@@ -4,6 +4,27 @@ import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+     * Represents a checkers board using bitboards.
+     * 
+     * <p>
+     * This class supports:
+     * <ul>
+     *   <li>Different board sizes: 8x8, 10x10, and 12x12</li>
+     *   <li>Two bitboards per player to handle up to 128 squares (board1 and board2)</li>
+     *   <li>Initial positions of white and black pawns</li>
+     *   <li>Diagonal moves for even and odd rows</li>
+     * </ul>
+     * </p>
+     * 
+     * <p>
+     * Each square of the board corresponds to a bit in a long:
+     * <ul>
+     *   <li>Board1: squares 0 to 63</li>
+     *   <li>Board2: squares 64 to 127 (for larger boards)</li>
+     * </ul>
+     * </p>
+*/
 public class Board {
 
     private static final Set<Integer> VALID_SIZES = Set.of(8, 10,12);
@@ -23,6 +44,12 @@ public class Board {
     private long blackPawns2;
     private long blackCheckers2;
 
+    /**
+     * Creates a board of the given size and initializes the positions.
+     *
+     * @param size the size of the board (8, 10, or 12)
+     * @throws IllegalArgumentException if the size is invalid
+     */
     public Board(int size) {
         if (!VALID_SIZES.contains(size)){
             throw new IllegalArgumentException("Invalid board size: " + size);
@@ -33,6 +60,14 @@ public class Board {
         initDiag();
     }
 
+    /**
+     * Initializes the starting positions of the pawns on the board.
+     * 
+     * <p>
+     * White pawns are placed at the top, black pawns at the bottom.
+     * Depending on the board size, pawns may overflow into the second bitboard.
+     * </p>
+     */
     private void initPosition() {
 
         this.whitePawns1 = 0L;
@@ -81,6 +116,9 @@ public class Board {
         }
     }
 
+    /**
+     * Initializes diagonal shifts for even and odd rows.
+     */
     private initDiag() {
         this.diagsPair.put("NW", (this.sizeBoard/2)-1);
         this.diagsPair.put("NE", (this.sizeBoard/2));
@@ -93,6 +131,24 @@ public class Board {
         this.diagsUnpair.put("SE", -((this.sizeBoard/2)+1));
     }
 
+    /**
+     * Moves a piece from one square to another.
+     * 
+     * <p>
+     * Square indices can exceed 63 for larger boards:
+     * <ul>
+     *   <li>00-63 → bitboard 1</li>
+     *   <li>64-74  → bitboard 2</li>
+     * </ul>
+     * </p>
+     *
+     * @param from the starting square index
+     * @param to the target square index
+     * @throws IllegalArgumentException if no piece is present at the "from" position
+     */
+    public void move(int from, int to) {
+
+    }
 
     public long getBlackPawns1() {
         return this.blackPawns1;
