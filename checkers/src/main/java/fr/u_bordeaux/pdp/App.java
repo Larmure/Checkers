@@ -75,6 +75,8 @@ public class App {
 
         } catch (ParseException e) {
             System.err.println("Error: " + e.getMessage());
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("checkers", options);
             return 2; // error
         }
     }
