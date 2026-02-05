@@ -1,10 +1,15 @@
 package fr.u_bordeaux.pdp.model;
 
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Board {
 
     private static final Set<Integer> VALID_SIZES = Set.of(8, 10,12);
+
+    private Map<String, Integer> diagsPair = new HashMap<>();
+    private Map<String, Integer> diagsUnpair = new HashMap<>();
 
     private int sizeBoard;
 
@@ -24,6 +29,8 @@ public class Board {
         }
         this.sizeBoard = size;
         initPosition();
+
+        initDiag();
     }
 
     private void initPosition() {
@@ -72,6 +79,18 @@ public class Board {
                     " (valeurs autorisées : 8, 10, 12)"
                 );
         }
+    }
+
+    private initDiag() {
+        this.diagsPair.put("NW", (this.sizeBoard/2)-1);
+        this.diagsPair.put("NE", (this.sizeBoard/2));
+        this.diagsPair.put("SW", -((this.sizeBoard/2)+1));
+        this.diagsPair.put("SE", -(this.sizeBoard/2));
+
+        this.diagsUnpair.put("NW", (this.sizeBoard/2));
+        this.diagsUnpair.put("NE", (this.sizeBoard/2)+1);
+        this.diagsUnpair.put("SW", -((this.sizeBoard/2)));
+        this.diagsUnpair.put("SE", -((this.sizeBoard/2)+1));
     }
 
 
