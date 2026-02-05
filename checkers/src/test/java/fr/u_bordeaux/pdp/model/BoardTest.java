@@ -11,6 +11,8 @@ public class BoardTest {
 
         // 12 premier bit à 1
         long expectedWhite = (1L << 12) - 1;
+
+        // 12 prochain bit après le 20 ème indice sont à 1
         long expectedBlack = expectedWhite << 20;
 
         assertEquals(expectedWhite, board.getWhitePawns1());
