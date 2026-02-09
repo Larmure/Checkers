@@ -269,6 +269,95 @@ public class Board {
                 || isBitWhiteChecker(index) || isBitBlackChecker(index);
     }
 
+    private void addWhitePawn(int index) {
+        if (index < 64) {
+            whitePawns1 |= (1L << index);
+        } else {
+            whitePawns2 |= (1L << (index - 64));
+        }
+    }
+
+    private void removeWhitePawn(int index) {
+        if (index < 64) {
+            whitePawns1 &= ~(1L << index);
+        } else {
+            whitePawns2 &= ~(1L << (index - 64));
+        }
+    }
+
+    private void addBlackPawn(int index) {
+        if (index < 64) {
+            blackPawns1 |= (1L << index);
+        } else {
+            blackPawns2 |= (1L << (index - 64));
+        }
+    }
+
+    private void removeBlackPawn(int index) {
+        if (index < 64) {
+            blackPawns1 &= ~(1L << index);
+        } else {
+            blackPawns2 &= ~(1L << (index - 64));
+        }
+    }
+
+    private void addWhiteChecker(int index) {
+        if (index < 64) {
+            whiteCheckers1 |= (1L << index);
+        } else {
+            whiteCheckers2 |= (1L << (index - 64));
+        }
+    }
+
+    private void removeWhiteChecker(int index) {
+        if (index < 64) {
+            whiteCheckers1 &= ~(1L << index);
+        } else {
+            whiteCheckers2 &= ~(1L << (index - 64));
+        }
+    }
+
+    private void addBlackChecker(int index) {
+        if (index < 64) {
+            blackCheckers1 |= (1L << index);
+        } else {
+            blackCheckers2 |= (1L << (index - 64));
+        }
+    }
+
+    private void removeBlackChecker(int index) {
+        if (index < 64) {
+            blackCheckers1 &= ~(1L << index);
+        } else {
+            blackCheckers2 &= ~(1L << (index - 64));
+        }
+    }
+
+    /**
+     * Splits a move string like "A9-L12" into its two squares.
+     *
+     * @param move a string representing a move, e.g. "A9-L12"
+     * @return a string array of length 2: { "A9", "L12" }
+     * @throws IllegalArgumentException if the format is invalid
+     */
+    public void move(String move) {
+        if (move == null || !move.contains("-")) {
+            throw new IllegalArgumentException("Invalid move format: " + move);
+        }
+        
+        String[] parts = move.split("-");
+        
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Move should have exactly two squares: " + move);
+        }
+        int from = this.squareToIndex(parts[0]);
+        int to = this.squareToIndex(parts[1]);
+        
+        this.moveAux(from, to);
+    }
+
+
+
     /**
      * Moves a piece from one square to another.
      * 
@@ -284,7 +373,135 @@ public class Board {
      * @param to the target square index
      * @throws IllegalArgumentException if no piece is present at the "from" position
      */
-    public void move(int from, int to) {
-    }  
+    private void moveAux(int from, int to) {
+        if (from < 0 || from >= indexMax || to < 0 || to >= indexMax) {
+            throw new IllegalArgumentException("Move out of board bounds");
+        }
+
+        if (from == to) {
+            throw new IllegalArgumentException("Source and destination are identical");
+        }
+
+        if (isOccupied(to)) {
+            throw new IllegalArgumentException("Destination square is not empty: " + to);
+        }
+
+        if (isBitWhitePawn(from)) {
+            removeWhitePawn(from);
+            addWhitePawn(to);
+            return;
+        }
+
+        if (isBitBlackPawn(from)) {
+            removeBlackPawn(from);
+            addBlackPawn(to);
+            return;
+        }
+
+        if (isBitWhiteChecker(from)) {
+            removeWhiteChecker(from);
+            addWhiteChecker(to);
+            return;
+        }
+
+        if (isBitBlackChecker(from)) {
+            removeBlackChecker(from);
+            addBlackChecker(to);
+            return;
+        }
+
+        throw new IllegalArgumentException("No piece at source index: " + from);
+    }
+
+    public void promote(String square) {
+        int index = squareToIndex(square);
+        promoteBit(index);
+    }
+
+    private void promoteBit(int index) {
+        if (index < 0 || index >= indexMax) {
+            throw new IllegalArgumentException("Move out of board bounds");
+        }
+
+        if (isBitWhitePawn(index)) {
+            removeWhitePawn(index);
+            addWhiteChecker(index);
+            return;
+        }
+
+        if (isBitBlackPawn(index)) {
+            removeBlackPawn(index);
+            addBlackChecker(index);
+            return;
+        }
+
+        throw new IllegalArgumentException("No piece at source index: " + index);
+    } 
+
+
+    /**
+     * Convertit une position (row, col) du plateau réel
+     * en index de bitboard.
+     *
+     * @param row ligne du plateau
+     * @param col colonne du plateau
+     * @return index bitboard ou -1 si case blanche
+     */
+    private int boardToBitIndex(int row, int col) {
+        // A1 (0,0) doit être NOIRE
+        if ((row + col) % 2 != 0) {
+            return -1; // case blanche, non stockée
+        }
+
+        int blackBeforeRow = row * (sizeBoard / 2);
+        int blackInRow = col / 2;
+
+        return blackBeforeRow + blackInRow;
+    }
+
+
+    /**
+     * Affiche le plateau de jeu complet (cases blanches et noires),
+     * avec les pièces placées selon les bitboards.
+     */
+    public void printBoard() {
+
+        System.out.println();
+
+        // Affichage des lignes de haut en bas (L -> A)
+        for (int row = sizeBoard - 1; row >= 0; row--) {
+
+            // Lettre de ligne (A en bas)
+            char rowChar = (char) ('A' + row);
+            System.out.print(rowChar + "  ");
+
+            for (int col = 0; col < sizeBoard; col++) {
+                int bitIndex = boardToBitIndex(row, col);
+
+                if (bitIndex == -1) {
+                    System.out.print("_  "); // case blanche
+                } else if (isBitWhitePawn(bitIndex)) {
+                    System.out.print("w  ");
+                } else if (isBitWhiteChecker(bitIndex)) {
+                    System.out.print("W  ");
+                } else if (isBitBlackPawn(bitIndex)) {
+                    System.out.print("b  ");
+                } else if (isBitBlackChecker(bitIndex)) {
+                    System.out.print("B  ");
+                } else {
+                    System.out.print("_  "); // case noire vide
+                }
+            }
+            System.out.println();
+            
+        }
+        // En-tête colonnes (1..size)
+        System.out.print("  ");
+        for (int col = 1; col <= sizeBoard; col++) {
+            System.out.printf("%2d ", col);
+        }
+        System.out.println();
+    }
+
 }
 
