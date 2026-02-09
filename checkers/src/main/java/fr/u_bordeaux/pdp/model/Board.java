@@ -119,7 +119,7 @@ public class Board {
     /**
      * Initializes diagonal shifts for even and odd rows.
      */
-    private initDiag() {
+    private void initDiag() {
         this.diagsPair.put("NW", (this.sizeBoard/2)-1);
         this.diagsPair.put("NE", (this.sizeBoard/2));
         this.diagsPair.put("SW", -((this.sizeBoard/2)+1));
@@ -129,6 +129,98 @@ public class Board {
         this.diagsUnpair.put("NE", (this.sizeBoard/2)+1);
         this.diagsUnpair.put("SW", -((this.sizeBoard/2)));
         this.diagsUnpair.put("SE", -((this.sizeBoard/2)+1));
+    }
+
+    /**
+     * Convertit une case textuelle (ex: "C5") en index linéaire
+     * sur le plateau size x size.
+     *
+     * @param square position sous forme lettre+nombre
+     * @return index linéaire correspondant
+     */
+    private int squareToIndex(String square) {
+        char rowChar = Character.toUpperCase(square.charAt(0));
+        int row = rowChar - 'A';
+        int col = Integer.parseInt(square.substring(1)) - 1;
+        System.out.println((row * sizeBoard + col)/2);
+        return (row * sizeBoard + col)/2;
+    }
+
+     /**
+     * Teste la présence d'un bit à un index donné
+     * dans une paire de bitboards (0-63 / 64-127).
+     *
+     * @param index index global
+     * @param bitboard1 bits 0-63
+     * @param bitboard2 bits 64-127
+     * @return true si le bit est à 1
+     */
+    private boolean hasPawn(int index, long bitboard1, long bitboard2) {
+        if (index < 0 || index >= 128) {
+            throw new IllegalArgumentException("Index hors limites (0-127)");
+        }
+
+        if (index < 64) {
+            return ((bitboard1 >>> index) & 1L) == 1L;
+        } else {
+            return ((bitboard2 >>> (index - 64)) & 1L) == 1L;
+        }
+    }
+
+    /**
+     * Indique si un pion blanc est présent à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si un pion blanc est présent
+     */
+    public boolean isWhitePawn(String square) {
+        int index = squareToIndex(square);
+        return hasPawn(index, whitePawns1, whitePawns2);
+    }
+
+    /**
+     * Indique si un pion noir est présent à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si un pion noir est présent
+     */
+    public boolean isBlackPawn(String square) {
+        int index = squareToIndex(square);
+        return hasPawn(index, blackPawns1, blackPawns2);
+    }
+
+    /**
+     * Indique si une dame blanche est présente à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si une dame blanche est présente
+     */
+    public boolean isWhiteChecker(String square) {
+        int index = squareToIndex(square);
+        return hasPawn(index, whiteCheckers1, whiteCheckers2);
+    }
+
+    /**
+     * Indique si une dame noire est présente à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si une dame noire est présente
+     */
+    public boolean isBlackChecker(String square) {
+        int index = squareToIndex(square);
+        return hasPawn(index, blackCheckers1, blackCheckers2);
+    }
+
+    /**
+     * Indique si une pièce quelconque est présente à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si une pièce est présente
+     */
+    public boolean something(String square) {
+        String index = square;
+        return isWhitePawn(index) || isBlackPawn(index)
+                || isWhiteChecker(index) || isBlackChecker(index);
     }
 
     /**
@@ -150,20 +242,6 @@ public class Board {
 
     }
 
-    public long getBlackPawns1() {
-        return this.blackPawns1;
-    }
-
-    public long getBlackPawns2() {
-        return this.blackPawns2;
-    }
- 
-    public long getWhitePawns1() {
-        return this.whitePawns1;
-    }
-
-    public long getWhitePawns2() {
-        return this.whitePawns2;
-    }
+    
 }
 
