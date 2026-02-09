@@ -33,6 +33,7 @@ public class Board {
     private Map<String, Integer> diagsUnpair = new HashMap<>();
 
     private int sizeBoard;
+    private int indexMax;
 
     private long whitePawns1;
     private long whiteCheckers1;
@@ -55,6 +56,7 @@ public class Board {
             throw new IllegalArgumentException("Invalid board size: " + size);
         }
         this.sizeBoard = size;
+        this.indexMax = (this.sizeBoard * this.sizeBoard)/2;
         initPosition();
 
         initDiag();
@@ -156,7 +158,7 @@ public class Board {
      * @return true si le bit est à 1
      */
     private boolean hasPawn(int index, long bitboard1, long bitboard2) {
-        if (index < 0 || index >= 128) {
+        if (index < 0 || index >= this.indexMax) {
             throw new IllegalArgumentException("Index hors limites (0-127)");
         }
 
@@ -175,7 +177,7 @@ public class Board {
      */
     public boolean isWhitePawn(String square) {
         int index = squareToIndex(square);
-        return hasPawn(index, whitePawns1, whitePawns2);
+        return isBitBlackPawn(index);
     }
 
     /**
@@ -186,7 +188,7 @@ public class Board {
      */
     public boolean isBlackPawn(String square) {
         int index = squareToIndex(square);
-        return hasPawn(index, blackPawns1, blackPawns2);
+        return isBitBlackPawn(index);
     }
 
     /**
@@ -197,7 +199,7 @@ public class Board {
      */
     public boolean isWhiteChecker(String square) {
         int index = squareToIndex(square);
-        return hasPawn(index, whiteCheckers1, whiteCheckers2);
+        return isBitWhiteChecker(index);
     }
 
     /**
@@ -208,6 +210,46 @@ public class Board {
      */
     public boolean isBlackChecker(String square) {
         int index = squareToIndex(square);
+        return isBitBlackChecker(index);
+    }
+
+    /**
+     * Indique si un pion blanc est présent à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si un pion blanc est présent
+     */
+    private boolean isBitWhitePawn(int index) {
+        return hasPawn(index, whitePawns1, whitePawns2);
+    }
+
+    /**
+     * Indique si un pion noir est présent à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si un pion noir est présent
+     */
+    private boolean isBitBlackPawn(int index) {
+        return hasPawn(index, blackPawns1, blackPawns2);
+    }
+
+    /**
+     * Indique si une dame blanche est présente à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si une dame blanche est présente
+     */
+    private boolean isBitWhiteChecker(int index) {
+        return hasPawn(index, whiteCheckers1, whiteCheckers2);
+    }
+
+    /**
+     * Indique si une dame noire est présente à l'index donné.
+     *
+     * @param index index bitboard
+     * @return true si une dame noire est présente
+     */
+    private boolean isBitBlackChecker(int index) {
         return hasPawn(index, blackCheckers1, blackCheckers2);
     }
 
@@ -218,9 +260,13 @@ public class Board {
      * @return true si une pièce est présente
      */
     public boolean something(String square) {
-        String index = square;
-        return isWhitePawn(index) || isBlackPawn(index)
-                || isWhiteChecker(index) || isBlackChecker(index);
+        int index = squareToIndex(square);
+        return isOccupied(index);
+    }
+
+    private boolean isOccupied(int index) {
+        return isBitWhitePawn(index) || isBitBlackPawn(index)
+                || isBitWhiteChecker(index) || isBitBlackChecker(index);
     }
 
     /**
@@ -239,9 +285,6 @@ public class Board {
      * @throws IllegalArgumentException if no piece is present at the "from" position
      */
     public void move(int from, int to) {
-
-    }
-
-    
+    }  
 }
 
