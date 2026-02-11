@@ -7,13 +7,13 @@ public class GameController {
   private final GameView view;
   private final GameCheckers game;
 
-  public GameController(GameCheckers game,GameView view) {
+  public GameController(GameCheckers game, GameView view) {
     this.view = view;
     this.game = game;
   }
 
   public void start() {
-		view.setController(this);
+    view.setController(this);
     view.start();
   }
 
@@ -22,7 +22,8 @@ public class GameController {
       case "new" -> new NewCommand(this, args);
       case "quit" -> new QuitCommand();
       default -> {
-        System.out.println("Unknown command: " + commandName);
+        System.out.println("Unknown command: " 
+            + commandName);
         yield null; 
       }
     };
@@ -33,10 +34,10 @@ public class GameController {
   }
 
   public void startNewGame(boolean blitz, boolean contest, int time, int size) {
-    System.out.println("Initializing new game with options: " +
-      (blitz ? "Blitz " : "") +
-      (contest ? "Contest " : "") +
-      (time > 0 ? "Time=" + time + "s " : "") +
-      (size != 8 ? "Size=" + size : ""));
+    System.out.println("Initializing new game with options: " 
+        + (blitz ? "Blitz " : "") 
+        + (contest ? "Contest " : "") 
+        + (time > 0 ? "Time=" + time + "s " : "") 
+        + (size != 8 ? "Size=" + size : ""));
   }
 }

@@ -1,16 +1,19 @@
 package fr.ubordeaux.pdp.view;
 
+import fr.ubordeaux.pdp.controller.GameController;
 import java.util.Arrays;
 import java.util.Scanner;
 
-import fr.ubordeaux.pdp.controller.GameController;
 
-public class CLI extends GameView {
+
+
+
+public class CommandLineInterface extends GameView {
 
   private boolean verbose = false;
   private boolean debug = false;
 
-  public CLI(boolean verbose, boolean debug) {
+  public CommandLineInterface(boolean verbose, boolean debug) {
     this.verbose = verbose;
     this.debug = debug;
   }
@@ -27,26 +30,32 @@ public class CLI extends GameView {
 
   @Override
   public void start() {
-    if (verbose) 
+    if (verbose) {
       System.out.println("[Info] CLI mode started with verbose output.");
-    if (debug) 
+    }
+    if (debug) {
       System.out.println("[Debug] CLI mode started with debug output.");
+    }
     
+    @SuppressWarnings("resource")
     Scanner scanner = new Scanner(System.in);
 
     while (true) {
       System.out.print("> ");
 
-      if (!scanner.hasNextLine())
+      if (!scanner.hasNextLine()) {
         break;
+      }
     
       String input = scanner.nextLine().trim();
     
-      if (input.isEmpty())
+      if (input.isEmpty()) {
         continue;
+      }
     
-      if (input.equalsIgnoreCase("exit"))
+      if (input.equalsIgnoreCase("exit")) {
         break;
+      }
     
       try {
         String[] tokens = input.split("\\s+");

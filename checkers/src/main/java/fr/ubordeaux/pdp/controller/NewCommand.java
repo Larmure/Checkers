@@ -26,11 +26,11 @@ public class NewCommand implements Command {
       boolean contest = cmd.hasOption("c");
   
       int time = cmd.hasOption("t")
-        ? Integer.parseInt(cmd.getOptionValue("t"))
+          ? Integer.parseInt(cmd.getOptionValue("t"))
           : 0;
   
       int size = cmd.hasOption("s")
-        ? Integer.parseInt(cmd.getOptionValue("s"))
+          ? Integer.parseInt(cmd.getOptionValue("s"))
           : 8;
   
       controller.startNewGame(blitz, contest, time, size);
