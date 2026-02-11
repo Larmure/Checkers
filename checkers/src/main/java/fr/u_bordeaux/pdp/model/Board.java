@@ -1,7 +1,10 @@
 package fr.u_bordeaux.pdp.model;
 
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -130,8 +133,23 @@ public class Board {
         this.diagsUnpair.put("NW", (this.sizeBoard/2));
         this.diagsUnpair.put("NE", (this.sizeBoard/2)+1);
         this.diagsUnpair.put("SW", -((this.sizeBoard/2)));
-        this.diagsUnpair.put("SE", -((this.sizeBoard/2)+1));
+        this.diagsUnpair.put("SE", -((this.sizeBoard/2)-1));
     }
+
+    public void printDiagonals() {
+        System.out.println("Diagonales (lignes paires) :");
+        for (Map.Entry<String, Integer> entry : diagsPair.entrySet()) {
+            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
+        }
+
+        System.out.println();
+
+        System.out.println("Diagonales (lignes impaires) :");
+        for (Map.Entry<String, Integer> entry : diagsUnpair.entrySet()) {
+            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
+        }
+    }
+
 
     /**
      * Convertit une case textuelle (ex: "C5") en index linéaire
@@ -503,5 +521,341 @@ public class Board {
         System.out.println();
     }
 
+    private Map<String, Integer> diagsForIndex(int index) {
+        int row = index / (sizeBoard / 2);
+        return (row % 2 == 0) ? diagsPair : diagsUnpair;
+    }
+
+    private List<Integer> pawnSimpleTargets(int from) {
+        List<Integer> targets = new ArrayList<>();
+        Map<String, Integer> diags = diagsForIndex(from);
+
+        for (int delta : diags.values()) {
+            int to = from + delta;
+
+            if (to >= 0 && to < indexMax && !isOccupied(to)) {
+                targets.add(to);
+            }
+        }
+        return targets;
+    }
+
+
+    public List<String> getWhiteValidMoves() {
+
+        List<String> captures = new ArrayList<>();
+        List<String> simples  = new ArrayList<>();
+
+        for (int i = 0; i < indexMax; i++) {
+
+            if (isBitWhitePawn(i)) {
+                captures.addAll(getBestPawnCaptures(i, true));
+            }
+
+            if (isBitWhiteChecker(i)) {
+                captures.addAll(getBestCheckerCaptures(i, true));
+            }
+        }
+
+        if (!captures.isEmpty()) return captures;
+
+        // sinon coups simples
+        for (int i = 0; i < indexMax; i++) {
+
+            if (isBitWhitePawn(i)) {
+                for (int to : pawnSimpleTargets(i))
+                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
+            }
+
+            if (isBitWhiteChecker(i)) {
+                for (int to : checkerSimpleTargets(i))
+                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
+            }
+        }
+        return simples;
+    }
+
+
+    public List<String> getBlackValidMoves() {
+
+        List<String> captures = new ArrayList<>();
+        List<String> simples  = new ArrayList<>();
+
+        for (int i = 0; i < indexMax; i++) {
+
+            if (isBitBlackPawn(i)) {
+                captures.addAll(getBestPawnCaptures(i, false));
+            }
+
+            if (isBitBlackChecker(i)) {
+                captures.addAll(getBestCheckerCaptures(i, false));
+            }
+        }
+
+        if (!captures.isEmpty()) return captures;
+
+        // sinon coups simples
+        for (int i = 0; i < indexMax; i++) {
+
+            if (isBitBlackPawn(i)) {
+                for (int to : pawnSimpleTargets(i))
+                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
+            }
+
+            if (isBitBlackChecker(i)) {
+                for (int to : checkerSimpleTargets(i))
+                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
+            }
+        }
+        return simples;
+    }
+
+
+    public void printMoves(List<String> moves) {
+        if (moves == null || moves.isEmpty()) {
+            System.out.println("Aucun coup possible.");
+            return;
+        }
+
+        System.out.println("Coups possibles (" + moves.size() + ") :");
+        for (String move : moves) {
+            System.out.println("  " + move);
+        }
+    }
+
+    private String indexToSquare(int index) {
+        int row = index / (sizeBoard / 2);
+        int col = (index % (sizeBoard / 2)) * 2 + (row % 2 == 0 ? 0 : 1);
+
+        char rowChar = (char) ('A' + row);
+        return "" + rowChar + (col + 1);
+    }
+
+    private List<Integer> checkerSimpleTargets(int from) {
+        List<Integer> targets = new ArrayList<>();
+
+        for (String dir : diagsPair.keySet()) {
+            int current = from;
+
+            while (true) {
+                Map<String, Integer> diags = diagsForIndex(current);
+                int next = current + diags.get(dir);
+
+                if (next < 0 || next >= indexMax) break;
+                if (isOccupied(next)) break;
+
+                targets.add(next);
+                current = next;
+            }
+        }
+        return targets;
+    }
+
+    private List<CapturePath> pawnMultiCaptures(int from, boolean isWhite) {
+        List<CapturePath> results = new ArrayList<>();
+
+        dfsPawn(from, isWhite,
+                new ArrayList<>(List.of(from)),
+                new HashSet<>(),
+                results,
+                0);
+
+        return results;
+    }
+
+    private void dfsPawn(int current, boolean isWhite, List<Integer> path,
+            Set<Integer> captured, List<CapturePath> results,int captureCount) {
+
+        boolean foundNext = false;
+
+        Map<String, Integer> d1 = diagsForIndex(current);
+
+        for (String dir : d1.keySet()) {
+
+            int mid = current + d1.get(dir);
+            if (mid < 0 || mid >= indexMax) continue;
+
+            if (captured.contains(mid)) continue;
+
+            boolean enemy =
+                    isWhite
+                    ? (isBitBlackPawn(mid) || isBitBlackChecker(mid))
+                    : (isBitWhitePawn(mid) || isBitWhiteChecker(mid));
+
+            if (!enemy) continue;
+
+            Map<String, Integer> d2 = diagsForIndex(mid);
+            int to = mid + d2.get(dir);
+
+            if (to < 0 || to >= indexMax) continue;
+            if (isOccupied(to)) continue;
+
+            // saut valide
+            foundNext = true;
+
+            captured.add(mid);
+            path.add(to);
+
+            dfsPawn(to, isWhite, path, captured,
+                    results, captureCount + 1);
+
+            path.remove(path.size() - 1);
+            captured.remove(mid);
+        }
+
+        if (!foundNext && captureCount > 0) {
+            results.add(new CapturePath(path, captureCount));
+        }
+    }
+
+    private List<String> getBestPawnCaptures(int from, boolean isWhite) {
+
+        List<CapturePath> all = pawnMultiCaptures(from, isWhite);
+        if (all.isEmpty()) return List.of();
+
+        int max = all.stream()
+                    .mapToInt(c -> c.captures)
+                    .max()
+                    .orElse(0);
+
+        List<String> best = new ArrayList<>();
+        for (CapturePath c : all) {
+            if (c.captures == max) {
+                best.add(pathToMove(c.path));
+            }
+        }
+        return best;
+    }
+
+    private String pathToMove(List<Integer> path) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < path.size(); i++) {
+            if (i > 0) sb.append("x");
+            sb.append(path.get(i));
+        }
+        return sb.toString();
+    }
+
+    private List<String> getBestCheckerCaptures(int from, boolean isWhite) {
+
+    // Toutes les séquences possibles depuis cette dame
+        List<CapturePath> allCaptures = checkerMultiCaptures(from, isWhite);
+
+        if (allCaptures.isEmpty()) {
+            return List.of();
+        }
+
+        // On cherche le nombre maximum de prises
+        int maxCaptures = allCaptures.stream()
+                .mapToInt(c -> c.captures)
+                .max()
+                .orElse(0);
+
+        List<String> bestMoves = new ArrayList<>();
+
+        // On garde uniquement les chemins avec le nombre max
+        for (CapturePath cp : allCaptures) {
+            if (cp.captures == maxCaptures) {
+                bestMoves.add(pathToMove(cp.path));
+            }
+        }
+
+        return bestMoves;
+    }
+
+    private List<CapturePath> checkerMultiCaptures(int from, boolean isWhite) {
+
+        List<CapturePath> results = new ArrayList<>();
+
+        dfsChecker(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results, 0 );
+
+        return results;
+    }
+
+    private void dfsChecker(int current, boolean isWhite,  List<Integer> path,
+                            Set<Integer> captured, List<CapturePath> results, int captureCount) {
+
+        boolean foundContinuation = false;
+
+        for (String dir : diagsPair.keySet()) {
+
+            int pos = current;
+            boolean enemyFound = false;
+            int enemyIndex = -1;
+
+            while (true) {
+
+                Map<String, Integer> diags = diagsForIndex(pos);
+                int next = pos + diags.get(dir);
+
+                if (next < 0 || next >= indexMax)
+                    break;
+
+                if (!enemyFound) {
+
+                    if (isOccupied(next)) {
+
+                        boolean enemy = isWhite
+                                ? (isBitBlackPawn(next) || isBitBlackChecker(next))
+                                : (isBitWhitePawn(next) || isBitWhiteChecker(next));
+
+                        if (!enemy || captured.contains(next))
+                            break;
+
+                        enemyFound = true;
+                        enemyIndex = next;
+                        pos = next;
+                    } else {
+                        pos = next;
+                    }
+
+                } else {
+
+                    if (isOccupied(next))
+                        break;
+
+                    // saut valide
+                    foundContinuation = true;
+
+                    captured.add(enemyIndex);
+                    path.add(next);
+
+                    dfsChecker(
+                            next,
+                            isWhite,
+                            path,
+                            captured,
+                            results,
+                            captureCount + 1
+                    );
+
+                    path.remove(path.size() - 1);
+                    captured.remove(enemyIndex);
+
+                    pos = next;
+                }
+            }
+        }
+
+        // Fin de branche → on stocke si au moins une capture
+        if (!foundContinuation && captureCount > 0) {
+            results.add(new CapturePath(path, captureCount));
+        }
+    }
+
+
+
+
+    private static class CapturePath {
+        List<Integer> path = new ArrayList<>();
+        int captures;
+
+        CapturePath(List<Integer> p, int c) {
+            path.addAll(p);
+            captures = c;
+        }
+    }
+
 }
+
 
