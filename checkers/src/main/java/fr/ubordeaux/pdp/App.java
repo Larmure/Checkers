@@ -7,6 +7,12 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.GameCheckers;
+import fr.ubordeaux.pdp.view.CLI;
+import fr.ubordeaux.pdp.view.GameView;
+
+
 /**
  * Main class for the Checkers game. Handles command line arguments and initializes the game modes.
  *
@@ -46,6 +52,10 @@ public class App {
     }
 
     // Status EXIT_SUCCESS means continue execution normally
+    GameCheckers game = new GameCheckers();
+    GameView view = new CLI(verbose, debug);
+    GameController controller = new GameController(game, view);
+    controller.start();
   }
 
   /**
