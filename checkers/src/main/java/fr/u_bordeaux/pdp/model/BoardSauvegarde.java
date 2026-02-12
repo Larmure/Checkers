@@ -87,24 +87,6 @@ public class BoardSauvegarde {
     }
 
 
-    public static void main(String[] args) {
-
-        // 1️⃣ Créer un plateau (exemple 8x8)
-        Board board = new Board(8);
-
-        // 2️⃣ Créer la sauvegarde
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(board);
-
-        // 3️⃣ Créer le dossier Sauvegarde (OBLIGATOIRE)
-        sauvegarde.createSaveDirectory();
-
-        // 4️⃣ Sauvegarder dans un fichier
-        sauvegarde.saveToFile("test_board_main.txt");
-
-        // 5️⃣ Debug utile
-        System.out.println("user.dir = " + System.getProperty("user.dir"));
-    }
-
 }
 
 
