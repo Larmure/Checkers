@@ -10,7 +10,6 @@ import org.apache.commons.cli.ParseException;
 /**
  * Main class for the Checkers game. Handles command line arguments and initializes the game modes.
  *
- * @author Lalatiana
  * @version 1.0
  */
 public class App {
@@ -56,12 +55,17 @@ public class App {
    * @return EXIT_SUCCESS to continue, EXIT_INFO to stop (info displayed), EXIT_ERROR for error.
    */
   public static int run(String[] args) {
+    ConfigManager configManager = new ConfigManager();
+    configManager.load();
+    verbose = Boolean.parseBoolean(configManager.getProperty("verbose", "false"));
     // Options definition
     Options options = new Options();
     options.addOption("h", "help", false, "display help");
     options.addOption("V", "version", false, "display version");
     options.addOption("v", "verbose", false, "increase verbosity");
     options.addOption("d", "debug", false, "display debug messages");
+    options.addOption("b", "blitz", false, "enable blitz mode");
+    options.addOption("t", "time", true, "set time limit in minutes");
 
     CommandLineParser parser = new DefaultParser();
     try {
@@ -88,6 +92,9 @@ public class App {
         System.out.println("Debug mode enabled.");
       }
 
+      if (verbose) {
+        System.out.println("Verbose mode enabled.");
+      }
       System.out.println("Welcome to Checkers!");
       return EXIT_SUCCESS;
 
@@ -98,8 +105,6 @@ public class App {
       return EXIT_ERROR;
     }
   }
-
-  // --- GETTERS ---
 
   /**
    * Checks if verbose mode is enabled.
