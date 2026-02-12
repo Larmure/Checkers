@@ -90,5 +90,7 @@ public class Board {
     public long getWhitePawns2() {
         return this.whitePawns2;
     }
+
+    public int getSizeBoard() { return sizeBoard; }
 }
 
