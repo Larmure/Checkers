@@ -7,30 +7,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-/**
-     * Represents a checkers board using bitboards.
-     * 
-     * <p>
-     * This class supports:
-     * <ul>
-     *   <li>Different board sizes: 8x8, 10x10, and 12x12</li>
-     *   <li>Two bitboards per player to handle up to 128 squares (board1 and board2)</li>
-     *   <li>Initial positions of white and black pawns</li>
-     *   <li>Diagonal moves for even and odd rows</li>
-     * </ul>
-     * </p>
-     * 
-     * <p>
-     * Each square of the board corresponds to a bit in a long:
-     * <ul>
-     *   <li>Board1: squares 0 to 63</li>
-     *   <li>Board2: squares 64 to 127 (for larger boards)</li>
-     * </ul>
-     * </p>
-*/
+
 public class Board {
 
     private static final Set<Integer> VALID_SIZES = Set.of(8, 10,12);
+
+    // Masques pour le plateau 8x8 (on peut généraliser ensuite)
+    private long LEFT_EDGE_MASK;
+    private long RIGHT_EDGE_MASK;
 
     private Map<String, Integer> diagsPair = new HashMap<>();
     private Map<String, Integer> diagsUnpair = new HashMap<>();
@@ -48,12 +32,6 @@ public class Board {
     private long blackPawns2;
     private long blackCheckers2;
 
-    /**
-     * Creates a board of the given size and initializes the positions.
-     *
-     * @param size the size of the board (8, 10, or 12)
-     * @throws IllegalArgumentException if the size is invalid
-     */
     public Board(int size) {
         if (!VALID_SIZES.contains(size)){
             throw new IllegalArgumentException("Invalid board size: " + size);
@@ -61,18 +39,13 @@ public class Board {
         this.sizeBoard = size;
         this.indexMax = (this.sizeBoard * this.sizeBoard)/2;
         initPosition();
-
+        initEdgeMasks();
         initDiag();
     }
 
-    /**
-     * Initializes the starting positions of the pawns on the board.
-     * 
-     * <p>
-     * White pawns are placed at the top, black pawns at the bottom.
-     * Depending on the board size, pawns may overflow into the second bitboard.
-     * </p>
-     */
+    /*
+          INITIALISATION
+    */
     private void initPosition() {
 
         this.whitePawns1 = 0L;
@@ -121,9 +94,6 @@ public class Board {
         }
     }
 
-    /**
-     * Initializes diagonal shifts for even and odd rows.
-     */
     private void initDiag() {
         this.diagsPair.put("NW", (this.sizeBoard/2)-1);
         this.diagsPair.put("NE", (this.sizeBoard/2));
@@ -136,45 +106,33 @@ public class Board {
         this.diagsUnpair.put("SE", -((this.sizeBoard/2)-1));
     }
 
-    public void printDiagonals() {
-        System.out.println("Diagonales (lignes paires) :");
-        for (Map.Entry<String, Integer> entry : diagsPair.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+    private void initEdgeMasks() {
+        LEFT_EDGE_MASK = 0L;
+        RIGHT_EDGE_MASK = 0L;
 
-        System.out.println();
-
-        System.out.println("Diagonales (lignes impaires) :");
-        for (Map.Entry<String, Integer> entry : diagsUnpair.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
+        for (int row = 0; row < sizeBoard; row++) {
+            int leftIndex = boardToBitIndex(row, 0);
+            int rightIndex = boardToBitIndex(row, sizeBoard - 1);
+            if (leftIndex >= 0) LEFT_EDGE_MASK |= (leftIndex < 64 ? 1L << leftIndex : 0L);
+            if (rightIndex >= 0) RIGHT_EDGE_MASK |= (rightIndex < 64 ? 1L << rightIndex : 0L);
         }
     }
 
-
-    /**
-     * Convertit une case textuelle (ex: "C5") en index linéaire
-     * sur le plateau size x size.
-     *
-     * @param square position sous forme lettre+nombre
-     * @return index linéaire correspondant
-     */
-    private int squareToIndex(String square) {
-        char rowChar = Character.toUpperCase(square.charAt(0));
-        int row = rowChar - 'A';
-        int col = Integer.parseInt(square.substring(1)) - 1;
-        System.out.println((row * sizeBoard + col)/2);
-        return (row * sizeBoard + col)/2;
+    
+    // Vérifie si un pion est sur la colonne gauche ou droite
+    private boolean onLeftEdge(int index) {
+        return (index < 64) ? ((LEFT_EDGE_MASK & (1L << index)) != 0)
+                            : ((LEFT_EDGE_MASK & (1L << (index - 64))) != 0);
     }
 
-     /**
-     * Teste la présence d'un bit à un index donné
-     * dans une paire de bitboards (0-63 / 64-127).
-     *
-     * @param index index global
-     * @param bitboard1 bits 0-63
-     * @param bitboard2 bits 64-127
-     * @return true si le bit est à 1
-     */
+    private boolean onRightEdge(int index) {
+        return (index < 64) ? ((RIGHT_EDGE_MASK & (1L << index)) != 0)
+                            : ((RIGHT_EDGE_MASK & (1L << (index - 64))) != 0);
+    }
+
+    /*
+          ALL Types Of Presence
+    */
     private boolean hasPawn(int index, long bitboard1, long bitboard2) {
         if (index < 0 || index >= this.indexMax) {
             throw new IllegalArgumentException("Index hors limites (0-127)");
@@ -187,97 +145,44 @@ public class Board {
         }
     }
 
-    /**
-     * Indique si un pion blanc est présent à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si un pion blanc est présent
-     */
     public boolean isWhitePawn(String square) {
         int index = squareToIndex(square);
-        return isBitBlackPawn(index);
+        return isBitWhitePawn(index);
     }
 
-    /**
-     * Indique si un pion noir est présent à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si un pion noir est présent
-     */
     public boolean isBlackPawn(String square) {
         int index = squareToIndex(square);
         return isBitBlackPawn(index);
     }
 
-    /**
-     * Indique si une dame blanche est présente à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si une dame blanche est présente
-     */
     public boolean isWhiteChecker(String square) {
         int index = squareToIndex(square);
         return isBitWhiteChecker(index);
     }
 
-    /**
-     * Indique si une dame noire est présente à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si une dame noire est présente
-     */
     public boolean isBlackChecker(String square) {
         int index = squareToIndex(square);
         return isBitBlackChecker(index);
     }
 
-    /**
-     * Indique si un pion blanc est présent à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si un pion blanc est présent
-     */
     private boolean isBitWhitePawn(int index) {
         return hasPawn(index, whitePawns1, whitePawns2);
     }
 
-    /**
-     * Indique si un pion noir est présent à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si un pion noir est présent
-     */
     private boolean isBitBlackPawn(int index) {
         return hasPawn(index, blackPawns1, blackPawns2);
     }
 
-    /**
-     * Indique si une dame blanche est présente à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si une dame blanche est présente
-     */
+
     private boolean isBitWhiteChecker(int index) {
         return hasPawn(index, whiteCheckers1, whiteCheckers2);
     }
 
-    /**
-     * Indique si une dame noire est présente à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si une dame noire est présente
-     */
     private boolean isBitBlackChecker(int index) {
         return hasPawn(index, blackCheckers1, blackCheckers2);
     }
 
-    /**
-     * Indique si une pièce quelconque est présente à l'index donné.
-     *
-     * @param index index bitboard
-     * @return true si une pièce est présente
-     */
-    public boolean something(String square) {
+    public boolean occupied(String square) {
         int index = squareToIndex(square);
         return isOccupied(index);
     }
@@ -287,6 +192,10 @@ public class Board {
                 || isBitWhiteChecker(index) || isBitBlackChecker(index);
     }
 
+
+    /*
+          Operation
+    */
     private void addWhitePawn(int index) {
         if (index < 64) {
             whitePawns1 |= (1L << index);
@@ -351,86 +260,6 @@ public class Board {
         }
     }
 
-    /**
-     * Splits a move string like "A9-L12" into its two squares.
-     *
-     * @param move a string representing a move, e.g. "A9-L12"
-     * @return a string array of length 2: { "A9", "L12" }
-     * @throws IllegalArgumentException if the format is invalid
-     */
-    public void move(String move) {
-        if (move == null || !move.contains("-")) {
-            throw new IllegalArgumentException("Invalid move format: " + move);
-        }
-        
-        String[] parts = move.split("-");
-        
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Move should have exactly two squares: " + move);
-        }
-        int from = this.squareToIndex(parts[0]);
-        int to = this.squareToIndex(parts[1]);
-        
-        this.moveAux(from, to);
-    }
-
-
-
-    /**
-     * Moves a piece from one square to another.
-     * 
-     * <p>
-     * Square indices can exceed 63 for larger boards:
-     * <ul>
-     *   <li>00-63 → bitboard 1</li>
-     *   <li>64-74  → bitboard 2</li>
-     * </ul>
-     * </p>
-     *
-     * @param from the starting square index
-     * @param to the target square index
-     * @throws IllegalArgumentException if no piece is present at the "from" position
-     */
-    private void moveAux(int from, int to) {
-        if (from < 0 || from >= indexMax || to < 0 || to >= indexMax) {
-            throw new IllegalArgumentException("Move out of board bounds");
-        }
-
-        if (from == to) {
-            throw new IllegalArgumentException("Source and destination are identical");
-        }
-
-        if (isOccupied(to)) {
-            throw new IllegalArgumentException("Destination square is not empty: " + to);
-        }
-
-        if (isBitWhitePawn(from)) {
-            removeWhitePawn(from);
-            addWhitePawn(to);
-            return;
-        }
-
-        if (isBitBlackPawn(from)) {
-            removeBlackPawn(from);
-            addBlackPawn(to);
-            return;
-        }
-
-        if (isBitWhiteChecker(from)) {
-            removeWhiteChecker(from);
-            addWhiteChecker(to);
-            return;
-        }
-
-        if (isBitBlackChecker(from)) {
-            removeBlackChecker(from);
-            addBlackChecker(to);
-            return;
-        }
-
-        throw new IllegalArgumentException("No piece at source index: " + from);
-    }
-
     public void promote(String square) {
         int index = squareToIndex(square);
         promoteBit(index);
@@ -457,14 +286,436 @@ public class Board {
     } 
 
 
-    /**
-     * Convertit une position (row, col) du plateau réel
-     * en index de bitboard.
-     *
-     * @param row ligne du plateau
-     * @param col colonne du plateau
-     * @return index bitboard ou -1 si case blanche
+
+    //        Application Move with Move        //
+
+    public void applyMove(Move move) {
+
+        int from = move.getFrom();
+        int to = move.getTo();
+
+        // Move piece
+        if (isBitWhitePawn(from)) {
+            removeWhitePawn(from);
+            addWhitePawn(to);
+        } else if (isBitBlackPawn(from)) {
+            removeBlackPawn(from);
+            addBlackPawn(to);
+        } else if (isBitWhiteChecker(from)) {
+            removeWhiteChecker(from);
+            addWhiteChecker(to);
+        } else if (isBitBlackChecker(from)) {
+            removeBlackChecker(from);
+            addBlackChecker(to);
+        }
+
+        // Remove captured pieces
+        for (int captured : move.getCaptured()) {
+
+            if (isBitWhitePawn(captured)) removeWhitePawn(captured);
+            if (isBitBlackPawn(captured)) removeBlackPawn(captured);
+            if (isBitWhiteChecker(captured)) removeWhiteChecker(captured);
+            if (isBitBlackChecker(captured)) removeBlackChecker(captured);
+        }
+
+        // Vérifier promotion automatique pour les pions
+        boolean promoted = false;
+        if (isBitWhitePawn(to)) {
+            int row = to / (sizeBoard / 2);
+            if (row == sizeBoard - 1) { // dernière ligne pour les blancs
+                promoteBit(to);
+                promoted = true;
+            }
+        } else if (isBitBlackPawn(to)) {
+            int row = to / (sizeBoard / 2);
+            if (row == 0) { // première ligne pour les noirs
+                promoteBit(to);
+                promoted = true;
+            }
+        }
+
+        // Marquer le move comme promotion pour affichage
+        if (promoted) {
+            move.setPromotion(true);
+        }
+    }
+
+    private Map<String, Integer> diagsForIndex(int index) {
+        int row = index / (sizeBoard / 2);
+        return (row % 2 == 0) ? diagsPair : diagsUnpair;
+    }
+
+
+    // Deplacement simple
+    private List<Integer> pawnSimpleTargets(int from) {
+        List<Integer> targets = new ArrayList<>();
+        Map<String, Integer> diags = diagsForIndex(from);
+
+        for (Map.Entry<String, Integer> entry : diags.entrySet()) {
+            String dir = entry.getKey();
+            int delta = entry.getValue();
+            int to = from + delta;
+
+            // Vérifier les bordures
+            if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(from)) continue;
+            if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(from)) continue;
+
+            if (to >= 0 && to < indexMax && !isOccupied(to)) {
+                targets.add(to);
+            }
+        }
+
+        return targets;
+    }
+    private List<Integer> checkerSimpleTargets(int from) {
+        List<Integer> targets = new ArrayList<>();
+
+        // Parcours de toutes les directions diagonales
+        for (String dir : diagsPair.keySet()) {
+            int current = from;
+
+            while (true) {
+                Map<String, Integer> diags = diagsForIndex(current);
+                int delta = diags.get(dir);
+
+                // Vérification des bords
+                if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(current)) break;
+                if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(current)) break;
+
+                int next = current + delta;
+
+                // Hors plateau
+                if (next < 0 || next >= indexMax) break;
+
+                if (isOccupied(next)) break; // case occupée → stop
+
+                targets.add(next);
+                current = next; // continuer dans la même direction
+            }
+        }
+
+        return targets;
+    }
+
+
+    /*
+              Valides Moves    
+    */
+    public List<Move> getWhiteValidMoves() {
+        return getValidMoves(true);
+    }
+
+    public List<Move> getBlackValidMoves() {
+        return getValidMoves(false);
+    }
+
+    private List<Move> getValidMoves(boolean isWhite) {
+
+        List<Move> captures = new ArrayList<>();
+        List<Move> simples  = new ArrayList<>();
+
+        for (int i = 0; i < indexMax; i++) {
+
+            if (isWhite) {
+                if (isBitWhitePawn(i))
+                    captures.addAll(getBestPawnCaptures(i, true));
+
+                if (isBitWhiteChecker(i))
+                    captures.addAll(getBestCheckerCaptures(i, true));
+            } else {
+                if (isBitBlackPawn(i))
+                    captures.addAll(getBestPawnCaptures(i, false));
+
+                if (isBitBlackChecker(i))
+                    captures.addAll(getBestCheckerCaptures(i, false));
+            }
+        }
+
+        if (!captures.isEmpty()) return captures;
+
+        // Otherwise simple moves
+        for (int i = 0; i < indexMax; i++) {
+
+            if (isWhite) {
+                if (isBitWhitePawn(i))
+                    for (int to : pawnSimpleTargets(i))
+                        simples.add(new Move(List.of(i, to), List.of()));
+
+                if (isBitWhiteChecker(i))
+                    for (int to : checkerSimpleTargets(i))
+                        simples.add(new Move(List.of(i, to), List.of()));
+            } else {
+                if (isBitBlackPawn(i))
+                    for (int to : pawnSimpleTargets(i))
+                        simples.add(new Move(List.of(i, to), List.of()));
+
+                if (isBitBlackChecker(i))
+                    for (int to : checkerSimpleTargets(i))
+                        simples.add(new Move(List.of(i, to), List.of()));
+            }
+        }
+
+        return simples;
+    }
+    
+  /* BEST MOVES PAWNS CAPTURE */
+    private List<Move> getBestPawnCaptures(int from, boolean isWhite) {
+
+      List<CapturePath> all = pawnMultiCaptures(from, isWhite);
+      if (all.isEmpty()) return List.of();
+
+      int max = all.stream()
+              .mapToInt(c -> c.captures)
+              .max()
+              .orElse(0);
+
+      List<Move> best = new ArrayList<>();
+
+      for (CapturePath c : all) {
+          if (c.captures == max) {
+              best.add(new Move(c.path, new ArrayList<>(c.captured)));
+          }
+      }
+
+      return best;
+    }
+
+    private List<CapturePath> pawnMultiCaptures(int from, boolean isWhite) {
+        List<CapturePath> results = new ArrayList<>();
+
+        dfsPawn(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results,0);
+
+        return results;
+    }
+
+    private boolean canCapturePawn(int from, int over, int to, boolean isWhite) {
+        // On bloque si sur bordures
+        if ((over < from && onLeftEdge(from)) || (over > from && onRightEdge(from))) return false;
+        if (to < 0 || to >= indexMax || isOccupied(to)) return false;
+
+        boolean enemy = isWhite
+                ? (isBitBlackPawn(over) || isBitBlackChecker(over))
+                : (isBitWhitePawn(over) || isBitWhiteChecker(over));
+
+        return enemy;
+    }
+
+    private void dfsPawn(int current, boolean isWhite, List<Integer> path,
+                     Set<Integer> captured, List<CapturePath> results, int captureCount) {
+
+    boolean foundNext = false;
+
+    // Récupérer les bonnes diagonales selon la ligne actuelle
+    Map<String, Integer> diags = diagsForIndex(current);
+
+    for (Map.Entry<String, Integer> entry : diags.entrySet()) {
+        String dir = entry.getKey();
+        int delta = entry.getValue();
+
+        // Vérification des bords
+        if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(current)) continue;
+        if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(current)) continue;
+
+        int mid = current + delta;
+
+        // Hors plateau
+        if (mid < 0 || mid >= indexMax) continue;
+
+        // Case déjà capturée
+        if (captured.contains(mid)) continue;
+
+        // Vérifier que c'est un ennemi
+        boolean enemy = isWhite ? (isBitBlackPawn(mid) || isBitBlackChecker(mid))
+                                : (isBitWhitePawn(mid) || isBitWhiteChecker(mid));
+        if (!enemy) continue;
+
+        // Calculer la destination après le saut
+        Map<String, Integer> nextDiags = diagsForIndex(mid);
+        int to = mid + nextDiags.get(dir);
+
+        // Vérifications finales
+        if (to < 0 || to >= indexMax) continue;
+        if (isOccupied(to)) continue;
+        if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(mid)) continue;
+        if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(mid)) continue;
+
+        // Saut valide
+        foundNext = true;
+        captured.add(mid);
+        path.add(to);
+
+        // Appel récursif pour multi-captures
+        dfsPawn(to, isWhite, path, captured, results, captureCount + 1);
+
+        // Backtrack
+        path.remove(path.size() - 1);
+        captured.remove(mid);
+    }
+
+    // Stocker le chemin si aucune capture suivante
+    if (!foundNext && captureCount > 0) {
+        results.add(new CapturePath(path, new ArrayList<>(captured)));
+    }
+}
+
+
+
+  /* BEST MOVES CHECKERS CAPTURE */
+  private List<Move> getBestCheckerCaptures(int from, boolean isWhite) {
+
+      List<CapturePath> all = checkerMultiCaptures(from, isWhite);
+      if (all.isEmpty()) return List.of();
+
+      int max = all.stream()
+              .mapToInt(c -> c.captures)
+              .max()
+              .orElse(0);
+
+      List<Move> best = new ArrayList<>();
+
+      for (CapturePath c : all) {
+          if (c.captures == max) {
+              best.add(new Move(c.path, c.captured));
+          }
+      }
+
+      return best;
+  }
+
+
+    private List<CapturePath> checkerMultiCaptures(int from, boolean isWhite) {
+
+        List<CapturePath> results = new ArrayList<>();
+
+        dfsChecker(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results, 0 );
+
+        return results;
+    }
+
+    private void dfsChecker(int current, boolean isWhite, List<Integer> path,
+                        Set<Integer> captured, List<CapturePath> results, int captureCount) {
+
+        boolean foundNext = false;
+
+        for (String dir : diagsPair.keySet()) {
+            int pos = current;
+            boolean enemyFound = false;
+            int enemyIndex = -1;
+
+            while (true) {
+                Map<String, Integer> diags = diagsForIndex(pos);
+                int delta = diags.get(dir);
+
+                // Vérification des bords
+                if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(pos)) break;
+                if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(pos)) break;
+
+                int next = pos + delta;
+
+                // Hors plateau
+                if (next < 0 || next >= indexMax) break;
+
+                if (!enemyFound) {
+                    if (isOccupied(next)) {
+                        // Vérifier si c'est un ennemi et pas déjà capturé
+                        boolean enemy = isWhite ? (isBitBlackPawn(next) || isBitBlackChecker(next))
+                                                : (isBitWhitePawn(next) || isBitWhiteChecker(next));
+                        if (!enemy || captured.contains(next)) break;
+
+                        enemyFound = true;
+                        enemyIndex = next;
+                        pos = next;
+                    } else {
+                        pos = next;
+                    }
+                } else {
+                    // Après avoir trouvé un ennemi, chercher la case vide pour sauter
+                    if (isOccupied(next)) break;
+
+                    foundNext = true;
+                    captured.add(enemyIndex);
+                    path.add(next);
+
+                    // Appel récursif pour multi-captures
+                    dfsChecker(next, isWhite, path, captured, results, captureCount + 1);
+
+                    // Backtrack
+                    path.remove(path.size() - 1);
+                    captured.remove(enemyIndex);
+
+                    pos = next;
+                }
+            }
+        }
+
+        if (!foundNext && captureCount > 0) {
+            results.add(new CapturePath(path, new ArrayList<>(captured)));
+        }
+    }
+
+
+
+
+    /*
+          Classes internes
+    */
+    private static class CapturePath {
+        List<Integer> path;
+        List<Integer> captured;
+        int captures;
+
+        CapturePath(List<Integer> path, List<Integer> captured) {
+            this.path = new ArrayList<>(path);
+            this.captured = new ArrayList<>(captured);
+            this.captures = captured.size();
+        }
+    }
+
+    /*
+            Traduction des d'uen case en index ou inverse
+    */
+    public String indexToSquare(int index) {
+        int row = index / (sizeBoard / 2);
+        int col = (index % (sizeBoard / 2)) * 2 + (row % 2 == 0 ? 0 : 1);
+
+        char rowChar = (char) ('A' + row);
+        return "" + rowChar + (col + 1);
+    }
+
+    public int squareToIndex(String square) {
+        char rowChar = Character.toUpperCase(square.charAt(0));
+        int row = rowChar - 'A';
+        int col = Integer.parseInt(square.substring(1)) - 1;
+
+        // Vérifier que c'est une case noire
+        if ((row + col) % 2 != 0) {
+            throw new IllegalArgumentException("Case blanche invalide: " + square);
+        }
+
+        return (row * sizeBoard + col)/2;
+    }
+
+    /*
+          Affichages String
      */
+    public String diagsToString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Diagonales (lignes paires) :\n");
+        for (Map.Entry<String, Integer> entry : diagsPair.entrySet()) {
+            sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
+        }
+
+        sb.append("\n");
+
+        sb.append("Diagonales (lignes impaires) :\n");
+        for (Map.Entry<String, Integer> entry : diagsUnpair.entrySet()) {
+            sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
+        }
+
+        return sb.toString();
+    }
+
     private int boardToBitIndex(int row, int col) {
         // A1 (0,0) doit être NOIRE
         if ((row + col) % 2 != 0) {
@@ -477,384 +728,47 @@ public class Board {
         return blackBeforeRow + blackInRow;
     }
 
-
-    /**
-     * Affiche le plateau de jeu complet (cases blanches et noires),
-     * avec les pièces placées selon les bitboards.
-     */
-    public void printBoard() {
-
-        System.out.println();
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n");
 
         // Affichage des lignes de haut en bas (L -> A)
         for (int row = sizeBoard - 1; row >= 0; row--) {
 
             // Lettre de ligne (A en bas)
             char rowChar = (char) ('A' + row);
-            System.out.print(rowChar + "  ");
+            sb.append(rowChar).append("  ");
 
             for (int col = 0; col < sizeBoard; col++) {
                 int bitIndex = boardToBitIndex(row, col);
 
                 if (bitIndex == -1) {
-                    System.out.print("_  "); // case blanche
+                    sb.append("_  "); // case blanche
                 } else if (isBitWhitePawn(bitIndex)) {
-                    System.out.print("w  ");
+                    sb.append("w  ");
                 } else if (isBitWhiteChecker(bitIndex)) {
-                    System.out.print("W  ");
+                    sb.append("W  ");
                 } else if (isBitBlackPawn(bitIndex)) {
-                    System.out.print("b  ");
+                    sb.append("b  ");
                 } else if (isBitBlackChecker(bitIndex)) {
-                    System.out.print("B  ");
+                    sb.append("B  ");
                 } else {
-                    System.out.print("_  "); // case noire vide
+                    sb.append("_  "); // case noire vide
                 }
             }
-            System.out.println();
-            
+            sb.append("\n");
         }
+
         // En-tête colonnes (1..size)
-        System.out.print("  ");
+        sb.append("  ");
         for (int col = 1; col <= sizeBoard; col++) {
-            System.out.printf("%2d ", col);
+            sb.append(String.format("%2d ", col));
         }
-        System.out.println();
-    }
+        sb.append("\n");
 
-    private Map<String, Integer> diagsForIndex(int index) {
-        int row = index / (sizeBoard / 2);
-        return (row % 2 == 0) ? diagsPair : diagsUnpair;
-    }
-
-    private List<Integer> pawnSimpleTargets(int from) {
-        List<Integer> targets = new ArrayList<>();
-        Map<String, Integer> diags = diagsForIndex(from);
-
-        for (int delta : diags.values()) {
-            int to = from + delta;
-
-            if (to >= 0 && to < indexMax && !isOccupied(to)) {
-                targets.add(to);
-            }
-        }
-        return targets;
-    }
-
-
-    public List<String> getWhiteValidMoves() {
-
-        List<String> captures = new ArrayList<>();
-        List<String> simples  = new ArrayList<>();
-
-        for (int i = 0; i < indexMax; i++) {
-
-            if (isBitWhitePawn(i)) {
-                captures.addAll(getBestPawnCaptures(i, true));
-            }
-
-            if (isBitWhiteChecker(i)) {
-                captures.addAll(getBestCheckerCaptures(i, true));
-            }
-        }
-
-        if (!captures.isEmpty()) return captures;
-
-        // sinon coups simples
-        for (int i = 0; i < indexMax; i++) {
-
-            if (isBitWhitePawn(i)) {
-                for (int to : pawnSimpleTargets(i))
-                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
-            }
-
-            if (isBitWhiteChecker(i)) {
-                for (int to : checkerSimpleTargets(i))
-                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
-            }
-        }
-        return simples;
-    }
-
-
-    public List<String> getBlackValidMoves() {
-
-        List<String> captures = new ArrayList<>();
-        List<String> simples  = new ArrayList<>();
-
-        for (int i = 0; i < indexMax; i++) {
-
-            if (isBitBlackPawn(i)) {
-                captures.addAll(getBestPawnCaptures(i, false));
-            }
-
-            if (isBitBlackChecker(i)) {
-                captures.addAll(getBestCheckerCaptures(i, false));
-            }
-        }
-
-        if (!captures.isEmpty()) return captures;
-
-        // sinon coups simples
-        for (int i = 0; i < indexMax; i++) {
-
-            if (isBitBlackPawn(i)) {
-                for (int to : pawnSimpleTargets(i))
-                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
-            }
-
-            if (isBitBlackChecker(i)) {
-                for (int to : checkerSimpleTargets(i))
-                    simples.add(indexToSquare(i) + "-" + indexToSquare(to));
-            }
-        }
-        return simples;
-    }
-
-
-    public void printMoves(List<String> moves) {
-        if (moves == null || moves.isEmpty()) {
-            System.out.println("Aucun coup possible.");
-            return;
-        }
-
-        System.out.println("Coups possibles (" + moves.size() + ") :");
-        for (String move : moves) {
-            System.out.println("  " + move);
-        }
-    }
-
-    private String indexToSquare(int index) {
-        int row = index / (sizeBoard / 2);
-        int col = (index % (sizeBoard / 2)) * 2 + (row % 2 == 0 ? 0 : 1);
-
-        char rowChar = (char) ('A' + row);
-        return "" + rowChar + (col + 1);
-    }
-
-    private List<Integer> checkerSimpleTargets(int from) {
-        List<Integer> targets = new ArrayList<>();
-
-        for (String dir : diagsPair.keySet()) {
-            int current = from;
-
-            while (true) {
-                Map<String, Integer> diags = diagsForIndex(current);
-                int next = current + diags.get(dir);
-
-                if (next < 0 || next >= indexMax) break;
-                if (isOccupied(next)) break;
-
-                targets.add(next);
-                current = next;
-            }
-        }
-        return targets;
-    }
-
-    private List<CapturePath> pawnMultiCaptures(int from, boolean isWhite) {
-        List<CapturePath> results = new ArrayList<>();
-
-        dfsPawn(from, isWhite,
-                new ArrayList<>(List.of(from)),
-                new HashSet<>(),
-                results,
-                0);
-
-        return results;
-    }
-
-    private void dfsPawn(int current, boolean isWhite, List<Integer> path,
-            Set<Integer> captured, List<CapturePath> results,int captureCount) {
-
-        boolean foundNext = false;
-
-        Map<String, Integer> d1 = diagsForIndex(current);
-
-        for (String dir : d1.keySet()) {
-
-            int mid = current + d1.get(dir);
-            if (mid < 0 || mid >= indexMax) continue;
-
-            if (captured.contains(mid)) continue;
-
-            boolean enemy =
-                    isWhite
-                    ? (isBitBlackPawn(mid) || isBitBlackChecker(mid))
-                    : (isBitWhitePawn(mid) || isBitWhiteChecker(mid));
-
-            if (!enemy) continue;
-
-            Map<String, Integer> d2 = diagsForIndex(mid);
-            int to = mid + d2.get(dir);
-
-            if (to < 0 || to >= indexMax) continue;
-            if (isOccupied(to)) continue;
-
-            // saut valide
-            foundNext = true;
-
-            captured.add(mid);
-            path.add(to);
-
-            dfsPawn(to, isWhite, path, captured,
-                    results, captureCount + 1);
-
-            path.remove(path.size() - 1);
-            captured.remove(mid);
-        }
-
-        if (!foundNext && captureCount > 0) {
-            results.add(new CapturePath(path, captureCount));
-        }
-    }
-
-    private List<String> getBestPawnCaptures(int from, boolean isWhite) {
-
-        List<CapturePath> all = pawnMultiCaptures(from, isWhite);
-        if (all.isEmpty()) return List.of();
-
-        int max = all.stream()
-                    .mapToInt(c -> c.captures)
-                    .max()
-                    .orElse(0);
-
-        List<String> best = new ArrayList<>();
-        for (CapturePath c : all) {
-            if (c.captures == max) {
-                best.add(pathToMove(c.path));
-            }
-        }
-        return best;
-    }
-
-    private String pathToMove(List<Integer> path) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < path.size(); i++) {
-            if (i > 0) sb.append("x");
-            sb.append(path.get(i));
-        }
         return sb.toString();
     }
 
-    private List<String> getBestCheckerCaptures(int from, boolean isWhite) {
-
-    // Toutes les séquences possibles depuis cette dame
-        List<CapturePath> allCaptures = checkerMultiCaptures(from, isWhite);
-
-        if (allCaptures.isEmpty()) {
-            return List.of();
-        }
-
-        // On cherche le nombre maximum de prises
-        int maxCaptures = allCaptures.stream()
-                .mapToInt(c -> c.captures)
-                .max()
-                .orElse(0);
-
-        List<String> bestMoves = new ArrayList<>();
-
-        // On garde uniquement les chemins avec le nombre max
-        for (CapturePath cp : allCaptures) {
-            if (cp.captures == maxCaptures) {
-                bestMoves.add(pathToMove(cp.path));
-            }
-        }
-
-        return bestMoves;
-    }
-
-    private List<CapturePath> checkerMultiCaptures(int from, boolean isWhite) {
-
-        List<CapturePath> results = new ArrayList<>();
-
-        dfsChecker(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results, 0 );
-
-        return results;
-    }
-
-    private void dfsChecker(int current, boolean isWhite,  List<Integer> path,
-                            Set<Integer> captured, List<CapturePath> results, int captureCount) {
-
-        boolean foundContinuation = false;
-
-        for (String dir : diagsPair.keySet()) {
-
-            int pos = current;
-            boolean enemyFound = false;
-            int enemyIndex = -1;
-
-            while (true) {
-
-                Map<String, Integer> diags = diagsForIndex(pos);
-                int next = pos + diags.get(dir);
-
-                if (next < 0 || next >= indexMax)
-                    break;
-
-                if (!enemyFound) {
-
-                    if (isOccupied(next)) {
-
-                        boolean enemy = isWhite
-                                ? (isBitBlackPawn(next) || isBitBlackChecker(next))
-                                : (isBitWhitePawn(next) || isBitWhiteChecker(next));
-
-                        if (!enemy || captured.contains(next))
-                            break;
-
-                        enemyFound = true;
-                        enemyIndex = next;
-                        pos = next;
-                    } else {
-                        pos = next;
-                    }
-
-                } else {
-
-                    if (isOccupied(next))
-                        break;
-
-                    // saut valide
-                    foundContinuation = true;
-
-                    captured.add(enemyIndex);
-                    path.add(next);
-
-                    dfsChecker(
-                            next,
-                            isWhite,
-                            path,
-                            captured,
-                            results,
-                            captureCount + 1
-                    );
-
-                    path.remove(path.size() - 1);
-                    captured.remove(enemyIndex);
-
-                    pos = next;
-                }
-            }
-        }
-
-        // Fin de branche → on stocke si au moins une capture
-        if (!foundContinuation && captureCount > 0) {
-            results.add(new CapturePath(path, captureCount));
-        }
-    }
-
-
-
-
-    private static class CapturePath {
-        List<Integer> path = new ArrayList<>();
-        int captures;
-
-        CapturePath(List<Integer> p, int c) {
-            path.addAll(p);
-            captures = c;
-        }
-    }
 
 }
 
