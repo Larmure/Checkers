@@ -11,11 +11,9 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-
-
-
 /**
- * Main class for the Checkers game. Handles command line arguments and initializes the game modes.
+ * Main class for the Checkers game. Handles command line arguments and
+ * initializes the game modes.
  *
  * @version 1.0
  */
@@ -37,7 +35,8 @@ public class App {
   private static boolean debug = false;
 
   /**
-   * Entry point of the application. Delegates logic to run() and handles exit codes.
+   * Entry point of the application. Delegates logic to run() and handles exit
+   * codes.
    *
    * @param args command line arguments
    */
@@ -59,16 +58,19 @@ public class App {
   }
 
   /**
-   * Parses arguments and sets global flags. This method is separated for unit testing purposes to
+   * Parses arguments and sets global flags. This method is separated for unit
+   * testing purposes to
    * avoid System.exit().
    *
-   * @param args command line arguments: -h/--help, -V/--version, -v/--verbose, -d/--debug.
-   * @return EXIT_SUCCESS to continue, EXIT_INFO to stop (info displayed), EXIT_ERROR for error.
+   * @param args command line arguments: -h/--help, -V/--version, -v/--verbose,
+   *             -d/--debug.
+   * @return EXIT_SUCCESS to continue, EXIT_INFO to stop (info displayed),
+   *         EXIT_ERROR for error.
    */
   public static int run(String[] args) {
     ConfigManager configManager = new ConfigManager();
     configManager.load();
-    verbose = Boolean.parseBoolean(configManager.getProperty("verbose", "false"));
+    verbose = configManager.isVerbose();
     // Options definition
     Options options = new Options();
     options.addOption("h", "help", false, "display help");
@@ -95,7 +97,6 @@ public class App {
 
       if (cmd.hasOption("v")) {
         verbose = true;
-        System.out.println("Verbose mode enabled.");
       }
 
       if (cmd.hasOption("d")) {
