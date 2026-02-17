@@ -52,6 +52,14 @@ public class GameController {
       case "new" -> new NewCommand(this, args);
       case "help" -> new HelpCommand(args);
       case "quit" -> new QuitCommand();
+      case "load" -> new LoadCommand();
+      case "save" -> new SaveCommand();
+      case "pause" -> new PauseCommand();
+      case "hint" -> new HintCommand();
+      case "undo" -> new UndoCommand();
+      case "redo" -> new RedoCommand();
+      case "show" -> new ShowCommand();
+      case "set" -> new SetCommand();
       default -> {
         System.out.println("Unknown command: " 
             + commandName);

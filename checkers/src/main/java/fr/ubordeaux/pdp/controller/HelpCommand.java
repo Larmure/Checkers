@@ -13,7 +13,10 @@ public class HelpCommand implements Command, Helpable {
   @Override
   public void execute() {
     if (args == null || args.length == 0) {
-      System.out.println("List of all Commands:\n");
+      System.out.println("List of all availaible commands:");
+      for (String cmd : Utils.COMMANDS_LIST) {
+        System.out.println("- " + cmd);
+      }
       return;
     }
 
