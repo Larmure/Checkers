@@ -1,0 +1,106 @@
+package fr.ubordeaux.pdp.controller;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import fr.ubordeaux.pdp.model.Utils;
+
+/**
+ * Concrete implementation of {@link Command} that handles the initialization of a new game.
+ * This class uses Apache Commons CLI to parse specific game options such as 
+ * blitz mode, contest mode, time limits, and board size.
+ *
+ * @version 1.0
+ */
+public class NewCommand implements Command, Helpable {
+
+  /** The raw arguments provided by the user in the shell. */
+  private final String[] args;
+
+  /** The controller to which the game initialization is delegated. */
+  private final GameController controller;
+
+  /**
+   * Constructs a NewCommand with the required context and arguments.
+   *
+   * @param controller The {@link GameController} that will start the game.
+   * @param args       The string arguments to be parsed (e.g., "-b -s 10").
+   */
+  public NewCommand(GameController controller, String[] args) {
+    this.controller = controller;
+    this.args = args;
+  }
+
+  /**
+   * Parses the arguments and triggers the creation of a new game.
+   * If the arguments are invalid (wrong format or unknown options), 
+   * an error message is displayed to the user.
+   */
+  @Override
+  public void execute() {
+    CommandLineParser parser = new DefaultParser();
+    
+    try {
+      CommandLine cmd = parser.parse(newOptions(), args);
+  
+      boolean hasBlitz = cmd.hasOption("b");
+      boolean hasContest = cmd.hasOption("c");
+  
+      // If we use time option without blitz, we ignore it.
+      int blitzTime = 0;
+      boolean hasTimeOption = cmd.hasOption("t");
+      if (hasBlitz) {
+        String tValue = cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME));
+        blitzTime = Integer.parseInt(tValue);
+      } else if (hasTimeOption) {
+        System.out.println("Warning: time option used without blitz option.");
+      }
+
+			String sValue = cmd.getOptionValue("s");
+
+			int size = switch (sValue != null ? sValue : "8") {
+    		case "8"  -> 8;
+    		case "10" -> 10;
+    		case "12" -> 12;
+    		default -> {
+        	System.out.println("Warning: '" + sValue + "' is not a valid size. Only 8|10|12 are accepted.");
+        	yield Utils.DEFAULT_BOARD_SIZE;
+    		}
+			};
+  
+      controller.startNewGame(hasBlitz, hasContest, blitzTime, size);
+  
+    } catch (ParseException | NumberFormatException e) {
+      System.out.println("Invalid command syntax: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Defines the available CLI options for the "new" command.
+   * <ul>
+   * <li>-b, --blitz : Enable blitz mode</li>
+   * <li>-c, --contest : Enable contest mode</li>
+   * <li>-t, --time : Set time limit in seconds</li>
+   * <li>-s, --size : Set board size </li>
+   * </ul>
+   *
+   * @return An {@link Options} object containing the CLI schema.
+   */
+  private Options newOptions() {
+    Options opts = new Options();
+    opts.addOption("b", "blitz", false, "Blitz mode");
+    opts.addOption("c", "contest", false, "Contest mode");
+    opts.addOption("t", "time", true, "Time limit");
+    opts.addOption("s", "size", true, "Board size");
+    return opts;
+  }
+
+  @Override
+  public String getHelp() {
+    return "new [ARGS] : Start a new game\nARGS availaible : -blitz\n-time [MINUTES]\n-contest\n-size [8|10|12]";
+  }
+    
+}
