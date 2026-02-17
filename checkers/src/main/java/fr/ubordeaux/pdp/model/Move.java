@@ -102,4 +102,21 @@ public class Move {
 
         return sb.toString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Move move = (Move) o;
+        
+        // On compare le départ et l'arrivée (dernière case du chemin)
+        // Cela suffit généralement pour identifier un coup unique
+        return from == move.from && 
+               this.getTo() == move.getTo();
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(from, getTo());
+    }
 }

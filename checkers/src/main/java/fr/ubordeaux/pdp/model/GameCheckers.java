@@ -1,33 +1,81 @@
 package fr.ubordeaux.pdp.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import fr.ubordeaux.pdp.view.GameView;
+
 /**
- * Main logic class for the Checkers game, managing rules and state transitions.
- * Implements requirement.
+ * Manages the core logic, rules, and state transitions for the Checkers game.
+ * * <p>This class acts as the central model in the MVC architecture, coordinating
+ * interactions between the board, players, and game state. It implements the
+ * {@link Subject} interface to notify registered views of state changes.
  */
-public class GameCheckers {
+public class GameCheckers implements Subject {
 
   private State state;
   private Board board;
   private Player whitePlayer;
   private Player blackPlayer;
   private boolean isWhiteTurn;
+  private List<GameView> observers;
 
   /**
-   * Constructs a new game with a board of the specified size.
-   *
-   * @param size The size of the board (8, 10, or 12).
+   * Constructs a new game instance.
+   * * <p>Initializes a standard 12x12 board, sets the initial state to {@link InGameState},
+   * creates two human players, and grants the first turn to the white player.
    */
   public GameCheckers() {
-    this.board = new Board(8);
+    this.board = new Board(12);
     this.isWhiteTurn = true;
-    // this.state = new InGameState(this);
+    this.state = new InGameState(this);
+    whitePlayer = new HumanPlayer("White Player");
+    blackPlayer = new HumanPlayer("Black Player");
   }
 
   /**
-   * Returns a list of all legal moves for a given player.
-   * Mandatory captures are handled by the Board logic.
+   * Returns the current state of the game engine.
+   *
+   * @return The current {@link State} instance.
+   */
+  public State getState() {
+    return this.state;
+  }
+
+  /**
+   * Transitions the game to a new state.
+   *
+   * @param newState The new state to apply.
+   */
+  public void setState(State newState) {
+    this.state = newState;
+  } 
+
+  /**
+   * Identifies the player whose turn it currently is.
+   *
+   * @return The {@link Player} object for the current turn.
+   */
+  public Player getCurrentPlayer() {
+    return isWhiteTurn ? whitePlayer : blackPlayer;
+  }
+
+  /**
+   * Returns the game board.
+   *
+   * @return The active {@link Board} instance.
+   */
+  public Board getBoard() {
+    return this.board;
+  }
+
+  /**
+   * Retrieves all legal moves available for the specified player.
+   * * <p>This method delegates to the board logic, which enforces rules such as
+   * mandatory captures.
+   *
+   * @param player The player to retrieve moves for.
+   * @return A list of valid {@link Move} objects.
    */
   public List<Move> getPossibleMoves(Player player) {
     boolean isWhite = (player == whitePlayer);
@@ -35,10 +83,14 @@ public class GameCheckers {
   }
 
   /**
-   * Validates if a move is legal according to current turn and rules.
+   * Verifies if a specific move is legally allowed in the current context.
+   *
+   * @param move   The move to validate.
+   * @param player The player attempting the move.
+   * @return {@code true} if it is the player's turn and the move is valid; {@code false} otherwise.
    */
   public boolean isValidMove(Move move, Player player) {
-    // Check if it's the player's turn 
+    // Prevent moves if it is not the requesting player's turn.
     if ((isWhiteTurn && player != whitePlayer) || (!isWhiteTurn && player != blackPlayer)) {
       return false;
     }
@@ -46,28 +98,57 @@ public class GameCheckers {
   }
 
   /**
-   * Applies a move to the board, handles captures/promotions, and swaps turns.
+   * Executes a move on the board and updates the game flow.
+   * * <p>This includes updating the board configuration, toggling the active turn,
+   * and notifying all registered observers of the change.
+   *
+   * @param move The validated move to apply.
    */
   public void applyMove(Move move) {
     board.applyMove(move);
     this.isWhiteTurn = !this.isWhiteTurn;
 
-    // TODO: notifyObservers(); (Requirement for Observer Pattern in diagram)
+    notifyObservers();
   }
 
   /**
-   * Checks for game over conditions: no moves left or draw.
-   * Implements part of F10.
+   * Evaluates if the game has reached an end condition.
+   * * <p>Currently checks if the active player has any legal moves remaining.
+   * If not, the game transitions to {@link FinishedState}.
+   *
+   * @return The new state if the game is over, otherwise the current state.
    */
-  public /* State */ void checkGameOver() {
+  public State checkGameOver() {
     Player currentPlayer = isWhiteTurn ? whitePlayer : blackPlayer;
 
-    // If no moves are possible, the player has lost
+    // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
-      // return new FinishedState();
+      return new FinishedState();
     }
 
-    // Default state: game continues
-    // return new InGameState(this);
+    return this.state;
+  }
+
+  @Override
+  public void notifyObservers() {
+    // Guard clause to prevent NullPointerException if no observers are registered yet.
+    if (this.observers == null) return; 
+
+    for (GameView v : observers) {
+      v.update(this);
+    }
+  }
+
+  /**
+   * Registers a view to receive updates when the game state changes.
+   *
+   * @param observer The view implementing the {@link GameView} interface.
+   */
+  public void addObserver(GameView observer) {
+    // Lazy initialization of the observer list.
+    if (this.observers == null) {
+        this.observers = new ArrayList<>();
+    }
+    this.observers.add(observer);
   }
 }

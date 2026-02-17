@@ -1,8 +1,8 @@
 package fr.ubordeaux.pdp.model;
 
 /**
- * Abstract representation of a player in the Checkers game.
- * Base class for HumanPlayer and IAPlayer as defined in the system architecture.
+ * Abstract representation of a participant in the Checkers game.
+ * <p>Serves as the base class for both human-controlled players and AI agents.
  */
 public abstract class Player {
 
@@ -10,21 +10,31 @@ public abstract class Player {
   private int playTime;
 
   /**
-   * Returns the player's name.
+   * Base constructor for a player.
+   *
+   * @param name The display name of the player.
+   */
+  public Player(String name) {
+    this.name = name;
+  }
+
+  /**
+   * Returns the player's identifier.
    */
   public String getName() {
     return name;
   }
 
   /**
-   * Returns the remaining play time (specifically used for Blitz mode).
+   * Returns the remaining time allocated for this player.
+   * <p>This is specifically used in timed modes (e.g., Blitz).
    */
   public int getPlayTime() {
     return playTime;
   }
 
   /**
-   * Sets the player's name.
+   * Updates the player's display name.
    */
   public void setName(String name) {
     this.name = name;
@@ -32,9 +42,15 @@ public abstract class Player {
 
   /**
    * Updates the player's remaining play time.
-   * Required for Blitz mode time tracking (F5, F14).
+   *
+   * @param playTime The time in seconds (or ticks) remaining.
    */
   public void setPlayTime(int playTime) {
     this.playTime = playTime;
+  }
+
+  @Override
+  public String toString() {
+    return this.name;
   }
 }
