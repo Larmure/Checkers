@@ -22,6 +22,11 @@ public class QuitCommand implements Command, Helpable {
     System.exit(0);
   }
 
+  /**
+   * Returns the help string for the quit command.
+   *
+   * @return A brief description of the quit functionality.
+   */
   @Override
   public String getHelp() {
     return "quit : exit the program.";

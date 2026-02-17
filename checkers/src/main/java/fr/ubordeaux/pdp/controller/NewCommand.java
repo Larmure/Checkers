@@ -98,6 +98,11 @@ public class NewCommand implements Command, Helpable {
     return opts;
   }
 
+  /**
+   * Returns the help string for the new command.
+   *
+   * @return A brief description of the new game functionality.
+   */
   @Override
   public String getHelp() {
     return "new [ARGS] : Start a new game\nARGS availaible : -blitz\n-time [MINUTES]\n-contest\n-size [8|10|12]";
