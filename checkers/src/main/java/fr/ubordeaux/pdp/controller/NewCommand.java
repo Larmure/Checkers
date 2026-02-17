@@ -6,6 +6,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import fr.ubordeaux.pdp.model.Utils;
+
 /**
  * Concrete implementation of {@link Command} that handles the initialization of a new game.
  * This class uses Apache Commons CLI to parse specific game options such as 
@@ -13,7 +15,7 @@ import org.apache.commons.cli.ParseException;
  *
  * @version 1.0
  */
-public class NewCommand implements Command {
+public class NewCommand implements Command, Helpable {
 
   /** The raw arguments provided by the user in the shell. */
   private final String[] args;
@@ -51,15 +53,23 @@ public class NewCommand implements Command {
       int blitzTime = 0;
       boolean hasTimeOption = cmd.hasOption("t");
       if (hasBlitz) {
-        String tValue = cmd.getOptionValue("t", "30");
+        String tValue = cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME));
         blitzTime = Integer.parseInt(tValue);
       } else if (hasTimeOption) {
         System.out.println("Warning: time option used without blitz option.");
       }
-  
-      int size = cmd.hasOption("s")
-          ? Integer.parseInt(cmd.getOptionValue("s"))
-          : 8;
+
+			String sValue = cmd.getOptionValue("s");
+
+			int size = switch (sValue != null ? sValue : "8") {
+    		case "8"  -> 8;
+    		case "10" -> 10;
+    		case "12" -> 12;
+    		default -> {
+        	System.out.println("Warning: '" + sValue + "' is not a valid size. Only 8|10|12 are accepted.");
+        	yield Utils.DEFAULT_BOARD_SIZE;
+    		}
+			};
   
       controller.startNewGame(hasBlitz, hasContest, blitzTime, size);
   
@@ -86,6 +96,11 @@ public class NewCommand implements Command {
     opts.addOption("t", "time", true, "Time limit");
     opts.addOption("s", "size", true, "Board size");
     return opts;
+  }
+
+  @Override
+  public String getHelp() {
+    return "new [ARGS] : Start a new game\nARGS availaible : -blitz\n-time [MINUTES]\n-contest\n-size [8|10|12]";
   }
     
 }

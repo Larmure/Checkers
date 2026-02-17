@@ -7,7 +7,7 @@ package fr.ubordeaux.pdp.controller;
  *
  * @version 1.0
  */
-public class QuitCommand implements Command {
+public class QuitCommand implements Command, Helpable {
 
   /**
    * Executes the quit sequence.
@@ -20,6 +20,11 @@ public class QuitCommand implements Command {
   public void execute() {
     System.out.println("Exiting the game.");
     System.exit(0);
+  }
+
+  @Override
+  public String getHelp() {
+    return "quit : exit the program.";
   }
 
 }

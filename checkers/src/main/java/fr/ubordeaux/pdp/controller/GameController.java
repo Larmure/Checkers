@@ -50,6 +50,7 @@ public class GameController {
   public void executeCommand(String commandName, String[] args) {
     Command command = switch (commandName.toLowerCase()) {
       case "new" -> new NewCommand(this, args);
+      case "help" -> new HelpCommand(args);
       case "quit" -> new QuitCommand();
       default -> {
         System.out.println("Unknown command: " 
@@ -78,4 +79,5 @@ public class GameController {
         + (time > 0 ? "Time=" + time + "min " : "") 
         + (size != 8 ? "Size=" + size : ""));
   }
+
 }
