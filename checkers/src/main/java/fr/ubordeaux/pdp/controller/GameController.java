@@ -75,7 +75,7 @@ public class GameController {
     System.out.println("Initializing new game with options: " 
         + (blitz ? "Blitz " : "") 
         + (contest ? "Contest " : "") 
-        + (time > 0 ? "Time=" + time + "s " : "") 
+        + (time > 0 ? "Time=" + time + "min " : "") 
         + (size != 8 ? "Size=" + size : ""));
   }
 }

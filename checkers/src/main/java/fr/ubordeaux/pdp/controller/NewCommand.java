@@ -44,18 +44,24 @@ public class NewCommand implements Command {
     try {
       CommandLine cmd = parser.parse(newOptions(), args);
   
-      boolean blitz = cmd.hasOption("b");
-      boolean contest = cmd.hasOption("c");
+      boolean hasBlitz = cmd.hasOption("b");
+      boolean hasContest = cmd.hasOption("c");
   
-      int time = cmd.hasOption("t")
-          ? Integer.parseInt(cmd.getOptionValue("t"))
-          : 0;
+      // If we use time option without blitz, we ignore it.
+      int blitzTime = 0;
+      boolean hasTimeOption = cmd.hasOption("t");
+      if (hasBlitz) {
+        String tValue = cmd.getOptionValue("t", "30");
+        blitzTime = Integer.parseInt(tValue);
+      } else if (hasTimeOption) {
+        System.out.println("Warning: time option used without blitz option.");
+      }
   
       int size = cmd.hasOption("s")
           ? Integer.parseInt(cmd.getOptionValue("s"))
           : 8;
   
-      controller.startNewGame(blitz, contest, time, size);
+      controller.startNewGame(hasBlitz, hasContest, blitzTime, size);
   
     } catch (ParseException | NumberFormatException e) {
       System.out.println("Invalid command syntax: " + e.getMessage());
