@@ -28,6 +28,8 @@ public class App {
   /** Exit code error. */
   public static final int EXIT_ERROR = 2;
 
+  public static final int EXIT_GUI = 3;
+
   /** Flag to enable verbose. */
   private static boolean verbose = false;
 
@@ -48,8 +50,10 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
+    } else if (status == EXIT_GUI) {
+      //TODO
     }
-
+    
     // Status EXIT_SUCCESS means continue execution normally
     GameCheckers game = new GameCheckers();
     GameView view = new CommandLineInterface(verbose, debug);
@@ -79,10 +83,15 @@ public class App {
     options.addOption("d", "debug", false, "display debug messages");
     options.addOption("b", "blitz", false, "enable blitz mode");
     options.addOption("t", "time", true, "set time limit in minutes");
+    options.addOption("g", "gui", false, "launch graphical user interface");
 
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
+
+      if (!cmd.getArgList().isEmpty()) {
+        throw new ParseException("Unrecognized arguments: " + cmd.getArgList());
+      }
 
       if (cmd.hasOption("h")) {
         HelpFormatter formatter = new HelpFormatter();
@@ -101,12 +110,13 @@ public class App {
 
       if (cmd.hasOption("d")) {
         debug = true;
-        System.out.println("Debug mode enabled.");
       }
 
-      if (verbose) {
-        System.out.println("Verbose mode enabled.");
+      if (cmd.hasOption("g")) {
+        System.out.println("Launching Graphical Interface...");
+        return EXIT_GUI;
       }
+
       System.out.println("Welcome to Checkers!");
       return EXIT_SUCCESS;
 
