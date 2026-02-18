@@ -28,6 +28,7 @@ public class App {
   /** Exit code error. */
   public static final int EXIT_ERROR = 2;
 
+  /** Exit code for GUI. */
   public static final int EXIT_GUI = 3;
 
   /** Flag to enable verbose. */
