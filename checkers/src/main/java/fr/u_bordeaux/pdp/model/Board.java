@@ -12,9 +12,12 @@ public class Board {
 
     private static final Set<Integer> VALID_SIZES = Set.of(8, 10,12);
 
-    // Masques pour le plateau 8x8 (on peut généraliser ensuite)
-    private long LEFT_EDGE_MASK;
-    private long RIGHT_EDGE_MASK;
+    private long leftMask1;
+    private long leftMask2;
+
+    private long rightMask1;
+    private long rightMask2;
+
 
     private Map<String, Integer> diagsPair = new HashMap<>();
     private Map<String, Integer> diagsUnpair = new HashMap<>();
@@ -86,11 +89,6 @@ public class Board {
                 // dans le deuxième bitboard
                 this.blackPawns2 = ((1L << 8) - 1);
                 break;
-            default:
-                throw new IllegalArgumentException(
-                    "Taille de plateau invalide : " + this.sizeBoard +
-                    " (valeurs autorisées : 8, 10, 12)"
-                );
         }
     }
 
@@ -107,37 +105,59 @@ public class Board {
     }
 
     private void initEdgeMasks() {
-        LEFT_EDGE_MASK = 0L;
-        RIGHT_EDGE_MASK = 0L;
+
+        leftMask1 = leftMask2 = 0L;
+        rightMask1 = rightMask2 = 0L;
 
         for (int row = 0; row < sizeBoard; row++) {
+
             int leftIndex = boardToBitIndex(row, 0);
             int rightIndex = boardToBitIndex(row, sizeBoard - 1);
-            if (leftIndex >= 0) LEFT_EDGE_MASK |= (leftIndex < 64 ? 1L << leftIndex : 0L);
-            if (rightIndex >= 0) RIGHT_EDGE_MASK |= (rightIndex < 64 ? 1L << rightIndex : 0L);
+
+            // LEFT EDGE
+            if (leftIndex >= 0) {
+                if (leftIndex < 64) {
+                    leftMask1 |= (1L << leftIndex);
+                } else {
+                    leftMask2 |= (1L << (leftIndex - 64));
+                }
+            }
+
+            // RIGHT EDGE
+            if (rightIndex >= 0) {
+                if (rightIndex < 64) {
+                    rightMask1 |= (1L << rightIndex);
+                } else {
+                    rightMask2 |= (1L << (rightIndex - 64));
+                }
+            }
         }
     }
+
 
     
     // Vérifie si un pion est sur la colonne gauche ou droite
     private boolean onLeftEdge(int index) {
-        return (index < 64) ? ((LEFT_EDGE_MASK & (1L << index)) != 0)
-                            : ((LEFT_EDGE_MASK & (1L << (index - 64))) != 0);
+        if (index < 64) {
+            return (leftMask1 & (1L << index)) != 0;
+        } else {
+            return (leftMask2 & (1L << (index - 64))) != 0;
+        }
     }
 
     private boolean onRightEdge(int index) {
-        return (index < 64) ? ((RIGHT_EDGE_MASK & (1L << index)) != 0)
-                            : ((RIGHT_EDGE_MASK & (1L << (index - 64))) != 0);
+        if (index < 64) {
+            return (rightMask1 & (1L << index)) != 0;
+        } else {
+            return (rightMask2 & (1L << (index - 64))) != 0;
+        }
     }
+
 
     /*
           ALL Types Of Presence
     */
     private boolean hasPawn(int index, long bitboard1, long bitboard2) {
-        if (index < 0 || index >= this.indexMax) {
-            throw new IllegalArgumentException("Index hors limites (0-127)");
-        }
-
         if (index < 64) {
             return ((bitboard1 >>> index) & 1L) == 1L;
         } else {
@@ -190,6 +210,19 @@ public class Board {
     private boolean isOccupied(int index) {
         return isBitWhitePawn(index) || isBitBlackPawn(index)
                 || isBitWhiteChecker(index) || isBitBlackChecker(index);
+    }
+
+    /*
+              Plateau vide 
+    */
+    public boolean noPiecesLeft(boolean isWhite) {
+        if (isWhite) {
+            return whitePawns1 == 0L && whitePawns2 == 0L
+                && whiteCheckers1 == 0L && whiteCheckers2 == 0L;
+        } else {
+            return blackPawns1 == 0L && blackPawns2 == 0L
+                && blackCheckers1 == 0L && blackCheckers2 == 0L;
+        }
     }
 
 
@@ -488,18 +521,6 @@ public class Board {
         return results;
     }
 
-    private boolean canCapturePawn(int from, int over, int to, boolean isWhite) {
-        // On bloque si sur bordures
-        if ((over < from && onLeftEdge(from)) || (over > from && onRightEdge(from))) return false;
-        if (to < 0 || to >= indexMax || isOccupied(to)) return false;
-
-        boolean enemy = isWhite
-                ? (isBitBlackPawn(over) || isBitBlackChecker(over))
-                : (isBitWhitePawn(over) || isBitWhiteChecker(over));
-
-        return enemy;
-    }
-
     private void dfsPawn(int current, boolean isWhite, List<Integer> path,
                      Set<Integer> captured, List<CapturePath> results, int captureCount) {
 
@@ -672,13 +693,14 @@ public class Board {
     }
 
     /*
-            Traduction des d'uen case en index ou inverse
+            Traduction des d'une case en index ou inverse
     */
     public String indexToSquare(int index) {
         int row = index / (sizeBoard / 2);
         int col = (index % (sizeBoard / 2)) * 2 + (row % 2 == 0 ? 0 : 1);
 
         char rowChar = (char) ('A' + row);
+
         return "" + rowChar + (col + 1);
     }
 
@@ -686,7 +708,11 @@ public class Board {
         char rowChar = Character.toUpperCase(square.charAt(0));
         int row = rowChar - 'A';
         int col = Integer.parseInt(square.substring(1)) - 1;
-
+        
+        // verifie que la colonne et la ligne existe
+        if (row < 0 || row >= this.sizeBoard || col < 0 || col >= this.sizeBoard) {
+            throw new IllegalArgumentException("Index hors limites");
+        }
         // Vérifier que c'est une case noire
         if ((row + col) % 2 != 0) {
             throw new IllegalArgumentException("Case blanche invalide: " + square);
@@ -698,7 +724,7 @@ public class Board {
     /*
           Affichages String
      */
-    public String diagsToString() {
+    /* public String diagsToString() {
         StringBuilder sb = new StringBuilder();
 
         sb.append("Diagonales (lignes paires) :\n");
@@ -714,7 +740,7 @@ public class Board {
         }
 
         return sb.toString();
-    }
+    }*/
 
     private int boardToBitIndex(int row, int col) {
         // A1 (0,0) doit être NOIRE
@@ -768,6 +794,64 @@ public class Board {
 
         return sb.toString();
     }
+
+
+    /*public String edgeMasksToString() {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("\n=== LEFT EDGE MASK ===\n");
+        sb.append(maskToString(leftMask1, leftMask2));
+
+        sb.append("\n=== RIGHT EDGE MASK ===\n");
+        sb.append(maskToString(rightMask1, rightMask2));
+
+        return sb.toString();
+    }
+    private String maskToString(long mask1, long mask2) {
+
+        StringBuilder sb = new StringBuilder();
+        int blacksPerRow = sizeBoard / 2;
+
+        for (int row = sizeBoard - 1; row >= 0; row--) {
+
+            char rowChar = (char) ('A' + row);
+            sb.append(rowChar).append("  ");
+
+            for (int col = 0; col < sizeBoard; col++) {
+
+                // Case blanche
+                if ((row + col) % 2 != 0) {
+                    sb.append("_  ");
+                    continue;
+                }
+
+                int index = row * blacksPerRow + (col / 2);
+
+                boolean isSet;
+
+                if (index < 64) {
+                    isSet = (mask1 & (1L << index)) != 0;
+                } else {
+                    isSet = (mask2 & (1L << (index - 64))) != 0;
+                }
+
+                sb.append(isSet ? "1  " : "0  ");
+            }
+
+            sb.append("\n");
+        }
+
+        // Colonnes
+        sb.append("   ");
+        for (int col = 1; col <= sizeBoard; col++) {
+            sb.append(String.format("%2d ", col));
+        }
+        sb.append("\n");
+
+        return sb.toString();
+    }*/
+
 
 
 }
