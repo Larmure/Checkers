@@ -388,16 +388,6 @@ public class Board {
   // ---------------------------------------------------------------------------
 
   /**
-   * Promotes the pawn on the named square to a checker (king).
-   *
-   * @param square algebraic square name of the pawn to promote
-   * @throws IllegalArgumentException if the square is out of bounds or contains no pawn
-   */
-  public void promote(String square) {
-    promoteBit(squareToIndex(square));
-  }
-
-  /**
    * Promotes the pawn at bit {@code index} to a checker in place.
    *
    * @param index bit index of the pawn
@@ -1045,5 +1035,80 @@ public class Board {
     sb.append("\n");
 
     return sb.toString();
+  }
+
+  /**
+  * FOR TESTING PURPOSES ONLY.
+  */
+
+  /**
+   * Promotes the pawn on the named square to a checker (king).
+   *
+   * @param square algebraic square name of the pawn to promote
+   * @throws IllegalArgumentException if the square is out of bounds or contains no pawn
+   */
+  void promote(String square) {
+    promoteBit(squareToIndex(square));
+  }
+
+  /**
+   * Applies a simple move from one square to another.
+   *
+   * <p>This helper method converts board coordinates (e.g. "C3", "D4")
+   * into internal indices and applies the move.
+   *
+   * <p>Mainly intended for testing purposes. No move legality is checked.
+   *
+   * @param from source square (e.g. "C3")
+   * @param to   destination square (e.g. "D4")
+   */
+  void move(String from, String to) {
+    int f = squareToIndex(from);
+    int t = squareToIndex(to);
+    Move m = new Move(f,t);
+    applyMove(m);
+  }
+
+  /**
+   * Removes any piece (white/black, pawn/checker) from the given square.
+   * Intended for testing setup.
+   */
+  void remove(String from) {
+      int f = squareToIndex(from);
+      removeBlackChecker(f);
+      removeBlackPawn(f);
+      removeWhiteChecker(f);
+      removeWhitePawn(f);
+  }
+
+  /**
+   * Adds a white pawn on the given square.
+   * Testing helper.
+   */
+  void addWhite(String square) {
+      int f = squareToIndex(square);
+      addWhitePawn(f);
+  }
+
+  /**
+   * Adds a black pawn on the given square.
+   * Testing helper.
+   */
+  void addBlack(String square) {
+      int f = squareToIndex(square);
+      addBlackPawn(f);
+  }
+
+  /**
+   * Returns the list of simple target squares for a checker on a given square.
+   *
+   * <p>This method converts the board coordinate (e.g., "C3") to an internal index
+   * and delegates to {@link #checkerSimpleTargets(int)} to compute the targets.
+   *
+   * @param square the source square in standard notation (e.g., "C3")
+   * @return a list of target indices where the checker can move without capturing
+   */
+  List<Integer> checkerSimpleTarg(String square) {
+    return checkerSimpleTargets(squareToIndex(square));
   }
 }
