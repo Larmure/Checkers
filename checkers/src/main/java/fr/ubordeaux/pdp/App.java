@@ -2,14 +2,17 @@ package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameCheckers;
+import fr.ubordeaux.pdp.model.Internationalization;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.UnrecognizedOptionException;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -73,25 +76,26 @@ public class App {
    *         EXIT_ERROR for error.
    */
   public static int run(String[] args) {
+    Internationalization.init();
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
     // Options definition
     Options options = new Options();
-    options.addOption("h", "help", false, "display help");
-    options.addOption("V", "version", false, "display version");
-    options.addOption("v", "verbose", false, "increase verbosity");
-    options.addOption("d", "debug", false, "display debug messages");
-    options.addOption("b", "blitz", false, "enable blitz mode");
-    options.addOption("t", "time", true, "set time limit in minutes");
-    options.addOption("g", "gui", false, "launch graphical user interface");
+    options.addOption("h", "help", false, Internationalization.get("opt.help"));
+    options.addOption("V", "version", false, Internationalization.get("opt.version"));
+    options.addOption("v", "verbose", false, Internationalization.get("opt.verbose"));
+    options.addOption("d", "debug", false, Internationalization.get("opt.debug"));
+    options.addOption("b", "blitz", false, Internationalization.get("opt.blitz"));
+    options.addOption("t", "time", true, Internationalization.get("opt.time"));
+    options.addOption("g", "gui", false, Internationalization.get("opt.gui"));
 
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
 
       if (!cmd.getArgList().isEmpty()) {
-        throw new ParseException("Unrecognized arguments: " + cmd.getArgList());
+        throw new ParseException(Internationalization.get("app.error.unrecognized_arg") + cmd.getArgList());
       }
 
       if (cmd.hasOption("h")) {
@@ -101,7 +105,7 @@ public class App {
       }
 
       if (cmd.hasOption("V")) {
-        System.out.println("checkers version 1.0");
+        System.out.println(Internationalization.get("app.version"));
         return EXIT_INFO;
       }
 
@@ -114,15 +118,27 @@ public class App {
       }
 
       if (cmd.hasOption("g")) {
-        System.out.println("Launching Graphical Interface...");
+        System.out.println(Internationalization.get("app.gui.launch"));
         return EXIT_GUI;
       }
 
-      System.out.println("Welcome to Checkers!");
+      System.out.println(Internationalization.get("app.welcome"));
       return EXIT_SUCCESS;
 
     } catch (ParseException e) {
-      System.err.println("Error: " + e.getMessage());
+      String message;
+
+      if (e instanceof UnrecognizedOptionException) {
+          String opt = ((UnrecognizedOptionException) e).getOption();
+          message = Internationalization.get("app.error.unrecognized_option") + opt;
+      } else if (e instanceof MissingArgumentException) {
+          org.apache.commons.cli.Option optionObj = ((MissingArgumentException) e).getOption();
+          String optName = optionObj.getOpt(); 
+          message = Internationalization.get("app.error.missing_arg") + optName;
+      } else {
+          message = e.getMessage(); 
+      }
+      System.err.println(message);
       HelpFormatter formatter = new HelpFormatter();
       formatter.printHelp("checkers", options);
       return EXIT_ERROR;

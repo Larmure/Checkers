@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.model.Utils;
+import fr.ubordeaux.pdp.model.Internationalization;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -72,7 +73,7 @@ public class ConfigManager {
               this.verbose = Boolean.parseBoolean(value);
               foundVerbose = true;
             } else {
-              System.err.println("Warning: Invalid value for 'verbose': " + value);
+              System.err.println(Internationalization.get("config.warn.invalid_value") + value);
               this.verbose = Utils.DEFAULT_VERBOSE;
             }
             break;
@@ -86,7 +87,7 @@ public class ConfigManager {
             break;
 
           default:
-            System.err.println("Warning: Unknown key in .checkersrc: '" + key);
+            System.err.println(Internationalization.get("config.warn.unknown_key") + key);
             break;
         }
       }
@@ -98,8 +99,8 @@ public class ConfigManager {
       }
 
     } catch (Exception e) {
-      System.err.println("Warning: Configuration file is invalid (" + e.getMessage() + ").");
-      System.err.println("Resetting to default configuration...");
+      System.err.println(Internationalization.get("config.warn.invalid_file") + e.getMessage());
+      System.err.println(Internationalization.get("config.info.reset"));
       createDefaultConfig(configPath);
       this.verbose = Utils.DEFAULT_VERBOSE;
     }
