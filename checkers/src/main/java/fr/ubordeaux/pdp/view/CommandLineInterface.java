@@ -95,7 +95,6 @@ public class CommandLineInterface extends GameView {
         String[] tokens = input.split("\\s+");
 
         if (input.matches(Utils.MOVE_REGEX)) {
-          System.out.println("MOVE : " + tokens[0] + "-" + tokens[1]);
           controller.executeMove(tokens[0], tokens[1]);
         } else {
           // Split the input into tokens

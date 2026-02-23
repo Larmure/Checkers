@@ -111,27 +111,32 @@ public class GameCheckers implements Subject {
   public void applyMove(String fromS, String toS) {
     Move move = null; 
     
-    // Convert algebric notation to internal board indices
     int from = this.board.squareToIndex(fromS);
     int to = this.board.squareToIndex(toS);
 
-    // Verify the move against the engine's legal moves to enforce mandatory captures.
     for (Move m : this.getPossibleMoves(this.getCurrentPlayer())) {
-      if (m.getFrom() == from && m.getTo() == to) {
-        move = m;
-        break; 
-      }
+        if (m.getFrom() == from && m.getTo() == to) {
+            move = m;
+            break; 
+        }
     }
 
     if (move == null) {
-      System.err.println("Invalid move: Rule violation or mandatory capture missing.");
-      return;
+        System.err.println("Invalid move: Rule violation or mandatory capture missing.");
+        System.out.println("Here are all valid moves for " + getCurrentPlayer().getName() + ":");
+        
+        List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
+        for (Move m : possibleMoves) {
+            String fromSquare = this.board.indexToSquare(m.getFrom());
+            String toSquare   = this.board.indexToSquare(m.getTo());
+            System.out.println("  -> " + fromSquare + " " + toSquare);
+        }
+        
+        return;
     }
 
     board.applyMove(move);
-    
     this.isWhiteTurn = !this.isWhiteTurn;
-
     notifyObservers();
   }
 

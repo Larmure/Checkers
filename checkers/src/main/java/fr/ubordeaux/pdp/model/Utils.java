@@ -2,7 +2,18 @@ package fr.ubordeaux.pdp.model;
 
 import java.util.Map;
 
-import fr.ubordeaux.pdp.controller.*;
+import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.HelpCommand;
+import fr.ubordeaux.pdp.controller.HintCommand;
+import fr.ubordeaux.pdp.controller.LoadCommand;
+import fr.ubordeaux.pdp.controller.NewCommand;
+import fr.ubordeaux.pdp.controller.PauseCommand;
+import fr.ubordeaux.pdp.controller.QuitCommand;
+import fr.ubordeaux.pdp.controller.RedoCommand;
+import fr.ubordeaux.pdp.controller.SaveCommand;
+import fr.ubordeaux.pdp.controller.SetCommand;
+import fr.ubordeaux.pdp.controller.ShowCommand;
+import fr.ubordeaux.pdp.controller.UndoCommand;
 
 /**
  * Global utility class containing game constants and the command registry.
@@ -19,7 +30,7 @@ public class Utils {
   public static final int DEFAULT_TIME = 30;
   public static final boolean DEFAULT_CONTEST = false;
 
-  public static final String MOVE_REGEX = "^[a-zA-Z]\\d\\s[a-zA-Z]\\d$";
+  public static final String MOVE_REGEX = "^[a-zA-Z]\\d{1,2}\\s[a-zA-Z]\\d{1,2}$";
 
   /**
    * An immutable map linking command keywords to their representative instances.
