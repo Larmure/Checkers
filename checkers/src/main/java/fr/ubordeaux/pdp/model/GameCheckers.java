@@ -104,8 +104,32 @@ public class GameCheckers implements Subject {
    *
    * @param move The validated move to apply.
    */
-  public void applyMove(Move move) {
+  /**
+   * Applies a move using algebraic notation (e.g., "32-28").
+   * Validates the move against legal moves to enforce rules like mandatory captures.
+   */
+  public void applyMove(String fromS, String toS) {
+    Move move = null; 
+    
+    // Convert algebric notation to internal board indices
+    int from = this.board.squareToIndex(fromS);
+    int to = this.board.squareToIndex(toS);
+
+    // Verify the move against the engine's legal moves to enforce mandatory captures.
+    for (Move m : this.getPossibleMoves(this.getCurrentPlayer())) {
+      if (m.getFrom() == from && m.getTo() == to) {
+        move = m;
+        break; 
+      }
+    }
+
+    if (move == null) {
+      System.err.println("Invalid move: Rule violation or mandatory capture missing.");
+      return;
+    }
+
     board.applyMove(move);
+    
     this.isWhiteTurn = !this.isWhiteTurn;
 
     notifyObservers();

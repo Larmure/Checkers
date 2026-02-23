@@ -1,7 +1,6 @@
 package fr.ubordeaux.pdp.controller;
 
 import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.Move;
 import fr.ubordeaux.pdp.view.GameView;
 
 
@@ -19,7 +18,7 @@ public class GameController {
   private final GameView view;
 
   /** The core game engine containing rules and board state. */
-  private final GameCheckers game;
+  private GameCheckers game;
 
   /**
    * Initializes the controller with the required model and view components.
@@ -27,10 +26,8 @@ public class GameController {
    * @param game The {@link GameCheckers} instance (Model).
    * @param view The {@link GameView} instance (View).
    */
-  public GameController(GameCheckers game, GameView view) {
+  public GameController(GameView view) {
     this.view = view;
-    this.game = game;
-    game.addObserver(view);
   }
 
   /**
@@ -39,6 +36,8 @@ public class GameController {
   public void start() {
     view.setController(this);
     view.start();
+
+
   }
 
   /**
@@ -89,32 +88,18 @@ public class GameController {
     //     + (time > 0 ? "Time=" + time + "s " : "") 
     //     + (size != 8 ? "Size=" + size : ""));
 
-      loopGame();
+    this.game = new GameCheckers();
+    game.addObserver(view);
+
+    view.display(game);
   }
 
-  /**
-   * Orchestrates the main game execution cycle.
-   * <p>This method runs the loop that alternates between rendering the view,
-   * capturing user input, and updating the model. It continues until the game state
-   * transitions to a "Game Over" condition or the user explicitly quits.
-   */
-  public void loopGame() {
+  public void executeMove(String from, String to)
+  {
+    game.applyMove(from, to);
+
     view.display(game);
 
-    while (!game.getState().isGameOver()) {
-      Move move = view.getUserMove(game);
-      
-      if (move == null) {
-        break;
-      }
-
-      game.applyMove(move);
-
-      // Transition the state if the move resulted in a win/loss (e.g., no moves left).
-      game.setState(game.checkGameOver()); 
-    }
-    
-    // Delegate the final action (e.g., victory message) to the terminal state.
-    game.getState().handle(); 
-  } 
+    if(game.getState().isGameOver()) game.setState(game.checkGameOver()); 
+  }
 }

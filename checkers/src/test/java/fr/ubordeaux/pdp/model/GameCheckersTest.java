@@ -68,7 +68,6 @@ class GameCheckersTest {
             @Override public void update(GameCheckers g) { called = true; }
             @Override public void start() {}
             @Override public void display(GameCheckers g) {}
-            @Override public Move getUserMove(GameCheckers g) { return null; }
         }
 
         SpyView spy = new SpyView();
@@ -107,21 +106,19 @@ class GameCheckersTest {
 
     @Test
     void testApplyMove_SwitchTurn() {
-        boolean initialTurn = true; // On sait que ça commence par les blancs
+        // On récupère un coup valide pour ne pas dépendre d'un Move bidon
+        List<Move> moves = game.getPossibleMoves(game.getCurrentPlayer());
+        assertFalse(moves.isEmpty(), "Il doit y avoir des coups disponibles au début");
 
-        // On crée un coup bidon
-        Move dummyMove = new Move(0, 0); // Supposons un constructeur simple
+        Move first = moves.get(0);
+        String from = game.getBoard().indexToSquare(first.getFrom());
+        String to   = game.getBoard().indexToSquare(first.getTo());
 
         try {
-            game.applyMove(dummyMove);
+            game.applyMove(from, to);
         } catch (Exception e) {
-            // On ignore l'erreur du Board (NullPointer ou IndexOutOfBounds)
-            // car ce qui nous intéresse c'est si game.isWhiteTurn a changé
+            // On ignore les erreurs éventuelles du Board
         }
-        
-        // Note: Si applyMove plante AVANT la ligne "isWhiteTurn = ...", 
-        // ce test échouera, ce qui est logique.
-        // Mais sans Mockito, c'est dur d'aller plus loin ici.
     }
 
     @Test
@@ -158,36 +155,32 @@ class GameCheckersTest {
 
     @Test
     void testOpeningSequence_Dynamic() {
-        // On ajoute un observateur "vide" pour initialiser la liste interne du jeu
         game.addObserver(new GameView() {
             @Override public void update(GameCheckers g) {}
             @Override public void start() {}
             @Override public void display(GameCheckers g) {}
-            @Override public Move getUserMove(GameCheckers g) { return null; }
         });
-        
+
         // --- TOUR 1 : BLANCS ---
         List<Move> whiteMoves = game.getPossibleMoves(game.getCurrentPlayer());
         assertFalse(whiteMoves.isEmpty(), "Les blancs doivent avoir des coups possibles au début");
-        
-        Move moveW1 = whiteMoves.get(0);
-        
-        // ON SUPPRIME le check isValidMove ici car sans equals(), il échouera toujours
-        // assertTrue(game.isValidMove(moveW1, game.getCurrentPlayer()));
-        
-        // On applique directement le coup (ça marchera car c'est le bon objet référence)
-        game.applyMove(moveW1);
-        
-        assertNotEquals("White Player", game.getCurrentPlayer().toString(), "Après le coup blanc, ce n'est plus aux blancs");
 
+        Move moveW1 = whiteMoves.get(0);
+        String fromW1 = game.getBoard().indexToSquare(moveW1.getFrom());
+        String toW1   = game.getBoard().indexToSquare(moveW1.getTo());
+        game.applyMove(fromW1, toW1);
+
+        assertNotEquals("White Player", game.getCurrentPlayer().toString(),
+                "Après le coup blanc, ce n'est plus aux blancs");
 
         // --- TOUR 1 : NOIRS ---
         List<Move> blackMoves = game.getPossibleMoves(game.getCurrentPlayer());
         assertFalse(blackMoves.isEmpty());
-        
-        Move moveB1 = blackMoves.get(0);
-        game.applyMove(moveB1);
 
+        Move moveB1 = blackMoves.get(0);
+        String fromB1 = game.getBoard().indexToSquare(moveB1.getFrom());
+        String toB1   = game.getBoard().indexToSquare(moveB1.getTo());
+        game.applyMove(fromB1, toB1);
 
         // --- TOUR 2 : RE-BLANCS ---
         assertEquals("White Player", game.getCurrentPlayer().toString());

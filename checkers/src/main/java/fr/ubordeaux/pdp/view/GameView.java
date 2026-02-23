@@ -2,7 +2,6 @@ package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.Move;
 
 /**
  * Abstract representation of the game's user interface.
@@ -37,7 +36,4 @@ public abstract class GameView implements Observer {
    * Renders the current state of the game to the user.
    */
   public abstract void display(GameCheckers game);
-
-  public abstract Move getUserMove(GameCheckers game);
-
 }

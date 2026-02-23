@@ -1,15 +1,15 @@
 package fr.ubordeaux.pdp;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.view.CommandLineInterface;
-import fr.ubordeaux.pdp.view.GameView;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.GameView;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -56,9 +56,8 @@ public class App {
     }
     
     // Status EXIT_SUCCESS means continue execution normally
-    GameCheckers game = new GameCheckers();
     GameView view = new CommandLineInterface(verbose, debug);
-    GameController controller = new GameController(game, view);
+    GameController controller = new GameController(view);
     controller.start();
   }
 
