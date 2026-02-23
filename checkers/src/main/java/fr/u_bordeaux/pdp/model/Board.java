@@ -500,7 +500,7 @@ public class Board {
    * @param from bit index of the pawn
    * @return mutable list of destination indices; may be empty
    */
-  private List<Integer> pawnSimpleTargets(int from) {
+  private List<Integer> pawnSimpleTargets(int from, boolean isWhite) {
     List<Integer> targets = new ArrayList<>();
     Map<String, Integer> diags = diagsForIndex(from);
 
@@ -509,6 +509,13 @@ public class Board {
       int delta = entry.getValue();
       int to = from + delta;
 
+      // White moves north (NW/NE only); black moves south (SW/SE only).
+      if (isWhite && (dir.equals("SW") || dir.equals("SE"))) {
+        continue;
+      }
+      if (!isWhite && (dir.equals("NW") || dir.equals("NE"))) {
+        continue;
+      }
       if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(from)) {
         continue;
       }
@@ -626,7 +633,7 @@ public class Board {
     for (int i = 0; i < indexMax; i++) {
       if (isWhite) {
         if (isBitWhitePawn(i)) {
-          for (int to : pawnSimpleTargets(i)) {
+          for (int to : pawnSimpleTargets(i,true)) {
             simples.add(new Move(List.of(i, to), List.of()));
           }
         }
@@ -637,7 +644,7 @@ public class Board {
         }
       } else {
         if (isBitBlackPawn(i)) {
-          for (int to : pawnSimpleTargets(i)) {
+          for (int to : pawnSimpleTargets(i,false)) {
             simples.add(new Move(List.of(i, to), List.of()));
           }
         }
