@@ -98,7 +98,6 @@ class BoardTest {
   @Test
   void testOccupied() {
     Board board = new Board(12);
-    System.out.println(board);
 
     assertTrue(board.occupied("A1"));
     assertTrue(board.occupied("L12"));
@@ -139,8 +138,6 @@ class BoardTest {
     Move blackMove = new Move(List.of(blackFrom, blackTo), List.of());
 
     board.applyMove(blackMove);
-
-    System.out.println(board);
   }
 
   // ----------------------------
@@ -222,8 +219,7 @@ class BoardTest {
   @Test
   void testCheckerSimpleTargetsBord() throws Exception {
     Board board = new Board(12);
-
-    System.out.println(board);
+    
     int from = board.squareToIndex("H2");
     int blockingSquare = board.squareToIndex("G1");
 
