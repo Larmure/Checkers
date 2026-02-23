@@ -17,6 +17,9 @@ public class Utils {
   public static final boolean DEFAULT_VERBOSE = false;
   public static final boolean DEFAULT_BLITZ = false;
   public static final int DEFAULT_TIME = 30;
+  public static final boolean DEFAULT_CONTEST = false;
+
+  public static final String MOVE_REGEX = "^[a-zA-Z]\\d\\s[a-zA-Z]\\d$";
 
   /**
    * An immutable map linking command keywords to their representative instances.

@@ -6,6 +6,7 @@ import java.util.Scanner;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Move;
+import fr.ubordeaux.pdp.model.Utils;
 
 /**
  * Concrete implementation of {@link GameView} providing an interactive text-based shell.
@@ -92,15 +93,20 @@ public class CommandLineInterface extends GameView {
       }
     
       try {
-        // Split the input into tokens
         String[] tokens = input.split("\\s+");
-        String commandName = tokens[0];     
-        String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-        
-        controller.executeCommand(commandName, args);
+
+        if (input.matches(Utils.MOVE_REGEX)) {
+          System.out.println("MOVE : " + tokens[0] + "-" + tokens[1]);
+        } else {
+          // Split the input into tokens
+          String commandName = tokens[0];     
+          String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
+          
+          controller.executeCommand(commandName, args);
+        }
 
       } catch (Exception e) {
-        System.out.println("Invalid command: " + e.getMessage());
+        System.out.println("Invalid input: " + e.getMessage());
       }
     }
 

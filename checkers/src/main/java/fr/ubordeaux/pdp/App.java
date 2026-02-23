@@ -85,6 +85,8 @@ public class App {
     options.addOption("b", "blitz", false, "enable blitz mode");
     options.addOption("t", "time", true, "set time limit in minutes");
     options.addOption("g", "gui", false, "launch graphical user interface");
+    options.addOption("c", "contest", true, "enable contest mode");
+    options.addOption("s", "size", true, "set board size (8|10|12)");
 
     CommandLineParser parser = new DefaultParser();
     try {
@@ -116,6 +118,27 @@ public class App {
       if (cmd.hasOption("g")) {
         System.out.println("Launching Graphical Interface...");
         return EXIT_GUI;
+      }
+      
+      if (cmd.hasOption("b")) {
+        System.out.println("Blitz mode enabled.");
+      }
+
+      if (cmd.hasOption("t")) {
+        System.out.println("Time limit set to " + args[0] + ".");
+      }
+
+      if (cmd.hasOption("c")) {
+        System.out.println("Contest mode enabled.");
+      }
+
+      if (cmd.hasOption("s")) {
+        System.out.println("Board size : " + args[0] + ".");
+      }
+
+
+      if (verbose) {
+        System.out.println("Verbose mode enabled.");
       }
 
       System.out.println("Welcome to Checkers!");
