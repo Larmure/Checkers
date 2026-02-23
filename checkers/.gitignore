@@ -2,3 +2,6 @@ target/
 *.class
 /.metadata/
 .project
+.settings/
+*.prefs
+.classpath
