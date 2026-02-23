@@ -1,5 +1,7 @@
 package fr.ubordeaux.pdp;
 
+import fr.ubordeaux.pdp.model.Utils;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -8,6 +10,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.GameOption;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 
@@ -32,10 +35,20 @@ public class App {
   public static final int EXIT_GUI = 3;
 
   /** Flag to enable verbose. */
-  private static boolean verbose = false;
+  private static boolean verbose = Utils.DEFAULT_VERBOSE;
 
   /** Flag to enable debug mode. */
-  private static boolean debug = false;
+  private static boolean debug = Utils.DEFAULT_DEBUG;
+
+  private static boolean blitz = Utils.DEFAULT_BLITZ;
+
+  private static int time = Utils.DEFAULT_TIME;
+
+  private static boolean contest = Utils.DEFAULT_CONTEST;
+
+  private static int size = Utils.DEFAULT_BOARD_SIZE;
+
+  
 
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
@@ -58,7 +71,8 @@ public class App {
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
-    controller.start();
+    controller.start(); 
+    controller.startNewGame(new GameOption(blitz, time, contest, size));
   }
 
   /**
@@ -107,37 +121,38 @@ public class App {
       }
 
       if (cmd.hasOption("v")) {
+        System.out.println("Verbose mode enabled.");
         verbose = true;
       }
 
       if (cmd.hasOption("d")) {
+        System.out.println("Debug mode enabled.");
         debug = true;
       }
 
       if (cmd.hasOption("g")) {
         System.out.println("Launching Graphical Interface...");
-        return EXIT_GUI;
+        // return EXIT_GUI;
       }
       
       if (cmd.hasOption("b")) {
         System.out.println("Blitz mode enabled.");
+        blitz = true;
       }
 
       if (cmd.hasOption("t")) {
-        System.out.println("Time limit set to " + args[0] + ".");
+        time = Integer.parseInt(cmd.getOptionValue("t"));
+        System.out.println("Time limit set to " + time + ".");
       }
 
       if (cmd.hasOption("c")) {
         System.out.println("Contest mode enabled.");
+        contest = true;
       }
 
       if (cmd.hasOption("s")) {
-        System.out.println("Board size : " + args[0] + ".");
-      }
-
-
-      if (verbose) {
-        System.out.println("Verbose mode enabled.");
+        size = Integer.parseInt(cmd.getOptionValue("s"));
+        System.out.println("Board size : " + size + ".");
       }
 
       System.out.println("Welcome to Checkers!");

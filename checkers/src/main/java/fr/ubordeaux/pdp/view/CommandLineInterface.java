@@ -60,56 +60,60 @@ public class CommandLineInterface extends GameView {
   }
 
   /**
-   * Starts the main input loop. 
+   * Starts the main input loop into a separated Thread. 
    * It captures user strings, splits them into commands and arguments, 
    * and delegates execution to the controller.
    */
   @Override
   public void start() {
-    if (verbose) {
-      System.out.println("[Info] CLI mode started with verbose output.");
-    }
-    if (debug) {
-      System.out.println("[Debug] CLI mode started with debug output.");
-    }
-    
-    // We must not close "System.in"
-    @SuppressWarnings("resource")
-    Scanner scanner = new Scanner(System.in);
+    Thread inputThread = new Thread(() -> {
 
-    // Wait for user commands and execute them
-    while (true) {
-      System.out.print(">> ");
-
-      if (!scanner.hasNextLine()) {
-        break;
+      if (verbose) {
+        System.out.println("[Info] CLI mode started with verbose output.");
       }
-    
-      String input = scanner.nextLine().trim();
-    
-      if (input.isEmpty()) {
-        continue;
+      if (debug) {
+        System.out.println("[Debug] CLI mode started with debug output.");
       }
-    
-      try {
-        String[] tokens = input.split("\\s+");
 
-        if (input.matches(Utils.MOVE_REGEX)) {
-          System.out.println("MOVE : " + tokens[0] + "-" + tokens[1]);
-          controller.executeMove(tokens[0], tokens[1]);
-        } else {
-          // Split the input into tokens
-          String commandName = tokens[0];     
-          String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-          
-          controller.executeCommand(commandName, args);
+      // We must not close "System.in"
+      @SuppressWarnings("resource")
+      Scanner scanner = new Scanner(System.in);
+
+      // Wait for user commands and execute them
+      while (true) {
+        System.out.print(">> ");
+
+        if (!scanner.hasNextLine()) {
+          break;
         }
+      
+        String input = scanner.nextLine().trim();
+      
+        if (input.isEmpty()) {
+          continue;
+        }
+      
+        try {
+          // Split the input into tokens
+          String[] tokens = input.split("\\s+");
 
-      } catch (Exception e) {
-        System.out.println("Invalid input: " + e.getMessage());
+          if (input.matches(Utils.MOVE_REGEX)) {
+            System.out.println("MOVE : " + tokens[0] + "-" + tokens[1]);
+            controller.executeMove(tokens[0], tokens[1]);
+          } else {
+            String commandName = tokens[0];     
+            String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
+
+            controller.executeCommand(commandName, args);
+          }
+
+        } catch (Exception e) {
+          System.out.println("Invalid input: " + e.getMessage());
+        }
       }
-    }
-
+    });
+    inputThread.setDaemon(true);
+    inputThread.start();
   }
 
   /**

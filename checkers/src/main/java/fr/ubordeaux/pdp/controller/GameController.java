@@ -1,7 +1,10 @@
 package fr.ubordeaux.pdp.controller;
 
 import fr.ubordeaux.pdp.model.GameCheckers;
+import fr.ubordeaux.pdp.model.GameOption;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.model.Utils;
+import jdk.jshell.execution.Util;
 
 
 /**
@@ -81,14 +84,10 @@ public class GameController {
    * @param time    The time limit per player in seconds (0 for no limit).
    * @param size    The board dimension (standard is 8).
    */
-  public void startNewGame(boolean blitz, boolean contest, int time, int size) {
-    // System.out.println("Initializing new game with options: " 
-    //     + (blitz ? "Blitz " : "") 
-    //     + (contest ? "Contest " : "") 
-    //     + (time > 0 ? "Time=" + time + "s " : "") 
-    //     + (size != 8 ? "Size=" + size : ""));
+  public void startNewGame(GameOption gameOption) {
+    System.out.println("Initializing new game with options: " + gameOption); 
 
-    this.game = new GameCheckers();
+    this.game = new GameCheckers(gameOption);
     game.addObserver(view);
 
     view.display(game);

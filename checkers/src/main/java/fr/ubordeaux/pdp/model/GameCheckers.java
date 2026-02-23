@@ -25,8 +25,8 @@ public class GameCheckers implements Subject {
    * * <p>Initializes a standard 12x12 board, sets the initial state to {@link InGameState},
    * creates two human players, and grants the first turn to the white player.
    */
-  public GameCheckers() {
-    this.board = new Board(12);
+  public GameCheckers(GameOption gameOption) {
+    this.board = new Board(gameOption.getSize());
     this.isWhiteTurn = true;
     this.state = new InGameState(this);
     whitePlayer = new HumanPlayer("White Player");

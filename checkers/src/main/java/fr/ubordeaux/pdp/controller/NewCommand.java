@@ -6,6 +6,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import fr.ubordeaux.pdp.model.GameOption;
 import fr.ubordeaux.pdp.model.Utils;
 
 /**
@@ -48,31 +49,11 @@ public class NewCommand implements Command, Helpable {
   
       boolean hasBlitz = cmd.hasOption("b");
       boolean hasContest = cmd.hasOption("c");
-  
-      // If we use time option without blitz, we ignore it.
-      int blitzTime = 0;
-      boolean hasTimeOption = cmd.hasOption("t");
-      if (hasBlitz) {
-        String tValue = cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME));
-        blitzTime = Integer.parseInt(tValue);
-      } else if (hasTimeOption) {
-        System.out.println("Warning: time option used without blitz option.");
-      }
-
-			String sValue = cmd.getOptionValue("s");
-
-			int size = switch (sValue != null ? sValue : "8") {
-    		case "8"  -> 8;
-    		case "10" -> 10;
-    		case "12" -> 12;
-    		default -> {
-        	System.out.println("Warning: '" + sValue + "' is not a valid size. Only 8|10|12 are accepted.");
-        	yield Utils.DEFAULT_BOARD_SIZE;
-    		}
-			};
-  
-      controller.startNewGame(hasBlitz, hasContest, blitzTime, size);
-  
+      String tValue = cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME));
+      int blitzTime = Integer.parseInt(tValue);
+      String sValue = cmd.getOptionValue("s");
+      int size = Integer.parseInt(sValue);
+      controller.startNewGame(new GameOption(hasBlitz, blitzTime, hasContest, size));
     } catch (ParseException | NumberFormatException e) {
       System.out.println("Invalid command syntax: " + e.getMessage());
     }
