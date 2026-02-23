@@ -1,5 +1,7 @@
 package fr.ubordeaux.pdp.view;
 
+import fr.ubordeaux.pdp.model.GameCheckers;
+
 /**
  * Defines a receiver for update notifications from an observable object.
  * This interface is a core component of the Observer Design Pattern, 
@@ -15,6 +17,6 @@ public interface Observer {
    * Implementing classes (like {@link GameView}) should use this method 
    * to refresh their display or process the new state.
    */
-  void update();
+  void update(GameCheckers game);
 
 }
