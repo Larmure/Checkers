@@ -13,11 +13,10 @@ import fr.ubordeaux.pdp.controller.*;
  */
 public class Utils {
 
-  /** The standard dimension of the checkers board (8x8). */
-	public static final int DEFAULT_BOARD_SIZE = 8;
-
-  /** The default time limit per player in seconds. */
-	public static final int DEFAULT_TIME = 30;
+  public static final int DEFAULT_BOARD_SIZE = 8;
+  public static final boolean DEFAULT_VERBOSE = false;
+  public static final boolean DEFAULT_BLITZ = false;
+  public static final int DEFAULT_TIME = 30;
 
   /**
    * An immutable map linking command keywords to their representative instances.

@@ -1,775 +1,1121 @@
 package fr.ubordeaux.pdp.model;
 
-import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-
+/**
+ * Represents a draughts (checkers) board encoded with bitboards.
+ *
+ * <p>Supports board sizes of 8, 10, and 12. Each playable (dark) square is mapped to a bit
+ * index. Two 64-bit longs are used per piece type to handle boards larger than 64 playable
+ * squares (e.g. the 12×12 board has 72 playable squares).
+ *
+ * <p>Coordinate system: rows are labelled {@code A} (bottom) to {@code L} (top); columns are
+ * numbered {@code 1} (left) to {@code size} (right). Only dark squares (where {@code (row+col)}
+ * is even) store pieces.
+ */
 public class Board {
 
-    private static final Set<Integer> VALID_SIZES = Set.of(8, 10,12);
+  /** Set of board sizes accepted by the constructor. */
+  private static final Set<Integer> VALID_SIZES = Set.of(8, 10, 12);
 
-    // Masques pour le plateau 8x8 (on peut généraliser ensuite)
-    private long LEFT_EDGE_MASK;
-    private long RIGHT_EDGE_MASK;
+  // ---- Edge masks (one bit per left/right-edge playable square) ----
+  private long leftMask1;
+  private long leftMask2;
+  private long rightMask1;
+  private long rightMask2;
 
-    private Map<String, Integer> diagsPair = new HashMap<>();
-    private Map<String, Integer> diagsUnpair = new HashMap<>();
+  /** Diagonal offsets (index deltas) for even rows. */
+  private Map<String, Integer> diagsPair = new HashMap<>();
 
-    private int sizeBoard;
-    private int indexMax;
+  /** Diagonal offsets (index deltas) for odd rows. */
+  private Map<String, Integer> diagsUnpair = new HashMap<>();
 
-    private long whitePawns1;
-    private long whiteCheckers1;
-    private long blackPawns1;
-    private long blackCheckers1;
+  /** Side length of the board (8, 10, or 12). */
+  private int sizeBoard;
 
-    private long whitePawns2;
-    private long whiteCheckers2;
-    private long blackPawns2;
-    private long blackCheckers2;
+  /** Total number of playable squares ({@code sizeBoard * sizeBoard / 2}). */
+  private int indexMax;
 
-    public Board(int size) {
-        if (!VALID_SIZES.contains(size)){
-            throw new IllegalArgumentException("Invalid board size: " + size);
-        }
-        this.sizeBoard = size;
-        this.indexMax = (this.sizeBoard * this.sizeBoard)/2;
-        initPosition();
-        initEdgeMasks();
-        initDiag();
+  // ---- Bitboards (low 64 bits then high bits for boards > 64 squares) ----
+  private long whitePawns1;
+  private long whiteCheckers1;
+  private long blackPawns1;
+  private long blackCheckers1;
+
+  private long whitePawns2;
+  private long whiteCheckers2;
+  private long blackPawns2;
+  private long blackCheckers2;
+
+  /**
+   * Constructs a new board of the given size and places pieces in their starting positions.
+   *
+   * @param size the side length of the board; must be 8, 10, or 12
+   * @throws IllegalArgumentException if {@code size} is not one of the valid values
+   */
+  public Board(int size) {
+    if (!VALID_SIZES.contains(size)) {
+      throw new IllegalArgumentException("Invalid board size: " + size);
     }
+    this.sizeBoard = size;
+    this.indexMax = (this.sizeBoard * this.sizeBoard) / 2;
+    initPosition();
+    initEdgeMasks();
+    initDiag();
+  }
 
-    /*
-          INITIALISATION
-    */
-    private void initPosition() {
+  // ---------------------------------------------------------------------------
+  //  Initialisation
+  // ---------------------------------------------------------------------------
 
-        this.whitePawns1 = 0L;
-        this.blackPawns1 = 0L;
-        this.whiteCheckers1 = 0L;
-        this.blackCheckers1 = 0L;
+  /**
+   * Places all pawns in their standard starting positions using bitboard arithmetic.
+   *
+   * <p>White occupies the lowest-indexed rows; black occupies the highest-indexed rows. On a
+   * 12×12 board the black bitboard overflows 64 bits and the surplus is stored in
+   * {@code blackPawns2}.
+   */
+  private void initPosition() {
+    this.whitePawns1 = 0L;
+    this.blackPawns1 = 0L;
+    this.whiteCheckers1 = 0L;
+    this.blackCheckers1 = 0L;
 
-        this.whitePawns2 = 0L;
-        this.blackPawns2 = 0L;
-        this.whiteCheckers2 = 0L;
-        this.blackCheckers2 = 0L;
+    this.whitePawns2 = 0L;
+    this.blackPawns2 = 0L;
+    this.whiteCheckers2 = 0L;
+    this.blackCheckers2 = 0L;
 
-        switch (this.sizeBoard) {
-            case 8:
-                // on décale au 12 ème bit le 1 et on soustrait 1
-                // ce qui fait que les 12 premiers indices sont des 1
-                this.whitePawns1 = (1L << 12) - 1;
-                long v1 = ((1L << 12) - 1);
-                // on décale à gauche de 20 les 12 premiers 1
-                this.blackPawns1 = v1 << 20;
-                break;
-            case 10:
-                // on décale au 20 ème bit le 1 et on soustrait 1
-                // ce qui fait que les 20 premiers indices sont des 1
-                this.whitePawns1 = (1L << 20) - 1;
-                long v2 = ((1L << 20) - 1);
-                // on décale à gauche de 30 les 20 premiers 1
-                this.blackPawns1 = v2 << 30;
-                break;
-            case 12:
-                // on décale au 30 ème bit le 1 et on soustrait 1
-                // ce qui fait que les 30 premiers indices sont des 1
-                this.whitePawns1 = (1L << 30) - 1;
-                long v3 = ((1L << 30) - 1);
-                // on décale à gauche de 42 les 30 premiers 1
-                this.blackPawns1 = v3 << 42;
-                // on aura un debordement de 8 à gauche on le met donc 
-                // dans le deuxième bitboard
-                this.blackPawns2 = ((1L << 8) - 1);
-                break;
-            default:
-                throw new IllegalArgumentException(
-                    "Taille de plateau invalide : " + this.sizeBoard +
-                    " (valeurs autorisées : 8, 10, 12)"
-                );
-        }
+    switch (this.sizeBoard) {
+      case 8:
+        // Set the 12 lowest bits (indices 0-11) for white; shift them by 20 for black.
+        this.whitePawns1 = (1L << 12) - 1;
+        this.blackPawns1 = ((1L << 12) - 1) << 20;
+        break;
+      case 10:
+        // Set the 20 lowest bits (indices 0-19) for white; shift them by 30 for black.
+        this.whitePawns1 = (1L << 20) - 1;
+        this.blackPawns1 = ((1L << 20) - 1) << 30;
+        break;
+      case 12:
+        // Set the 30 lowest bits (indices 0-29) for white; shift them by 42 for black.
+        // Black overflows: the top 8 bits spill into blackPawns2.
+        this.whitePawns1 = (1L << 30) - 1;
+        this.blackPawns1 = ((1L << 30) - 1) << 42;
+        this.blackPawns2 = (1L << 8) - 1;
+        break;
+      default:
+        break;
     }
+  }
 
-    private void initDiag() {
-        this.diagsPair.put("NW", (this.sizeBoard/2)-1);
-        this.diagsPair.put("NE", (this.sizeBoard/2));
-        this.diagsPair.put("SW", -((this.sizeBoard/2)+1));
-        this.diagsPair.put("SE", -(this.sizeBoard/2));
+  /**
+   * Initialises the diagonal offset maps for even and odd rows.
+   *
+   * <p>Each direction key ({@code "NW"}, {@code "NE"}, {@code "SW"}, {@code "SE"}) maps to the
+   * signed index delta that moves one step in that direction.
+   */
+  private void initDiag() {
+    int half = this.sizeBoard / 2;
+    this.diagsPair.put("NW", half - 1);
+    this.diagsPair.put("NE", half);
+    this.diagsPair.put("SW", -(half + 1));
+    this.diagsPair.put("SE", -half);
 
-        this.diagsUnpair.put("NW", (this.sizeBoard/2));
-        this.diagsUnpair.put("NE", (this.sizeBoard/2)+1);
-        this.diagsUnpair.put("SW", -((this.sizeBoard/2)));
-        this.diagsUnpair.put("SE", -((this.sizeBoard/2)-1));
-    }
+    this.diagsUnpair.put("NW", half);
+    this.diagsUnpair.put("NE", half + 1);
+    this.diagsUnpair.put("SW", -half);
+    this.diagsUnpair.put("SE", -(half - 1));
+  }
 
-    private void initEdgeMasks() {
-        LEFT_EDGE_MASK = 0L;
-        RIGHT_EDGE_MASK = 0L;
+  /**
+   * Builds bitmasks that identify squares on the left and right edges of the board.
+   *
+   * <p>These masks are used to prevent diagonal moves from "wrapping" around board edges.
+   */
+  private void initEdgeMasks() {
+    leftMask1 = leftMask2 = 0L;
+    rightMask1 = rightMask2 = 0L;
 
-        for (int row = 0; row < sizeBoard; row++) {
-            int leftIndex = boardToBitIndex(row, 0);
-            int rightIndex = boardToBitIndex(row, sizeBoard - 1);
-            if (leftIndex >= 0) LEFT_EDGE_MASK |= (leftIndex < 64 ? 1L << leftIndex : 0L);
-            if (rightIndex >= 0) RIGHT_EDGE_MASK |= (rightIndex < 64 ? 1L << rightIndex : 0L);
-        }
-    }
+    for (int row = 0; row < sizeBoard; row++) {
+      int leftIndex = boardToBitIndex(row, 0);
+      int rightIndex = boardToBitIndex(row, sizeBoard - 1);
 
-    
-    // Vérifie si un pion est sur la colonne gauche ou droite
-    private boolean onLeftEdge(int index) {
-        return (index < 64) ? ((LEFT_EDGE_MASK & (1L << index)) != 0)
-                            : ((LEFT_EDGE_MASK & (1L << (index - 64))) != 0);
-    }
-
-    private boolean onRightEdge(int index) {
-        return (index < 64) ? ((RIGHT_EDGE_MASK & (1L << index)) != 0)
-                            : ((RIGHT_EDGE_MASK & (1L << (index - 64))) != 0);
-    }
-
-    /*
-          ALL Types Of Presence
-    */
-    private boolean hasPawn(int index, long bitboard1, long bitboard2) {
-        if (index < 0 || index >= this.indexMax) {
-            throw new IllegalArgumentException("Index hors limites (0-127)");
-        }
-
-        if (index < 64) {
-            return ((bitboard1 >>> index) & 1L) == 1L;
+      if (leftIndex >= 0) {
+        if (leftIndex < 64) {
+          leftMask1 |= (1L << leftIndex);
         } else {
-            return ((bitboard2 >>> (index - 64)) & 1L) == 1L;
+          leftMask2 |= (1L << (leftIndex - 64));
         }
-    }
-
-    public boolean isWhitePawn(String square) {
-        int index = squareToIndex(square);
-        return isBitWhitePawn(index);
-    }
-
-    public boolean isBlackPawn(String square) {
-        int index = squareToIndex(square);
-        return isBitBlackPawn(index);
-    }
-
-    public boolean isWhiteChecker(String square) {
-        int index = squareToIndex(square);
-        return isBitWhiteChecker(index);
-    }
-
-    public boolean isBlackChecker(String square) {
-        int index = squareToIndex(square);
-        return isBitBlackChecker(index);
-    }
-
-    private boolean isBitWhitePawn(int index) {
-        return hasPawn(index, whitePawns1, whitePawns2);
-    }
-
-    private boolean isBitBlackPawn(int index) {
-        return hasPawn(index, blackPawns1, blackPawns2);
-    }
-
-
-    private boolean isBitWhiteChecker(int index) {
-        return hasPawn(index, whiteCheckers1, whiteCheckers2);
-    }
-
-    private boolean isBitBlackChecker(int index) {
-        return hasPawn(index, blackCheckers1, blackCheckers2);
-    }
-
-    public boolean occupied(String square) {
-        int index = squareToIndex(square);
-        return isOccupied(index);
-    }
-
-    private boolean isOccupied(int index) {
-        return isBitWhitePawn(index) || isBitBlackPawn(index)
-                || isBitWhiteChecker(index) || isBitBlackChecker(index);
-    }
-
-
-    /*
-          Operation
-    */
-    private void addWhitePawn(int index) {
-        if (index < 64) {
-            whitePawns1 |= (1L << index);
-        } else {
-            whitePawns2 |= (1L << (index - 64));
-        }
-    }
-
-    private void removeWhitePawn(int index) {
-        if (index < 64) {
-            whitePawns1 &= ~(1L << index);
-        } else {
-            whitePawns2 &= ~(1L << (index - 64));
-        }
-    }
-
-    private void addBlackPawn(int index) {
-        if (index < 64) {
-            blackPawns1 |= (1L << index);
-        } else {
-            blackPawns2 |= (1L << (index - 64));
-        }
-    }
-
-    private void removeBlackPawn(int index) {
-        if (index < 64) {
-            blackPawns1 &= ~(1L << index);
-        } else {
-            blackPawns2 &= ~(1L << (index - 64));
-        }
-    }
-
-    private void addWhiteChecker(int index) {
-        if (index < 64) {
-            whiteCheckers1 |= (1L << index);
-        } else {
-            whiteCheckers2 |= (1L << (index - 64));
-        }
-    }
-
-    private void removeWhiteChecker(int index) {
-        if (index < 64) {
-            whiteCheckers1 &= ~(1L << index);
-        } else {
-            whiteCheckers2 &= ~(1L << (index - 64));
-        }
-    }
-
-    private void addBlackChecker(int index) {
-        if (index < 64) {
-            blackCheckers1 |= (1L << index);
-        } else {
-            blackCheckers2 |= (1L << (index - 64));
-        }
-    }
-
-    private void removeBlackChecker(int index) {
-        if (index < 64) {
-            blackCheckers1 &= ~(1L << index);
-        } else {
-            blackCheckers2 &= ~(1L << (index - 64));
-        }
-    }
-
-    public void promote(String square) {
-        int index = squareToIndex(square);
-        promoteBit(index);
-    }
-
-    private void promoteBit(int index) {
-        if (index < 0 || index >= indexMax) {
-            throw new IllegalArgumentException("Move out of board bounds");
-        }
-
-        if (isBitWhitePawn(index)) {
-            removeWhitePawn(index);
-            addWhiteChecker(index);
-            return;
-        }
-
-        if (isBitBlackPawn(index)) {
-            removeBlackPawn(index);
-            addBlackChecker(index);
-            return;
-        }
-
-        throw new IllegalArgumentException("No piece at source index: " + index);
-    } 
-
-
-
-    //        Application Move with Move        //
-
-    public void applyMove(Move move) {
-
-        int from = move.getFrom();
-        int to = move.getTo();
-
-        // Move piece
-        if (isBitWhitePawn(from)) {
-            removeWhitePawn(from);
-            addWhitePawn(to);
-        } else if (isBitBlackPawn(from)) {
-            removeBlackPawn(from);
-            addBlackPawn(to);
-        } else if (isBitWhiteChecker(from)) {
-            removeWhiteChecker(from);
-            addWhiteChecker(to);
-        } else if (isBitBlackChecker(from)) {
-            removeBlackChecker(from);
-            addBlackChecker(to);
-        }
-
-        // Remove captured pieces
-        for (int captured : move.getCaptured()) {
-
-            if (isBitWhitePawn(captured)) removeWhitePawn(captured);
-            if (isBitBlackPawn(captured)) removeBlackPawn(captured);
-            if (isBitWhiteChecker(captured)) removeWhiteChecker(captured);
-            if (isBitBlackChecker(captured)) removeBlackChecker(captured);
-        }
-
-        // Vérifier promotion automatique pour les pions
-        boolean promoted = false;
-        if (isBitWhitePawn(to)) {
-            int row = to / (sizeBoard / 2);
-            if (row == sizeBoard - 1) { // dernière ligne pour les blancs
-                promoteBit(to);
-                promoted = true;
-            }
-        } else if (isBitBlackPawn(to)) {
-            int row = to / (sizeBoard / 2);
-            if (row == 0) { // première ligne pour les noirs
-                promoteBit(to);
-                promoted = true;
-            }
-        }
-
-        // Marquer le move comme promotion pour affichage
-        if (promoted) {
-            move.setPromotion(true);
-        }
-    }
-
-    private Map<String, Integer> diagsForIndex(int index) {
-        int row = index / (sizeBoard / 2);
-        return (row % 2 == 0) ? diagsPair : diagsUnpair;
-    }
-
-
-    // Deplacement simple
-    private List<Integer> pawnSimpleTargets(int from) {
-        List<Integer> targets = new ArrayList<>();
-        Map<String, Integer> diags = diagsForIndex(from);
-
-        for (Map.Entry<String, Integer> entry : diags.entrySet()) {
-            String dir = entry.getKey();
-            int delta = entry.getValue();
-            int to = from + delta;
-
-            // Vérifier les bordures
-            if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(from)) continue;
-            if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(from)) continue;
-
-            if (to >= 0 && to < indexMax && !isOccupied(to)) {
-                targets.add(to);
-            }
-        }
-
-        return targets;
-    }
-    private List<Integer> checkerSimpleTargets(int from) {
-        List<Integer> targets = new ArrayList<>();
-
-        // Parcours de toutes les directions diagonales
-        for (String dir : diagsPair.keySet()) {
-            int current = from;
-
-            while (true) {
-                Map<String, Integer> diags = diagsForIndex(current);
-                int delta = diags.get(dir);
-
-                // Vérification des bords
-                if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(current)) break;
-                if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(current)) break;
-
-                int next = current + delta;
-
-                // Hors plateau
-                if (next < 0 || next >= indexMax) break;
-
-                if (isOccupied(next)) break; // case occupée → stop
-
-                targets.add(next);
-                current = next; // continuer dans la même direction
-            }
-        }
-
-        return targets;
-    }
-
-
-    /*
-              Valides Moves    
-    */
-    public List<Move> getWhiteValidMoves() {
-        return getValidMoves(true);
-    }
-
-    public List<Move> getBlackValidMoves() {
-        return getValidMoves(false);
-    }
-
-    private List<Move> getValidMoves(boolean isWhite) {
-
-        List<Move> captures = new ArrayList<>();
-        List<Move> simples  = new ArrayList<>();
-
-        for (int i = 0; i < indexMax; i++) {
-
-            if (isWhite) {
-                if (isBitWhitePawn(i))
-                    captures.addAll(getBestPawnCaptures(i, true));
-
-                if (isBitWhiteChecker(i))
-                    captures.addAll(getBestCheckerCaptures(i, true));
-            } else {
-                if (isBitBlackPawn(i))
-                    captures.addAll(getBestPawnCaptures(i, false));
-
-                if (isBitBlackChecker(i))
-                    captures.addAll(getBestCheckerCaptures(i, false));
-            }
-        }
-
-        if (!captures.isEmpty()) return captures;
-
-        // Otherwise simple moves
-        for (int i = 0; i < indexMax; i++) {
-
-            if (isWhite) {
-                if (isBitWhitePawn(i))
-                    for (int to : pawnSimpleTargets(i))
-                        simples.add(new Move(List.of(i, to), List.of()));
-
-                if (isBitWhiteChecker(i))
-                    for (int to : checkerSimpleTargets(i))
-                        simples.add(new Move(List.of(i, to), List.of()));
-            } else {
-                if (isBitBlackPawn(i))
-                    for (int to : pawnSimpleTargets(i))
-                        simples.add(new Move(List.of(i, to), List.of()));
-
-                if (isBitBlackChecker(i))
-                    for (int to : checkerSimpleTargets(i))
-                        simples.add(new Move(List.of(i, to), List.of()));
-            }
-        }
-
-        return simples;
-    }
-    
-  /* BEST MOVES PAWNS CAPTURE */
-    private List<Move> getBestPawnCaptures(int from, boolean isWhite) {
-
-      List<CapturePath> all = pawnMultiCaptures(from, isWhite);
-      if (all.isEmpty()) return List.of();
-
-      int max = all.stream()
-              .mapToInt(c -> c.captures)
-              .max()
-              .orElse(0);
-
-      List<Move> best = new ArrayList<>();
-
-      for (CapturePath c : all) {
-          if (c.captures == max) {
-              best.add(new Move(c.path, new ArrayList<>(c.captured)));
-          }
       }
 
-      return best;
+      if (rightIndex >= 0) {
+        if (rightIndex < 64) {
+          rightMask1 |= (1L << rightIndex);
+        } else {
+          rightMask2 |= (1L << (rightIndex - 64));
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Edge detection
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns {@code true} if the playable square at {@code index} is on the left edge.
+   *
+   * @param index bit index of the square
+   * @return {@code true} when the square is on the leftmost column
+   */
+  private boolean onLeftEdge(int index) {
+    if (index < 64) {
+      return (leftMask1 & (1L << index)) != 0;
+    }
+    return (leftMask2 & (1L << (index - 64))) != 0;
+  }
+
+  /**
+   * Returns {@code true} if the playable square at {@code index} is on the right edge.
+   *
+   * @param index bit index of the square
+   * @return {@code true} when the square is on the rightmost column
+   */
+  private boolean onRightEdge(int index) {
+    if (index < 64) {
+      return (rightMask1 & (1L << index)) != 0;
+    }
+    return (rightMask2 & (1L << (index - 64))) != 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Bit-level presence queries
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Tests whether a given bit is set in the supplied pair of bitboards.
+   *
+   * @param index      bit index of the square to test
+   * @param bitboard1  low 64-bit word
+   * @param bitboard2  high 64-bit word (for indices ≥ 64)
+   * @return {@code true} if the bit at {@code index} is set
+   */
+  private boolean hasPawn(int index, long bitboard1, long bitboard2) {
+    if (index < 64) {
+      return ((bitboard1 >>> index) & 1L) == 1L;
+    }
+    return ((bitboard2 >>> (index - 64)) & 1L) == 1L;
+  }
+
+  /**
+   * Returns {@code true} if a white pawn occupies the square identified by its algebraic name.
+   *
+   * @param square algebraic square name (e.g. {@code "A1"})
+   * @return {@code true} if a white pawn is present
+   */
+  public boolean isWhitePawn(String square) {
+    return isBitWhitePawn(squareToIndex(square));
+  }
+
+  /**
+   * Returns {@code true} if a black pawn occupies the square identified by its algebraic name.
+   *
+   * @param square algebraic square name (e.g. {@code "H8"})
+   * @return {@code true} if a black pawn is present
+   */
+  public boolean isBlackPawn(String square) {
+    return isBitBlackPawn(squareToIndex(square));
+  }
+
+  /**
+   * Returns {@code true} if a white checker (king) occupies the named square.
+   *
+   * @param square algebraic square name
+   * @return {@code true} if a white checker is present
+   */
+  public boolean isWhiteChecker(String square) {
+    return isBitWhiteChecker(squareToIndex(square));
+  }
+
+  /**
+   * Returns {@code true} if a black checker (king) occupies the named square.
+   *
+   * @param square algebraic square name
+   * @return {@code true} if a black checker is present
+   */
+  public boolean isBlackChecker(String square) {
+    return isBitBlackChecker(squareToIndex(square));
+  }
+
+  private boolean isBitWhitePawn(int index) {
+    return hasPawn(index, whitePawns1, whitePawns2);
+  }
+
+  private boolean isBitBlackPawn(int index) {
+    return hasPawn(index, blackPawns1, blackPawns2);
+  }
+
+  private boolean isBitWhiteChecker(int index) {
+    return hasPawn(index, whiteCheckers1, whiteCheckers2);
+  }
+
+  private boolean isBitBlackChecker(int index) {
+    return hasPawn(index, blackCheckers1, blackCheckers2);
+  }
+
+  /**
+   * Returns {@code true} if the named square is occupied by any piece.
+   *
+   * @param square algebraic square name
+   * @return {@code true} when the square is not empty
+   */
+  public boolean occupied(String square) {
+    return isOccupied(squareToIndex(square));
+  }
+
+  /**
+   * Returns {@code true} if the square at {@code index} is occupied by any piece.
+   *
+   * @param index bit index of the square
+   * @return {@code true} when the square is not empty
+   */
+  private boolean isOccupied(int index) {
+    return isBitWhitePawn(index)
+        || isBitBlackPawn(index)
+        || isBitWhiteChecker(index)
+        || isBitBlackChecker(index);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Game-state queries
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns {@code true} if the given side has no pieces remaining on the board.
+   *
+   * @param isWhite {@code true} to check the white side; {@code false} for black
+   * @return {@code true} when all bitboards for that colour are zero
+   */
+  public boolean noPiecesLeft(boolean isWhite) {
+    if (isWhite) {
+      return whitePawns1 == 0L
+          && whitePawns2 == 0L
+          && whiteCheckers1 == 0L
+          && whiteCheckers2 == 0L;
+    }
+    return blackPawns1 == 0L
+        && blackPawns2 == 0L
+        && blackCheckers1 == 0L
+        && blackCheckers2 == 0L;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Bitboard mutation helpers
+  // ---------------------------------------------------------------------------
+
+  private void addWhitePawn(int index) {
+    if (index < 64) {
+      whitePawns1 |= (1L << index);
+    } else {
+      whitePawns2 |= (1L << (index - 64));
+    }
+  }
+
+  private void removeWhitePawn(int index) {
+    if (index < 64) {
+      whitePawns1 &= ~(1L << index);
+    } else {
+      whitePawns2 &= ~(1L << (index - 64));
+    }
+  }
+
+  private void addBlackPawn(int index) {
+    if (index < 64) {
+      blackPawns1 |= (1L << index);
+    } else {
+      blackPawns2 |= (1L << (index - 64));
+    }
+  }
+
+  private void removeBlackPawn(int index) {
+    if (index < 64) {
+      blackPawns1 &= ~(1L << index);
+    } else {
+      blackPawns2 &= ~(1L << (index - 64));
+    }
+  }
+
+  private void addWhiteChecker(int index) {
+    if (index < 64) {
+      whiteCheckers1 |= (1L << index);
+    } else {
+      whiteCheckers2 |= (1L << (index - 64));
+    }
+  }
+
+  private void removeWhiteChecker(int index) {
+    if (index < 64) {
+      whiteCheckers1 &= ~(1L << index);
+    } else {
+      whiteCheckers2 &= ~(1L << (index - 64));
+    }
+  }
+
+  private void addBlackChecker(int index) {
+    if (index < 64) {
+      blackCheckers1 |= (1L << index);
+    } else {
+      blackCheckers2 |= (1L << (index - 64));
+    }
+  }
+
+  private void removeBlackChecker(int index) {
+    if (index < 64) {
+      blackCheckers1 &= ~(1L << index);
+    } else {
+      blackCheckers2 &= ~(1L << (index - 64));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Promotion
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Promotes the pawn at bit {@code index} to a checker in place.
+   *
+   * @param index bit index of the pawn
+   * @throws IllegalArgumentException if the index is out of bounds or no pawn is present
+   */
+  private void promoteBit(int index) {
+    if (index < 0 || index >= indexMax) {
+      throw new IllegalArgumentException("Move out of board bounds");
+    }
+    if (isBitWhitePawn(index)) {
+      removeWhitePawn(index);
+      addWhiteChecker(index);
+      return;
+    }
+    if (isBitBlackPawn(index)) {
+      removeBlackPawn(index);
+      addBlackChecker(index);
+      return;
+    }
+    throw new IllegalArgumentException("No piece at source index: " + index);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Move application
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Applies a {@link Move} to the board: relocates the moving piece, removes any captured
+   * pieces, and auto-promotes a pawn that has reached the opposite back rank.
+   *
+   * @param move the move to apply; must refer to valid squares
+   */
+  public void applyMove(Move move) {
+    int from = move.getFrom();
+    int to = move.getTo();
+
+    // Relocate the moving piece.
+    if (isBitWhitePawn(from)) {
+      removeWhitePawn(from);
+      addWhitePawn(to);
+    } else if (isBitBlackPawn(from)) {
+      removeBlackPawn(from);
+      addBlackPawn(to);
+    } else if (isBitWhiteChecker(from)) {
+      removeWhiteChecker(from);
+      addWhiteChecker(to);
+    } else if (isBitBlackChecker(from)) {
+      removeBlackChecker(from);
+      addBlackChecker(to);
     }
 
-    private List<CapturePath> pawnMultiCaptures(int from, boolean isWhite) {
-        List<CapturePath> results = new ArrayList<>();
-
-        dfsPawn(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results,0);
-
-        return results;
+    // Remove all captured pieces.
+    for (int captured : move.getCaptured()) {
+      if (isBitWhitePawn(captured)) {
+        removeWhitePawn(captured);
+      }
+      if (isBitBlackPawn(captured)) {
+        removeBlackPawn(captured);
+      }
+      if (isBitWhiteChecker(captured)) {
+        removeWhiteChecker(captured);
+      }
+      if (isBitBlackChecker(captured)) {
+        removeBlackChecker(captured);
+      }
     }
 
-    private boolean canCapturePawn(int from, int over, int to, boolean isWhite) {
-        // On bloque si sur bordures
-        if ((over < from && onLeftEdge(from)) || (over > from && onRightEdge(from))) return false;
-        if (to < 0 || to >= indexMax || isOccupied(to)) return false;
+    // Auto-promotion when a pawn reaches the back rank.
+    boolean promoted = false;
+    int row = to / (sizeBoard / 2);
 
-        boolean enemy = isWhite
-                ? (isBitBlackPawn(over) || isBitBlackChecker(over))
-                : (isBitWhitePawn(over) || isBitWhiteChecker(over));
-
-        return enemy;
+    if (isBitWhitePawn(to) && row == sizeBoard - 1) {
+      promoteBit(to);
+      promoted = true;
+    } else if (isBitBlackPawn(to) && row == 0) {
+      promoteBit(to);
+      promoted = true;
     }
 
-    private void dfsPawn(int current, boolean isWhite, List<Integer> path,
-                     Set<Integer> captured, List<CapturePath> results, int captureCount) {
+    if (promoted) {
+      move.setPromotion(true);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Diagonal-map selection
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the diagonal offset map appropriate for the row that contains {@code index}.
+   *
+   * <p>Even rows use {@link #diagsPair}; odd rows use {@link #diagsUnpair}.
+   *
+   * @param index bit index of the square whose row determines the map
+   * @return the diagonal offset map for that row parity
+   */
+  private Map<String, Integer> diagsForIndex(int index) {
+    int row = index / (sizeBoard / 2);
+    return (row % 2 == 0) ? diagsPair : diagsUnpair;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Simple-move target generation
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the list of bit indices reachable by a single (non-capturing) pawn step from
+   * {@code from}.
+   *
+   * @param from bit index of the pawn
+   * @return mutable list of destination indices; may be empty
+   */
+  private List<Integer> pawnSimpleTargets(int from, boolean isWhite) {
+    List<Integer> targets = new ArrayList<>();
+    Map<String, Integer> diags = diagsForIndex(from);
+
+    for (Map.Entry<String, Integer> entry : diags.entrySet()) {
+      String dir = entry.getKey();
+      int delta = entry.getValue();
+      int to = from + delta;
+
+      // White moves north (NW/NE only); black moves south (SW/SE only).
+      if (isWhite && (dir.equals("SW") || dir.equals("SE"))) {
+        continue;
+      }
+      if (!isWhite && (dir.equals("NW") || dir.equals("NE"))) {
+        continue;
+      }
+      if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(from)) {
+        continue;
+      }
+      if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(from)) {
+        continue;
+      }
+      if (to >= 0 && to < indexMax && !isOccupied(to)) {
+        targets.add(to);
+      }
+    }
+    return targets;
+  }
+
+  /**
+   * Returns all squares reachable by a single (non-capturing) checker (king) slide from
+   * {@code from} in any diagonal direction.
+   *
+   * @param from bit index of the checker
+   * @return mutable list of destination indices; may be empty
+   */
+  private List<Integer> checkerSimpleTargets(int from) {
+    List<Integer> targets = new ArrayList<>();
+
+    for (String dir : diagsPair.keySet()) {
+      int current = from;
+
+      while (true) {
+        Map<String, Integer> diags = diagsForIndex(current);
+        int delta = diags.get(dir);
+
+        if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(current)) {
+          break;
+        }
+        if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(current)) {
+          break;
+        }
+
+        int next = current + delta;
+        if (next < 0 || next >= indexMax) {
+          break;
+        }
+        if (isOccupied(next)) {
+          break;
+        }
+
+        targets.add(next);
+        current = next;
+      }
+    }
+    return targets;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Public move-list API
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the list of legal moves for white in the current position.
+   *
+   * <p>If any capture is available, only capturing moves are returned (mandatory-capture rule).
+   *
+   * @return non-null, possibly empty list of legal {@link Move} objects
+   */
+  public List<Move> getWhiteValidMoves() {
+    return getValidMoves(true);
+  }
+
+  /**
+   * Returns the list of legal moves for black in the current position.
+   *
+   * <p>If any capture is available, only capturing moves are returned (mandatory-capture rule).
+   *
+   * @return non-null, possibly empty list of legal {@link Move} objects
+   */
+  public List<Move> getBlackValidMoves() {
+    return getValidMoves(false);
+  }
+
+  /**
+   * Core move-generation routine shared by both colours.
+   *
+   * <p>Captures are collected first. If any exist, simple moves are skipped and only the
+   * maximum-length captures are returned.
+   *
+   * @param isWhite {@code true} to generate moves for white; {@code false} for black
+   * @return list of legal {@link Move} objects
+   */
+  private List<Move> getValidMoves(boolean isWhite) {
+    List<Move> captures = new ArrayList<>();
+    List<Move> simples = new ArrayList<>();
+
+    for (int i = 0; i < indexMax; i++) {
+      if (isWhite) {
+        if (isBitWhitePawn(i)) {
+          captures.addAll(getBestPawnCaptures(i, true));
+        }
+        if (isBitWhiteChecker(i)) {
+          captures.addAll(getBestCheckerCaptures(i, true));
+        }
+      } else {
+        if (isBitBlackPawn(i)) {
+          captures.addAll(getBestPawnCaptures(i, false));
+        }
+        if (isBitBlackChecker(i)) {
+          captures.addAll(getBestCheckerCaptures(i, false));
+        }
+      }
+    }
+
+    if (!captures.isEmpty()) {
+      return captures;
+    }
+
+    // No captures available: collect simple moves.
+    for (int i = 0; i < indexMax; i++) {
+      if (isWhite) {
+        if (isBitWhitePawn(i)) {
+          for (int to : pawnSimpleTargets(i,true)) {
+            simples.add(new Move(List.of(i, to), List.of()));
+          }
+        }
+        if (isBitWhiteChecker(i)) {
+          for (int to : checkerSimpleTargets(i)) {
+            simples.add(new Move(List.of(i, to), List.of()));
+          }
+        }
+      } else {
+        if (isBitBlackPawn(i)) {
+          for (int to : pawnSimpleTargets(i,false)) {
+            simples.add(new Move(List.of(i, to), List.of()));
+          }
+        }
+        if (isBitBlackChecker(i)) {
+          for (int to : checkerSimpleTargets(i)) {
+            simples.add(new Move(List.of(i, to), List.of()));
+          }
+        }
+      }
+    }
+
+    return simples;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Pawn capture generation
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the longest pawn capture sequences available from {@code from}.
+   *
+   * @param from    bit index of the pawn
+   * @param isWhite {@code true} if the pawn belongs to white
+   * @return list of {@link Move} objects with the maximum capture count; empty if none
+   */
+  private List<Move> getBestPawnCaptures(int from, boolean isWhite) {
+    List<CapturePath> all = pawnMultiCaptures(from, isWhite);
+    if (all.isEmpty()) {
+      return List.of();
+    }
+
+    int max = all.stream().mapToInt(c -> c.captures).max().orElse(0);
+    List<Move> best = new ArrayList<>();
+
+    for (CapturePath c : all) {
+      if (c.captures == max) {
+        best.add(new Move(c.path, new ArrayList<>(c.captured)));
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Enumerates all pawn multi-capture sequences from {@code from} via depth-first search.
+   *
+   * @param from    bit index of the pawn
+   * @param isWhite {@code true} if the pawn belongs to white
+   * @return list of every possible {@link CapturePath}
+   */
+  private List<CapturePath> pawnMultiCaptures(int from, boolean isWhite) {
+    List<CapturePath> results = new ArrayList<>();
+    dfsPawn(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results, 0);
+    return results;
+  }
+
+  /**
+   * Recursive DFS that explores all pawn capture continuations from {@code current}.
+   *
+   * @param current      bit index of the pawn's current position
+   * @param isWhite      {@code true} if the pawn belongs to white
+   * @param path         ordered list of squares visited so far (including start)
+   * @param captured     set of enemy bit indices already captured in this path
+   * @param results      accumulator for completed capture paths
+   * @param captureCount number of captures performed so far in this path
+   */
+  private void dfsPawn(
+      int current,
+      boolean isWhite,
+      List<Integer> path,
+      Set<Integer> captured,
+      List<CapturePath> results,
+      int captureCount) {
 
     boolean foundNext = false;
-
-    // Récupérer les bonnes diagonales selon la ligne actuelle
     Map<String, Integer> diags = diagsForIndex(current);
 
     for (Map.Entry<String, Integer> entry : diags.entrySet()) {
-        String dir = entry.getKey();
-        int delta = entry.getValue();
+      String dir = entry.getKey();
+      int delta = entry.getValue();
 
-        // Vérification des bords
-        if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(current)) continue;
-        if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(current)) continue;
-
-        int mid = current + delta;
-
-        // Hors plateau
-        if (mid < 0 || mid >= indexMax) continue;
-
-        // Case déjà capturée
-        if (captured.contains(mid)) continue;
-
-        // Vérifier que c'est un ennemi
-        boolean enemy = isWhite ? (isBitBlackPawn(mid) || isBitBlackChecker(mid))
-                                : (isBitWhitePawn(mid) || isBitWhiteChecker(mid));
-        if (!enemy) continue;
-
-        // Calculer la destination après le saut
-        Map<String, Integer> nextDiags = diagsForIndex(mid);
-        int to = mid + nextDiags.get(dir);
-
-        // Vérifications finales
-        if (to < 0 || to >= indexMax) continue;
-        if (isOccupied(to)) continue;
-        if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(mid)) continue;
-        if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(mid)) continue;
-
-        // Saut valide
-        foundNext = true;
-        captured.add(mid);
-        path.add(to);
-
-        // Appel récursif pour multi-captures
-        dfsPawn(to, isWhite, path, captured, results, captureCount + 1);
-
-        // Backtrack
-        path.remove(path.size() - 1);
-        captured.remove(mid);
-    }
-
-    // Stocker le chemin si aucune capture suivante
-    if (!foundNext && captureCount > 0) {
-        results.add(new CapturePath(path, new ArrayList<>(captured)));
-    }
-}
-
-
-
-  /* BEST MOVES CHECKERS CAPTURE */
-  private List<Move> getBestCheckerCaptures(int from, boolean isWhite) {
-
-      List<CapturePath> all = checkerMultiCaptures(from, isWhite);
-      if (all.isEmpty()) return List.of();
-
-      int max = all.stream()
-              .mapToInt(c -> c.captures)
-              .max()
-              .orElse(0);
-
-      List<Move> best = new ArrayList<>();
-
-      for (CapturePath c : all) {
-          if (c.captures == max) {
-              best.add(new Move(c.path, c.captured));
-          }
+      if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(current)) {
+        continue;
+      }
+      if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(current)) {
+        continue;
       }
 
-      return best;
+      int mid = current + delta;
+      if (mid < 0 || mid >= indexMax) {
+        continue;
+      }
+      if (captured.contains(mid)) {
+        continue;
+      }
+
+      boolean enemy =
+          isWhite
+              ? (isBitBlackPawn(mid) || isBitBlackChecker(mid))
+              : (isBitWhitePawn(mid) || isBitWhiteChecker(mid));
+      if (!enemy) {
+        continue;
+      }
+
+      // Compute landing square.
+      Map<String, Integer> nextDiags = diagsForIndex(mid);
+      int to = mid + nextDiags.get(dir);
+
+      if (to < 0 || to >= indexMax) {
+        continue;
+      }
+      if (isOccupied(to)) {
+        continue;
+      }
+      if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(mid)) {
+        continue;
+      }
+      if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(mid)) {
+        continue;
+      }
+
+      // Valid jump: recurse then backtrack.
+      foundNext = true;
+      captured.add(mid);
+      path.add(to);
+
+      dfsPawn(to, isWhite, path, captured, results, captureCount + 1);
+
+      path.remove(path.size() - 1);
+      captured.remove(mid);
+    }
+
+    if (!foundNext && captureCount > 0) {
+      results.add(new CapturePath(path, new ArrayList<>(captured)));
+    }
   }
 
+  // ---------------------------------------------------------------------------
+  //  Checker (king) capture generation
+  // ---------------------------------------------------------------------------
 
-    private List<CapturePath> checkerMultiCaptures(int from, boolean isWhite) {
-
-        List<CapturePath> results = new ArrayList<>();
-
-        dfsChecker(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results, 0 );
-
-        return results;
+  /**
+   * Returns the longest checker capture sequences available from {@code from}.
+   *
+   * @param from    bit index of the checker
+   * @param isWhite {@code true} if the checker belongs to white
+   * @return list of {@link Move} objects with the maximum capture count; empty if none
+   */
+  private List<Move> getBestCheckerCaptures(int from, boolean isWhite) {
+    List<CapturePath> all = checkerMultiCaptures(from, isWhite);
+    if (all.isEmpty()) {
+      return List.of();
     }
 
-    private void dfsChecker(int current, boolean isWhite, List<Integer> path,
-                        Set<Integer> captured, List<CapturePath> results, int captureCount) {
+    int max = all.stream().mapToInt(c -> c.captures).max().orElse(0);
+    List<Move> best = new ArrayList<>();
 
-        boolean foundNext = false;
+    for (CapturePath c : all) {
+      if (c.captures == max) {
+        best.add(new Move(c.path, c.captured));
+      }
+    }
+    return best;
+  }
 
-        for (String dir : diagsPair.keySet()) {
-            int pos = current;
-            boolean enemyFound = false;
-            int enemyIndex = -1;
+  /**
+   * Enumerates all checker multi-capture sequences from {@code from} via depth-first search.
+   *
+   * @param from    bit index of the checker
+   * @param isWhite {@code true} if the checker belongs to white
+   * @return list of every possible {@link CapturePath}
+   */
+  private List<CapturePath> checkerMultiCaptures(int from, boolean isWhite) {
+    List<CapturePath> results = new ArrayList<>();
+    dfsChecker(from, isWhite, new ArrayList<>(List.of(from)), new HashSet<>(), results, 0);
+    return results;
+  }
 
-            while (true) {
-                Map<String, Integer> diags = diagsForIndex(pos);
-                int delta = diags.get(dir);
+  /**
+   * Recursive DFS that explores all checker capture continuations from {@code current}.
+   *
+   * <p>Unlike a pawn, a checker can slide multiple squares before and after a jump.
+   *
+   * @param current      bit index of the checker's current position
+   * @param isWhite      {@code true} if the checker belongs to white
+   * @param path         ordered list of squares visited so far (including start)
+   * @param captured     set of enemy bit indices already captured in this path
+   * @param results      accumulator for completed capture paths
+   * @param captureCount number of captures performed so far in this path
+   */
+  private void dfsChecker(
+      int current,
+      boolean isWhite,
+      List<Integer> path,
+      Set<Integer> captured,
+      List<CapturePath> results,
+      int captureCount) {
 
-                // Vérification des bords
-                if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(pos)) break;
-                if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(pos)) break;
+    boolean foundNext = false;
 
-                int next = pos + delta;
+    for (String dir : diagsPair.keySet()) {
+      int pos = current;
+      boolean enemyFound = false;
+      int enemyIndex = -1;
 
-                // Hors plateau
-                if (next < 0 || next >= indexMax) break;
+      while (true) {
+        Map<String, Integer> diags = diagsForIndex(pos);
+        int delta = diags.get(dir);
 
-                if (!enemyFound) {
-                    if (isOccupied(next)) {
-                        // Vérifier si c'est un ennemi et pas déjà capturé
-                        boolean enemy = isWhite ? (isBitBlackPawn(next) || isBitBlackChecker(next))
-                                                : (isBitWhitePawn(next) || isBitWhiteChecker(next));
-                        if (!enemy || captured.contains(next)) break;
+        if ((dir.equals("NW") || dir.equals("SW")) && onLeftEdge(pos)) {
+          break;
+        }
+        if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(pos)) {
+          break;
+        }
 
-                        enemyFound = true;
-                        enemyIndex = next;
-                        pos = next;
-                    } else {
-                        pos = next;
-                    }
-                } else {
-                    // Après avoir trouvé un ennemi, chercher la case vide pour sauter
-                    if (isOccupied(next)) break;
+        int next = pos + delta;
+        if (next < 0 || next >= indexMax) {
+          break;
+        }
 
-                    foundNext = true;
-                    captured.add(enemyIndex);
-                    path.add(next);
-
-                    // Appel récursif pour multi-captures
-                    dfsChecker(next, isWhite, path, captured, results, captureCount + 1);
-
-                    // Backtrack
-                    path.remove(path.size() - 1);
-                    captured.remove(enemyIndex);
-
-                    pos = next;
-                }
+        if (!enemyFound) {
+          if (isOccupied(next)) {
+            boolean enemy =
+                isWhite
+                    ? (isBitBlackPawn(next) || isBitBlackChecker(next))
+                    : (isBitWhitePawn(next) || isBitWhiteChecker(next));
+            if (!enemy || captured.contains(next)) {
+              break;
             }
-        }
+            enemyFound = true;
+            enemyIndex = next;
+            pos = next;
+          } else {
+            pos = next;
+          }
+        } else {
+          // Slide past the captured enemy and record all valid landing squares.
+          if (isOccupied(next)) {
+            break;
+          }
 
-        if (!foundNext && captureCount > 0) {
-            results.add(new CapturePath(path, new ArrayList<>(captured)));
+          foundNext = true;
+          captured.add(enemyIndex);
+          path.add(next);
+
+          dfsChecker(next, isWhite, path, captured, results, captureCount + 1);
+
+          path.remove(path.size() - 1);
+          captured.remove(enemyIndex);
+
+          pos = next;
         }
+      }
     }
 
-
-
-
-    /*
-          Classes internes
-    */
-    private static class CapturePath {
-        List<Integer> path;
-        List<Integer> captured;
-        int captures;
-
-        CapturePath(List<Integer> path, List<Integer> captured) {
-            this.path = new ArrayList<>(path);
-            this.captured = new ArrayList<>(captured);
-            this.captures = captured.size();
-        }
+    if (!foundNext && captureCount > 0) {
+      results.add(new CapturePath(path, new ArrayList<>(captured)));
     }
+  }
 
-    /*
-            Traduction des d'uen case en index ou inverse
-    */
-    public String indexToSquare(int index) {
-        int row = index / (sizeBoard / 2);
-        int col = (index % (sizeBoard / 2)) * 2 + (row % 2 == 0 ? 0 : 1);
+  // ---------------------------------------------------------------------------
+  //  Internal value type
+  // ---------------------------------------------------------------------------
 
-        char rowChar = (char) ('A' + row);
-        return "" + rowChar + (col + 1);
-    }
+  /**
+   * Immutable value object that records a single complete capture sequence.
+   *
+   * <p>Used internally by the DFS capture-generation methods before being converted into
+   * {@link Move} objects.
+   */
+  private static class CapturePath {
 
-    public int squareToIndex(String square) {
-        char rowChar = Character.toUpperCase(square.charAt(0));
-        int row = rowChar - 'A';
-        int col = Integer.parseInt(square.substring(1)) - 1;
+    /** Sequence of bit indices from the origin to the final landing square. */
+    final List<Integer> path;
 
-        // Vérifier que c'est une case noire
-        if ((row + col) % 2 != 0) {
-            throw new IllegalArgumentException("Case blanche invalide: " + square);
-        }
+    /** Bit indices of every enemy piece captured along this path. */
+    final List<Integer> captured;
 
-        return (row * sizeBoard + col)/2;
-    }
+    /** Number of captures in this path (equals {@code captured.size()}). */
+    final int captures;
 
-    /*
-          Affichages String
+    /**
+     * Constructs a {@code CapturePath} with defensive copies of both lists.
+     *
+     * @param path     sequence of bit indices (origin → intermediate squares → destination)
+     * @param captured set of captured enemy bit indices
      */
-    public String diagsToString() {
-        StringBuilder sb = new StringBuilder();
+    CapturePath(List<Integer> path, List<Integer> captured) {
+      this.path = new ArrayList<>(path);
+      this.captured = new ArrayList<>(captured);
+      this.captures = captured.size();
+    }
+  }
 
-        sb.append("Diagonales (lignes paires) :\n");
-        for (Map.Entry<String, Integer> entry : diagsPair.entrySet()) {
-            sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
+  // ---------------------------------------------------------------------------
+  //  Coordinate conversion utilities
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Converts a bit index to its algebraic square name (e.g. {@code 0} → {@code "A1"}).
+   *
+   * @param index bit index in the range {@code [0, indexMax)}
+   * @return algebraic name such as {@code "A1"} or {@code "H8"}
+   */
+  public String indexToSquare(int index) {
+    int row = index / (sizeBoard / 2);
+    int col = (index % (sizeBoard / 2)) * 2 + (row % 2 == 0 ? 0 : 1);
+    char rowChar = (char) ('A' + row);
+    return "" + rowChar + (col + 1);
+  }
+
+  /**
+   * Converts an algebraic square name to its bit index.
+   *
+   * @param square algebraic name such as {@code "A1"}; row is a letter, column is a number
+   * @return bit index in the range {@code [0, indexMax)}
+   * @throws IllegalArgumentException if the square is outside the board or is a light square
+   */
+  public int squareToIndex(String square) {
+    char rowChar = Character.toUpperCase(square.charAt(0));
+    int row = rowChar - 'A';
+    int col = Integer.parseInt(square.substring(1)) - 1;
+
+    if (row < 0 || row >= this.sizeBoard || col < 0 || col >= this.sizeBoard) {
+      throw new IllegalArgumentException("Index hors limites");
+    }
+    if ((row + col) % 2 != 0) {
+      throw new IllegalArgumentException("Case blanche invalide: " + square);
+    }
+    return (row * sizeBoard + col) / 2;
+  }
+
+  /**
+   * Maps a {@code (row, col)} board position to its bit index, or {@code -1} for light squares.
+   *
+   * @param row zero-based row index (0 = bottom row 'A')
+   * @param col zero-based column index (0 = leftmost column)
+   * @return bit index, or {@code -1} when the square is not playable
+   */
+  private int boardToBitIndex(int row, int col) {
+    if ((row + col) % 2 != 0) {
+      return -1; // light square, not stored
+    }
+    int blackBeforeRow = row * (sizeBoard / 2);
+    int blackInRow = col / 2;
+    return blackBeforeRow + blackInRow;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Display
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns a human-readable ASCII representation of the board, with row letters on the left
+   * and column numbers along the bottom.
+   *
+   * <p>Piece symbols: {@code w} = white pawn, {@code W} = white checker, {@code b} = black
+   * pawn, {@code B} = black checker, {@code _} = empty or light square.
+   *
+   * @return multi-line string depicting the current board state
+   */
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("\n");
+
+    for (int row = sizeBoard - 1; row >= 0; row--) {
+      char rowChar = (char) ('A' + row);
+      sb.append(rowChar).append("  ");
+
+      for (int col = 0; col < sizeBoard; col++) {
+        int bitIndex = boardToBitIndex(row, col);
+
+        if (bitIndex == -1) {
+          sb.append("_  ");
+        } else if (isBitWhitePawn(bitIndex)) {
+          sb.append("w  ");
+        } else if (isBitWhiteChecker(bitIndex)) {
+          sb.append("W  ");
+        } else if (isBitBlackPawn(bitIndex)) {
+          sb.append("b  ");
+        } else if (isBitBlackChecker(bitIndex)) {
+          sb.append("B  ");
+        } else {
+          sb.append("_  ");
         }
-
-        sb.append("\n");
-
-        sb.append("Diagonales (lignes impaires) :\n");
-        for (Map.Entry<String, Integer> entry : diagsUnpair.entrySet()) {
-            sb.append("  ").append(entry.getKey()).append(" -> ").append(entry.getValue()).append("\n");
-        }
-
-        return sb.toString();
+      }
+      sb.append("\n");
     }
 
-    private int boardToBitIndex(int row, int col) {
-        // A1 (0,0) doit être NOIRE
-        if ((row + col) % 2 != 0) {
-            return -1; // case blanche, non stockée
-        }
-
-        int blackBeforeRow = row * (sizeBoard / 2);
-        int blackInRow = col / 2;
-
-        return blackBeforeRow + blackInRow;
+    sb.append("  ");
+    for (int col = 1; col <= sizeBoard; col++) {
+      sb.append(String.format("%2d ", col));
     }
+    sb.append("\n");
 
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n");
+    return sb.toString();
+  }
 
-        // Affichage des lignes de haut en bas (L -> A)
-        for (int row = sizeBoard - 1; row >= 0; row--) {
+  /**
+  * FOR TESTING PURPOSES ONLY.
+  */
 
-            // Lettre de ligne (A en bas)
-            char rowChar = (char) ('A' + row);
-            sb.append(rowChar).append("  ");
+  /**
+   * Promotes the pawn on the named square to a checker (king).
+   *
+   * @param square algebraic square name of the pawn to promote
+   * @throws IllegalArgumentException if the square is out of bounds or contains no pawn
+   */
+  void promote(String square) {
+    promoteBit(squareToIndex(square));
+  }
 
-            for (int col = 0; col < sizeBoard; col++) {
-                int bitIndex = boardToBitIndex(row, col);
+  /**
+   * Applies a simple move from one square to another.
+   *
+   * <p>This helper method converts board coordinates (e.g. "C3", "D4")
+   * into internal indices and applies the move.
+   *
+   * <p>Mainly intended for testing purposes. No move legality is checked.
+   *
+   * @param from source square (e.g. "C3")
+   * @param to   destination square (e.g. "D4")
+   */
+  void move(String from, String to) {
+    int f = squareToIndex(from);
+    int t = squareToIndex(to);
+    Move m = new Move(f,t);
+    applyMove(m);
+  }
 
-                if (bitIndex == -1) {
-                    sb.append("_  "); // case blanche
-                } else if (isBitWhitePawn(bitIndex)) {
-                    sb.append("w  ");
-                } else if (isBitWhiteChecker(bitIndex)) {
-                    sb.append("W  ");
-                } else if (isBitBlackPawn(bitIndex)) {
-                    sb.append("b  ");
-                } else if (isBitBlackChecker(bitIndex)) {
-                    sb.append("B  ");
-                } else {
-                    sb.append("_  "); // case noire vide
-                }
-            }
-            sb.append("\n");
-        }
+  /**
+   * Removes any piece (white/black, pawn/checker) from the given square.
+   * Intended for testing setup.
+   */
+  void remove(String from) {
+      int f = squareToIndex(from);
+      removeBlackChecker(f);
+      removeBlackPawn(f);
+      removeWhiteChecker(f);
+      removeWhitePawn(f);
+  }
 
-        // En-tête colonnes (1..size)
-        sb.append("  ");
-        for (int col = 1; col <= sizeBoard; col++) {
-            sb.append(String.format("%2d ", col));
-        }
-        sb.append("\n");
+  /**
+   * Adds a white pawn on the given square.
+   * Testing helper.
+   */
+  void addWhite(String square) {
+      int f = squareToIndex(square);
+      addWhitePawn(f);
+  }
 
-        return sb.toString();
-    }
+  /**
+   * Adds a black pawn on the given square.
+   * Testing helper.
+   */
+  void addBlack(String square) {
+      int f = squareToIndex(square);
+      addBlackPawn(f);
+  }
 
-
+  /**
+   * Returns the list of simple target squares for a checker on a given square.
+   *
+   * <p>This method converts the board coordinate (e.g., "C3") to an internal index
+   * and delegates to {@link #checkerSimpleTargets(int)} to compute the targets.
+   *
+   * @param square the source square in standard notation (e.g., "C3")
+   * @return a list of target indices where the checker can move without capturing
+   */
+  List<Integer> checkerSimpleTarg(String square) {
+    return checkerSimpleTargets(squareToIndex(square));
+  }
 }
-
-

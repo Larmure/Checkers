@@ -1,31 +1,35 @@
 package fr.ubordeaux.pdp;
 
-import java.io.FileInputStream;
+import fr.ubordeaux.pdp.model.Utils;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Properties;
+import java.util.List;
 
 /**
  * Manages the configuration file for the Checkers game.
- * Handles loading, creating default settings, and retrieving properties.
- * The configuration is stored in a file named .checkersrc in the user's home directory.
+ *
+ * Handles the {@code .checkersrc} file located in the user's home directory.
+ * It strictly enforces the presence of a {@code [defaults]} header and provides
+ * fallback mechanisms for invalid or missing keys and values.
+ * 
+ * @version 1.0
  */
 public class ConfigManager {
-
-  /** Name of the configuration file. */
   private static final String CONFIG_FILE = ".checkersrc";
 
-  /** Properties object to store configuration key-value pairs. */
-  private final Properties props = new Properties();
+  private boolean verbose = Utils.DEFAULT_VERBOSE;
+  private boolean blitz = Utils.DEFAULT_BLITZ;
+  private int time = Utils.DEFAULT_TIME;
 
   /**
-   * Loads the configuration from the .checkersrc file in the user's home directory.
-   * If the file does not exist, a default one is created.
-   * If the file is invalid, a warning is displayed and default values are used.
+   * Loads configuration settings from the {@code .checkersrc} file.
+   *
+   * If the file does not exist, a default one is created. If the file is 
+   * corrupted (missing header), it is reset. For specific invalid values, 
+   * it logs a warning and uses safe defaults from {@link Utils}.
    */
   public void load() {
     Path configPath = Paths.get(System.getProperty("user.home"), CONFIG_FILE);
@@ -34,48 +38,96 @@ public class ConfigManager {
       createDefaultConfig(configPath);
     }
 
-    InputStream input = null;
     try {
-      input = new FileInputStream(configPath.toFile());
-      props.load(input);
-    } catch (IOException e) {
-      System.err.println("Warning: Configuration file is invalid.");
-    } finally {
-      if (input != null) {
-        try {
-          input.close();
-        } catch (IOException ex) {
-          // Silent catch for closing stream
+      List<String> lines = Files.readAllLines(configPath);
+
+      // Strict validation of the Header on the first line
+      if (lines.isEmpty() || !lines.get(0).trim().equals("[defaults]")) {
+        throw new IOException("Missing [defaults] header.");
+      }
+
+      boolean foundVerbose = false;
+
+      // Iterate through lines after the header
+      for (int i = 1; i < lines.size(); i++) {
+        String line = lines.get(i).trim();
+
+        // Skip empty lines or comments
+        if (line.isEmpty() || line.startsWith("#")) {
+          continue;
+        }
+
+        // Split the line at the first '=' sign
+        String[] parts = line.split("=", 2);
+        if (parts.length < 2) {
+          continue;
+        }
+
+        String key = parts[0].trim();
+        String value = parts[1].trim();
+
+        switch (key) {
+          case "verbose":
+            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+              this.verbose = Boolean.parseBoolean(value);
+              foundVerbose = true;
+            } else {
+              System.err.println("Warning: Invalid value for 'verbose': " + value);
+              this.verbose = Utils.DEFAULT_VERBOSE;
+            }
+            break;
+
+          case "blitz":
+            // F5 implementation: this.blitz = Boolean.parseBoolean(value);
+            break;
+
+          case "timeout":
+            // F5 implementation: this.time = Integer.parseInt(value);
+            break;
+
+          default:
+            System.err.println("Warning: Unknown key in .checkersrc: '" + key);
+            break;
         }
       }
+
+      // Check if keys were found
+      if (!foundVerbose) {
+        System.err.println("Note: 'verbose' key not found. Using default: " + Utils.DEFAULT_VERBOSE);
+        this.verbose = Utils.DEFAULT_VERBOSE;
+      }
+
+    } catch (Exception e) {
+      System.err.println("Warning: Configuration file is invalid (" + e.getMessage() + ").");
+      System.err.println("Resetting to default configuration...");
+      createDefaultConfig(configPath);
+      this.verbose = Utils.DEFAULT_VERBOSE;
     }
   }
 
   /**
-   * Creates a default configuration file with initial settings.
+   * Creates a default {@code .checkersrc} file with predefined values from {@link Utils}.
    *
    * @param path The path where the configuration file should be created.
    */
   private void createDefaultConfig(Path path) {
     try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
       writer.println("[defaults]");
-      writer.println("verbose = false");
-      writer.println("blitz = false");
-      writer.println("timeout = 30");
-      System.out.println("Default configuration created in: " + path.toString());
+      writer.println("verbose = " + Utils.DEFAULT_VERBOSE);
+      writer.println("blitz = " + Utils.DEFAULT_BLITZ);
+      writer.println("timeout = " + Utils.DEFAULT_TIME);
+      System.out.println("Default configuration file created successfully in : "+ path.toString());
     } catch (IOException e) {
-      System.err.println("Error creating default configuration: " + e.getMessage());
+      System.err.println("Critical Error: Could not create configuration file.");
     }
   }
 
   /**
-   * Retrieves a configuration property by its key.
+   * Checks if verbose mode is enabled.
    *
-   * @param key The configuration key to look for.
-   * @param defaultValue The value to return if the key is not found.
-   * @return The value associated with the key, or the default value.
+   * @return true if verbose mode is active, false otherwise.
    */
-  public String getProperty(String key, String defaultValue) {
-    return props.getProperty(key, defaultValue);
+  public boolean isVerbose() {
+    return this.verbose;
   }
 }

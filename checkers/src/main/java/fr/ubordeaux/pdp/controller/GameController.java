@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.controller;
 
 import fr.ubordeaux.pdp.model.GameCheckers;
+import fr.ubordeaux.pdp.model.Move;
 import fr.ubordeaux.pdp.view.GameView;
 
 
@@ -29,6 +30,7 @@ public class GameController {
   public GameController(GameCheckers game, GameView view) {
     this.view = view;
     this.game = game;
+    game.addObserver(view);
   }
 
   /**
@@ -81,11 +83,38 @@ public class GameController {
    * @param size    The board dimension (standard is 8).
    */
   public void startNewGame(boolean blitz, boolean contest, int time, int size) {
-    System.out.println("Initializing new game with options: " 
-        + (blitz ? "Blitz " : "") 
-        + (contest ? "Contest " : "") 
-        + (time > 0 ? "Time=" + time + "min " : "") 
-        + (size != 8 ? "Size=" + size : ""));
+    // System.out.println("Initializing new game with options: " 
+    //     + (blitz ? "Blitz " : "") 
+    //     + (contest ? "Contest " : "") 
+    //     + (time > 0 ? "Time=" + time + "s " : "") 
+    //     + (size != 8 ? "Size=" + size : ""));
+
+      loopGame();
   }
 
+  /**
+   * Orchestrates the main game execution cycle.
+   * <p>This method runs the loop that alternates between rendering the view,
+   * capturing user input, and updating the model. It continues until the game state
+   * transitions to a "Game Over" condition or the user explicitly quits.
+   */
+  public void loopGame() {
+    view.display(game);
+
+    while (!game.getState().isGameOver()) {
+      Move move = view.getUserMove(game);
+      
+      if (move == null) {
+        break;
+      }
+
+      game.applyMove(move);
+
+      // Transition the state if the move resulted in a win/loss (e.g., no moves left).
+      game.setState(game.checkGameOver()); 
+    }
+    
+    // Delegate the final action (e.g., victory message) to the terminal state.
+    game.getState().handle(); 
+  } 
 }

@@ -1,4 +1,4 @@
-package fr.u_bordeaux.pdp.model;
+package fr.ubordeaux.pdp.model;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
