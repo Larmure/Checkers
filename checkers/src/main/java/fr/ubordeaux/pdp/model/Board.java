@@ -1044,6 +1044,159 @@ public class Board {
     return sb.toString();
   }
 
+  public int evaluateSimple() {
+
+    int score = 0;
+
+    int pawn = 100;
+    int checker = 350;
+
+    for (int i = 0; i < indexMax; i++) {
+
+      // ---- Blanc ----
+      if (isBitWhitePawn(i)) {
+        score += pawn;
+      }
+
+      if (isBitWhiteChecker(i)) {
+        score += checker;
+      }
+
+      // ---- Noir ----
+      if (isBitBlackPawn(i)) {
+        score -= pawn;
+      }
+
+      if (isBitBlackChecker(i)) {
+          score -= checker;
+        }
+    }
+
+    return score;
+  }
+
+  public int evaluateAdvanced() {
+
+    int score = 0;
+
+    int pawn = 100;
+    int checker = 350;
+    int avancement = 8;
+
+    int half = sizeBoard / 2;
+
+    for (int i = 0; i < indexMax; i++) {
+
+        int row = i / half;
+
+        // ---- Blanc ----
+        if (isBitWhitePawn(i)) {
+          score += pawn;
+
+          // Bonus d'avancement (plus il monte, mieux c'est)
+          score += row * avancement;
+        }
+
+        if (isBitWhiteChecker(i)) {
+          score += checker;
+        }
+
+        // ---- Noir ----
+        if (isBitBlackPawn(i)) {
+          score -= pawn;
+
+          // Bonus d'avancement noir (plus il descend, mieux c'est)
+          score -= (sizeBoard - 1 - row) * avancement;
+        }
+
+        if (isBitBlackChecker(i)) {
+            score -= checker;
+        }
+    }
+
+    return score;
+  }
+
+  /**
+   * Evaluates the current board position.
+   *
+   * <p>A positive score indicates an advantage for white.
+   * A negative score indicates an advantage for black.
+   *
+   * <p>The evaluation is based on:
+   * <ul>
+   *   <li>Material balance (pawns and checkers)</li>
+   *   <li>Pawn advancement</li>
+   *   <li>Center control</li>
+   *   <li>Mobility (number of legal moves)</li>
+   * </ul>
+   *
+   * @return evaluation score from white's perspective
+   */
+  public int evaluateMax() {
+
+    int score = 0;
+
+    int pawn = 100;
+    int checker = 350;
+    int mobility = 5;
+    int center = 15;
+    int avancement = 8;
+
+    int half = sizeBoard / 2;
+
+    for (int i = 0; i < indexMax; i++) {
+
+        int row = i / half;
+
+        // ---- Blanc ----
+        if (isBitWhitePawn(i)) {
+          score += pawn;
+
+          // Bonus d'avancement (plus il monte, mieux c'est)
+          score += row * avancement;
+        }
+
+        if (isBitWhiteChecker(i)) {
+          score += checker;
+        }
+
+        // ---- Noir ----
+        if (isBitBlackPawn(i)) {
+          score -= pawn;
+
+          // Bonus d'avancement noir (plus il descend, mieux c'est)
+          score -= (sizeBoard - 1 - row) * avancement;
+        }
+
+        if (isBitBlackChecker(i)) {
+            score -= checker;
+        }
+
+        // ---- Bonus centre ----
+        int col = (i % half) * 2 + (row % 2 == 0 ? 0 : 1);
+
+        boolean inCenter =
+          row >= sizeBoard / 2 - 2 && row <= sizeBoard / 2 + 1
+          && col >= sizeBoard / 2 - 2 && col <= sizeBoard / 2 + 1;
+
+        if (inCenter) {
+            if (isBitWhitePawn(i) || isBitWhiteChecker(i)) {
+                score += center;
+            }
+            if (isBitBlackPawn(i) || isBitBlackChecker(i)) {
+                score -= center;
+            }
+        }
+    }
+
+    // ---- Mobilité ----
+    score += getWhiteValidMoves().size() * mobility;
+    score -= getBlackValidMoves().size() * mobility;
+
+    return score;
+}
+
   /**
   * FOR TESTING PURPOSES ONLY.
   */
