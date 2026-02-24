@@ -23,13 +23,13 @@ public class ShowCommand implements Command, Helpable {
       System.out.println(getHelp());
       return;
     }
-    
+
     switch (args[0]) {
       case "board" -> controller.displayBoard();
-      case "history" -> throw new IllegalArgumentException("show history not implemented yet");
-      case "time" -> throw new IllegalArgumentException("show time not implemented yet");
+      case "history" -> throw new IllegalArgumentException("show history not implemented yet.");
+      case "time" -> throw new IllegalArgumentException("show time not implemented yet.");
       case "configuration" -> controller.displayGameOptions();
-      default -> throw new AssertionError();
+      default -> System.out.println(args[0] + " is not a valid option.\nOnly board | history | time | configuration are accepted.");
     }
   }
 

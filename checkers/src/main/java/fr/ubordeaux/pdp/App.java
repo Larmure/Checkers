@@ -94,6 +94,11 @@ public class App {
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
+    blitz = configManager.isBlitz();     
+    time = configManager.getTime();      
+    contest = configManager.isContest(); 
+    size = configManager.getSize();
+    debug = configManager.isDebug();
     // Options definition
     Options options = new Options();
     options.addOption("h", "help", false, "display help");
