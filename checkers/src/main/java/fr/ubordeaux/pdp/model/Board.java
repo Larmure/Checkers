@@ -1068,8 +1068,8 @@ public class Board {
       }
 
       if (isBitBlackChecker(i)) {
-          score -= checker;
-        }
+        score -= checker;
+      }
     }
 
     return score;
@@ -1087,31 +1087,31 @@ public class Board {
 
     for (int i = 0; i < indexMax; i++) {
 
-        int row = i / half;
+      int row = i / half;
 
-        // ---- Blanc ----
-        if (isBitWhitePawn(i)) {
-          score += pawn;
+      // ---- Blanc ----
+      if (isBitWhitePawn(i)) {
+        score += pawn;
 
-          // Bonus d'avancement (plus il monte, mieux c'est)
-          score += row * avancement;
-        }
+        // Bonus d'avancement (plus il monte, mieux c'est)
+        score += row * avancement;
+      }
 
-        if (isBitWhiteChecker(i)) {
-          score += checker;
-        }
+      if (isBitWhiteChecker(i)) {
+        score += checker;
+      }
 
-        // ---- Noir ----
-        if (isBitBlackPawn(i)) {
-          score -= pawn;
+      // ---- Noir ----
+      if (isBitBlackPawn(i)) {
+        score -= pawn;
 
-          // Bonus d'avancement noir (plus il descend, mieux c'est)
-          score -= (sizeBoard - 1 - row) * avancement;
-        }
+        // Bonus d'avancement noir (plus il descend, mieux c'est)
+        score -= (sizeBoard - 1 - row) * avancement;
+      }
 
-        if (isBitBlackChecker(i)) {
-            score -= checker;
-        }
+      if (isBitBlackChecker(i)) {
+        score -= checker;
+      }
     }
 
     return score;
@@ -1147,47 +1147,47 @@ public class Board {
 
     for (int i = 0; i < indexMax; i++) {
 
-        int row = i / half;
+      int row = i / half;
 
-        // ---- Blanc ----
-        if (isBitWhitePawn(i)) {
-          score += pawn;
+      // ---- Blanc ----
+      if (isBitWhitePawn(i)) {
+        score += pawn;
 
-          // Bonus d'avancement (plus il monte, mieux c'est)
-          score += row * avancement;
+        // Bonus d'avancement (plus il monte, mieux c'est)
+        score += row * avancement;
+      }
+
+      if (isBitWhiteChecker(i)) {
+        score += checker;
+      }
+
+      // ---- Noir ----
+      if (isBitBlackPawn(i)) {
+        score -= pawn;
+
+        // Bonus d'avancement noir (plus il descend, mieux c'est)
+        score -= (sizeBoard - 1 - row) * avancement;
+      }
+
+      if (isBitBlackChecker(i)) {
+        score -= checker;
+      }
+
+      // ---- Bonus centre ----
+      int col = (i % half) * 2 + (row % 2 == 0 ? 0 : 1);
+
+      boolean inCenter =
+        row >= sizeBoard / 2 - 2 && row <= sizeBoard / 2 + 1
+        && col >= sizeBoard / 2 - 2 && col <= sizeBoard / 2 + 1;
+
+      if (inCenter) {
+        if (isBitWhitePawn(i) || isBitWhiteChecker(i)) {
+          score += center;
         }
-
-        if (isBitWhiteChecker(i)) {
-          score += checker;
+        if (isBitBlackPawn(i) || isBitBlackChecker(i)) {
+          score -= center;
         }
-
-        // ---- Noir ----
-        if (isBitBlackPawn(i)) {
-          score -= pawn;
-
-          // Bonus d'avancement noir (plus il descend, mieux c'est)
-          score -= (sizeBoard - 1 - row) * avancement;
-        }
-
-        if (isBitBlackChecker(i)) {
-            score -= checker;
-        }
-
-        // ---- Bonus centre ----
-        int col = (i % half) * 2 + (row % 2 == 0 ? 0 : 1);
-
-        boolean inCenter =
-          row >= sizeBoard / 2 - 2 && row <= sizeBoard / 2 + 1
-          && col >= sizeBoard / 2 - 2 && col <= sizeBoard / 2 + 1;
-
-        if (inCenter) {
-            if (isBitWhitePawn(i) || isBitWhiteChecker(i)) {
-                score += center;
-            }
-            if (isBitBlackPawn(i) || isBitBlackChecker(i)) {
-                score -= center;
-            }
-        }
+      }
     }
 
     // ---- Mobilité ----
