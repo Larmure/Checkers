@@ -10,7 +10,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameOption;
+import fr.ubordeaux.pdp.model.Configuration;
 import fr.ubordeaux.pdp.model.Utils;
 
 /**
@@ -57,7 +57,7 @@ public class NewCommand implements Command, Helpable {
       int blitzTime = Integer.parseInt(tValue);
       String sValue = cmd.getOptionValue("s");
       int size = Integer.parseInt(sValue);
-      controller.startNewGame(new GameOption(hasBlitz, blitzTime, hasContest, size));
+      controller.startNewGame(new Configuration(hasBlitz, blitzTime, hasContest, size, controller.isVerbose(), controller.isDebug()));
     } catch (ParseException | NumberFormatException e) {
       System.out.println("Invalid command syntax: " + e.getMessage());
     }

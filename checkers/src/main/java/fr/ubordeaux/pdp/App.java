@@ -10,7 +10,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameOption;
+import fr.ubordeaux.pdp.model.Configuration;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 
@@ -71,7 +71,7 @@ public class App {
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
-    controller.startNewGame(new GameOption(blitz, time, contest, size));
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug));
     controller.start(); 
     try {
         ((CommandLineInterface) view).join();

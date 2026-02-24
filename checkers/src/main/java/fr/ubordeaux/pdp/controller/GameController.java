@@ -1,7 +1,7 @@
 package fr.ubordeaux.pdp.controller;
 
 import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.GameOption;
+import fr.ubordeaux.pdp.model.Configuration;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.controller.commands.*;
 
@@ -22,7 +22,7 @@ public class GameController {
   /** The core game engine containing rules and board state. */
   private GameCheckers game;
 
-  private GameOption gameOptions;
+  private Configuration configuration;
 
   /**
    * Initializes the controller with the required model and view components.
@@ -62,7 +62,7 @@ public class GameController {
       case "undo" -> new UndoCommand();
       case "redo" -> new RedoCommand();
       case "show" -> new ShowCommand(this, args);
-      case "set" -> new SetCommand();
+      case "set" -> new SetCommand(this, args);
       default -> {
         System.out.println("Unknown command: " 
             + commandName);
@@ -83,10 +83,10 @@ public class GameController {
    * @param time    The time limit per player in seconds (0 for no limit).
    * @param size    The board dimension (standard is 8).
    */
-  public void startNewGame(GameOption gameOption) {
-    System.out.println("Initializing new game with options: " + gameOption); 
-    this.game = new GameCheckers(gameOption);
-    this.gameOptions =  new GameOption(gameOption);
+  public void startNewGame(Configuration configuration) {
+    System.out.println("Initializing new game with options: " + configuration); 
+    this.game = new GameCheckers(configuration);
+    this.configuration =  new Configuration(configuration);
     game.addObserver(view);
     view.display(game);
   }
@@ -104,7 +104,23 @@ public class GameController {
     view.display(game);
   }
 
-  public void displayGameOptions() {
-    System.out.println(gameOptions);
+  public void displayConfiguration() {
+    System.out.println(configuration);
+  }
+  
+  public boolean isVerbose() {
+    return configuration.isVerbose();
+  }
+
+  public boolean isDebug() {
+    return configuration.isDebug();
+  }
+
+  public void setDebug(boolean debug) {
+    this.configuration = new Configuration(configuration, isVerbose(), debug);
+  }
+
+  public void setVerbose(boolean verbose) {
+    this.configuration = new Configuration(configuration, verbose, isDebug());
   }
 }

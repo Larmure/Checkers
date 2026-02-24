@@ -28,7 +28,7 @@ public class ShowCommand implements Command, Helpable {
       case "board" -> controller.displayBoard();
       case "history" -> throw new IllegalArgumentException("show history not implemented yet.");
       case "time" -> throw new IllegalArgumentException("show time not implemented yet.");
-      case "configuration" -> controller.displayGameOptions();
+      case "configuration" -> controller.displayConfiguration();
       default -> System.out.println(args[0] + " is not a valid option.\nOnly board | history | time | configuration are accepted.");
     }
   }

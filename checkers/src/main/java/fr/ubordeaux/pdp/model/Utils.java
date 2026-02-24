@@ -42,8 +42,8 @@ public class Utils {
       Map.entry("hint", new HintCommand()),
       Map.entry("undo", new UndoCommand()),
       Map.entry("redo", new RedoCommand()),
-      Map.entry("show", new ShowCommand(null,null)),
-      Map.entry("set", new SetCommand())
+      Map.entry("show", new ShowCommand(null, null)),
+      Map.entry("set", new SetCommand(null, null))
     );
 
   /**
