@@ -71,8 +71,13 @@ public class App {
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
-    controller.start(); 
     controller.startNewGame(new GameOption(blitz, time, contest, size));
+    controller.start(); 
+    try {
+        ((CommandLineInterface) view).join();
+    } catch (InterruptedException ex) {
+        System.exit(0);
+    }
   }
 
   /**

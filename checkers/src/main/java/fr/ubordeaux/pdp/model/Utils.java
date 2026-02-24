@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 import fr.ubordeaux.pdp.controller.*;
+import fr.ubordeaux.pdp.controller.commands.*;
 
 /**
  * Global utility class containing game constants and the command registry.
@@ -41,7 +42,7 @@ public class Utils {
       Map.entry("hint", new HintCommand()),
       Map.entry("undo", new UndoCommand()),
       Map.entry("redo", new RedoCommand()),
-      Map.entry("show", new ShowCommand()),
+      Map.entry("show", new ShowCommand(null,null)),
       Map.entry("set", new SetCommand())
     );
 

@@ -3,8 +3,7 @@ package fr.ubordeaux.pdp.controller;
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.GameOption;
 import fr.ubordeaux.pdp.view.GameView;
-import fr.ubordeaux.pdp.model.Utils;
-import jdk.jshell.execution.Util;
+import fr.ubordeaux.pdp.controller.commands.*;
 
 
 /**
@@ -23,6 +22,8 @@ public class GameController {
   /** The core game engine containing rules and board state. */
   private GameCheckers game;
 
+  private GameOption gameOptions;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -39,8 +40,6 @@ public class GameController {
   public void start() {
     view.setController(this);
     view.start();
-
-
   }
 
   /**
@@ -62,7 +61,7 @@ public class GameController {
       case "hint" -> new HintCommand();
       case "undo" -> new UndoCommand();
       case "redo" -> new RedoCommand();
-      case "show" -> new ShowCommand();
+      case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand();
       default -> {
         System.out.println("Unknown command: " 
@@ -86,10 +85,9 @@ public class GameController {
    */
   public void startNewGame(GameOption gameOption) {
     System.out.println("Initializing new game with options: " + gameOption); 
-
     this.game = new GameCheckers(gameOption);
+    this.gameOptions =  new GameOption(gameOption);
     game.addObserver(view);
-
     view.display(game);
   }
 
@@ -100,5 +98,13 @@ public class GameController {
     view.display(game);
 
     if(game.getState().isGameOver()) game.setState(game.checkGameOver()); 
+  }
+
+  public void displayBoard() {
+    view.display(game);
+  }
+
+  public void displayGameOptions() {
+    System.out.println(gameOptions);
   }
 }

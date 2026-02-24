@@ -24,6 +24,13 @@ public class GameOption {
     this.size = size;
   }
 
+  public GameOption(GameOption other) {
+    this.blitz = other.blitz;
+    this.time = other.time;
+    this.contest = other.contest;
+    this.size = other.size;
+  }
+
   public boolean isBlitz() { 
     return blitz;
   }

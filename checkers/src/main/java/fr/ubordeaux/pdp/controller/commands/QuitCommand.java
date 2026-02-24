@@ -1,4 +1,7 @@
-package fr.ubordeaux.pdp.controller;
+package fr.ubordeaux.pdp.controller.commands;
+
+import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.Helpable;
 
 /**
  * Concrete implementation of {@link Command} used to terminate the application.

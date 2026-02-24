@@ -1,4 +1,7 @@
-package fr.ubordeaux.pdp.controller;
+package fr.ubordeaux.pdp.controller.commands;
+
+import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.Helpable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -6,6 +9,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameOption;
 import fr.ubordeaux.pdp.model.Utils;
 

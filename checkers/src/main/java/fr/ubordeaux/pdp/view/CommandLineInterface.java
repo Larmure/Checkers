@@ -16,6 +16,8 @@ import fr.ubordeaux.pdp.model.Utils;
  */
 public class CommandLineInterface extends GameView {
 
+  private Thread inputThread;
+
   /** Flag to enable verbose. */
   private boolean verbose = false;
 
@@ -66,8 +68,7 @@ public class CommandLineInterface extends GameView {
    */
   @Override
   public void start() {
-    Thread inputThread = new Thread(() -> {
-
+    inputThread = new Thread(() -> {
       if (verbose) {
         System.out.println("[Info] CLI mode started with verbose output.");
       }
@@ -103,7 +104,6 @@ public class CommandLineInterface extends GameView {
           } else {
             String commandName = tokens[0];     
             String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-
             controller.executeCommand(commandName, args);
           }
 
@@ -112,7 +112,6 @@ public class CommandLineInterface extends GameView {
         }
       }
     });
-    inputThread.setDaemon(true);
     inputThread.start();
   }
 
@@ -124,6 +123,10 @@ public class CommandLineInterface extends GameView {
   @Override
   public void setController(GameController controller) {
     this.controller = controller;
+  }
+
+  public void join() throws InterruptedException {
+    if (inputThread != null) inputThread.join();
   }
 
 }
