@@ -22,7 +22,7 @@ public class Utils {
   public static final int DEFAULT_TIME = 30;
   public static final boolean DEFAULT_CONTEST = false;
 
-  public static final String MOVE_REGEX = "^[a-zA-Z]\\d\\s[a-zA-Z]\\d$";
+  public static final String MOVE_REGEX = "^[a-zA-Z]\\d{1,2}\\s[a-zA-Z]\\d{1,2}$";
 
   /** Set of board sizes accepted by the constructor. */
   public static final Set<Integer> VALID_SIZES = Set.of(8, 10, 12);

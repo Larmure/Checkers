@@ -1,4 +1,5 @@
-package fr.ubordeaux.pdp.controller;
+
+   package fr.ubordeaux.pdp.controller;
 
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Configuration;
@@ -88,6 +89,18 @@ public class GameController {
     this.game = new GameCheckers(configuration);
     this.configuration =  new Configuration(configuration);
     game.addObserver(view);
+
+    System.out.println("");
+    System.out.println("RULES:");
+    System.out.println("- The board is 8x8. Each player starts with 12 pieces on the dark squares.");
+    System.out.println("- Pieces move diagonally forward, one square at a time.");
+    System.out.println("- To capture an opponent's piece, jump over it diagonally to the empty square behind it.");
+    System.out.println("- If you can capture, you must. You can chain multiple captures in one turn.");
+    System.out.println("- Reach the opponent's back row to become a King (moves diagonally in all directions).");
+    System.out.println("- The player who captures all opponent's pieces (or blocks them) wins.");
+    System.out.println("");
+    System.out.println("To apply movements, enter for example: E1 F2");
+
     view.display(game);
   }
 
