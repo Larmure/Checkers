@@ -1,4 +1,7 @@
-package fr.ubordeaux.pdp.controller;
+package fr.ubordeaux.pdp.controller.commands;
+
+import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.Helpable;
 
 /**
  * Concrete implementation of {@link Command} used to terminate the application.
@@ -22,6 +25,11 @@ public class QuitCommand implements Command, Helpable {
     System.exit(0);
   }
 
+  /**
+   * Returns the help string for the quit command.
+   *
+   * @return A brief description of the quit functionality.
+   */
   @Override
   public String getHelp() {
     return "quit : exit the program.";

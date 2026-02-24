@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.model;
 
 /**
  * Represents the terminal state of the game.
+ * 
  * <p>In this state, no further moves are allowed, and the game loop is instructed to stop.
  */
 public class FinishedState implements State {

@@ -20,9 +20,6 @@ import java.util.Set;
  */
 public class Board {
 
-  /** Set of board sizes accepted by the constructor. */
-  private static final Set<Integer> VALID_SIZES = Set.of(8, 10, 12);
-
   // ---- Edge masks (one bit per left/right-edge playable square) ----
   private long leftMask1;
   private long leftMask2;
@@ -59,7 +56,7 @@ public class Board {
    * @throws IllegalArgumentException if {@code size} is not one of the valid values
    */
   public Board(int size) {
-    if (!VALID_SIZES.contains(size)) {
+    if (!Utils.VALID_SIZES.contains(size)) {
       throw new IllegalArgumentException("Invalid board size: " + size);
     }
     this.sizeBoard = size;

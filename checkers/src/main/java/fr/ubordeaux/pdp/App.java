@@ -1,15 +1,18 @@
 package fr.ubordeaux.pdp;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.view.CommandLineInterface;
-import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.model.Utils;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.Configuration;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.GameView;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -32,10 +35,20 @@ public class App {
   public static final int EXIT_GUI = 3;
 
   /** Flag to enable verbose. */
-  private static boolean verbose = false;
+  private static boolean verbose = Utils.DEFAULT_VERBOSE;
 
   /** Flag to enable debug mode. */
-  private static boolean debug = false;
+  private static boolean debug = Utils.DEFAULT_DEBUG;
+
+  private static boolean blitz = Utils.DEFAULT_BLITZ;
+
+  private static int time = Utils.DEFAULT_TIME;
+
+  private static boolean contest = Utils.DEFAULT_CONTEST;
+
+  private static int size = Utils.DEFAULT_BOARD_SIZE;
+
+  
 
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
@@ -56,10 +69,15 @@ public class App {
     }
     
     // Status EXIT_SUCCESS means continue execution normally
-    GameCheckers game = new GameCheckers();
     GameView view = new CommandLineInterface(verbose, debug);
-    GameController controller = new GameController(game, view);
-    controller.start();
+    GameController controller = new GameController(view);
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug));
+    controller.start(); 
+    try {
+        ((CommandLineInterface) view).join();
+    } catch (InterruptedException ex) {
+        System.exit(0);
+    }
   }
 
   /**
@@ -76,6 +94,11 @@ public class App {
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
+    blitz = configManager.isBlitz();     
+    time = configManager.getTime();      
+    contest = configManager.isContest(); 
+    size = configManager.getSize();
+    debug = configManager.isDebug();
     // Options definition
     Options options = new Options();
     options.addOption("h", "help", false, "display help");
@@ -85,6 +108,8 @@ public class App {
     options.addOption("b", "blitz", false, "enable blitz mode");
     options.addOption("t", "time", true, "set time limit in minutes");
     options.addOption("g", "gui", false, "launch graphical user interface");
+    options.addOption("c", "contest", true, "enable contest mode");
+    options.addOption("s", "size", true, "set board size (8|10|12)");
 
     CommandLineParser parser = new DefaultParser();
     try {
@@ -106,16 +131,38 @@ public class App {
       }
 
       if (cmd.hasOption("v")) {
+        System.out.println("Verbose mode enabled.");
         verbose = true;
       }
 
       if (cmd.hasOption("d")) {
+        System.out.println("Debug mode enabled.");
         debug = true;
       }
 
       if (cmd.hasOption("g")) {
         System.out.println("Launching Graphical Interface...");
-        return EXIT_GUI;
+        // return EXIT_GUI;
+      }
+      
+      if (cmd.hasOption("b")) {
+        System.out.println("Blitz mode enabled.");
+        blitz = true;
+      }
+
+      if (cmd.hasOption("t")) {
+        time = Integer.parseInt(cmd.getOptionValue("t"));
+        System.out.println("Time limit set to " + time + ".");
+      }
+
+      if (cmd.hasOption("c")) {
+        System.out.println("Contest mode enabled.");
+        contest = true;
+      }
+
+      if (cmd.hasOption("s")) {
+        size = Integer.parseInt(cmd.getOptionValue("s"));
+        System.out.println("Board size : " + size + ".");
       }
 
       System.out.println("Welcome to Checkers!");
