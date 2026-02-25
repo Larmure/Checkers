@@ -101,15 +101,13 @@ public class GameController {
     System.out.println("");
     System.out.println("To apply movements, enter for example: E1 F2");
 
-    view.display(game);
+    displayBoard();
   }
 
   public void executeMove(String from, String to)
   {
     game.applyMove(from, to);
-
-    view.display(game);
-
+    
     if(game.getState().isGameOver()) game.setState(game.checkGameOver()); 
   }
 
