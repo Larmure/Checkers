@@ -52,7 +52,7 @@ public class NewCommand implements Command, Helpable {
       CommandLine cmd = parser.parse(newOptions(), args);
   
     
-      if (args.length != 0) {
+      if (args!=null && args.length != 0) {
         boolean hasBlitz = cmd.hasOption("b");
         boolean hasContest = cmd.hasOption("c");
         String tValue = cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME));

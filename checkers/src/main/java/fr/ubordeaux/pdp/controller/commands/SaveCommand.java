@@ -7,8 +7,8 @@ public class SaveCommand implements Command, Helpable {
 
   @Override
   public void execute() {
-      throw new UnsupportedOperationException("Not supported yet.");
-  }
+      System.out.println("Save: This feature is not implemented yet.");
+}
 
   /**
    * Returns the help string for the save command.

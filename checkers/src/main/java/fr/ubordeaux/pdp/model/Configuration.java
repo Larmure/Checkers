@@ -46,6 +46,10 @@ public class Configuration {
     this.debug = debug;
   }
 
+  public static Configuration getDefaultConfiguration() {
+    return new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE, Utils.DEFAULT_VERBOSE, Utils.DEFAULT_DEBUG);
+  }
+
   public boolean isBlitz() { 
     return blitz;
   }

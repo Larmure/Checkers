@@ -7,7 +7,7 @@ public class LoadCommand implements Command, Helpable {
 
     @Override
     public void execute() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        System.out.println("Load: This feature is not implemented yet.");
     }
 
     /**

@@ -7,7 +7,7 @@ public class PauseCommand implements Command, Helpable {
 
     @Override
     public void execute() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        System.out.println("Pause: This feature is not implemented yet.");
     }
 
     /**

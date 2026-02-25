@@ -64,9 +64,9 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
-    } else if (status == EXIT_GUI) {
+    } //else if (status == EXIT_GUI) {
       //TODO
-    }
+    //}
     
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
@@ -193,6 +193,24 @@ public class App {
   public static boolean isDebug() {
     return debug;
   }
+
+  public static boolean isBlitz() {
+    return blitz;
+  }
+
+  public static int getSize() {
+    return size;
+  }
+
+  public static int getTime() {
+    return time;
+  }
+  
+  public static boolean isContest() {
+    return contest;
+  }
+
+
 
   /**
    * Resets the global state. Essential for isolated unit tests.
