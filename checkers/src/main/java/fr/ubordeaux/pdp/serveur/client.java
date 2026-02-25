@@ -1,4 +1,4 @@
-package fr.u_bordeaux.pdp.serveur;
+package fr.ubordeaux.pdp.serveur;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

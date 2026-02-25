@@ -1,14 +1,12 @@
-package fr.u_bordeaux.pdp.model;
-
-import static org.junit.jupiter.api.Assertions.*;
+package fr.ubordeaux.pdp.model;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
-
-import fr.ubordeaux.pdp.model.BoardSauvegarde;
 public class SauvegardeTest {
     @Test
     void testSaveBoardSize8() throws IOException {

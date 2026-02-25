@@ -4,5 +4,6 @@ target/
 .project
 .settings/
 *.prefs
-.classpath.idea/
+.classpath
+.idea/
 .vscode/
