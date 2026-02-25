@@ -11,6 +11,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
 
@@ -40,6 +41,12 @@ public class App {
   /** Flag to enable debug mode. */
   private static boolean debug = false;
 
+  /** Flag to enable white AI. */
+  private static boolean whiteIsAI = false;
+
+  /** Flag to enable black AI. */
+  private static boolean blackIsAI = false;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -59,7 +66,9 @@ public class App {
     }
     
     // Status EXIT_SUCCESS means continue execution normally
-    GameCheckers game = new GameCheckers();
+    GameCheckers game = new GameCheckers(whiteIsAI, blackIsAI);
+    System.out.println("Player White type: " + game.getWhitePlayer().getClass().getSimpleName());
+    System.out.println("Player Black type: " + game.getBlackPlayer().getClass().getSimpleName());
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(game, view);
     controller.start();
@@ -89,7 +98,14 @@ public class App {
     options.addOption("b", "blitz", false, Internationalization.get("opt.blitz"));
     options.addOption("t", "time", true, Internationalization.get("opt.time"));
     options.addOption("g", "gui", false, Internationalization.get("opt.gui"));
-
+    //options.addOption("a", "ai", true, Internationalization.get("opt.ai"));
+    Option aiOption = Option.builder("a")
+      .longOpt("ai")
+      .desc(Internationalization.get("opt.ai"))
+      .hasArg()
+      .optionalArg(true)
+      .build();
+    options.addOption(aiOption);
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -122,6 +138,22 @@ public class App {
         return EXIT_GUI;
       }
 
+      if (cmd.hasOption("a")) {
+        String color = cmd.getOptionValue("a", "default").toUpperCase();
+        if (color == null) {
+          color = "W";
+        }
+
+        color = color.toUpperCase();
+        if (color.equals("W")) whiteIsAI = true;
+        else if (color.equals("B")) blackIsAI = true;
+        else if (color.equals("A")) {
+          whiteIsAI = true;
+          blackIsAI = true;
+        } else {
+          whiteIsAI = true; 
+        }
+      }
       System.out.println(Internationalization.get("app.welcome"));
       return EXIT_SUCCESS;
 

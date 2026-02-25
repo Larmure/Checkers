@@ -1,0 +1,5 @@
+/.metadata/
+.settings/
+*.prefs
+.classpath
+.project

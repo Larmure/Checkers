@@ -23,14 +23,26 @@ public class GameCheckers implements Subject {
   /**
    * Constructs a new game instance.
    * * <p>Initializes a standard 12x12 board, sets the initial state to {@link InGameState},
-   * creates two human players, and grants the first turn to the white player.
+   * and grants the first turn to the white player.
+   * Player types (Human or AI) are assigned based on the provided flags
+   * 
+   * @param whiteIsAI True if the white player should be controlled by the AI.
+   * @param blackIsAI True if the black player should be controlled by the AI.
    */
-  public GameCheckers() {
+  public GameCheckers(boolean whiteIsAI, boolean blackIsAI) {
     this.board = new Board(12);
     this.isWhiteTurn = true;
     this.state = new InGameState(this);
-    whitePlayer = new HumanPlayer("White Player");
-    blackPlayer = new HumanPlayer("Black Player");
+    if (whiteIsAI == true) {
+      this.whitePlayer = new AIPlayer("White AI");
+    } else {
+      this.whitePlayer = new HumanPlayer("White Player");
+    }
+    if (blackIsAI == true) {
+      this.blackPlayer = new AIPlayer("Black AI");
+    } else {
+      this.blackPlayer = new HumanPlayer("Black Player");
+    }
   }
 
   /**
@@ -150,5 +162,23 @@ public class GameCheckers implements Subject {
         this.observers = new ArrayList<>();
     }
     this.observers.add(observer);
+  }
+
+  /**
+ * Returns the white player instance.
+ *
+ * @return The white player.
+ */
+  public Player getWhitePlayer() {
+    return this.whitePlayer;
+  }
+
+  /**
+   * Returns the black player instance.
+   *
+   * @return The black player.
+   */
+  public Player getBlackPlayer() {
+    return this.blackPlayer;
   }
 }
