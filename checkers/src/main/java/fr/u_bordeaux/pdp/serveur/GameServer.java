@@ -9,7 +9,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import fr.u_bordeaux.pdp.model.CommandProtocol;
+import fr.ubordeaux.pdp.model.CommandProtocol;
 
 
 public class GameServer {

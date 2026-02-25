@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
+
+import fr.ubordeaux.pdp.model.BoardSauvegarde;
 public class SauvegardeTest {
     @Test
     void testSaveBoardSize8() throws IOException {

@@ -1,4 +1,4 @@
-package fr.u_bordeaux.pdp.model;
+package fr.ubordeaux.pdp.model;
 
 import java.io.BufferedWriter;
 import java.io.File;

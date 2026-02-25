@@ -1,4 +1,8 @@
 target/
 *.class
-.idea/
+/.metadata/
+.project
+.settings/
+*.prefs
+.classpath.idea/
 .vscode/

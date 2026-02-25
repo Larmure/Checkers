@@ -1,0 +1,204 @@
+package fr.ubordeaux.pdp;
+
+import fr.ubordeaux.pdp.model.Utils;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.Configuration;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.GameView;
+
+/**
+ * Main class for the Checkers game. Handles command line arguments and
+ * initializes the game modes.
+ *
+ * @version 1.0
+ */
+public class App {
+
+  /** Exit code for success. */
+  public static final int EXIT_SUCCESS = 0;
+
+  /** Exit code for Help or Version. */
+  public static final int EXIT_INFO = 1;
+
+  /** Exit code error. */
+  public static final int EXIT_ERROR = 2;
+
+  /** Exit code for GUI. */
+  public static final int EXIT_GUI = 3;
+
+  /** Flag to enable verbose. */
+  private static boolean verbose = Utils.DEFAULT_VERBOSE;
+
+  /** Flag to enable debug mode. */
+  private static boolean debug = Utils.DEFAULT_DEBUG;
+
+  private static boolean blitz = Utils.DEFAULT_BLITZ;
+
+  private static int time = Utils.DEFAULT_TIME;
+
+  private static boolean contest = Utils.DEFAULT_CONTEST;
+
+  private static int size = Utils.DEFAULT_BOARD_SIZE;
+
+  
+
+  /**
+   * Entry point of the application. Delegates logic to run() and handles exit
+   * codes.
+   *
+   * @param args command line arguments
+   */
+  public static void main(String[] args) {
+    int status = run(args);
+
+    // Status handling
+    if (status == EXIT_INFO) {
+      System.exit(0);
+    } else if (status == EXIT_ERROR) {
+      System.exit(1);
+    } else if (status == EXIT_GUI) {
+      //TODO
+    }
+    
+    // Status EXIT_SUCCESS means continue execution normally
+    GameView view = new CommandLineInterface(verbose, debug);
+    GameController controller = new GameController(view);
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug));
+    controller.start(); 
+    try {
+        ((CommandLineInterface) view).join();
+    } catch (InterruptedException ex) {
+        System.exit(0);
+    }
+  }
+
+  /**
+   * Parses arguments and sets global flags. This method is separated for unit
+   * testing purposes to
+   * avoid System.exit().
+   *
+   * @param args command line arguments: -h/--help, -V/--version, -v/--verbose,
+   *             -d/--debug.
+   * @return EXIT_SUCCESS to continue, EXIT_INFO to stop (info displayed),
+   *         EXIT_ERROR for error.
+   */
+  public static int run(String[] args) {
+    ConfigManager configManager = new ConfigManager();
+    configManager.load();
+    verbose = configManager.isVerbose();
+    blitz = configManager.isBlitz();     
+    time = configManager.getTime();      
+    contest = configManager.isContest(); 
+    size = configManager.getSize();
+    debug = configManager.isDebug();
+    // Options definition
+    Options options = new Options();
+    options.addOption("h", "help", false, "display help");
+    options.addOption("V", "version", false, "display version");
+    options.addOption("v", "verbose", false, "increase verbosity");
+    options.addOption("d", "debug", false, "display debug messages");
+    options.addOption("b", "blitz", false, "enable blitz mode");
+    options.addOption("t", "time", true, "set time limit in minutes");
+    options.addOption("g", "gui", false, "launch graphical user interface");
+    options.addOption("c", "contest", true, "enable contest mode");
+    options.addOption("s", "size", true, "set board size (8|10|12)");
+
+    CommandLineParser parser = new DefaultParser();
+    try {
+      CommandLine cmd = parser.parse(options, args);
+
+      if (!cmd.getArgList().isEmpty()) {
+        throw new ParseException("Unrecognized arguments: " + cmd.getArgList());
+      }
+
+      if (cmd.hasOption("h")) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("checkers", options);
+        return EXIT_INFO;
+      }
+
+      if (cmd.hasOption("V")) {
+        System.out.println("checkers version 1.0");
+        return EXIT_INFO;
+      }
+
+      if (cmd.hasOption("v")) {
+        System.out.println("Verbose mode enabled.");
+        verbose = true;
+      }
+
+      if (cmd.hasOption("d")) {
+        System.out.println("Debug mode enabled.");
+        debug = true;
+      }
+
+      if (cmd.hasOption("g")) {
+        System.out.println("Launching Graphical Interface...");
+        // return EXIT_GUI;
+      }
+      
+      if (cmd.hasOption("b")) {
+        System.out.println("Blitz mode enabled.");
+        blitz = true;
+      }
+
+      if (cmd.hasOption("t")) {
+        time = Integer.parseInt(cmd.getOptionValue("t"));
+        System.out.println("Time limit set to " + time + ".");
+      }
+
+      if (cmd.hasOption("c")) {
+        System.out.println("Contest mode enabled.");
+        contest = true;
+      }
+
+      if (cmd.hasOption("s")) {
+        size = Integer.parseInt(cmd.getOptionValue("s"));
+        System.out.println("Board size : " + size + ".");
+      }
+
+      System.out.println("Welcome to Checkers!");
+      return EXIT_SUCCESS;
+
+    } catch (ParseException e) {
+      System.err.println("Error: " + e.getMessage());
+      HelpFormatter formatter = new HelpFormatter();
+      formatter.printHelp("checkers", options);
+      return EXIT_ERROR;
+    }
+  }
+
+  /**
+   * Checks if verbose mode is enabled.
+   *
+   * @return true if verbose is on.
+   */
+  public static boolean isVerbose() {
+    return verbose;
+  }
+
+  /**
+   * Checks if debug mode is enabled.
+   *
+   * @return true if debug is on.
+   */
+  public static boolean isDebug() {
+    return debug;
+  }
+
+  /**
+   * Resets the global state. Essential for isolated unit tests.
+   */
+  public static void reset() {
+    verbose = false;
+    debug = false;
+  }
+}
