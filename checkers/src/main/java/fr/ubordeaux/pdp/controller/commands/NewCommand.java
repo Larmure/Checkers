@@ -59,9 +59,9 @@ public class NewCommand implements Command, Helpable {
         int blitzTime = Integer.parseInt(tValue);
         String sValue = cmd.getOptionValue("s");
         int size = Integer.parseInt(sValue);
-        controller.startNewGame(new Configuration(hasBlitz, blitzTime, hasContest, size, controller.isVerbose(), controller.isDebug()));
+        controller.startNewGame(new Configuration(hasBlitz, blitzTime, hasContest, size, controller.isVerbose(), controller.isDebug(), controller.isWhiteIsAi(), controller.isBlackIsAi()));
       } else {
-        controller.startNewGame(new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE, controller.isVerbose(), controller.isDebug()));
+        controller.startNewGame(Configuration.getDefaultConfiguration());
       }
 
       

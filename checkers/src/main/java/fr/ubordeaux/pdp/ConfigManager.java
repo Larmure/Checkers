@@ -10,8 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import fr.ubordeaux.pdp.model.Utils;
-
 /**
  * Manages the configuration file for the Checkers game.
  *

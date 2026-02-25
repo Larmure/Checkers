@@ -28,7 +28,6 @@ public class GameController {
   /**
    * Initializes the controller with the required model and view components.
    *
-   * @param game The {@link GameCheckers} instance (Model).
    * @param view The {@link GameView} instance (View).
    */
   public GameController(GameView view) {
@@ -133,5 +132,13 @@ public class GameController {
 
   public void setVerbose(boolean verbose) {
     this.configuration = new Configuration(configuration, verbose, isDebug());
+  }
+
+  public boolean isWhiteIsAi() {
+    return configuration.isWhiteIsAI();
+  }
+
+  public boolean isBlackIsAi() {
+    return configuration.isBlackIsAI();
   }
 }
