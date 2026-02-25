@@ -961,6 +961,9 @@ public class Board {
    * @throws IllegalArgumentException if the square is outside the board or is a light square
    */
   public int squareToIndex(String square) {
+    if(square == null) {
+      throw new IllegalArgumentException("Invalid square format: " + square);
+    }
     char rowChar = Character.toUpperCase(square.charAt(0));
     int row = rowChar - 'A';
     int col = Integer.parseInt(square.substring(1)) - 1;
