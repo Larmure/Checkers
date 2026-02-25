@@ -247,4 +247,23 @@ class GameCheckersTest {
         assertEquals("White Player", game.getCurrentPlayer().toString(),
                 "After Black plays, it should be White's turn again.");
     }
+
+    @Test
+    void testApplyMoveInvalidShouldPrintPossibleMoves() {
+        // We use a move that is clearly invalid (from a square to the same square).
+        // This will cause board.validateMove to return null.
+        String sameSquare = "A1";
+
+        // This call will enter the 'if (move == null)' block.
+        // It will then execute the 'for (Move m : possibleMoves)' loop 
+        // to print all valid options to the console.
+        game.applyMove(sameSquare, sameSquare);
+
+        // Verification: The turn should NOT have switched to the other player.
+        // isWhiteTurn remains true because of the early 'return' in your model.
+        assertTrue(game.getIsWhiteTurn(), "The turn should not change after an invalid move.");
+        
+        // Ensure the game board still exists
+        assertNotNull(game.getBoard(), "The board should still be accessible.");
+    }
 }

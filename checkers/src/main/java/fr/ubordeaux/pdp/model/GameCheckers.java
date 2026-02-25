@@ -76,6 +76,15 @@ public class GameCheckers implements Subject {
   }
 
   /**
+   * Returns the boolean of white turn.
+   *
+   * @return The {@link isWhiteTurn} boolean for the current turn.
+   */
+  public boolean getIsWhiteTurn() {
+    return this.isWhiteTurn;
+  }
+
+  /**
    * Retrieves all legal moves available for the specified player.
    * 
    * <p>This method delegates to the board logic, which enforces rules such as
