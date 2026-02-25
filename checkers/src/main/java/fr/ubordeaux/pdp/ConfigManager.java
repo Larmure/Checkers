@@ -32,8 +32,8 @@ public class ConfigManager {
   /**
    * Loads configuration settings from the {@code .checkersrc} file.
    *
-   * If the file does not exist, a default one is created. If the file is 
-   * corrupted (missing header), it is reset. For specific invalid values, 
+   * If the file does not exist, a default one is created. If the file is
+   * corrupted (missing header), it is reset. For specific invalid values,
    * it logs a warning and uses safe defaults from {@link Utils}.
    */
   public void load() {
@@ -54,6 +54,8 @@ public class ConfigManager {
       boolean foundVerbose = false;
       boolean foundContest = false;
       boolean foundDebug = false;
+      boolean foundBlitz = false;
+      boolean foundTimeout = false;
 
       // Iterate through lines after the header
       for (int i = 1; i < lines.size(); i++) {
@@ -85,11 +87,23 @@ public class ConfigManager {
             break;
 
           case "blitz":
-            this.blitz = Boolean.parseBoolean(value);
+            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+              this.blitz = Boolean.parseBoolean(value);
+              foundBlitz = true;
+            } else {
+              System.err.println("Warning: Invalid value for 'blitz': " + value);
+              this.blitz = Utils.DEFAULT_BLITZ;
+            }
             break;
 
           case "timeout":
-            this.time = Integer.parseInt(value);
+            try {
+              this.time = Integer.parseInt(value);
+              foundTimeout = true;
+            } catch (NumberFormatException e) {
+              System.err.println("Warning: Invalid value for 'timeout': " + value);
+              this.time = Utils.DEFAULT_TIME;
+            }
             break;
 
           case "contest":
@@ -101,7 +115,7 @@ public class ConfigManager {
               this.contest = Utils.DEFAULT_CONTEST;
             }
             break;
-          
+
           case "debug":
             if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
               this.debug = Boolean.parseBoolean(value);
@@ -111,9 +125,9 @@ public class ConfigManager {
               this.debug = Utils.DEFAULT_DEBUG;
             }
             break;
-          
+
           case "size":
-            if(Utils.VALID_SIZES.contains(Integer.valueOf(value))) {
+            if (Utils.VALID_SIZES.contains(Integer.valueOf(value))) {
               this.size = Integer.parseInt(value);
             } else {
               System.err.println("Warning: Invalid size for 'size': " + value);
@@ -139,8 +153,18 @@ public class ConfigManager {
       }
 
       if (!foundDebug) {
-        System.err.println("Note: 'debug' key not found. Using default: " + Utils.DEFAULT_CONTEST);
+        System.err.println("Note: 'debug' key not found. Using default: " + Utils.DEFAULT_DEBUG);
         this.debug = Utils.DEFAULT_DEBUG;
+      }
+
+      if (!foundTimeout) {
+        System.err.println("Note: 'timeout' key not found. Using default: " + Utils.DEFAULT_TIME);
+        this.time = Utils.DEFAULT_TIME;
+      }
+
+      if (!foundBlitz) {
+        System.err.println("Note: 'blitz' key not found. Using default: " + Utils.DEFAULT_BLITZ);
+        this.blitz = Utils.DEFAULT_BLITZ;
       }
 
     } catch (Exception e) {
@@ -150,11 +174,14 @@ public class ConfigManager {
       this.verbose = Utils.DEFAULT_VERBOSE;
       this.contest = Utils.DEFAULT_CONTEST;
       this.debug = Utils.DEFAULT_DEBUG;
+      this.blitz = Utils.DEFAULT_BLITZ;
+      this.time = Utils.DEFAULT_TIME;
     }
   }
 
   /**
-   * Creates a default {@code .checkersrc} file with predefined values from {@link Utils}.
+   * Creates a default {@code .checkersrc} file with predefined values from
+   * {@link Utils}.
    *
    * @param path The path where the configuration file should be created.
    */
@@ -167,7 +194,7 @@ public class ConfigManager {
       writer.println("contest = " + Utils.DEFAULT_CONTEST);
       writer.println("size = " + Utils.DEFAULT_BOARD_SIZE);
       writer.println("debug = " + Utils.DEFAULT_DEBUG);
-      System.out.println("Default configuration file created successfully in : "+ path.toString());
+      System.out.println("Default configuration file created successfully in : " + path.toString());
     } catch (IOException e) {
       System.err.println("Critical Error: Could not create configuration file.");
     }
