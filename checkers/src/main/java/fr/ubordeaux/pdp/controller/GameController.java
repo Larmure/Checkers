@@ -1,8 +1,10 @@
-package fr.ubordeaux.pdp.controller;
+
+   package fr.ubordeaux.pdp.controller;
 
 import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.Move;
+import fr.ubordeaux.pdp.model.Configuration;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.controller.commands.*;
 
 
 /**
@@ -19,7 +21,9 @@ public class GameController {
   private final GameView view;
 
   /** The core game engine containing rules and board state. */
-  private final GameCheckers game;
+  private GameCheckers game;
+
+  private Configuration configuration;
 
   /**
    * Initializes the controller with the required model and view components.
@@ -27,10 +31,8 @@ public class GameController {
    * @param game The {@link GameCheckers} instance (Model).
    * @param view The {@link GameView} instance (View).
    */
-  public GameController(GameCheckers game, GameView view) {
+  public GameController(GameView view) {
     this.view = view;
-    this.game = game;
-    game.addObserver(view);
   }
 
   /**
@@ -54,6 +56,14 @@ public class GameController {
       case "new" -> new NewCommand(this, args);
       case "help" -> new HelpCommand(args);
       case "quit" -> new QuitCommand();
+      case "load" -> new LoadCommand();
+      case "save" -> new SaveCommand();
+      case "pause" -> new PauseCommand();
+      case "hint" -> new HintCommand();
+      case "undo" -> new UndoCommand();
+      case "redo" -> new RedoCommand();
+      case "show" -> new ShowCommand(this, args);
+      case "set" -> new SetCommand(this, args);
       default -> {
         System.out.println("Unknown command: " 
             + commandName);
@@ -74,39 +84,54 @@ public class GameController {
    * @param time    The time limit per player in seconds (0 for no limit).
    * @param size    The board dimension (standard is 8).
    */
-  public void startNewGame(boolean blitz, boolean contest, int time, int size) {
-    // System.out.println("Initializing new game with options: " 
-    //     + (blitz ? "Blitz " : "") 
-    //     + (contest ? "Contest " : "") 
-    //     + (time > 0 ? "Time=" + time + "s " : "") 
-    //     + (size != 8 ? "Size=" + size : ""));
+  public void startNewGame(Configuration configuration) {
+    System.out.println("Initializing new game with options: " + configuration); 
+    this.game = new GameCheckers(configuration);
+    this.configuration =  new Configuration(configuration);
+    game.addObserver(view);
 
-      loopGame();
+    System.out.println("");
+    System.out.println("RULES:");
+    System.out.println("- The board is 8x8. Each player starts with 12 pieces on the dark squares.");
+    System.out.println("- Pieces move diagonally forward, one square at a time.");
+    System.out.println("- To capture an opponent's piece, jump over it diagonally to the empty square behind it.");
+    System.out.println("- If you can capture, you must. You can chain multiple captures in one turn.");
+    System.out.println("- Reach the opponent's back row to become a King (moves diagonally in all directions).");
+    System.out.println("- The player who captures all opponent's pieces (or blocks them) wins.");
+    System.out.println("");
+    System.out.println("To apply movements, enter for example: E1 F2");
+
+    displayBoard();
   }
 
-  /**
-   * Orchestrates the main game execution cycle.
-   * <p>This method runs the loop that alternates between rendering the view,
-   * capturing user input, and updating the model. It continues until the game state
-   * transitions to a "Game Over" condition or the user explicitly quits.
-   */
-  public void loopGame() {
-    view.display(game);
-
-    while (!game.getState().isGameOver()) {
-      Move move = view.getUserMove(game);
-      
-      if (move == null) {
-        break;
-      }
-
-      game.applyMove(move);
-
-      // Transition the state if the move resulted in a win/loss (e.g., no moves left).
-      game.setState(game.checkGameOver()); 
-    }
+  public void executeMove(String from, String to)
+  {
+    game.applyMove(from, to);
     
-    // Delegate the final action (e.g., victory message) to the terminal state.
-    game.getState().handle(); 
-  } 
+    if(game.getState().isGameOver()) game.setState(game.checkGameOver()); 
+  }
+
+  public void displayBoard() {
+    view.display(game);
+  }
+
+  public void displayConfiguration() {
+    System.out.println(configuration);
+  }
+  
+  public boolean isVerbose() {
+    return configuration.isVerbose();
+  }
+
+  public boolean isDebug() {
+    return configuration.isDebug();
+  }
+
+  public void setDebug(boolean debug) {
+    this.configuration = new Configuration(configuration, isVerbose(), debug);
+  }
+
+  public void setVerbose(boolean verbose) {
+    this.configuration = new Configuration(configuration, verbose, isDebug());
+  }
 }

@@ -2,12 +2,15 @@ package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.model.Utils;
 import fr.ubordeaux.pdp.model.Internationalization;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+
+import fr.ubordeaux.pdp.model.Utils;
 
 /**
  * Manages the configuration file for the Checkers game.
@@ -24,6 +27,9 @@ public class ConfigManager {
   private boolean verbose = Utils.DEFAULT_VERBOSE;
   private boolean blitz = Utils.DEFAULT_BLITZ;
   private int time = Utils.DEFAULT_TIME;
+  private boolean contest = Utils.DEFAULT_CONTEST;
+  private int size = Utils.DEFAULT_BOARD_SIZE;
+  private boolean debug = Utils.DEFAULT_DEBUG;
 
   /**
    * Loads configuration settings from the {@code .checkersrc} file.
@@ -48,6 +54,8 @@ public class ConfigManager {
       }
 
       boolean foundVerbose = false;
+      boolean foundContest = false;
+      boolean foundDebug = false;
 
       // Iterate through lines after the header
       for (int i = 1; i < lines.size(); i++) {
@@ -79,11 +87,40 @@ public class ConfigManager {
             break;
 
           case "blitz":
-            // F5 implementation: this.blitz = Boolean.parseBoolean(value);
+            this.blitz = Boolean.parseBoolean(value);
             break;
 
           case "timeout":
-            // F5 implementation: this.time = Integer.parseInt(value);
+            this.time = Integer.parseInt(value);
+            break;
+
+          case "contest":
+            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+              this.contest = Boolean.parseBoolean(value);
+              foundContest = true;
+            } else {
+              System.err.println("Warning: Invalid value for 'contest': " + value);
+              this.contest = Utils.DEFAULT_CONTEST;
+            }
+            break;
+          
+          case "debug":
+            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+              this.debug = Boolean.parseBoolean(value);
+              foundDebug = true;
+            } else {
+              System.err.println("Warning: Invalid value for 'debug': " + value);
+              this.debug = Utils.DEFAULT_DEBUG;
+            }
+            break;
+          
+          case "size":
+            if(Utils.VALID_SIZES.contains(Integer.valueOf(value))) {
+              this.size = Integer.parseInt(value);
+            } else {
+              System.err.println("Warning: Invalid size for 'size': " + value);
+              this.size = Utils.DEFAULT_BOARD_SIZE;
+            }
             break;
 
           default:
@@ -98,11 +135,23 @@ public class ConfigManager {
         this.verbose = Utils.DEFAULT_VERBOSE;
       }
 
+      if (!foundContest) {
+        System.err.println("Note: 'contest' key not found. Using default: " + Utils.DEFAULT_CONTEST);
+        this.contest = Utils.DEFAULT_CONTEST;
+      }
+
+      if (!foundDebug) {
+        System.err.println("Note: 'debug' key not found. Using default: " + Utils.DEFAULT_CONTEST);
+        this.debug = Utils.DEFAULT_DEBUG;
+      }
+
     } catch (Exception e) {
       System.err.println(Internationalization.get("config.warn.invalid_file") + e.getMessage());
       System.err.println(Internationalization.get("config.info.reset"));
       createDefaultConfig(configPath);
       this.verbose = Utils.DEFAULT_VERBOSE;
+      this.contest = Utils.DEFAULT_CONTEST;
+      this.debug = Utils.DEFAULT_DEBUG;
     }
   }
 
@@ -117,6 +166,9 @@ public class ConfigManager {
       writer.println("verbose = " + Utils.DEFAULT_VERBOSE);
       writer.println("blitz = " + Utils.DEFAULT_BLITZ);
       writer.println("timeout = " + Utils.DEFAULT_TIME);
+      writer.println("contest = " + Utils.DEFAULT_CONTEST);
+      writer.println("size = " + Utils.DEFAULT_BOARD_SIZE);
+      writer.println("debug = " + Utils.DEFAULT_DEBUG);
       System.out.println("Default configuration file created successfully in : "+ path.toString());
     } catch (IOException e) {
       System.err.println("Critical Error: Could not create configuration file.");
@@ -130,5 +182,25 @@ public class ConfigManager {
    */
   public boolean isVerbose() {
     return this.verbose;
+  }
+
+  public boolean isBlitz() {
+    return this.blitz;
+  }
+
+  public int getTime() {
+    return this.time;
+  }
+
+  public boolean isContest() {
+    return this.contest;
+  }
+
+  public int getSize() {
+    return this.size;
+  }
+
+  public boolean isDebug() {
+    return this.debug;
   }
 }

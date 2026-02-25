@@ -3,193 +3,267 @@ package fr.ubordeaux.pdp.model;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import fr.ubordeaux.pdp.view.GameView;
 
+/**
+ * Tests for the GameCheckers class.
+ *
+ * Each method annotated with @Test checks one specific behavior of the game.
+ * A test passes when nothing crashes AND all assertEquals/assertTrue calls are true.
+ */
 class GameCheckersTest {
 
+    // The game we are testing. It is recreated fresh before each test.
     private GameCheckers game;
 
+    /**
+     * This method is called automatically BEFORE each test.
+     * It guarantees that every test starts with a brand new game.
+     */
     @BeforeEach
-    void setUp() {
+    void createNewGame() {
         game = new GameCheckers();
     }
 
+    // =========================================================================
+    // Who plays first?
+    // =========================================================================
     @Test
-    void testGetCurrentPlayer_Branches() throws Exception {
-        // Branche 1 : Tour des blancs (état initial)
-        Player p1 = game.getCurrentPlayer();
-        assertEquals("White Player", p1.toString(), "Au début, c'est le joueur Blanc");
-
-        // Branche 2 : Tour des noirs
-        // On utilise la Réflexion pour forcer le boolean 'isWhiteTurn' à false
-        Field turnField = GameCheckers.class.getDeclaredField("isWhiteTurn");
-        turnField.setAccessible(true);
-        turnField.set(game, false); // On force le tour des noirs
-
-        Player p2 = game.getCurrentPlayer();
-        assertEquals("Black Player", p2.toString(), "Si isWhiteTurn est false, c'est le joueur Noir");
+    void whitePlayerGoesFirst() {
+        // At the start of a game, it should be White's turn.
+        Player currentPlayer = game.getCurrentPlayer();
+        assertEquals("White Player", currentPlayer.toString(),
+                "At the start, the White Player should play first.");
     }
 
+    // =========================================================================
+    // Does the turn switch correctly between players?
+    // =========================================================================
     @Test
-    void testIsValidMove_TurnLogic() throws Exception {
-        // Récupération des deux joueurs
-        Player white = game.getCurrentPlayer();
-        // On crée un faux joueur noir pour le test
-        Player fakeBlack = new HumanPlayer("Black Player"); 
+    void turnSwitchesToBlackAfterWhite() throws Exception {
+        // We cheat a little: we directly access the private field "isWhiteTurn"
+        // and force it to false, as if White had just played.
+        Field turnField = GameCheckers.class.getDeclaredField("isWhiteTurn");
+        turnField.setAccessible(true); // Ask Java for permission to access it
+        turnField.set(game, false);    // Force: "it is no longer White's turn"
 
-        // Cas A : C'est le tour des Blancs (vrai par défaut), le Noir essaie de jouer
-        assertFalse(game.isValidMove(null, fakeBlack), 
-            "Retourne false si c'est le tour des Blancs et que Noir joue");
+        // Now, the current player should be Black.
+        Player currentPlayer = game.getCurrentPlayer();
+        assertEquals("Black Player", currentPlayer.toString(),
+                "When isWhiteTurn is false, the current player should be Black.");
+    }
 
-        // Cas B : On force le tour des Noirs
+    // =========================================================================
+    //  A player cannot play during the opponent's turn
+    // =========================================================================
+    @Test
+    void aPlayerCannotPlayDuringTheOpponentsTurn() throws Exception {
+        // Situation: it is White's turn (default state).
+        // We create a fake Black player to simulate their attempt to play.
+        Player fakeBlack = new HumanPlayer("Black Player");
+
+        // Black should NOT be able to play during White's turn.
+        assertFalse(game.isValidMove(null, fakeBlack),
+                "Black should not be able to play during White's turn.");
+
+        // Now force it to be Black's turn.
         Field turnField = GameCheckers.class.getDeclaredField("isWhiteTurn");
         turnField.setAccessible(true);
         turnField.set(game, false);
 
-        // Maintenant c'est le tour des Noirs, le Blanc essaie de jouer
-        assertFalse(game.isValidMove(null, white), 
-            "Retourne false si c'est le tour des Noirs et que Blanc joue");
+        // We create a fake White player to test the reverse situation.
+        // (After setting isWhiteTurn=false, getCurrentPlayer() returns Black,
+        //  so we build a separate fake White player for this check.)
+        Player fakeWhite = new HumanPlayer("White Player");
+
+        assertFalse(game.isValidMove(null, fakeWhite),
+                "White should not be able to play during Black's turn.");
     }
 
+    // =========================================================================
+    //  Plays invalid moves
+    // =========================================================================
+
     @Test
-    void testObserverPattern() {
-        // Classe Espion interne pour vérifier l'appel
-        class SpyView extends GameView {
-            boolean called = false;
-            @Override public void update(GameCheckers g) { called = true; }
+    void applyMoveWithInvalidMoveDoesNothing() {
+        // Try to move from a non-existent or illegal square.
+        // This should hit the "move == null" branch in applyMove.
+        String currentPlayer = game.getCurrentPlayer().toString();
+
+        game.applyMove("H12", "E1"); // Clearly invalid squares
+
+        // The turn should NOT have switched since the move was rejected.
+        assertEquals(currentPlayer, game.getCurrentPlayer().toString(),
+                "An invalid move should not switch the turn.");
+    }
+
+    // =========================================================================
+    //  Observers (views) are properly notified
+    // =========================================================================
+    @Test
+    void theViewIsNotifiedWhenRequested() {
+        // We create a spy view that records whether it was called.
+        boolean[] wasNotified = {false}; // Single-element array so we can modify it inside the anonymous class
+
+        GameView spyView = new GameView() {
+            @Override
+            public void update(GameCheckers g) {
+                wasNotified[0] = true; // Mark that the view received the notification
+            }
             @Override public void start() {}
             @Override public void display(GameCheckers g) {}
-            @Override public Move getUserMove(GameCheckers g) { return null; }
-        }
+        };
 
-        SpyView spy = new SpyView();
-
-        // Branche 1 : addObserver (doit créer la liste car elle est null au début)
-        game.addObserver(spy);
-
-        // Branche 2 : notifyObservers (doit parcourir la liste)
+        // Add our spy view to the game, then notify all observers.
+        game.addObserver(spyView);
         game.notifyObservers();
 
-        assertTrue(spy.called, "L'observateur doit être notifié");
+        // The spy view must have been called.
+        assertTrue(wasNotified[0], "The view should receive a notification after notifyObservers().");
     }
 
+    // =========================================================================
+    //  The game should not be over at the very beginning
+    // =========================================================================
     @Test
-    void testCheckGameOver_Continue() {
-        // Au début du jeu, il y a des mouvements possibles
-        State result = game.checkGameOver();
-        
-        // On vérifie que l'état retourné est bien l'état courant (donc pas FinishedState)
-        assertSame(game.getState(), result, 
-            "Tant qu'il y a des coups, checkGameOver retourne l'état courant");
-        assertFalse(result instanceof FinishedState, 
-            "Le jeu ne doit pas être fini au démarrage");
+    void gameIsNotFinishedAtStart() {
+        // At the start, both sides have pieces and available moves.
+        // So checkGameOver() should return the current state (InGameState), not FinishedState.
+        State returnedState = game.checkGameOver();
+
+        assertFalse(returnedState instanceof FinishedState,
+                "The game should not be finished on the very first turn.");
+
+        assertSame(game.getState(), returnedState,
+                "checkGameOver() should return the current state as long as the game continues.");
     }
 
+    // =========================================================================
+    //  The game state can be changed
+    // =========================================================================
     @Test
-    void testStateAccessors() {
-        State initialState = game.getState();
-        assertNotNull(initialState);
+    void gameStateCanBeChanged() {
+        // Check that the initial state exists.
+        assertNotNull(game.getState(), "The initial state should not be null.");
 
-        State finish = new FinishedState();
-        game.setState(finish);
+        // Create a "Game Over" state and force it into the game.
+        State finishedState = new FinishedState();
+        game.setState(finishedState);
 
-        assertSame(finish, game.getState(), "Le setter doit modifier l'état");
+        // The game state should now be the one we just set.
+        assertSame(finishedState, game.getState(),
+                "setState() should correctly replace the current state.");
     }
 
+    // =========================================================================
+    //  Playing a move passes the turn to the other player
+    // =========================================================================
     @Test
-    void testApplyMove_SwitchTurn() {
-        boolean initialTurn = true; // On sait que ça commence par les blancs
+    void playingAMoveSwitchesTurnToOtherPlayer() {
+        // Get the list of available moves for the current player (White).
+        List<Move> availableMoves = game.getPossibleMoves(game.getCurrentPlayer());
+        assertFalse(availableMoves.isEmpty(),
+                "There should be available moves at the start of the game.");
 
-        // On crée un coup bidon
-        Move dummyMove = new Move(0, 0); // Supposons un constructeur simple
+        // Play the first available move.
+        Move firstMove = availableMoves.get(0);
+        String fromSquare = game.getBoard().indexToSquare(firstMove.getFrom());
+        String toSquare   = game.getBoard().indexToSquare(firstMove.getTo());
 
-        try {
-            game.applyMove(dummyMove);
-        } catch (Exception e) {
-            // On ignore l'erreur du Board (NullPointer ou IndexOutOfBounds)
-            // car ce qui nous intéresse c'est si game.isWhiteTurn a changé
-        }
-        
-        // Note: Si applyMove plante AVANT la ligne "isWhiteTurn = ...", 
-        // ce test échouera, ce qui est logique.
-        // Mais sans Mockito, c'est dur d'aller plus loin ici.
+        game.applyMove(fromSquare, toSquare);
+
+        // After White plays, it should no longer be White's turn.
+        assertNotEquals("White Player", game.getCurrentPlayer().toString(),
+                "After White plays, it should be Black's turn.");
     }
 
+    // =========================================================================
+    //  The game ends when a side has no more moves
+    // =========================================================================
     @Test
-    void testGameFinish_WithFakeBoard() throws Exception {
-        // 1. On crée un "Faux Plateau" qui ne renvoie aucun mouvement possible
-        // On étend la classe Board (assure-toi que Board n'est pas 'final')
-        class BlockedBoard extends Board {
-            public BlockedBoard(int size) { super(size); }
-
-            // On surcharge les méthodes pour dire "Aucun coup possible"
+    void gameEndsWhenASideHasNoMoreMoves() throws Exception {
+        // Create a fake board that always says "no moves available".
+        Board fakeBoard = new Board(12) {
             @Override
-            public List<Move> getWhiteValidMoves() { return List.of(); } // Liste vide
+            public List<Move> getWhiteValidMoves() { return List.of(); } // Empty list
             @Override
-            public List<Move> getBlackValidMoves() { return List.of(); } // Liste vide
-        }
+            public List<Move> getBlackValidMoves() { return List.of(); } // Empty list
+        };
 
-        // 2. On instancie ce faux plateau
-        Board fakeBoard = new BlockedBoard(12);
+        // Inject this fake board into the game using Java reflection.
+        Field boardField = GameCheckers.class.getDeclaredField("board");
+        boardField.setAccessible(true);
+        boardField.set(game, fakeBoard);
 
-        // 3. INJECTION : On remplace le vrai plateau du jeu par le faux via la Réflexion
-        // C'est nécessaire car tu n'as pas de méthode setBoard()
-        java.lang.reflect.Field boardField = GameCheckers.class.getDeclaredField("board");
-        boardField.setAccessible(true); // On autorise l'accès au champ privé
-        boardField.set(game, fakeBoard); // On injecte le faux plateau
+        // Now checkGameOver() should detect that no moves are possible
+        // and return a FinishedState.
+        State finalState = game.checkGameOver();
 
-        // 4. On appelle checkGameOver()
-        // Comme le plateau dit "0 mouvements", le jeu doit se finir
-        State resultState = game.checkGameOver();
-
-        // 5. Vérification
-        assertTrue(resultState instanceof FinishedState, 
-            "Si le plateau n'a plus de mouvements, le jeu doit passer en FinishedState");
+        assertTrue(finalState instanceof FinishedState,
+                "If no moves are possible, the game should transition to FinishedState.");
     }
 
+    // =========================================================================
+    //  Simulate an opening sequence (White plays, Black plays, White plays again)
+    // =========================================================================
     @Test
-    void testOpeningSequence_Dynamic() {
-        // On ajoute un observateur "vide" pour initialiser la liste interne du jeu
+    void simulateTwoFullTurns() {
+        // Add an empty observer just to avoid errors if the code tries to notify views.
         game.addObserver(new GameView() {
             @Override public void update(GameCheckers g) {}
             @Override public void start() {}
             @Override public void display(GameCheckers g) {}
-            @Override public Move getUserMove(GameCheckers g) { return null; }
         });
-        
-        // --- TOUR 1 : BLANCS ---
+
+        // --- Turn 1: White plays ---
         List<Move> whiteMoves = game.getPossibleMoves(game.getCurrentPlayer());
-        assertFalse(whiteMoves.isEmpty(), "Les blancs doivent avoir des coups possibles au début");
-        
-        Move moveW1 = whiteMoves.get(0);
-        
-        // ON SUPPRIME le check isValidMove ici car sans equals(), il échouera toujours
-        // assertTrue(game.isValidMove(moveW1, game.getCurrentPlayer()));
-        
-        // On applique directement le coup (ça marchera car c'est le bon objet référence)
-        game.applyMove(moveW1);
-        
-        assertNotEquals("White Player", game.getCurrentPlayer().toString(), "Après le coup blanc, ce n'est plus aux blancs");
+        assertFalse(whiteMoves.isEmpty(), "White should have moves available at the start.");
 
+        Move whiteMove = whiteMoves.get(0);
+        game.applyMove(
+            game.getBoard().indexToSquare(whiteMove.getFrom()),
+            game.getBoard().indexToSquare(whiteMove.getTo())
+        );
 
-        // --- TOUR 1 : NOIRS ---
+        // After White's move, it should be Black's turn.
+        assertEquals("Black Player", game.getCurrentPlayer().toString(),
+                "After White plays, it should be Black's turn.");
+
+        // --- Turn 1: Black plays ---
         List<Move> blackMoves = game.getPossibleMoves(game.getCurrentPlayer());
-        assertFalse(blackMoves.isEmpty());
+        assertFalse(blackMoves.isEmpty(), "Black should have moves available on their turn.");
+
+        Move blackMove = blackMoves.get(0);
+        game.applyMove(
+            game.getBoard().indexToSquare(blackMove.getFrom()),
+            game.getBoard().indexToSquare(blackMove.getTo())
+        );
+
+        // After Black's move, it should be White's turn again.
+        assertEquals("White Player", game.getCurrentPlayer().toString(),
+                "After Black plays, it should be White's turn again.");
+    }
+
+    @Test
+    void testApplyMoveInvalidShouldPrintPossibleMoves() {
+        // We use a move that is clearly invalid (from a square to the same square).
+        // This will cause board.validateMove to return null.
+        String sameSquare = "A1";
+
+        // This call will enter the 'if (move == null)' block.
+        // It will then execute the 'for (Move m : possibleMoves)' loop 
+        // to print all valid options to the console.
+        game.applyMove(sameSquare, sameSquare);
+
+        // Verification: The turn should NOT have switched to the other player.
+        // isWhiteTurn remains true because of the early 'return' in your model.
+        assertTrue(game.getIsWhiteTurn(), "The turn should not change after an invalid move.");
         
-        Move moveB1 = blackMoves.get(0);
-        game.applyMove(moveB1);
-
-
-        // --- TOUR 2 : RE-BLANCS ---
-        assertEquals("White Player", game.getCurrentPlayer().toString());
+        // Ensure the game board still exists
+        assertNotNull(game.getBoard(), "The board should still be accessible.");
     }
 }

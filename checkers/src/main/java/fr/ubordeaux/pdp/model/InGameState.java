@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.model;
 
 /**
  * Represents the active state where the game is currently being played.
+ * 
  * <p>Holds a reference to the game context to access player information during the loop.
  */
 public class InGameState implements State {

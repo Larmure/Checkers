@@ -1,0 +1,23 @@
+package fr.ubordeaux.pdp.controller.commands;
+
+import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.Helpable;
+
+public class PauseCommand implements Command, Helpable {
+
+    @Override
+    public void execute() {
+        System.out.println("Pause: This feature is not implemented yet.");
+    }
+
+    /**
+     * Returns the help string for the pause command.
+     *
+     * @return A brief description of the pause functionality.
+     */
+    @Override
+    public String getHelp() {
+        return "pause : Stop the time in blitz.";
+    }
+
+}

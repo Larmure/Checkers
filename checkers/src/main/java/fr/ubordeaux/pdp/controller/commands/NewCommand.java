@@ -1,4 +1,7 @@
-package fr.ubordeaux.pdp.controller;
+package fr.ubordeaux.pdp.controller.commands;
+
+import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.Helpable;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -6,6 +9,8 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.Configuration;
 import fr.ubordeaux.pdp.model.Utils;
 
 /**
@@ -46,33 +51,20 @@ public class NewCommand implements Command, Helpable {
     try {
       CommandLine cmd = parser.parse(newOptions(), args);
   
-      boolean hasBlitz = cmd.hasOption("b");
-      boolean hasContest = cmd.hasOption("c");
-  
-      // If we use time option without blitz, we ignore it.
-      int blitzTime = 0;
-      boolean hasTimeOption = cmd.hasOption("t");
-      if (hasBlitz) {
+    
+      if (args!=null && args.length != 0) {
+        boolean hasBlitz = cmd.hasOption("b");
+        boolean hasContest = cmd.hasOption("c");
         String tValue = cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME));
-        blitzTime = Integer.parseInt(tValue);
-      } else if (hasTimeOption) {
-        System.out.println("Warning: time option used without blitz option.");
+        int blitzTime = Integer.parseInt(tValue);
+        String sValue = cmd.getOptionValue("s");
+        int size = Integer.parseInt(sValue);
+        controller.startNewGame(new Configuration(hasBlitz, blitzTime, hasContest, size, controller.isVerbose(), controller.isDebug()));
+      } else {
+        controller.startNewGame(new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE, controller.isVerbose(), controller.isDebug()));
       }
 
-			String sValue = cmd.getOptionValue("s");
-
-			int size = switch (sValue != null ? sValue : "8") {
-    		case "8"  -> 8;
-    		case "10" -> 10;
-    		case "12" -> 12;
-    		default -> {
-        	System.out.println("Warning: '" + sValue + "' is not a valid size. Only 8|10|12 are accepted.");
-        	yield Utils.DEFAULT_BOARD_SIZE;
-    		}
-			};
-  
-      controller.startNewGame(hasBlitz, hasContest, blitzTime, size);
-  
+      
     } catch (ParseException | NumberFormatException e) {
       System.out.println("Invalid command syntax: " + e.getMessage());
     }
@@ -98,6 +90,11 @@ public class NewCommand implements Command, Helpable {
     return opts;
   }
 
+  /**
+   * Returns the help string for the new command.
+   *
+   * @return A brief description of the new game functionality.
+   */
   @Override
   public String getHelp() {
     return "new [ARGS] : Start a new game\nARGS availaible : -blitz\n-time [MINUTES]\n-contest\n-size [8|10|12]";

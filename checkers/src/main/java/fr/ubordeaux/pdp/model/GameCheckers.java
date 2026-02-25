@@ -1,13 +1,13 @@
 package fr.ubordeaux.pdp.model;
 
+import fr.ubordeaux.pdp.view.GameView;
 import java.util.ArrayList;
 import java.util.List;
 
-import fr.ubordeaux.pdp.view.GameView;
-
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
- * * <p>This class acts as the central model in the MVC architecture, coordinating
+ * 
+ * <p>This class acts as the central model in the MVC architecture, coordinating
  * interactions between the board, players, and game state. It implements the
  * {@link Subject} interface to notify registered views of state changes.
  */
@@ -29,20 +29,25 @@ public class GameCheckers implements Subject {
    * @param whiteIsAI True if the white player should be controlled by the AI.
    * @param blackIsAI True if the black player should be controlled by the AI.
    */
-  public GameCheckers(boolean whiteIsAI, boolean blackIsAI) {
-    this.board = new Board(12);
+
+  public GameCheckers(Configuration configuration) {
+    this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
     this.state = new InGameState(this);
-    if (whiteIsAI == true) {
+    if (configuration.isWhiteIsAI() == true) {
       this.whitePlayer = new AIPlayer("White AI");
     } else {
       this.whitePlayer = new HumanPlayer("White Player");
     }
-    if (blackIsAI == true) {
+    if (configuration.isBlackIsAI() == true) {
       this.blackPlayer = new AIPlayer("Black AI");
     } else {
       this.blackPlayer = new HumanPlayer("Black Player");
     }
+  }
+
+  public GameCheckers(){
+    this(Configuration.getDefaultConfiguration());
   }
 
   /**
@@ -82,8 +87,18 @@ public class GameCheckers implements Subject {
   }
 
   /**
+   * Returns the boolean of white turn.
+   *
+   * @return The {@link isWhiteTurn} boolean for the current turn.
+   */
+  public boolean getIsWhiteTurn() {
+    return this.isWhiteTurn;
+  }
+
+  /**
    * Retrieves all legal moves available for the specified player.
-   * * <p>This method delegates to the board logic, which enforces rules such as
+   * 
+   * <p>This method delegates to the board logic, which enforces rules such as
    * mandatory captures.
    *
    * @param player The player to retrieve moves for.
@@ -110,22 +125,53 @@ public class GameCheckers implements Subject {
   }
 
   /**
-   * Executes a move on the board and updates the game flow.
-   * * <p>This includes updating the board configuration, toggling the active turn,
-   * and notifying all registered observers of the change.
+   * Applies a move using algebraic notation (e.g., "32-28").
+   * Validates the move against legal moves to enforce rules like mandatory captures.
    *
-   * @param move The validated move to apply.
+   * @param fromS   position from.
+   * @param toS position to.
    */
-  public void applyMove(Move move) {
+  public void applyMove(String fromS, String toS) {
+    Move move = null;
+    int from, to;
+    try {
+        from = this.board.squareToIndex(fromS);
+        to = this.board.squareToIndex(toS);
+    } catch (IllegalArgumentException e) {
+        System.err.println("Invalid square: " + e.getMessage());
+        return;
+    }
+
+    for (Move m : this.getPossibleMoves(this.getCurrentPlayer())) {
+      if (m.getFrom() == from && m.getTo() == to) {
+        move = m;
+        break; 
+      }
+    }
+
+    if (move == null) {
+      System.err.println("Invalid move: Rule violation or mandatory capture missing.");
+      System.out.println("Here are all valid moves for " + getCurrentPlayer().getName() + ":");
+      
+      List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
+      for (Move m : possibleMoves) {
+        String fromSquare = this.board.indexToSquare(m.getFrom());
+        String toSquare   = this.board.indexToSquare(m.getTo());
+        System.out.println("  -> " + fromSquare + " " + toSquare);
+      }
+      
+      return;
+    }
+
     board.applyMove(move);
     this.isWhiteTurn = !this.isWhiteTurn;
-
     notifyObservers();
   }
 
   /**
    * Evaluates if the game has reached an end condition.
-   * * <p>Currently checks if the active player has any legal moves remaining.
+   * 
+   * <p>Currently checks if the active player has any legal moves remaining.
    * If not, the game transitions to {@link FinishedState}.
    *
    * @return The new state if the game is over, otherwise the current state.
@@ -144,7 +190,9 @@ public class GameCheckers implements Subject {
   @Override
   public void notifyObservers() {
     // Guard clause to prevent NullPointerException if no observers are registered yet.
-    if (this.observers == null) return; 
+    if (this.observers == null) {
+      return;
+    } 
 
     for (GameView v : observers) {
       v.update(this);
@@ -159,7 +207,7 @@ public class GameCheckers implements Subject {
   public void addObserver(GameView observer) {
     // Lazy initialization of the observer list.
     if (this.observers == null) {
-        this.observers = new ArrayList<>();
+      this.observers = new ArrayList<>();
     }
     this.observers.add(observer);
   }

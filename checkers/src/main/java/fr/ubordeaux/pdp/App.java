@@ -1,10 +1,11 @@
 package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Internationalization;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.model.Utils;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -14,6 +15,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
+
+import fr.ubordeaux.pdp.model.Configuration;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -36,10 +39,20 @@ public class App {
   public static final int EXIT_GUI = 3;
 
   /** Flag to enable verbose. */
-  private static boolean verbose = false;
+  private static boolean verbose = Utils.DEFAULT_VERBOSE;
 
   /** Flag to enable debug mode. */
-  private static boolean debug = false;
+  private static boolean debug = Utils.DEFAULT_DEBUG;
+
+  private static boolean blitz = Utils.DEFAULT_BLITZ;
+
+  private static int time = Utils.DEFAULT_TIME;
+
+  private static boolean contest = Utils.DEFAULT_CONTEST;
+
+  private static int size = Utils.DEFAULT_BOARD_SIZE;
+
+  
 
   /** Flag to enable white AI. */
   private static boolean whiteIsAI = false;
@@ -61,17 +74,20 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
-    } else if (status == EXIT_GUI) {
+    } //else if (status == EXIT_GUI) {
       //TODO
-    }
+    //}
     
     // Status EXIT_SUCCESS means continue execution normally
-    GameCheckers game = new GameCheckers(whiteIsAI, blackIsAI);
-    System.out.println("Player White type: " + game.getWhitePlayer().getClass().getSimpleName());
-    System.out.println("Player Black type: " + game.getBlackPlayer().getClass().getSimpleName());
     GameView view = new CommandLineInterface(verbose, debug);
-    GameController controller = new GameController(game, view);
-    controller.start();
+    GameController controller = new GameController(view);
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteIsAI, blackIsAI));
+    controller.start(); 
+    try {
+        ((CommandLineInterface) view).join();
+    } catch (InterruptedException ex) {
+        System.exit(0);
+    }
   }
 
   /**
@@ -89,6 +105,11 @@ public class App {
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
+    blitz = configManager.isBlitz();     
+    time = configManager.getTime();      
+    contest = configManager.isContest(); 
+    size = configManager.getSize();
+    debug = configManager.isDebug();
     // Options definition
     Options options = new Options();
     options.addOption("h", "help", false, Internationalization.get("opt.help"));
@@ -106,6 +127,8 @@ public class App {
       .optionalArg(true)
       .build();
     options.addOption(aiOption);
+    options.addOption("c", "contest", true, "enable contest mode");
+    options.addOption("s", "size", true, "set board size (8|10|12)");
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -126,16 +149,38 @@ public class App {
       }
 
       if (cmd.hasOption("v")) {
+        System.out.println("Verbose mode enabled.");
         verbose = true;
       }
 
       if (cmd.hasOption("d")) {
+        System.out.println("Debug mode enabled.");
         debug = true;
       }
 
       if (cmd.hasOption("g")) {
         System.out.println(Internationalization.get("app.gui.launch"));
-        return EXIT_GUI;
+        // return EXIT_GUI;
+      }
+      
+      if (cmd.hasOption("b")) {
+        System.out.println("Blitz mode enabled.");
+        blitz = true;
+      }
+
+      if (cmd.hasOption("t")) {
+        time = Integer.parseInt(cmd.getOptionValue("t"));
+        System.out.println("Time limit set to " + time + ".");
+      }
+
+      if (cmd.hasOption("c")) {
+        System.out.println("Contest mode enabled.");
+        contest = true;
+      }
+
+      if (cmd.hasOption("s")) {
+        size = Integer.parseInt(cmd.getOptionValue("s"));
+        System.out.println("Board size : " + size + ".");
       }
 
       if (cmd.hasOption("a")) {
@@ -194,6 +239,24 @@ public class App {
   public static boolean isDebug() {
     return debug;
   }
+
+  public static boolean isBlitz() {
+    return blitz;
+  }
+
+  public static int getSize() {
+    return size;
+  }
+
+  public static int getTime() {
+    return time;
+  }
+  
+  public static boolean isContest() {
+    return contest;
+  }
+
+
 
   /**
    * Resets the global state. Essential for isolated unit tests.
