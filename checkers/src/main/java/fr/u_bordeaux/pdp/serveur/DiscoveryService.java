@@ -22,7 +22,8 @@ public class DiscoveryService implements Runnable {
             socket.setBroadcast(true); // activation du broadcast
             InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255"); // broadcast
 
-            String message = serverName + ":" + tcpPort;
+            String localIp = InetAddress.getLocalHost().getHostAddress();
+            String message = serverName + ":" + localIp + ":" + tcpPort;
             byte[] buffer = message.getBytes();
 
             System.out.println("Discovery service started, broadcasting every 10 seconds...");
@@ -30,7 +31,7 @@ public class DiscoveryService implements Runnable {
             while (true) {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length, broadcastAddress, DISCOVERY_PORT);
                 socket.send(packet);
-                System.out.println("Broadcast sent: " + message);
+                //System.out.println("Broadcast sent: " + message);
                 Thread.sleep(BROADCAST_INTERVAL);
             }
 

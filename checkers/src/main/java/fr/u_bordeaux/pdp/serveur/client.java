@@ -35,20 +35,22 @@ public class client {
 
         if (servers.isEmpty()) {
             System.out.println("No game servers found on the network.");
-            System.out.println("Make sure at least one server is running.");
         } else {
             System.out.println("\n╔════════════════════════════════════╗");
             System.out.println("║   Available Game Servers          ║");
             System.out.println("╠════════════════════════════════════╣");
             for (int i = 0; i < servers.size(); i++) {
                 String[] parts = servers.get(i).split(":");
+                // Format réel : nom:ip:port (3 parties)
                 String name = parts.length > 0 ? parts[0] : "Unknown";
-                String port = parts.length > 1 ? parts[1] : "?";
-                System.out.printf("║ %d. %-20s Port: %-6s║%n", (i + 1), name, port);
+                String ip   = parts.length > 1 ? parts[1] : "?";
+                String port = parts.length > 2 ? parts[2] : "?";
+                System.out.printf("║ %d. %-15s %s:%-6s║%n", (i + 1), name, ip, port);
             }
             System.out.println("╚════════════════════════════════════╝\n");
-            System.out.println("Use 'join <host>:<port>' to connect to a server");
-            System.out.println("Example: join localhost:12345");
+            // Indique le bon format à l'utilisateur
+            System.out.println("Use 'join <ip>:<port>' to connect");
+            System.out.println("Example: join 192.168.1.42:12345");
         }
     }
 
@@ -59,7 +61,6 @@ public class client {
     private void joinServer(String address) {
         if (connected) {
             System.out.println("Already connected to " + currentServer);
-            System.out.println("Use 'quit' to disconnect first.");
             return;
         }
 
@@ -67,7 +68,6 @@ public class client {
             String[] parts = address.split(":");
             if (parts.length != 2) {
                 System.out.println("Invalid address format. Use: host:port");
-                System.out.println("Example: localhost:12345");
                 return;
             }
 
@@ -78,10 +78,7 @@ public class client {
 
             socket = new Socket(host, port);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(
-                    new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
-                    true
-            );
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
 
             connected = true;
             currentServer = address;
@@ -89,11 +86,38 @@ public class client {
             System.out.println("✓ Successfully connected to server!");
             System.out.println("You can now use 'ping' to test the connection or 'quit' to disconnect.");
 
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid port number: " );
-        } catch (IOException e) {
+            // --- NOUVEAU : Thread d'écoute en arrière-plan ---
+            new Thread(() -> {
+                try {
+                    String response;
+                    // On lit les messages du serveur en permanence
+                    while ((response = in.readLine()) != null) {
+                        if ("PONG".equals(response)) {
+                            System.out.println("\n✓ Server responded: PONG");
+                        } else if ("BYE".equals(response)) {
+                            System.out.println("\nServer: " + response);
+                        } else {
+                            System.out.println("\nServer: " + response);
+                        }
+                        // Réaffiche le prompt pour que ce soit propre
+                        if (connected) System.out.print("[" + currentServer + "] > ");
+                    }
+                } catch (IOException e) {
+                    // Cette exception s'active quand le serveur coupe brutalement
+                } finally {
+                    // Dès que le serveur s'arrête, on arrive ici instantanément
+                    if (connected) {
+                        System.out.println("\n\n[!] ATTENTION : Le serveur s'est arrêté brutalement !");
+                        disconnect();
+                        // On force l'affichage du prompt local sans attendre
+                        System.out.print("[local] > ");
+                    }
+                }
+            }).start();
+            // --------------------------------------------------
+
+        } catch (Exception e) {
             System.out.println("✗ Connection failed: " + e.getMessage());
-            System.out.println("Make sure the server is running and the address is correct.");
         }
     }
 
@@ -102,25 +126,11 @@ public class client {
      */
     private void ping() {
         if (!connected) {
-            System.out.println("Not connected to any server. Use 'join <host>:<port>' first.");
+            System.out.println("Not connected to any server.");
             return;
         }
-
-        try {
-            out.println("PING");
-            String response = in.readLine();
-
-            if ("PONG".equals(response)) {
-                System.out.println("✓ Server responded: PONG");
-                System.out.println("Connection is active.");
-            } else {
-                System.out.println("Unexpected response: " + response);
-            }
-
-        } catch (IOException e) {
-            System.out.println("✗ Ping failed: " + e.getMessage());
-            disconnect();
-        }
+        // On envoie juste le PING, le Thread d'écoute s'occupera d'afficher le PONG
+        out.println("PING");
     }
 
     /**
@@ -128,15 +138,8 @@ public class client {
      */
     private void quit() {
         if (connected) {
-            try {
-                out.println("QUIT");
-                String response = in.readLine();
-                System.out.println("Server: " + response);
-            } catch (IOException e) {
-                System.out.println("Error during disconnect: " + e.getMessage());
-            } finally {
-                disconnect();
-            }
+            out.println("QUIT");
+            disconnect(); // On force la déconnexion locale
         } else {
             System.out.println("Not connected to any server.");
         }
@@ -146,6 +149,8 @@ public class client {
      * Ferme la connexion
      */
     private void disconnect() {
+        connected = false;
+        currentServer = null;
         try {
             if (in != null) in.close();
             if (out != null) out.close();
@@ -153,9 +158,6 @@ public class client {
         } catch (IOException e) {
             // Ignorer les erreurs de fermeture
         }
-
-        connected = false;
-        currentServer = null;
         System.out.println("Disconnected from server.");
     }
 
@@ -220,8 +222,11 @@ public class client {
                     break;
 
                 case "quit":
-                    quit();
-                    if (!connected) {
+                    if (connected) {
+                        // On se déconnecte du serveur (l'affichage repassera en [local] >)
+                        quit();
+                    } else {
+                        // Si on est DÉJÀ en local, on quitte le programme
                         System.out.println("Exiting client. Goodbye!");
                         scanner.close();
                         return;

@@ -35,14 +35,17 @@ public class ServerListService {
 
                     String message = new String(packet.getData(), 0, packet.getLength());
 
-                    // Éviter les doublons
+                    // On vérifie si c'est un nouveau serveur
                     if (!servers.contains(message)) {
                         servers.add(message);
-                        System.out.println("Server discovered: " + message);
-                    }
 
+                        // Affichage immédiat lors de la découverte
+                        String[] parts = message.split(":");
+                        if (parts.length == 3) {
+                            System.out.println("Nouveau serveur trouvé : " + parts[0] + " à l'adresse " + parts[1] + ":" + parts[2]);
+                        }
+                    }
                 } catch (SocketTimeoutException e) {
-                    // Timeout, continuer à écouter si le temps n'est pas écoulé
                     continue;
                 }
             }
@@ -68,8 +71,11 @@ public class ServerListService {
             System.out.println("No game servers available.");
         } else {
             System.out.println("\n=== Available Game Servers ===");
-            for (int i = 0; i < servers.size(); i++) {
-                System.out.println((i + 1) + ". " + servers.get(i));
+            for (String s : servers) {
+                String[] parts = s.split(":");
+                if (parts.length == 3) {
+                    System.out.println("- " + parts[0] + " | Adresse à taper: " + parts[1] + ":" + parts[2]);
+                }
             }
             System.out.println("==============================\n");
         }
