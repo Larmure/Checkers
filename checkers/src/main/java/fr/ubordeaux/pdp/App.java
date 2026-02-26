@@ -195,8 +195,12 @@ public class App {
         else if (color.equals("A")) {
           whiteIsAI = true;
           blackIsAI = true;
-        } else {
-          whiteIsAI = true; 
+        } else if (color.equals("")) {
+          whiteIsAI = true;
+        }
+        else {
+          System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
+          whiteIsAI = true;
         }
       }
       System.out.println(Internationalization.get("app.welcome"));
@@ -206,14 +210,14 @@ public class App {
       String message;
 
       if (e instanceof UnrecognizedOptionException) {
-          String opt = ((UnrecognizedOptionException) e).getOption();
-          message = Internationalization.get("app.error.unrecognized_option") + opt;
+        String opt = ((UnrecognizedOptionException) e).getOption();
+        message = Internationalization.get("app.error.unrecognized_option") + opt;
       } else if (e instanceof MissingArgumentException) {
-          org.apache.commons.cli.Option optionObj = ((MissingArgumentException) e).getOption();
-          String optName = optionObj.getOpt(); 
-          message = Internationalization.get("app.error.missing_arg") + optName;
+        org.apache.commons.cli.Option optionObj = ((MissingArgumentException) e).getOption();
+        String optName = optionObj.getOpt(); 
+        message = Internationalization.get("app.error.missing_arg") + optName;
       } else {
-          message = e.getMessage(); 
+        message = e.getMessage(); 
       }
       System.err.println(message);
       HelpFormatter formatter = new HelpFormatter();
