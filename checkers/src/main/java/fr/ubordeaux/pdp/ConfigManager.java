@@ -45,102 +45,114 @@ public class ConfigManager {
 
     try {
       List<String> lines = Files.readAllLines(configPath);
-
-      // Strict validation of the Header on the first line
-      if (lines.isEmpty() || !lines.get(0).trim().equals("[defaults]")) {
-        throw new IOException("Missing [defaults] header.");
-      }
-
+      boolean inDefaultsSection = false;
+      boolean foundHeader = false;
       boolean foundVerbose = false;
       boolean foundContest = false;
       boolean foundDebug = false;
       boolean foundBlitz = false;
       boolean foundTimeout = false;
 
-      // Iterate through lines after the header
-      for (int i = 1; i < lines.size(); i++) {
-        String line = lines.get(i).trim();
+      for (String line : lines) {
+        line = line.trim();
 
         // Skip empty lines or comments
         if (line.isEmpty() || line.startsWith("#")) {
           continue;
         }
 
-        // Split the line at the first '=' sign
-        String[] parts = line.split("=", 2);
-        if (parts.length < 2) {
+        if (line.startsWith("[") && line.endsWith("]")) {
+          // Check if we are entering the [defaults] section
+          if (line.equalsIgnoreCase("[defaults]")) {
+            inDefaultsSection = true;
+            foundHeader = true;
+          } else {
+            // If we encounter a different section header, stop parsing defaults
+            inDefaultsSection = false;
+          }
           continue;
         }
 
-        String key = parts[0].trim();
-        String value = parts[1].trim();
+        // Parse key-value pairs only if we are inside the [defaults] section
+        if (inDefaultsSection) {
+          String[] parts = line.split("=", 2);
+          if (parts.length < 2) {
+            continue; // Ignore lines that don't follow the 'key = value' format
+          }
 
-        switch (key) {
-          case "verbose":
-            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-              this.verbose = Boolean.parseBoolean(value);
-              foundVerbose = true;
-            } else {
-              System.err.println(Internationalization.get("config.warn.invalid_value") + value);
-              this.verbose = Utils.DEFAULT_VERBOSE;
-            }
-            break;
+          String key = parts[0].trim();
+          String value = parts[1].trim();
 
-          case "blitz":
-            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-              this.blitz = Boolean.parseBoolean(value);
-              foundBlitz = true;
-            } else {
-              System.err.println("Warning: Invalid value for 'blitz': " + value);
-              this.blitz = Utils.DEFAULT_BLITZ;
-            }
-            break;
+          switch (key) {
+            case "verbose":
+              if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                this.verbose = Boolean.parseBoolean(value);
+                foundVerbose = true;
+              } else {
+                System.err.println(Internationalization.get("config.warn.invalid_value") + value);
+                this.verbose = Utils.DEFAULT_VERBOSE;
+              }
+              break;
 
-          case "timeout":
-            try {
-              this.time = Integer.parseInt(value);
-              foundTimeout = true;
-            } catch (NumberFormatException e) {
-              System.err.println("Warning: Invalid value for 'timeout': " + value);
-              this.time = Utils.DEFAULT_TIME;
-            }
-            break;
+            case "blitz":
+              if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                this.blitz = Boolean.parseBoolean(value);
+                foundBlitz = true;
+              } else {
+                System.err.println("Warning: Invalid value for 'blitz': " + value);
+                this.blitz = Utils.DEFAULT_BLITZ;
+              }
+              break;
 
-          case "contest":
-            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-              this.contest = Boolean.parseBoolean(value);
-              foundContest = true;
-            } else {
-              System.err.println("Warning: Invalid value for 'contest': " + value);
-              this.contest = Utils.DEFAULT_CONTEST;
-            }
-            break;
+            case "timeout":
+              try {
+                this.time = Integer.parseInt(value);
+                foundTimeout = true;
+              } catch (NumberFormatException e) {
+                System.err.println("Warning: Invalid value for 'timeout': " + value);
+                this.time = Utils.DEFAULT_TIME;
+              }
+              break;
 
-          case "debug":
-            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-              this.debug = Boolean.parseBoolean(value);
-              foundDebug = true;
-            } else {
-              System.err.println("Warning: Invalid value for 'debug': " + value);
-              this.debug = Utils.DEFAULT_DEBUG;
-            }
-            break;
+            case "contest":
+              if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                this.contest = Boolean.parseBoolean(value);
+                foundContest = true;
+              } else {
+                System.err.println("Warning: Invalid value for 'contest': " + value);
+                this.contest = Utils.DEFAULT_CONTEST;
+              }
+              break;
 
-          case "size":
-            if (Utils.VALID_SIZES.contains(Integer.valueOf(value))) {
-              this.size = Integer.parseInt(value);
-            } else {
-              System.err.println("Warning: Invalid size for 'size': " + value);
-              this.size = Utils.DEFAULT_BOARD_SIZE;
-            }
-            break;
+            case "debug":
+              if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                this.debug = Boolean.parseBoolean(value);
+                foundDebug = true;
+              } else {
+                System.err.println("Warning: Invalid value for 'debug': " + value);
+                this.debug = Utils.DEFAULT_DEBUG;
+              }
+              break;
 
-          default:
-            System.err.println(Internationalization.get("config.warn.unknown_key") + key);
-            break;
+            case "size":
+              if (Utils.VALID_SIZES.contains(Integer.valueOf(value))) {
+                this.size = Integer.parseInt(value);
+              } else {
+                System.err.println("Warning: Invalid size for 'size': " + value);
+                this.size = Utils.DEFAULT_BOARD_SIZE;
+              }
+              break;
+
+            default:
+              System.err.println(Internationalization.get("config.warn.unknown_key") + key);
+              break;
+
+          }
         }
       }
-
+      if (!foundHeader) {
+        throw new IOException("The required [defaults] header is missing from the configuration file.");
+      }
       // Check if keys were found
       if (!foundVerbose) {
         System.err.println("Note: 'verbose' key not found. Using default: " + Utils.DEFAULT_VERBOSE);
