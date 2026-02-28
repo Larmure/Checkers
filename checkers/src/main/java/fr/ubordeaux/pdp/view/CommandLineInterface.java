@@ -6,6 +6,7 @@ import java.util.Scanner;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Utils;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 /**
  * Concrete implementation of {@link GameView} providing an interactive text-based shell.
@@ -24,15 +25,21 @@ public class CommandLineInterface extends GameView {
   /** Flag to enable debug. */
   private boolean debug = false;
 
+  private boolean blitz = false;
+
   /**
    * Constructs a CommandLineInterface with specific logging levels.
    *
    * @param verbose Enable or disable verbose output.
    * @param debug Enable or disable debug output.
+   * @param blitz Enable or disable blitz mode.
    */
-  public CommandLineInterface(boolean verbose, boolean debug) {
+  public CommandLineInterface(boolean verbose, boolean debug, boolean blitz) {
     this.verbose = verbose;
     this.debug = debug;
+    this.blitz = blitz;
+
+    Internationalization.init();
   }
 
   /**
@@ -40,15 +47,28 @@ public class CommandLineInterface extends GameView {
    */
   @Override
   public void display(GameCheckers game) {
-    System.out.println("\n=== GAME BOARD ===");
+    System.out.println(Internationalization.get("game.board_title"));
     
     // On utilise le toString() du Board que tu as fourni dans tes fichiers
     // C'est ici que la Vue "lit" le modèle sans le modifier
     System.out.println(game.getBoard().toString());
     
     // Affichage des infos de tour
-    String tour = game.getCurrentPlayer().toString(); // Assure-toi que Player a un toString
-    System.out.println("Turn : " + tour);
+    String tour = game.getCurrentPlayer().getName(); 
+    System.out.println(String.format(Internationalization.get("game.turn"), tour));
+
+    if(blitz)
+    {
+      int totalSeconds = game.getCurrentPlayer().getPlayTime();
+      int minutes = totalSeconds / 60;
+      int seconds = totalSeconds % 60;
+
+      String formattedTime = String.format("%02d:%02d", minutes, seconds);
+
+      String template = Internationalization.get("game.time_remaining");
+
+      System.out.println(String.format(template, game.getCurrentPlayer().getName(), formattedTime));
+    }
     System.out.println("======================\n");
   }
 
@@ -99,7 +119,6 @@ public class CommandLineInterface extends GameView {
           String[] tokens = input.split("\\s+");
 
           if (input.matches(Utils.MOVE_REGEX)) {
-            System.out.println("MOVE : " + tokens[0] + "-" + tokens[1]);
             controller.executeMove(tokens[0], tokens[1]);
           } else {
             String commandName = tokens[0];     

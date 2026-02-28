@@ -79,7 +79,7 @@ public class App {
     //}
     
     // Status EXIT_SUCCESS means continue execution normally
-    GameView view = new CommandLineInterface(verbose, debug);
+    GameView view = new CommandLineInterface(verbose, debug, blitz);
     GameController controller = new GameController(view);
     controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteIsAI, blackIsAI));
     controller.start(); 

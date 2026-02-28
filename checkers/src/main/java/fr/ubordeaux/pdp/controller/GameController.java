@@ -5,7 +5,9 @@ import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Configuration;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.controller.commands.*;
-
+import fr.ubordeaux.pdp.model.Internationalization;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Orchestrator of the game logic and user interactions.
@@ -25,6 +27,8 @@ public class GameController {
 
   private Configuration configuration;
 
+  private Timer blitzTimer;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -32,6 +36,7 @@ public class GameController {
    */
   public GameController(GameView view) {
     this.view = view;
+    Internationalization.init();
   }
 
   /**
@@ -89,16 +94,13 @@ public class GameController {
     this.configuration =  new Configuration(configuration);
     game.addObserver(view);
 
-    System.out.println("");
-    System.out.println("RULES:");
-    System.out.println("- The board is 8x8. Each player starts with 12 pieces on the dark squares.");
-    System.out.println("- Pieces move diagonally forward, one square at a time.");
-    System.out.println("- To capture an opponent's piece, jump over it diagonally to the empty square behind it.");
-    System.out.println("- If you can capture, you must. You can chain multiple captures in one turn.");
-    System.out.println("- Reach the opponent's back row to become a King (moves diagonally in all directions).");
-    System.out.println("- The player who captures all opponent's pieces (or blocks them) wins.");
-    System.out.println("");
-    System.out.println("To apply movements, enter for example: E1 F2");
+    String rules = Internationalization.get("game.rules");
+    System.out.println(rules);
+
+    if (configuration.isBlitz())
+    {
+      startBlitzTimer();
+    }
 
     displayBoard();
   }
@@ -107,7 +109,15 @@ public class GameController {
   {
     game.applyMove(from, to);
     
-    if(game.getState().isGameOver()) game.setState(game.checkGameOver()); 
+    if(configuration.isBlitz()) {
+      startBlitzTimer(); 
+    }
+    
+    if(game.getState().isGameOver()) 
+    {
+      game.setState(game.checkGameOver());
+      stopBlitzTimer();
+    } 
   }
 
   public void displayBoard() {
@@ -116,6 +126,34 @@ public class GameController {
 
   public void displayConfiguration() {
     System.out.println(configuration);
+  }
+
+  private void startBlitzTimer() {
+    stopBlitzTimer();
+    blitzTimer = new Timer(true); // daemon = s'arrête avec le programme
+    blitzTimer.scheduleAtFixedRate(new TimerTask() {
+        @Override
+        public void run() {
+            // 1. Mise à jour de la logique uniquement (pas d'affichage constant)
+            game.timerPlayer();
+
+            int totalSeconds = game.getCurrentPlayer().getPlayTime();
+
+            // 2. On intervient dans la console UNIQUEMENT si le temps est écoulé
+            if (totalSeconds <= 0) {
+                stopBlitzTimer();             
+                System.out.println("\n" + Internationalization.get("game.time_up") + game.getCurrentPlayer().getName());
+                game.setState(new fr.ubordeaux.pdp.model.FinishedState());
+            }
+        }
+    }, 1000, 1000);
+  }
+
+  public void stopBlitzTimer() {
+    if (blitzTimer != null) {
+      blitzTimer.cancel();
+      blitzTimer = null;
+    }
   }
   
   public boolean isVerbose() {

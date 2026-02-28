@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.model;
 import fr.ubordeaux.pdp.view.GameView;
 import java.util.ArrayList;
 import java.util.List;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
@@ -34,15 +35,24 @@ public class GameCheckers implements Subject {
     this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
     this.state = new InGameState(this);
+    Internationalization.init();
+
+    // MODE IA
     if (configuration.isWhiteIsAI() == true) {
       this.whitePlayer = new AIPlayer("White AI");
     } else {
-      this.whitePlayer = new HumanPlayer("White Player");
+      this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
     if (configuration.isBlackIsAI() == true) {
       this.blackPlayer = new AIPlayer("Black AI");
     } else {
-      this.blackPlayer = new HumanPlayer("Black Player");
+      this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
+    }
+
+    // MODE BLITZ
+    if(configuration.isBlitz() == true) {
+      this.whitePlayer.setPlayTime(configuration.getTime());
+      this.blackPlayer.setPlayTime(configuration.getTime());
     }
   }
 
@@ -134,15 +144,18 @@ public class GameCheckers implements Subject {
   public void applyMove(String fromS, String toS) {
     Move move = null;
     int from, to;
+    List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
+    
     try {
         from = this.board.squareToIndex(fromS);
         to = this.board.squareToIndex(toS);
     } catch (IllegalArgumentException e) {
-        System.err.println("Invalid square: " + e.getMessage());
+        System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+        
         return;
     }
 
-    for (Move m : this.getPossibleMoves(this.getCurrentPlayer())) {
+    for (Move m : possibleMoves) {
       if (m.getFrom() == from && m.getTo() == to) {
         move = m;
         break; 
@@ -150,10 +163,9 @@ public class GameCheckers implements Subject {
     }
 
     if (move == null) {
-      System.err.println("Invalid move: Rule violation or mandatory capture missing.");
-      System.out.println("Here are all valid moves for " + getCurrentPlayer().getName() + ":");
+      System.err.println(Internationalization.get("game.invalid_move"));     
+      System.out.println(String.format(Internationalization.get("game.display_valid_moves"), getCurrentPlayer().getName()));
       
-      List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
       for (Move m : possibleMoves) {
         String fromSquare = this.board.indexToSquare(m.getFrom());
         String toSquare   = this.board.indexToSquare(m.getTo());
@@ -213,10 +225,10 @@ public class GameCheckers implements Subject {
   }
 
   /**
- * Returns the white player instance.
- *
- * @return The white player.
- */
+   * Returns the white player instance.
+   *
+   * @return The white player.
+   */
   public Player getWhitePlayer() {
     return this.whitePlayer;
   }
@@ -228,5 +240,18 @@ public class GameCheckers implements Subject {
    */
   public Player getBlackPlayer() {
     return this.blackPlayer;
+  }
+
+  /** 
+   * Updates the play time of the current player by decrementing it by 1 second.
+   */
+  public void timerPlayer() {
+    if (isWhiteTurn) {
+      int newTime = whitePlayer.getPlayTime() - 1;
+      whitePlayer.setPlayTime(newTime);
+    } else {
+      int newTime = blackPlayer.getPlayTime() - 1;
+      blackPlayer.setPlayTime(newTime);
+    }
   }
 }
