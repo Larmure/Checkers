@@ -3,7 +3,6 @@ package fr.ubordeaux.pdp.model;
 import fr.ubordeaux.pdp.view.GameView;
 import java.util.ArrayList;
 import java.util.List;
-import fr.ubordeaux.pdp.model.Internationalization;
 
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
@@ -34,7 +33,7 @@ public class GameCheckers implements Subject {
   public GameCheckers(Configuration configuration) {
     this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
-    this.state = new InGameState(this);
+    this.state = State.IN_GAME;
     Internationalization.init();
 
     // MODE IA
@@ -51,8 +50,10 @@ public class GameCheckers implements Subject {
 
     // MODE BLITZ
     if(configuration.isBlitz() == true) {
-      this.whitePlayer.setPlayTime(configuration.getTime());
-      this.blackPlayer.setPlayTime(configuration.getTime());
+      int timeInSeconds = configuration.getTime() * 60; 
+      
+      this.whitePlayer.setPlayTime(timeInSeconds);
+      this.blackPlayer.setPlayTime(timeInSeconds);
     }
   }
 
@@ -145,6 +146,12 @@ public class GameCheckers implements Subject {
     Move move = null;
     int from, to;
     List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
+
+    if(state == State.PAUSE) 
+    {
+      System.out.println(Internationalization.get("game.game_paused"));
+      return;
+    }
     
     try {
         from = this.board.squareToIndex(fromS);
@@ -193,7 +200,7 @@ public class GameCheckers implements Subject {
 
     // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
-      return new FinishedState();
+      return State.FINISHED;
     }
 
     return this.state;

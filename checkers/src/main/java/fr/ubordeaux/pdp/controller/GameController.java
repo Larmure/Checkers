@@ -6,6 +6,7 @@ import fr.ubordeaux.pdp.model.Configuration;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.controller.commands.*;
 import fr.ubordeaux.pdp.model.Internationalization;
+import fr.ubordeaux.pdp.model.State;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -62,7 +63,7 @@ public class GameController {
       case "quit" -> new QuitCommand();
       case "load" -> new LoadCommand();
       case "save" -> new SaveCommand();
-      case "pause" -> new PauseCommand(blitzTimer);
+      case "pause" -> new PauseCommand(blitzTimer, game);
       case "hint" -> new HintCommand();
       case "undo" -> new UndoCommand();
       case "redo" -> new RedoCommand();
@@ -114,7 +115,7 @@ public class GameController {
       startBlitzTimer(); 
     }
     
-    if(game.getState().isGameOver()) 
+    if(game.getState().equals(State.FINISHED)) 
     {
       game.setState(game.checkGameOver());
       stopBlitzTimer();
@@ -144,7 +145,7 @@ public class GameController {
             if (totalSeconds <= 0) {
                 stopBlitzTimer();             
                 System.out.println("\n" + Internationalization.get("game.time_up") + game.getCurrentPlayer().getName());
-                game.setState(new fr.ubordeaux.pdp.model.FinishedState());
+                game.setState(State.FINISHED);
             }
         }
     }, 1000, 1000);

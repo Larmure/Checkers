@@ -2,7 +2,7 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.InGameState;
+import fr.ubordeaux.pdp.model.State;
 
 public class ContinueCommand implements Command {
     private final GameCheckers game;
@@ -13,7 +13,7 @@ public class ContinueCommand implements Command {
 
     @Override
     public void execute() {
-        game.setState(new InGameState(game));
+        game.setState(State.IN_GAME);
         game.notifyObservers();
     }   
 }
