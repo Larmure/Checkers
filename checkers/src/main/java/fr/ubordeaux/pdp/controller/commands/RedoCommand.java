@@ -2,12 +2,13 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class RedoCommand implements Command, Helpable {
 
   @Override
   public void execute() {
-      System.out.println("Redo: This feature is not implemented yet.");
+      System.out.println(Internationalization.get("redo.execute"));
   }
 
   /**
@@ -17,7 +18,7 @@ public class RedoCommand implements Command, Helpable {
    */
   @Override
   public String getHelp() {
-      return "redo [N] : Replay the last canceled move. (or the N-last)";
+      return Internationalization.get("redo.help");
   }
 
 }

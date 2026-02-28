@@ -11,6 +11,7 @@ import org.apache.commons.cli.ParseException;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.Configuration;
+import fr.ubordeaux.pdp.model.Internationalization;
 import fr.ubordeaux.pdp.model.Utils;
 
 /**
@@ -65,7 +66,7 @@ public class NewCommand implements Command, Helpable {
 
       
     } catch (ParseException | NumberFormatException e) {
-      System.out.println("Invalid command syntax: " + e.getMessage());
+      System.out.println(Internationalization.get("new.invalid") + e.getMessage());
     }
   }
 
@@ -96,7 +97,7 @@ public class NewCommand implements Command, Helpable {
    */
   @Override
   public String getHelp() {
-    return "new [ARGS] : Start a new game\nARGS availaible : -blitz\n-time [MINUTES]\n-contest\n-size [8|10|12]";
+    return Internationalization.get("new.help");
   }
     
 }

@@ -2,12 +2,13 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class PauseCommand implements Command, Helpable {
 
     @Override
     public void execute() {
-        System.out.println("Pause: This feature is not implemented yet.");
+        System.out.println(Internationalization.get("pause.execute"));
     }
 
     /**
@@ -17,7 +18,7 @@ public class PauseCommand implements Command, Helpable {
      */
     @Override
     public String getHelp() {
-        return "pause : Stop the time in blitz.";
+        return Internationalization.get("pause.help");
     }
 
 }

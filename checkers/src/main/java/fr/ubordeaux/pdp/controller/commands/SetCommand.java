@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class SetCommand implements Command, Helpable {
 
@@ -27,7 +28,7 @@ public void execute() {
     
     String[] parts = args[0].split("=", 2);
     if (parts.length < 2) {
-        System.out.println("Invalid format. Expected PARAM=VALUE.\n" + getHelp());
+        System.out.println(Internationalization.get("set.execute.format") + getHelp());
         return;
     }
     
@@ -35,16 +36,16 @@ public void execute() {
     String value = parts[1].trim().toLowerCase();
     
     if (!value.equals("true") && !value.equals("false")) {
-        System.out.println("Invalid value '" + value + "'. Only true or false are accepted.");
+        System.out.println(Internationalization.get("set.execute.value1") + value + Internationalization.get("set.execute.value2"));
         return;
     }
     
     boolean boolValue = Boolean.parseBoolean(value);
     
     switch (param) {
-      case "debug"   -> { controller.setDebug(boolValue);   System.out.println("debug set to " + boolValue);   }
-      case "verbose" -> { controller.setVerbose(boolValue); System.out.println("verbose set to " + boolValue); }
-      default -> System.out.println("'" + param + "' is not a valid parameter. Only debug or verbose are accepted.");
+      case "debug"   -> { controller.setDebug(boolValue);   System.out.println(Internationalization.get("set.debug") + boolValue);   }
+      case "verbose" -> { controller.setVerbose(boolValue); System.out.println(Internationalization.get("set.verbose") + boolValue); }
+      default -> System.out.println("'" + param + Internationalization.get("set.parameter"));
     }
 }
 
@@ -55,7 +56,7 @@ public void execute() {
    */
   @Override
   public String getHelp() {
-    return "set PARAM=VALUE : Change the current configuration.\nExemple: 'set debug=true'";
+    return Internationalization.get("set.help");
   }
 
 }

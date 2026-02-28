@@ -2,12 +2,13 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class HintCommand implements Command, Helpable {
 
     @Override
     public void execute() {
-        System.out.println("Hint: This feature is not implemented yet. Please try to find the best move on your own!");
+        System.out.println(Internationalization.get("hint.execute"));
     }
 
     /**
@@ -17,7 +18,7 @@ public class HintCommand implements Command, Helpable {
      */
     @Override
     public String getHelp() {
-        return "hint : Display a recommanded move.";
+        return Internationalization.get("hint.help");
     }
 
 }

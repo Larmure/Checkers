@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class ShowCommand implements Command, Helpable {
 
@@ -26,10 +27,10 @@ public class ShowCommand implements Command, Helpable {
 
     switch (args[0]) {
       case "board" -> controller.displayBoard();
-      case "history" -> throw new IllegalArgumentException("show history not implemented yet.");
-      case "time" -> throw new IllegalArgumentException("show time not implemented yet.");
+      case "history" -> System.out.println(Internationalization.get("show.history"));
+      case "time" -> System.out.println(Internationalization.get("show.time"));
       case "configuration" -> controller.displayConfiguration();
-      default -> System.out.println(args[0] + " is not a valid option.\nOnly board | history | time | configuration are accepted.");
+      default -> System.out.println(args[0] + Internationalization.get("show.default"));
     }
   }
 
@@ -40,7 +41,7 @@ public class ShowCommand implements Command, Helpable {
    */
   @Override
   public String getHelp() {
-    return "show board|history|time|configuration : Display the board, moves history, the remaining time of each player or the configuration.";
+    return Internationalization.get("show.help");
   }
 
 }
