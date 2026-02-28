@@ -1,11 +1,16 @@
 package fr.ubordeaux.pdp.view;
 
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Scanner;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Utils;
+
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 
 /**
  * Concrete implementation of {@link GameView} providing an interactive text-based shell.
@@ -23,6 +28,9 @@ public class CommandLineInterface extends GameView {
 
   /** Flag to enable debug. */
   private boolean debug = false;
+
+  private Terminal terminal;
+  private LineReader lineReader;
 
   /**
    * Constructs a CommandLineInterface with specific logging levels.
@@ -68,45 +76,40 @@ public class CommandLineInterface extends GameView {
    */
   @Override
   public void start() {
+    try {
+      terminal = TerminalBuilder.terminal();
+    } catch (IOException ex) {
+      System.getLogger(CommandLineInterface.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+    }
+    lineReader = LineReaderBuilder.builder().terminal(terminal).build();
+
+
     inputThread = new Thread(() -> {
-      if (verbose) {
-        System.out.println("[Info] CLI mode started with verbose output.");
-      }
-      if (debug) {
-        System.out.println("[Debug] CLI mode started with debug output.");
-      }
+      if (verbose) System.out.println("[Info] CLI mode started with verbose output.");
+      if (debug) System.out.println("[Debug] CLI mode started with debug output.");
 
-      // We must not close "System.in"
-      @SuppressWarnings("resource")
-      Scanner scanner = new Scanner(System.in);
-
-      // Wait for user commands and execute them
       while (true) {
-        System.out.print(">> ");
-
-        if (!scanner.hasNextLine()) {
-          break;
+        String input;
+        try {
+            input = lineReader.readLine(">> ").trim(); // JLine gère les flèches et Ctrl+R
+        } catch (org.jline.reader.EndOfFileException | org.jline.reader.UserInterruptException e) {
+            break;
         }
-      
-        String input = scanner.nextLine().trim();
-      
+
         if (input.isEmpty()) {
           continue;
         }
-      
-        try {
-          // Split the input into tokens
-          String[] tokens = input.split("\\s+");
 
+        try {
+          String[] tokens = input.split("\\s+");
           if (input.matches(Utils.MOVE_REGEX)) {
             System.out.println("MOVE : " + tokens[0] + "-" + tokens[1]);
             controller.executeMove(tokens[0], tokens[1]);
           } else {
-            String commandName = tokens[0];     
+            String commandName = tokens[0];
             String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
             controller.executeCommand(commandName, args);
           }
-
         } catch (Exception e) {
           System.out.println("Invalid input: " + e.getMessage());
         }
