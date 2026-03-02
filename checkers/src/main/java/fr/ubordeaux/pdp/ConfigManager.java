@@ -99,7 +99,7 @@ public class ConfigManager {
                 this.blitz = Boolean.parseBoolean(value);
                 foundBlitz = true;
               } else {
-                System.err.println("Warning: Invalid value for 'blitz': " + value);
+                System.err.println(Internationalization.get("config.warn.invalid_generic", "blitz", value));
                 this.blitz = Utils.DEFAULT_BLITZ;
               }
               break;
@@ -109,7 +109,7 @@ public class ConfigManager {
                 this.time = Integer.parseInt(value);
                 foundTimeout = true;
               } catch (NumberFormatException e) {
-                System.err.println("Warning: Invalid value for 'timeout': " + value);
+                System.err.println(Internationalization.get("config.warn.invalid_generic", "timeout", value));
                 this.time = Utils.DEFAULT_TIME;
               }
               break;
@@ -119,7 +119,7 @@ public class ConfigManager {
                 this.contest = Boolean.parseBoolean(value);
                 foundContest = true;
               } else {
-                System.err.println("Warning: Invalid value for 'contest': " + value);
+                System.err.println(Internationalization.get("config.warn.invalid_generic", "contest", value));
                 this.contest = Utils.DEFAULT_CONTEST;
               }
               break;
@@ -129,7 +129,7 @@ public class ConfigManager {
                 this.debug = Boolean.parseBoolean(value);
                 foundDebug = true;
               } else {
-                System.err.println("Warning: Invalid value for 'debug': " + value);
+                System.err.println(Internationalization.get("config.warn.invalid_generic", "debug", value));
                 this.debug = Utils.DEFAULT_DEBUG;
               }
               break;
@@ -138,7 +138,7 @@ public class ConfigManager {
               if (Utils.VALID_SIZES.contains(Integer.valueOf(value))) {
                 this.size = Integer.parseInt(value);
               } else {
-                System.err.println("Warning: Invalid size for 'size': " + value);
+                System.err.println(Internationalization.get("config.warn.invalid_size", value));
                 this.size = Utils.DEFAULT_BOARD_SIZE;
               }
               break;
@@ -151,31 +151,31 @@ public class ConfigManager {
         }
       }
       if (!foundHeader) {
-        throw new IOException("The required [defaults] header is missing from the configuration file.");
+        throw new IOException(Internationalization.get("config.error.missing_header"));
       }
       // Check if keys were found
       if (!foundVerbose) {
-        System.err.println("Note: 'verbose' key not found. Using default: " + Utils.DEFAULT_VERBOSE);
+        System.err.println(Internationalization.get("config.warn.key_not_found", "verbose", Utils.DEFAULT_VERBOSE));
         this.verbose = Utils.DEFAULT_VERBOSE;
       }
 
       if (!foundContest) {
-        System.err.println("Note: 'contest' key not found. Using default: " + Utils.DEFAULT_CONTEST);
+        System.err.println(Internationalization.get("config.warn.key_not_found", "contest", Utils.DEFAULT_VERBOSE));
         this.contest = Utils.DEFAULT_CONTEST;
       }
 
       if (!foundDebug) {
-        System.err.println("Note: 'debug' key not found. Using default: " + Utils.DEFAULT_DEBUG);
+        System.err.println(Internationalization.get("config.warn.key_not_found", "debug", Utils.DEFAULT_VERBOSE));
         this.debug = Utils.DEFAULT_DEBUG;
       }
 
       if (!foundTimeout) {
-        System.err.println("Note: 'timeout' key not found. Using default: " + Utils.DEFAULT_TIME);
+        System.err.println(Internationalization.get("config.warn.key_not_found", "timeout", Utils.DEFAULT_VERBOSE));
         this.time = Utils.DEFAULT_TIME;
       }
 
       if (!foundBlitz) {
-        System.err.println("Note: 'blitz' key not found. Using default: " + Utils.DEFAULT_BLITZ);
+        System.err.println(Internationalization.get("config.warn.key_not_found", "blitz", Utils.DEFAULT_VERBOSE));
         this.blitz = Utils.DEFAULT_BLITZ;
       }
 
@@ -206,9 +206,9 @@ public class ConfigManager {
       writer.println("contest = " + Utils.DEFAULT_CONTEST);
       writer.println("size = " + Utils.DEFAULT_BOARD_SIZE);
       writer.println("debug = " + Utils.DEFAULT_DEBUG);
-      System.out.println("Default configuration file created successfully in : " + path.toString());
+      System.err.println(Internationalization.get("config.info.created", path.toString()));
     } catch (IOException e) {
-      System.err.println("Critical Error: Could not create configuration file.");
+      System.err.println(Internationalization.get("config.info.created"));
     }
   }
 

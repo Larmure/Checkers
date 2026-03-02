@@ -149,12 +149,12 @@ public class App {
       }
 
       if (cmd.hasOption("v")) {
-        System.out.println("Verbose mode enabled.");
+        System.out.println(Internationalization.get("opt.verbose.status"));
         verbose = true;
       }
 
       if (cmd.hasOption("d")) {
-        System.out.println("Debug mode enabled.");
+        System.out.println(Internationalization.get("opt.debug.status"));
         debug = true;
       }
 
@@ -164,23 +164,23 @@ public class App {
       }
       
       if (cmd.hasOption("b")) {
-        System.out.println("Blitz mode enabled.");
+        System.out.println(Internationalization.get("opt.blitz.status"));
         blitz = true;
       }
 
       if (cmd.hasOption("t")) {
         time = Integer.parseInt(cmd.getOptionValue("t"));
-        System.out.println("Time limit set to " + time + ".");
+        System.out.println(Internationalization.get("opt.time.status", time));
       }
 
       if (cmd.hasOption("c")) {
-        System.out.println("Contest mode enabled.");
+        System.out.println(Internationalization.get("opt.contest.status"));
         contest = true;
       }
 
       if (cmd.hasOption("s")) {
         size = Integer.parseInt(cmd.getOptionValue("s"));
-        System.out.println("Board size : " + size + ".");
+        System.out.println(Internationalization.get("opt.size.status") + size + ".");
       }
 
       if (cmd.hasOption("a")) {

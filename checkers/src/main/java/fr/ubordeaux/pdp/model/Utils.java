@@ -18,7 +18,7 @@ public class Utils {
   public static final int DEFAULT_BOARD_SIZE = 8;
   public static final boolean DEFAULT_DEBUG = false;
   public static final boolean DEFAULT_VERBOSE = false;
-  public static final boolean DEFAULT_BLITZ = true;
+  public static final boolean DEFAULT_BLITZ = false;
   public static final int DEFAULT_TIME = 30;
   public static final boolean DEFAULT_CONTEST = false;
   public static final boolean DEFAULT_WHITE_AI = false;
