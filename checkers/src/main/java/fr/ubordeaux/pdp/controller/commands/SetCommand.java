@@ -10,7 +10,7 @@ public class SetCommand implements Command, Helpable {
 
   /** The raw arguments provided by the user in the shell. */
   private final String[] args;
-  
+
   /** The controller to which the game initialization is delegated. */
   private final GameController controller;
 
@@ -20,34 +20,41 @@ public class SetCommand implements Command, Helpable {
   }
 
   @Override
-public void execute() {
+  public void execute() {
     if (args == null || args.length == 0) {
-        System.out.println(getHelp());
-        return;
+      System.out.println(getHelp());
+      return;
     }
-    
+
     String[] parts = args[0].split("=", 2);
     if (parts.length < 2) {
-        System.out.println(Internationalization.get("set.execute.format") + getHelp());
-        return;
+      System.out.println(Internationalization.get("set.execute.format") + getHelp());
+      return;
     }
-    
+
     String param = parts[0].trim().toLowerCase();
     String value = parts[1].trim().toLowerCase();
-    
+
     if (!value.equals("true") && !value.equals("false")) {
-        System.out.println(Internationalization.get("set.execute.value1") + value + Internationalization.get("set.execute.value2"));
-        return;
+      System.out.println(Internationalization.get("set.execute.value1") + value
+          + Internationalization.get("set.execute.value2"));
+      return;
     }
-    
+
     boolean boolValue = Boolean.parseBoolean(value);
-    
+
     switch (param) {
-      case "debug"   -> { controller.setDebug(boolValue);   System.out.println(Internationalization.get("set.debug") + boolValue);   }
-      case "verbose" -> { controller.setVerbose(boolValue); System.out.println(Internationalization.get("set.verbose") + boolValue); }
+      case "debug" -> {
+        controller.setDebug(boolValue);
+        System.out.println(Internationalization.get("set.debug") + boolValue);
+      }
+      case "verbose" -> {
+        controller.setVerbose(boolValue);
+        System.out.println(Internationalization.get("set.verbose") + boolValue);
+      }
       default -> System.out.println("'" + param + Internationalization.get("set.parameter"));
     }
-}
+  }
 
   /**
    * Returns the help string for the set command.
