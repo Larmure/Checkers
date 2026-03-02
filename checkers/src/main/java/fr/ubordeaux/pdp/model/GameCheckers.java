@@ -1,12 +1,13 @@
 package fr.ubordeaux.pdp.model;
 
-import fr.ubordeaux.pdp.view.GameView;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.ubordeaux.pdp.view.GameView;
+
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
- * 
+ *
  * <p>This class acts as the central model in the MVC architecture, coordinating
  * interactions between the board, players, and game state. It implements the
  * {@link Subject} interface to notify registered views of state changes.
@@ -19,6 +20,7 @@ public class GameCheckers implements Subject {
   private Player blackPlayer;
   private boolean isWhiteTurn;
   private List<GameView> observers;
+  private  Configuration configuration;
 
   /**
    * Constructs a new game instance.
@@ -26,11 +28,10 @@ public class GameCheckers implements Subject {
    * and grants the first turn to the white player.
    * Player types (Human or AI) are assigned based on the provided flags
    * 
-   * @param whiteIsAI True if the white player should be controlled by the AI.
-   * @param blackIsAI True if the black player should be controlled by the AI.
    */
 
   public GameCheckers(Configuration configuration) {
+    this .configuration=configuration;
     this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
     this.state = new InGameState(this);
@@ -66,7 +67,7 @@ public class GameCheckers implements Subject {
    */
   public void setState(State newState) {
     this.state = newState;
-  } 
+  }
 
   /**
    * Identifies the player whose turn it currently is.
@@ -97,7 +98,7 @@ public class GameCheckers implements Subject {
 
   /**
    * Retrieves all legal moves available for the specified player.
-   * 
+   *
    * <p>This method delegates to the board logic, which enforces rules such as
    * mandatory captures.
    *
@@ -145,21 +146,21 @@ public class GameCheckers implements Subject {
     for (Move m : this.getPossibleMoves(this.getCurrentPlayer())) {
       if (m.getFrom() == from && m.getTo() == to) {
         move = m;
-        break; 
+        break;
       }
     }
 
     if (move == null) {
       System.err.println("Invalid move: Rule violation or mandatory capture missing.");
       System.out.println("Here are all valid moves for " + getCurrentPlayer().getName() + ":");
-      
+
       List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
       for (Move m : possibleMoves) {
         String fromSquare = this.board.indexToSquare(m.getFrom());
         String toSquare   = this.board.indexToSquare(m.getTo());
         System.out.println("  -> " + fromSquare + " " + toSquare);
       }
-      
+
       return;
     }
 
@@ -170,7 +171,7 @@ public class GameCheckers implements Subject {
 
   /**
    * Evaluates if the game has reached an end condition.
-   * 
+   *
    * <p>Currently checks if the active player has any legal moves remaining.
    * If not, the game transitions to {@link FinishedState}.
    *
@@ -192,7 +193,7 @@ public class GameCheckers implements Subject {
     // Guard clause to prevent NullPointerException if no observers are registered yet.
     if (this.observers == null) {
       return;
-    } 
+    }
 
     for (GameView v : observers) {
       v.update(this);
@@ -211,6 +212,18 @@ public class GameCheckers implements Subject {
     }
     this.observers.add(observer);
   }
+
+  public boolean isWhiteTurn() {
+    return isWhiteTurn;
+  }
+
+  public void setWhiteTurn(boolean isWhite) {
+    this.isWhiteTurn = isWhite;
+  }
+  public Configuration getConfiguration() {
+    return configuration;
+  }
+
 
   /**
  * Returns the white player instance.
