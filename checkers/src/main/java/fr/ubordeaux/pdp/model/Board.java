@@ -439,15 +439,19 @@ public class Board {
     // Remove all captured pieces.
     for (int captured : move.getCaptured()) {
       if (isBitWhitePawn(captured)) {
+        move.getCapturedColors().add("WP"); 
         removeWhitePawn(captured);
       }
       if (isBitBlackPawn(captured)) {
+        move.getCapturedColors().add("BP"); 
         removeBlackPawn(captured);
       }
       if (isBitWhiteChecker(captured)) {
+        move.getCapturedColors().add("WC"); 
         removeWhiteChecker(captured);
       }
       if (isBitBlackChecker(captured)) {
+        move.getCapturedColors().add("BC"); 
         removeBlackChecker(captured);
       }
     }
@@ -1197,6 +1201,29 @@ public class Board {
     return score;
 }
 
+  public void restorePiece(int index, String type) {
+    if (index < 0 || index >= indexMax) {
+      throw new IllegalArgumentException("Index hors limites");
+    }
+    switch (type) {
+      case "WP": addWhitePawn(index); break;
+      case "BP": addBlackPawn(index); break;
+      case "WC": addWhiteChecker(index); break;
+      case "BC": addBlackChecker(index); break;
+    }
+  }
+
+  // Permet d'annuler une promotion (Dame -> Pion)
+  public void demoteBit(int index) {
+    if (isBitWhiteChecker(index)) {
+      removeWhiteChecker(index);
+      addWhitePawn(index);
+    } else if (isBitBlackChecker(index)) {
+      removeBlackChecker(index);
+      addBlackPawn(index);
+    }
+  }
+
   /**
   * FOR TESTING PURPOSES ONLY.
   */
@@ -1271,4 +1298,5 @@ public class Board {
   List<Integer> checkerSimpleTarg(String square) {
     return checkerSimpleTargets(squareToIndex(square));
   }
+
 }

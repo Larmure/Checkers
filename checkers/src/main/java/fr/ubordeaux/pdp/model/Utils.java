@@ -42,8 +42,8 @@ public class Utils {
       Map.entry("save", new SaveCommand()),
       Map.entry("pause", new PauseCommand(null, null)),
       Map.entry("hint", new HintCommand()),
-      Map.entry("undo", new UndoCommand()),
-      Map.entry("redo", new RedoCommand()),
+      Map.entry("undo", new UndoCommand(null)),
+      Map.entry("redo", new RedoCommand(null)),
       Map.entry("show", new ShowCommand(null, null)),
       Map.entry("set", new SetCommand(null, null)),
       Map.entry("continue", new ContinueCommand(null))

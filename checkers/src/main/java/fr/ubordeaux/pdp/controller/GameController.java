@@ -65,8 +65,8 @@ public class GameController {
       case "save" -> new SaveCommand();
       case "pause" -> new PauseCommand(blitzTimer, game);
       case "hint" -> new HintCommand();
-      case "undo" -> new UndoCommand();
-      case "redo" -> new RedoCommand();
+      case "undo" -> new UndoCommand(this);
+      case "redo" -> new RedoCommand(this);
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
@@ -222,5 +222,13 @@ public class GameController {
     }
     
     System.out.println("Séquence terminée.");
+  }
+
+  public void undoGame() {
+    game.undo();
+  }
+
+  public void redoGame() {
+    game.redo();
   }
 }

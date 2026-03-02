@@ -1,13 +1,19 @@
 package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 
 public class UndoCommand implements Command, Helpable {
+  private final GameController controller;
+
+  public UndoCommand(GameController controller) {
+    this.controller = controller;
+  }
 
   @Override
   public void execute() {
-      System.out.println("Undo: This feature is not implemented yet.");
+    controller.undoGame();
   }
 
   /**
