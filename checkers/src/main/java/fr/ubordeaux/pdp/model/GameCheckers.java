@@ -152,6 +152,12 @@ public class GameCheckers implements Subject {
       System.out.println(Internationalization.get("game.game_paused"));
       return;
     }
+
+    if(state == State.FINISHED) 
+    {
+      System.out.println(Internationalization.get("game.game_is_over"));
+      return;
+    }
     
     try {
         from = this.board.squareToIndex(fromS);
@@ -200,7 +206,8 @@ public class GameCheckers implements Subject {
 
     // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
-      return State.FINISHED;
+      setState(State.FINISHED);
+      return this.state;
     }
 
     return this.state;
