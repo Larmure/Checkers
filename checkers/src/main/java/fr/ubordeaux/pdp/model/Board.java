@@ -1256,6 +1256,14 @@ public class Board {
       addBlackPawn(f);
   }
 
+
+  public void clearAllBitboards() {
+    whitePawns1 = whitePawns2 = 0L;
+    blackPawns1 = blackPawns2 = 0L;
+    whiteCheckers1 = whiteCheckers2 = 0L;
+    blackCheckers1 = blackCheckers2 = 0L;
+}
+
   /**
    * Returns the list of simple target squares for a checker on a given square.
    *
@@ -1303,6 +1311,31 @@ public class Board {
 
   public long getBlackCheckers2() {
     return blackCheckers2;
+  }
+  public void setWhitePawns1(long v) { 
+    this.whitePawns1 = v;
+   }
+  public void setWhitePawns2(long v) {
+     this.whitePawns2 = v; 
+    }
+  public void setBlackPawns1(long v) {
+     this.blackPawns1 = v; 
+    }
+  public void setBlackPawns2(long v) {
+     this.blackPawns2 = v; 
+    }
+
+  public void setWhiteCheckers1(long v) {
+     this.whiteCheckers1 = v; 
+    }
+  public void setWhiteCheckers2(long v) {
+     this.whiteCheckers2 = v; 
+    }
+  public void setBlackCheckers1(long v) { 
+    this.blackCheckers1 = v; 
+  }
+  public void setBlackCheckers2(long v) { 
+    this.blackCheckers2 = v; 
   }
 
   

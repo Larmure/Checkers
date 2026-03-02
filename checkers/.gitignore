@@ -7,3 +7,4 @@ target/
 .classpath
 .idea/
 .vscode/
+checkers/Sauvegarde/*.txt

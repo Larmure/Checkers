@@ -3,8 +3,18 @@ package fr.ubordeaux.pdp.model;
 import java.util.Map;
 import java.util.Set;
 
-import fr.ubordeaux.pdp.controller.*;
-import fr.ubordeaux.pdp.controller.commands.*;
+import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.commands.HelpCommand;
+import fr.ubordeaux.pdp.controller.commands.HintCommand;
+import fr.ubordeaux.pdp.controller.commands.LoadCommand;
+import fr.ubordeaux.pdp.controller.commands.NewCommand;
+import fr.ubordeaux.pdp.controller.commands.PauseCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitCommand;
+import fr.ubordeaux.pdp.controller.commands.RedoCommand;
+import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.SetCommand;
+import fr.ubordeaux.pdp.controller.commands.ShowCommand;
+import fr.ubordeaux.pdp.controller.commands.UndoCommand;
 
 /**
  * Global utility class containing game constants and the command registry.
@@ -33,18 +43,18 @@ public class Utils {
    * are primarily used for metadata retrieval (like help strings) rather than execution.
    */
   public static final Map<String, Command> COMMANDS_MAP = Map.ofEntries(
-      Map.entry("new", new NewCommand(null, null)),
-      Map.entry("help", new HelpCommand(null)),
-      Map.entry("quit", new QuitCommand()),
-      Map.entry("load", new LoadCommand()),
-      Map.entry("save", new SaveCommand()),
-      Map.entry("pause", new PauseCommand()),
-      Map.entry("hint", new HintCommand()),
-      Map.entry("undo", new UndoCommand()),
-      Map.entry("redo", new RedoCommand()),
-      Map.entry("show", new ShowCommand(null, null)),
-      Map.entry("set", new SetCommand(null, null))
-    );
+          Map.entry("new", new NewCommand(null, null)),
+          Map.entry("help", new HelpCommand(null)),
+          Map.entry("quit", new QuitCommand()),
+          Map.entry("load", new LoadCommand(null,null)),
+          Map.entry("save", new SaveCommand(null, null)),
+          Map.entry("pause", new PauseCommand()),
+          Map.entry("hint", new HintCommand()),
+          Map.entry("undo", new UndoCommand()),
+          Map.entry("redo", new RedoCommand()),
+          Map.entry("show", new ShowCommand(null, null)),
+          Map.entry("set", new SetCommand(null, null))
+  );
 
   /**
    * A formatted list of all available commands and their expected syntax.

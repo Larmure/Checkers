@@ -66,6 +66,7 @@ public class Configuration {
 
   public boolean isDebug() {
     return debug;
+
   }
 
   @Override

@@ -1,0 +1,20 @@
+[settings] # Game configuration parameters
+starting-player=white # Can be black or white
+time-mode=blitz
+ai-mode=None
+ai-depth=2
+debug=false
+board-size=8
+
+[game] # Current board state
+o - o - o - o -
+- o - o - o - o
+o - o - o - o -
+- - - - - - - -
+- - - - - - - -
+- x - x - x - x
+x - x - x - x -
+- x - x - x - x
+
+[history] # Move history
+# History feature to be implemented
