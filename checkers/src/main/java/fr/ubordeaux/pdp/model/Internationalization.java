@@ -6,8 +6,9 @@ import java.util.ResourceBundle;
 
 /**
  * Handles application internationalization (i18n).
- * This class manages language detection based on system environment variables 
+ * This class manages language detection based on system environment variables
  * (LANG or LC_ALL) and provides localized strings using Resource Bundles.
+ * 
  * @version 1.0
  */
 public class Internationalization {
@@ -19,8 +20,9 @@ public class Internationalization {
 
   /**
    * Initializes the internationalization system.
-   * Detects the system locale and verifies if it is supported (English or French). 
-   * If the locale is unsupported, it defaults to English and prints a warning 
+   * Detects the system locale and verifies if it is supported (English or
+   * French).
+   * If the locale is unsupported, it defaults to English and prints a warning
    * message to the standard error output as per specifications.
    */
   public static void init() {
@@ -38,12 +40,22 @@ public class Internationalization {
   }
 
   /**
+   * Ensures that the resource bundle is initialized before accessing it.
+   */
+  private static void ensureInitialized() {
+    if (bundle == null) {
+      init();
+    }
+  }
+
+  /**
    * Retrieves a localized string for a given key.
    *
    * @param key The identifier for the localized message.
    * @return The localized string.
    */
   public static String get(String key) {
+    ensureInitialized(); // for tests purposes
     return bundle.getString(key);
   }
 }

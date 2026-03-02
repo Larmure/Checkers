@@ -3,79 +3,89 @@ package fr.ubordeaux.pdp.view;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Configuration;
-import org.junit.jupiter.api.AfterEach;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class CommandLineInterfaceTest {
 
-    private CommandLineInterface cli;
-    private SpyController spyController;
-    private final InputStream originalIn = System.in;
+  private CommandLineInterface cli;
+  private SpyController spyController;
 
-    @BeforeEach
-    void setUp() {
-        // Initialize the view in verbose/debug mode to cover those branches
-        cli = new CommandLineInterface(true, true);
-        spyController = new SpyController(null);
-        cli.setController(spyController);
+  @BeforeEach
+  void setUp() {
+    cli = new CommandLineInterface(true, true);
+    spyController = new SpyController(null);
+    cli.setController(spyController);
+  }
+
+  @Test
+  void testDisplayCalls() {
+    GameCheckers game = new GameCheckers(Configuration.getDefaultConfiguration());
+    assertDoesNotThrow(() -> cli.display(game));
+    assertDoesNotThrow(() -> cli.update(game));
+  }
+
+  @Test
+  void testHandleInputMove() {
+    cli.handleInput("B2 C3");
+    assertTrue(spyController.executeMoveCalled, "Move 'B2 C3' should have been executed.");
+  }
+
+  @Test
+  void testHandleInputCommand() {
+    cli.handleInput("show");
+    assertTrue(spyController.executeCommandCalled, "Command 'show' should have been executed.");
+  }
+
+  @Test
+  void testHandleInputEmpty() {
+    // Should not crash or call anything
+    assertDoesNotThrow(() -> cli.handleInput(""));
+    assertDoesNotThrow(() -> cli.handleInput(null));
+    assertFalse(spyController.executeCommandCalled);
+    assertFalse(spyController.executeMoveCalled);
+  }
+
+  @Test
+  void testInputLoopWithCommands() throws InterruptedException {
+    // Mock LineReader to return inputs then throw EndOfFileException
+    LineReader mockReader = mock(LineReader.class);
+    when(mockReader.readLine(anyString()))
+        .thenReturn("show")
+        .thenReturn("B2 C3")
+        .thenReturn("")
+        .thenThrow(new EndOfFileException());
+
+    cli.setLineReader(mockReader);
+    cli.start();
+    cli.join();
+
+    assertTrue(spyController.executeCommandCalled, "The 'show' command should have been executed.");
+    assertTrue(spyController.executeMoveCalled, "The move 'B2 C3' should have been executed.");
+  }
+
+  // --- Spy class ---
+  private static class SpyController extends GameController {
+    boolean executeCommandCalled = false;
+    boolean executeMoveCalled = false;
+
+    public SpyController(GameView view) {
+      super(view);
     }
 
-    @AfterEach
-    void tearDown() {
-        // Always restore the original input stream
-        System.setIn(originalIn);
+    @Override
+    public void executeCommand(String commandName, String[] args) {
+      this.executeCommandCalled = true;
     }
 
-    @Test
-    void testDisplayCalls() {
-        // Verify that display does not crash with a model
-        GameCheckers game = new GameCheckers(Configuration.getDefaultConfiguration());
-        assertDoesNotThrow(() -> cli.display(game));
-        assertDoesNotThrow(() -> cli.update(game));
+    @Override
+    public void executeMove(String from, String to) {
+      this.executeMoveCalled = true;
     }
-
-    @Test
-    void testInputLoopWithCommands() throws InterruptedException {
-        // Simulate a sequence of user inputs:
-        // 1. A "show" command
-        // 2. A move "B2 C3" (format validated by Utils.MOVE_REGEX)
-        // 3. An empty line (to cover the "continue" branch)
-        String input = "show\nB2 C3\n\n";
-        System.setIn(new ByteArrayInputStream(input.getBytes()));
-
-        cli.start();
-        
-        // Wait briefly or interrupt if needed
-        // Note: Since the thread runs an infinite loop on scanner.nextLine(),
-        // it will stop when the ByteArrayInputStream is exhausted (hasNextLine() -> false).
-        cli.join(); 
-
-        assertTrue(spyController.executeCommandCalled, "The 'show' command should have been executed.");
-        assertTrue(spyController.executeMoveCalled, "The move 'B2 C3' should have been executed.");
-    }
-
-    // --- Internal Spy class to verify controller calls ---
-    private static class SpyController extends GameController {
-        boolean executeCommandCalled = false;
-        boolean executeMoveCalled = false;
-
-        public SpyController(GameView view) { super(view); }
-
-        @Override
-        public void executeCommand(String commandName, String[] args) {
-            this.executeCommandCalled = true;
-        }
-
-        @Override
-        public void executeMove(String from, String to) {
-            this.executeMoveCalled = true;
-        }
-    }
+  }
 }
