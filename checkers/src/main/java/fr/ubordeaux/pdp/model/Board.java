@@ -250,19 +250,19 @@ public class Board {
     return isBitBlackChecker(squareToIndex(square));
   }
 
-  private boolean isBitWhitePawn(int index) {
+  public boolean isBitWhitePawn(int index) {
     return hasPawn(index, whitePawns1, whitePawns2);
   }
 
-  private boolean isBitBlackPawn(int index) {
+  public boolean isBitBlackPawn(int index) {
     return hasPawn(index, blackPawns1, blackPawns2);
   }
 
-  private boolean isBitWhiteChecker(int index) {
+  public boolean isBitWhiteChecker(int index) {
     return hasPawn(index, whiteCheckers1, whiteCheckers2);
   }
 
-  private boolean isBitBlackChecker(int index) {
+  public boolean isBitBlackChecker(int index) {
     return hasPawn(index, blackCheckers1, blackCheckers2);
   }
 
@@ -310,6 +310,14 @@ public class Board {
         && blackPawns2 == 0L
         && blackCheckers1 == 0L
         && blackCheckers2 == 0L;
+  }
+
+  public int getIndexMax() {
+    return this.indexMax;
+  }
+
+  public int getSizeBoard() {
+    return this.sizeBoard;
   }
 
   // ---------------------------------------------------------------------------
@@ -1044,159 +1052,6 @@ public class Board {
     return sb.toString();
   }
 
-  public int evaluateSimple() {
-
-    int score = 0;
-
-    int pawn = 100;
-    int checker = 350;
-
-    for (int i = 0; i < indexMax; i++) {
-
-      // ---- Blanc ----
-      if (isBitWhitePawn(i)) {
-        score += pawn;
-      }
-
-      if (isBitWhiteChecker(i)) {
-        score += checker;
-      }
-
-      // ---- Noir ----
-      if (isBitBlackPawn(i)) {
-        score -= pawn;
-      }
-
-      if (isBitBlackChecker(i)) {
-        score -= checker;
-      }
-    }
-
-    return score;
-  }
-
-  public int evaluateAdvanced() {
-
-    int score = 0;
-
-    int pawn = 100;
-    int checker = 350;
-    int avancement = 8;
-
-    int half = sizeBoard / 2;
-
-    for (int i = 0; i < indexMax; i++) {
-
-      int row = i / half;
-
-      // ---- Blanc ----
-      if (isBitWhitePawn(i)) {
-        score += pawn;
-
-        // Bonus d'avancement (plus il monte, mieux c'est)
-        score += row * avancement;
-      }
-
-      if (isBitWhiteChecker(i)) {
-        score += checker;
-      }
-
-      // ---- Noir ----
-      if (isBitBlackPawn(i)) {
-        score -= pawn;
-
-        // Bonus d'avancement noir (plus il descend, mieux c'est)
-        score -= (sizeBoard - 1 - row) * avancement;
-      }
-
-      if (isBitBlackChecker(i)) {
-        score -= checker;
-      }
-    }
-
-    return score;
-  }
-
-  /**
-   * Evaluates the current board position.
-   *
-   * <p>A positive score indicates an advantage for white.
-   * A negative score indicates an advantage for black.
-   *
-   * <p>The evaluation is based on:
-   * <ul>
-   *   <li>Material balance (pawns and checkers)</li>
-   *   <li>Pawn advancement</li>
-   *   <li>Center control</li>
-   *   <li>Mobility (number of legal moves)</li>
-   * </ul>
-   *
-   * @return evaluation score from white's perspective
-   */
-  public int evaluateMax() {
-
-    int score = 0;
-
-    int pawn = 100;
-    int checker = 350;
-    int mobility = 5;
-    int center = 15;
-    int avancement = 8;
-
-    int half = sizeBoard / 2;
-
-    for (int i = 0; i < indexMax; i++) {
-
-      int row = i / half;
-
-      // ---- Blanc ----
-      if (isBitWhitePawn(i)) {
-        score += pawn;
-
-        // Bonus d'avancement (plus il monte, mieux c'est)
-        score += row * avancement;
-      }
-
-      if (isBitWhiteChecker(i)) {
-        score += checker;
-      }
-
-      // ---- Noir ----
-      if (isBitBlackPawn(i)) {
-        score -= pawn;
-
-        // Bonus d'avancement noir (plus il descend, mieux c'est)
-        score -= (sizeBoard - 1 - row) * avancement;
-      }
-
-      if (isBitBlackChecker(i)) {
-        score -= checker;
-      }
-
-      // ---- Bonus centre ----
-      int col = (i % half) * 2 + (row % 2 == 0 ? 0 : 1);
-
-      boolean inCenter =
-        row >= sizeBoard / 2 - 2 && row <= sizeBoard / 2 + 1
-        && col >= sizeBoard / 2 - 2 && col <= sizeBoard / 2 + 1;
-
-      if (inCenter) {
-        if (isBitWhitePawn(i) || isBitWhiteChecker(i)) {
-          score += center;
-        }
-        if (isBitBlackPawn(i) || isBitBlackChecker(i)) {
-          score -= center;
-        }
-      }
-    }
-
-    // ---- Mobilité ----
-    score += getWhiteValidMoves().size() * mobility;
-    score -= getBlackValidMoves().size() * mobility;
-
-    return score;
-}
-
   /**
   * FOR TESTING PURPOSES ONLY.
   */
@@ -1207,7 +1062,7 @@ public class Board {
    * @param square algebraic square name of the pawn to promote
    * @throws IllegalArgumentException if the square is out of bounds or contains no pawn
    */
-  void promote(String square) {
+  public void promote(String square) {
     promoteBit(squareToIndex(square));
   }
 
@@ -1222,7 +1077,7 @@ public class Board {
    * @param from source square (e.g. "C3")
    * @param to   destination square (e.g. "D4")
    */
-  void move(String from, String to) {
+  public void move(String from, String to) {
     int f = squareToIndex(from);
     int t = squareToIndex(to);
     Move m = new Move(f,t);
@@ -1233,7 +1088,7 @@ public class Board {
    * Removes any piece (white/black, pawn/checker) from the given square.
    * Intended for testing setup.
    */
-  void remove(String from) {
+  public void remove(String from) {
       int f = squareToIndex(from);
       removeBlackChecker(f);
       removeBlackPawn(f);
@@ -1245,7 +1100,7 @@ public class Board {
    * Adds a white pawn on the given square.
    * Testing helper.
    */
-  void addWhite(String square) {
+  public void addWhite(String square) {
       int f = squareToIndex(square);
       addWhitePawn(f);
   }
@@ -1254,7 +1109,7 @@ public class Board {
    * Adds a black pawn on the given square.
    * Testing helper.
    */
-  void addBlack(String square) {
+  public void addBlack(String square) {
       int f = squareToIndex(square);
       addBlackPawn(f);
   }
@@ -1268,7 +1123,20 @@ public class Board {
    * @param square the source square in standard notation (e.g., "C3")
    * @return a list of target indices where the checker can move without capturing
    */
-  List<Integer> checkerSimpleTarg(String square) {
+  public List<Integer> checkerSimpleTarg(String square) {
     return checkerSimpleTargets(squareToIndex(square));
   }
+
+  public void clearBoard() {
+    for (int row = 1; row <= this.sizeBoard; row++) {
+      for (int col = 0; col < this.sizeBoard; col++) {
+        if ((row + col) % 2 != 0) {
+          char file = (char) ('A' + col);
+          String square = file + "" + row;
+          remove(square);
+        }
+      }
+    }
+  }
+
 }
