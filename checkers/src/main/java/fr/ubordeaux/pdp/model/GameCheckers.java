@@ -24,22 +24,31 @@ public class GameCheckers implements Subject {
 
   /**
    * Constructs a new game instance.
-   *
-   * <p>Initializes a standard 12x12 board, sets the initial state to {@link InGameState},
-   * creates two human players, and grants the first turn to the white player.
+   * * <p>Initializes a standard 12x12 board, sets the initial state to {@link InGameState},
+   * and grants the first turn to the white player.
+   * Player types (Human or AI) are assigned based on the provided flags
+   * 
    */
+
   public GameCheckers(Configuration configuration) {
     this .configuration=configuration;
     this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
     this.state = new InGameState(this);
-    whitePlayer = new HumanPlayer("White Player");
-    blackPlayer = new HumanPlayer("Black Player");
+    if (configuration.isWhiteIsAI() == true) {
+      this.whitePlayer = new AIPlayer("White AI");
+    } else {
+      this.whitePlayer = new HumanPlayer("White Player");
+    }
+    if (configuration.isBlackIsAI() == true) {
+      this.blackPlayer = new AIPlayer("Black AI");
+    } else {
+      this.blackPlayer = new HumanPlayer("Black Player");
+    }
   }
 
   public GameCheckers(){
-    this(new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_CONTEST,
-                           Utils.DEFAULT_BOARD_SIZE, Utils.DEFAULT_VERBOSE, Utils.DEFAULT_DEBUG));
+    this(Configuration.getDefaultConfiguration());
   }
 
   /**
@@ -76,6 +85,15 @@ public class GameCheckers implements Subject {
    */
   public Board getBoard() {
     return this.board;
+  }
+
+  /**
+   * Returns the boolean of white turn.
+   *
+   * @return The {@link isWhiteTurn} boolean for the current turn.
+   */
+  public boolean getIsWhiteTurn() {
+    return this.isWhiteTurn;
   }
 
   /**
@@ -151,14 +169,6 @@ public class GameCheckers implements Subject {
     notifyObservers();
   }
 
-  public Player getWhitePlayer() {
-    return whitePlayer;
-  }
-
-  public Player getBlackPlayer() {
-    return blackPlayer;
-  }
-
   /**
    * Evaluates if the game has reached an end condition.
    *
@@ -215,4 +225,21 @@ public class GameCheckers implements Subject {
   }
 
 
+  /**
+ * Returns the white player instance.
+ *
+ * @return The white player.
+ */
+  public Player getWhitePlayer() {
+    return this.whitePlayer;
+  }
+
+  /**
+   * Returns the black player instance.
+   *
+   * @return The black player.
+   */
+  public Player getBlackPlayer() {
+    return this.blackPlayer;
+  }
 }

@@ -38,7 +38,6 @@ public class GameController {
   /**
    * Initializes the controller with the required model and view components.
    *
-   * @param game The {@link GameCheckers} instance (Model).
    * @param view The {@link GameView} instance (View).
    */
   public GameController(GameView view) {
@@ -157,4 +156,11 @@ public class GameController {
     this.game.addObserver(view);
     displayBoard();
 }
+  public boolean isWhiteIsAi() {
+    return configuration.isWhiteIsAI();
+  }
+
+  public boolean isBlackIsAi() {
+    return configuration.isBlackIsAI();
+  }
 }

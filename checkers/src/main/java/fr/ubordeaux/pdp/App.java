@@ -1,18 +1,22 @@
 package fr.ubordeaux.pdp;
 
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.Internationalization;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.model.Utils;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.UnrecognizedOptionException;
 
-import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.Configuration;
-import fr.ubordeaux.pdp.view.CommandLineInterface;
-import fr.ubordeaux.pdp.view.GameView;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -50,6 +54,12 @@ public class App {
 
   
 
+  /** Flag to enable white AI. */
+  private static boolean whiteIsAI = false;
+
+  /** Flag to enable black AI. */
+  private static boolean blackIsAI = false;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -64,14 +74,14 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
-    } else if (status == EXIT_GUI) {
+    } //else if (status == EXIT_GUI) {
       //TODO
-    }
+    //}
     
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
-    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug));
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteIsAI, blackIsAI));
     controller.start(); 
     try {
         ((CommandLineInterface) view).join();
@@ -91,6 +101,7 @@ public class App {
    *         EXIT_ERROR for error.
    */
   public static int run(String[] args) {
+    Internationalization.init();
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
@@ -101,22 +112,29 @@ public class App {
     debug = configManager.isDebug();
     // Options definition
     Options options = new Options();
-    options.addOption("h", "help", false, "display help");
-    options.addOption("V", "version", false, "display version");
-    options.addOption("v", "verbose", false, "increase verbosity");
-    options.addOption("d", "debug", false, "display debug messages");
-    options.addOption("b", "blitz", false, "enable blitz mode");
-    options.addOption("t", "time", true, "set time limit in minutes");
-    options.addOption("g", "gui", false, "launch graphical user interface");
+    options.addOption("h", "help", false, Internationalization.get("opt.help"));
+    options.addOption("V", "version", false, Internationalization.get("opt.version"));
+    options.addOption("v", "verbose", false, Internationalization.get("opt.verbose"));
+    options.addOption("d", "debug", false, Internationalization.get("opt.debug"));
+    options.addOption("b", "blitz", false, Internationalization.get("opt.blitz"));
+    options.addOption("t", "time", true, Internationalization.get("opt.time"));
+    options.addOption("g", "gui", false, Internationalization.get("opt.gui"));
+    //options.addOption("a", "ai", true, Internationalization.get("opt.ai"));
+    Option aiOption = Option.builder("a")
+      .longOpt("ai")
+      .desc(Internationalization.get("opt.ai"))
+      .hasArg()
+      .optionalArg(true)
+      .build();
+    options.addOption(aiOption);
     options.addOption("c", "contest", true, "enable contest mode");
     options.addOption("s", "size", true, "set board size (8|10|12)");
-
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
 
       if (!cmd.getArgList().isEmpty()) {
-        throw new ParseException("Unrecognized arguments: " + cmd.getArgList());
+        throw new ParseException(Internationalization.get("app.error.unrecognized_arg") + cmd.getArgList());
       }
 
       if (cmd.hasOption("h")) {
@@ -126,50 +144,82 @@ public class App {
       }
 
       if (cmd.hasOption("V")) {
-        System.out.println("checkers version 1.0");
+        System.out.println(Internationalization.get("app.version"));
         return EXIT_INFO;
       }
 
       if (cmd.hasOption("v")) {
-        System.out.println("Verbose mode enabled.");
+        System.out.println(Internationalization.get("opt.verbose.status"));
         verbose = true;
       }
 
       if (cmd.hasOption("d")) {
-        System.out.println("Debug mode enabled.");
+        System.out.println(Internationalization.get("opt.debug.status"));
         debug = true;
       }
 
       if (cmd.hasOption("g")) {
-        System.out.println("Launching Graphical Interface...");
+        System.out.println(Internationalization.get("app.gui.launch"));
         // return EXIT_GUI;
       }
       
       if (cmd.hasOption("b")) {
-        System.out.println("Blitz mode enabled.");
+        System.out.println(Internationalization.get("opt.blitz.status"));
         blitz = true;
       }
 
       if (cmd.hasOption("t")) {
         time = Integer.parseInt(cmd.getOptionValue("t"));
-        System.out.println("Time limit set to " + time + ".");
+        System.out.println(Internationalization.get("opt.time.status", time));
       }
 
       if (cmd.hasOption("c")) {
-        System.out.println("Contest mode enabled.");
+        System.out.println(Internationalization.get("opt.contest.status"));
         contest = true;
       }
 
       if (cmd.hasOption("s")) {
         size = Integer.parseInt(cmd.getOptionValue("s"));
-        System.out.println("Board size : " + size + ".");
+        System.out.println(Internationalization.get("opt.size.status") + size + ".");
       }
 
-      System.out.println("Welcome to Checkers!");
+      if (cmd.hasOption("a")) {
+        String color = cmd.getOptionValue("a", "default").toUpperCase();
+        if (color == null) {
+          color = "W";
+        }
+
+        color = color.toUpperCase();
+        if (color.equals("W")) whiteIsAI = true;
+        else if (color.equals("B")) blackIsAI = true;
+        else if (color.equals("A")) {
+          whiteIsAI = true;
+          blackIsAI = true;
+        } else if (color.equals("")) {
+          whiteIsAI = true;
+        }
+        else {
+          System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
+          whiteIsAI = true;
+        }
+      }
+      System.out.println(Internationalization.get("app.welcome"));
       return EXIT_SUCCESS;
 
     } catch (ParseException e) {
-      System.err.println("Error: " + e.getMessage());
+      String message;
+
+      if (e instanceof UnrecognizedOptionException) {
+        String opt = ((UnrecognizedOptionException) e).getOption();
+        message = Internationalization.get("app.error.unrecognized_option") + opt;
+      } else if (e instanceof MissingArgumentException) {
+        org.apache.commons.cli.Option optionObj = ((MissingArgumentException) e).getOption();
+        String optName = optionObj.getOpt(); 
+        message = Internationalization.get("app.error.missing_arg") + optName;
+      } else {
+        message = e.getMessage(); 
+      }
+      System.err.println(message);
       HelpFormatter formatter = new HelpFormatter();
       formatter.printHelp("checkers", options);
       return EXIT_ERROR;
@@ -193,6 +243,24 @@ public class App {
   public static boolean isDebug() {
     return debug;
   }
+
+  public static boolean isBlitz() {
+    return blitz;
+  }
+
+  public static int getSize() {
+    return size;
+  }
+
+  public static int getTime() {
+    return time;
+  }
+  
+  public static boolean isContest() {
+    return contest;
+  }
+
+
 
   /**
    * Resets the global state. Essential for isolated unit tests.

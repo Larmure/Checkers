@@ -52,17 +52,16 @@ public class NewCommand implements Command, Helpable {
       CommandLine cmd = parser.parse(newOptions(), args);
   
     
-      if (args.length != 0) {
-        boolean hasBlitz = cmd.hasOption("b");
-        boolean hasContest = cmd.hasOption("c");
-        String tValue = cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME));
-        int blitzTime = Integer.parseInt(tValue);
-        String sValue = cmd.getOptionValue("s");
-        int size = Integer.parseInt(sValue);
-        controller.startNewGame(new Configuration(hasBlitz, blitzTime, hasContest, size, controller.isVerbose(), controller.isDebug()));
-      } else {
-        controller.startNewGame(new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE, controller.isVerbose(), controller.isDebug()));
-      }
+      boolean hasBlitz = cmd.hasOption("b");
+      boolean hasContest = cmd.hasOption("c");
+      int blitzTime = Integer.parseInt(cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME)));
+      int size = Integer.parseInt(cmd.getOptionValue("s", String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
+          
+      controller.startNewGame(new Configuration(
+          hasBlitz, blitzTime, hasContest, size,
+          controller.isVerbose(), controller.isDebug(),
+          controller.isWhiteIsAi(), controller.isBlackIsAi()
+      ));
 
       
     } catch (ParseException | NumberFormatException e) {

@@ -1,0 +1,6 @@
+/.metadata/
+.settings/
+*.prefs
+.classpath
+.project
+checkers/Sauvegarde/*
