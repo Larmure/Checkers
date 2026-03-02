@@ -5,6 +5,6 @@
         "editor.defaultFormatter": "redhat.java"
     },
     "editor.formatOnSave": true,
-    "java.format.settings.url": "${workspaceFolder}/.vscode/eclipse-java-google-style.xml",
+    "java.format.settings.url": "${workspaceFolder}/.checkstyle/google_checks.xml",
     "java.format.settings.profile": "GoogleStyle"
 }

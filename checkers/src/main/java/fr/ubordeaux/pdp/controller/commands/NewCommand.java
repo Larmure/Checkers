@@ -1,22 +1,21 @@
 package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
-
+import fr.ubordeaux.pdp.model.Configuration;
+import fr.ubordeaux.pdp.model.Internationalization;
+import fr.ubordeaux.pdp.model.Utils;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.Configuration;
-import fr.ubordeaux.pdp.model.Internationalization;
-import fr.ubordeaux.pdp.model.Utils;
-
 /**
- * Concrete implementation of {@link Command} that handles the initialization of a new game.
- * This class uses Apache Commons CLI to parse specific game options such as 
+ * Concrete implementation of {@link Command} that handles the initialization of
+ * a new game.
+ * This class uses Apache Commons CLI to parse specific game options such as
  * blitz mode, contest mode, time limits, and board size.
  *
  * @version 1.0
@@ -42,29 +41,28 @@ public class NewCommand implements Command, Helpable {
 
   /**
    * Parses the arguments and triggers the creation of a new game.
-   * If the arguments are invalid (wrong format or unknown options), 
+   * If the arguments are invalid (wrong format or unknown options),
    * an error message is displayed to the user.
    */
   @Override
   public void execute() {
     CommandLineParser parser = new DefaultParser();
-    
+
     try {
       CommandLine cmd = parser.parse(newOptions(), args);
-  
-    
+
       boolean hasBlitz = cmd.hasOption("b");
       boolean hasContest = cmd.hasOption("c");
-      int blitzTime = Integer.parseInt(cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME)));
-      int size = Integer.parseInt(cmd.getOptionValue("s", String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
-          
+      int blitzTime = Integer.parseInt(cmd.getOptionValue("t",
+          String.valueOf(Utils.DEFAULT_TIME)));
+      int size = Integer.parseInt(cmd.getOptionValue("s",
+          String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
+
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
-          controller.isWhiteIsAi(), controller.isBlackIsAi()
-      ));
+          controller.isWhiteIsAi(), controller.isBlackIsAi()));
 
-      
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());
     }
@@ -76,7 +74,7 @@ public class NewCommand implements Command, Helpable {
    * <li>-b, --blitz : Enable blitz mode</li>
    * <li>-c, --contest : Enable contest mode</li>
    * <li>-t, --time : Set time limit in seconds</li>
-   * <li>-s, --size : Set board size </li>
+   * <li>-s, --size : Set board size</li>
    * </ul>
    *
    * @return An {@link Options} object containing the CLI schema.
@@ -99,5 +97,5 @@ public class NewCommand implements Command, Helpable {
   public String getHelp() {
     return Internationalization.get("new.help");
   }
-    
+
 }

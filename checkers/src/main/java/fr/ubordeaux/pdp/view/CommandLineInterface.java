@@ -1,14 +1,11 @@
 package fr.ubordeaux.pdp.view;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.jline.reader.EndOfFileException;
-
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Utils;
-
+import java.io.IOException;
+import java.util.Arrays;
+import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
@@ -22,7 +19,7 @@ import org.jline.terminal.TerminalBuilder;
  * the
  * {@link GameController}.
  *
- * @version 1.0
+ * @version 1.1
  */
 public class CommandLineInterface extends GameView {
 
@@ -70,9 +67,17 @@ public class CommandLineInterface extends GameView {
     this.display(gameCheckers);
   }
 
+  /**
+   * Handles user input from the terminal.
+   * It distinguishes between move commands (e.g., "B2 C3") and other commands
+   * (e.g., "show", "help") and delegates execution to the controller
+   *
+   * @param input The raw input string entered by the user.
+   */
   public void handleInput(String input) {
-    if (input == null || input.trim().isEmpty())
+    if (input == null || input.trim().isEmpty()) {
       return;
+    }
 
     String trimmed = input.trim();
     String[] tokens = trimmed.split("\\s+");
@@ -130,9 +135,18 @@ public class CommandLineInterface extends GameView {
     this.lineReader = lineReader;
   }
 
+  /**
+   * Waits for the input thread to finish. This is useful for testing purposes to
+   * ensure that all input processing
+   * is completed before assertions are made.
+   *
+   * @throws InterruptedException if the current thread is interrupted while
+   *                              waiting.
+   */
   public void join() throws InterruptedException {
-    if (inputThread != null)
+    if (inputThread != null) {
       inputThread.join();
+    }
   }
 
 }

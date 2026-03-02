@@ -5,6 +5,12 @@ import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.Internationalization;
 
+/**
+ * Command to show various aspects of the game such as the board, move history,
+ * time, and configuration.
+ *
+ * @version 1.0
+ */
 public class ShowCommand implements Command, Helpable {
 
   /** The raw arguments provided by the user in the shell. */
@@ -18,6 +24,14 @@ public class ShowCommand implements Command, Helpable {
     this.args = args;
   }
 
+  /**
+   * Executes the show command by interpreting the provided arguments and
+   * displaying
+   * the corresponding information. It supports showing the board, move history,
+   * time, and configuration. If the argument is unrecognized, it provides a
+   * default message to the user.
+   *
+   */
   @Override
   public void execute() {
     if (args == null || args.length == 0) {
