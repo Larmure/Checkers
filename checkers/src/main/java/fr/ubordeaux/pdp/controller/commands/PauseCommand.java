@@ -3,11 +3,10 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.Internationalization;
 import fr.ubordeaux.pdp.model.State;
 import java.util.Timer;
 
-
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class PauseCommand implements Command, Helpable {
     private final Timer blitzTimer;
@@ -16,7 +15,6 @@ public class PauseCommand implements Command, Helpable {
     public PauseCommand(Timer blitzTimer, GameCheckers game) {
         this.blitzTimer = blitzTimer;
         this.game = game;
-        Internationalization.init();
     }
 
     @Override
@@ -33,7 +31,7 @@ public class PauseCommand implements Command, Helpable {
      */
     @Override
     public String getHelp() {
-        return "pause : Stop the time in blitz.";
+        return Internationalization.get("pause.help");
     }
 
 }

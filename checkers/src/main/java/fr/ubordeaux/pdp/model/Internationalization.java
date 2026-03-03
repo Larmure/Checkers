@@ -6,9 +6,10 @@ import java.util.ResourceBundle;
 
 /**
  * Handles application internationalization (i18n).
- * * <p>This class manages language detection based on system environment variables 
+ * This class manages language detection based on system environment variables
  * (LANG or LC_ALL) and provides localized strings using Resource Bundles.
- * * @version 1.0
+ * 
+ * @version 1.0
  */
 public class Internationalization {
   /** The name of the resource bundle files. */
@@ -19,8 +20,9 @@ public class Internationalization {
 
   /**
    * Initializes the internationalization system.
-   * * <p>Detects the system locale and verifies if it is supported (English or French). 
-   * If the locale is unsupported, it defaults to English and prints a warning 
+   * Detects the system locale and verifies if it is supported (English or
+   * French).
+   * If the locale is unsupported, it defaults to English and prints a warning
    * message to the standard error output as per specifications.
    */
   public static void init() {
@@ -38,15 +40,28 @@ public class Internationalization {
   }
 
   /**
-   * Retrieves a localized string from the resource bundle and formats it using the 
-   * provided arguments. This method automatically escapes single quotes to ensure 
+   * Retrieves a localized string from the resource bundle and formats it using
+   * the
+   * provided arguments. This method automatically escapes single quotes to ensure
    * compatibility with MessageFormat.
+   * Ensures that the resource bundle is initialized before accessing it.
+   */
+  private static void ensureInitialized() {
+    if (bundle == null) {
+      init();
+    }
+  }
+
+  /**
+   * Retrieves a localized string for a given key.
    *
-   * @param key the identifier for the localized message
-   * @param args the arguments to be substituted into the message placeholders (e.g., {0}, {1})
+   * @param key  the identifier for the localized message
+   * @param args the arguments to be substituted into the message placeholders
+   *             (e.g., {0}, {1})
    * @return the formatted localized string
    */
   public static String get(String key, Object... args) {
+    ensureInitialized();
     String pattern = bundle.getString(key);
     return java.text.MessageFormat.format(pattern.replace("'", "''"), args);
   }

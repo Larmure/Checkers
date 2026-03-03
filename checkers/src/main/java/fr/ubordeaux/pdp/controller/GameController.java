@@ -1,5 +1,5 @@
 
-   package fr.ubordeaux.pdp.controller;
+package fr.ubordeaux.pdp.controller;
 
 import fr.ubordeaux.pdp.model.GameCheckers;
 import fr.ubordeaux.pdp.model.Configuration;
@@ -12,9 +12,10 @@ import java.util.TimerTask;
 
 /**
  * Orchestrator of the game logic and user interactions.
- * As the Controller in the MVC (Model-View-Controller) pattern, it mediates 
+ * As the Controller in the MVC (Model-View-Controller) pattern, it mediates
  * between the {@link GameCheckers} model and the {@link GameView}.
- * It interprets user inputs as {@link Command} objects and updates the game state.
+ * It interprets user inputs as {@link Command} objects and updates the game
+ * state.
  *
  * @version 1.0
  */
@@ -49,7 +50,7 @@ public class GameController {
 
   /**
    * Dispatches a user command to its corresponding logic.
-   * This method uses a modern switch expression to map command names to 
+   * This method uses a modern switch expression to map command names to
    * {@link Command} implementations.
    *
    * @param commandName The name of the command (e.g., "new", "quit").
@@ -70,9 +71,9 @@ public class GameController {
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
       default -> {
-        System.out.println("Unknown command: " 
+        System.out.println("Unknown command: "
             + commandName);
-        yield null; 
+        yield null;
       }
     };
 
@@ -90,39 +91,36 @@ public class GameController {
    * @param size    The board dimension (standard is 8).
    */
   public void startNewGame(Configuration configuration) {
-    System.out.println("Initializing new game with options: " + configuration); 
+    System.out.println("Initializing new game with options: " + configuration);
     this.game = new GameCheckers(configuration);
-    this.configuration =  new Configuration(configuration);
+    this.configuration = new Configuration(configuration);
     game.addObserver(view);
 
     String rules = Internationalization.get("game.rules");
     System.out.println(rules);
 
-    if (configuration.isBlitz())
-    {
+    if (configuration.isBlitz()) {
       startBlitzTimer();
     }
 
     displayBoard();
   }
 
-  public void executeMove(String from, String to)
-  { 
-    if(configuration.isBlitz()) {
-      startBlitzTimer(); 
+  public void executeMove(String from, String to) {
+    if (configuration.isBlitz()) {
+      startBlitzTimer();
     }
 
     game.applyMove(from, to);
 
-
     game.setState(game.checkGameOver());
-    if(game.getState().equals(State.FINISHED)) 
-    {
-      if (configuration.isBlitz()) stopBlitzTimer();
+    if (game.getState().equals(State.FINISHED)) {
+      if (configuration.isBlitz())
+        stopBlitzTimer();
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
-    } 
+    }
 
   }
 
@@ -134,24 +132,36 @@ public class GameController {
     System.out.println(configuration);
   }
 
+  public void displayTime() {
+    int totalSeconds = game.getCurrentPlayer().getPlayTime();
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
+
+    String formattedTime = String.format("%02d:%02d", minutes, seconds);
+
+    String template = Internationalization.get("game.time_remaining");
+
+    System.out.println(String.format(template, game.getCurrentPlayer().getName(), formattedTime));
+  }
+
   private void startBlitzTimer() {
     stopBlitzTimer();
     blitzTimer = new Timer(true); // daemon = s'arrête avec le programme
     blitzTimer.scheduleAtFixedRate(new TimerTask() {
-        @Override
-        public void run() {
-            // 1. Mise à jour de la logique uniquement (pas d'affichage constant)
-            game.timerPlayer();
+      @Override
+      public void run() {
+        // 1. Mise à jour de la logique uniquement (pas d'affichage constant)
+        game.timerPlayer();
 
-            int totalSeconds = game.getCurrentPlayer().getPlayTime();
+        int totalSeconds = game.getCurrentPlayer().getPlayTime();
 
-            // 2. On intervient dans la console UNIQUEMENT si le temps est écoulé
-            if (totalSeconds <= 0) {
-                stopBlitzTimer();             
-                System.out.println("\n" + Internationalization.get("game.time_up") + game.getCurrentPlayer().getName());
-                game.setState(State.FINISHED);
-            }
+        // 2. On intervient dans la console UNIQUEMENT si le temps est écoulé
+        if (totalSeconds <= 0) {
+          stopBlitzTimer();
+          System.out.println("\n" + Internationalization.get("game.time_up") + game.getCurrentPlayer().getName());
+          game.setState(State.FINISHED);
         }
+      }
     }, 1000, 1000);
   }
 
@@ -161,7 +171,7 @@ public class GameController {
       blitzTimer = null;
     }
   }
-  
+
   public boolean isVerbose() {
     return configuration.isVerbose();
   }
@@ -192,34 +202,34 @@ public class GameController {
    */
   public void playPredefinedSequence() {
     String[][] moves = {
-      {"c1", "d2"}, {"f4", "e3"}, {"d2", "f4"}, {"g5", "e3"},
-      {"b2", "c1"}, {"e3", "d2"}, {"c1", "e3"}, {"f2", "b2"},
-      {"a1", "c3"}, {"f6", "e5"}, {"c3", "d4"}, {"e5", "c3"},
-      {"b4", "d2"}, {"g3", "f2"}, {"d2", "e3"}, {"f2", "d4"},
-      {"c5", "e3"}, {"g1", "f2"}, {"e3", "g1"}, {"h2", "g3"},
-      {"g1", "h2"}, {"h4", "g5"}, {"h2", "e5"}, {"g5", "f4"},
-      {"e5", "g3"}, {"f8", "e7"}, {"c7", "d6"}, {"e7", "c5"},
-      {"b6", "d4"}, {"g7", "f8"}, {"d4", "e5"}, {"f8", "e7"},
-      {"e5", "f4"}, {"h6", "g5"}, {"f4", "h6"}, {"h8", "g7"},
-      {"h6", "d6"}
+        { "c1", "d2" }, { "f4", "e3" }, { "d2", "f4" }, { "g5", "e3" },
+        { "b2", "c1" }, { "e3", "d2" }, { "c1", "e3" }, { "f2", "b2" },
+        { "a1", "c3" }, { "f6", "e5" }, { "c3", "d4" }, { "e5", "c3" },
+        { "b4", "d2" }, { "g3", "f2" }, { "d2", "e3" }, { "f2", "d4" },
+        { "c5", "e3" }, { "g1", "f2" }, { "e3", "g1" }, { "h2", "g3" },
+        { "g1", "h2" }, { "h4", "g5" }, { "h2", "e5" }, { "g5", "f4" },
+        { "e5", "g3" }, { "f8", "e7" }, { "c7", "d6" }, { "e7", "c5" },
+        { "b6", "d4" }, { "g7", "f8" }, { "d4", "e5" }, { "f8", "e7" },
+        { "e5", "f4" }, { "h6", "g5" }, { "f4", "h6" }, { "h8", "g7" },
+        { "h6", "d6" }
     };
 
     System.out.println("Début de la séquence d'automatisation des coups...");
-    
+
     for (String[] move : moves) {
       String from = move[0];
       String to = move[1];
-      
+
       System.out.println("Coup joué : " + from + "-" + to);
-      
+
       executeMove(from, to);
-      
+
       if (game.getState() == State.FINISHED) {
-          System.out.println("La partie s'est terminée avant la fin de la séquence.");
-          break;
+        System.out.println("La partie s'est terminée avant la fin de la séquence.");
+        break;
       }
     }
-    
+
     System.out.println("Séquence terminée.");
   }
 
@@ -233,6 +243,10 @@ public class GameController {
     for (int i = 0; i < n; i++) {
       game.redoManage();
     }
+  }
+
+  public boolean isBlitz() {
+    return configuration.isBlitz();
   }
 
 }

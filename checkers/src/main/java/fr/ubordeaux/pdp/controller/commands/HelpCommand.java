@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 import fr.ubordeaux.pdp.model.Utils;
 
 /**
@@ -35,7 +36,7 @@ public class HelpCommand implements Command, Helpable {
   @Override
   public void execute() {
     if (args == null || args.length == 0) {
-      System.out.println("List of all availaible commands:");
+      System.out.println(Internationalization.get("help") + "\n");
       for (String cmd : Utils.COMMANDS_LIST) {
         System.out.println("- " + cmd);
       }
@@ -45,11 +46,11 @@ public class HelpCommand implements Command, Helpable {
     String targetName = args[0];
     Command targetCommand = Utils.COMMANDS_MAP.get(targetName);
     if (targetCommand == null) {
-      System.out.println("Error : The command '" + targetName + "' doesn't exist.");
+      System.out.println(Internationalization.get("command.not_found") + targetName);
     } else if (targetCommand instanceof Helpable helpable) { 
       System.out.println(helpable.getHelp());
     } else {
-      System.out.println("There is no help for '" + targetName + "'.");
+      System.out.println(Internationalization.get("command.no_help") + targetName);
     }
   }
   
@@ -60,7 +61,7 @@ public class HelpCommand implements Command, Helpable {
    */
   @Override
   public String getHelp() {
-    return "help [CMD] : Display the help of the shell of 'CMD'.";
+    return Internationalization.get("help.help");
   }
 
 }

@@ -3,14 +3,15 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class RedoCommand implements Command, Helpable {
-  private GameController controller;
+  private final GameController controller;
   private final String[] args;
 
   public RedoCommand(GameController controller, String[] args) {
-      this.controller = controller;
-      this.args = args;
+    this.controller = controller;
+    this.args = args;
   }
 
   @Override
@@ -34,7 +35,7 @@ public class RedoCommand implements Command, Helpable {
    */
   @Override
   public String getHelp() {
-      return "redo [N] : Replay the last canceled move. (or the N-last)";
+    return Internationalization.get("redo.help");
   }
 
 }

@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 /**
  * Concrete implementation of {@link Command} used to terminate the application.
@@ -21,7 +22,7 @@ public class QuitCommand implements Command, Helpable {
    */
   @Override
   public void execute() {
-    System.out.println("Exiting the game.");
+    System.out.println(Internationalization.get("quit.execute"));
     System.exit(0);
   }
 
@@ -32,7 +33,7 @@ public class QuitCommand implements Command, Helpable {
    */
   @Override
   public String getHelp() {
-    return "quit : exit the program.";
+    return Internationalization.get("quit.help");
   }
 
 }
