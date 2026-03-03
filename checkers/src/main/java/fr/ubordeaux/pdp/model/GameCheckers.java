@@ -19,7 +19,7 @@ public class GameCheckers implements Subject {
   private Player blackPlayer;
   private boolean isWhiteTurn;
   private List<GameView> observers;
-  private History history;
+  private ManagerUndoRedo managerUndoRedo;
 
   /**
    * Constructs a new game instance.
@@ -35,8 +35,7 @@ public class GameCheckers implements Subject {
     this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
     this.state = State.IN_GAME;
-    Internationalization.init();
-    history = new History();
+    managerUndoRedo = new ManagerUndoRedo(this.board);
 
     // MODE IA
     if (configuration.isWhiteIsAI() == true) {
@@ -192,8 +191,7 @@ public class GameCheckers implements Subject {
     }
 
     board.applyMove(move);
-    history.addMove(currentColor, move);
-    history.clearRedo();
+    managerUndoRedo.registerMove(currentColor, move);
     this.isWhiteTurn = !this.isWhiteTurn;
     notifyObservers();
   }
@@ -274,55 +272,17 @@ public class GameCheckers implements Subject {
     }
   }
 
-  public void undo() {
-    Move lastMove = history.getLastMove();
-    
-    if (lastMove != null) {
-      PlayerColor colorOfMove = !isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
-      history.addMoveRedo(colorOfMove, lastMove);
-
-      Move undoMove = new Move(lastMove.getTo(), lastMove.getFrom());
-      board.applyMove(undoMove);
-
-      if (lastMove.isPromotion()) {
-        board.demoteBit(lastMove.getFrom()); 
-      }
-
-      // Remettre les pièces capturées avec leur type exact
-      List<Integer> captures = lastMove.getCaptured();
-      List<String> types = lastMove.getCapturedColors();
-      
-      for (int i = 0; i < captures.size(); i++) {
-        board.restorePiece(captures.get(i), types.get(i));
-      }
-
-      history.reMove(); 
-      this.isWhiteTurn = !this.isWhiteTurn;
-      notifyObservers();
-    } else {
-      System.out.println(Internationalization.get("game.no_moves_to_undo"));
+  public void undoManage() {
+    if (managerUndoRedo.undo(this.isWhiteTurn)) {
+        this.isWhiteTurn = !this.isWhiteTurn;
+        notifyObservers();
     }
   }
 
-  public void redo() {
-    if (!history.hasRedo()) {
-      System.out.println(Internationalization.get("game.no_moves_to_redo"));
-      return;
-    }
-
-    Move redoMove = history.getLastMoveRedo();
-    PlayerColor currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
-
-    if (redoMove != null) {
-      redoMove.getCapturedColors().clear();
-
-      board.applyMove(redoMove);
-
-      history.addMove(currentColor, redoMove); 
-      history.removeLastMoveRedo();            
-
-      this.isWhiteTurn = !this.isWhiteTurn;
-      notifyObservers();
+  public void redoManage() {
+    if (managerUndoRedo.redo(this.isWhiteTurn)) {
+        this.isWhiteTurn = !this.isWhiteTurn;
+        notifyObservers();
     }
   }
 }

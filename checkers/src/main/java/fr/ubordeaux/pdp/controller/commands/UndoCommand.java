@@ -6,14 +6,25 @@ import fr.ubordeaux.pdp.controller.Helpable;
 
 public class UndoCommand implements Command, Helpable {
   private final GameController controller;
+  private final String[] args;
 
-  public UndoCommand(GameController controller) {
+  public UndoCommand(GameController controller, String[] args) {
     this.controller = controller;
+    this.args = args;
   }
 
   @Override
   public void execute() {
-    controller.undoGame();
+    if (args != null && args.length > 0) {
+      try {
+        int n = Integer.parseInt(args[0]);
+        controller.undoGame(n);
+      } catch (NumberFormatException e) {
+        System.out.println("Invalid argument for undo command.");
+      }
+    } else {
+      controller.undoGame(1);
+    }
   }
 
   /**

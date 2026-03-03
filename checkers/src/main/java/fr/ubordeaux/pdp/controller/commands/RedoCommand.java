@@ -6,14 +6,25 @@ import fr.ubordeaux.pdp.controller.Helpable;
 
 public class RedoCommand implements Command, Helpable {
   private GameController controller;
+  private final String[] args;
 
-  public RedoCommand(GameController controller) {
+  public RedoCommand(GameController controller, String[] args) {
       this.controller = controller;
+      this.args = args;
   }
 
   @Override
   public void execute() {
-    controller.redoGame();
+    if (args != null && args.length > 0) {
+      try {
+        int n = Integer.parseInt(args[0]);
+        controller.redoGame(n);
+      } catch (NumberFormatException e) {
+        System.out.println("Invalid argument for redo command.");
+      }
+    } else {
+      controller.redoGame(1);
+    }
   }
 
   /**

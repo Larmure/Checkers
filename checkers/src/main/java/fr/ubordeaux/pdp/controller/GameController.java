@@ -37,7 +37,6 @@ public class GameController {
    */
   public GameController(GameView view) {
     this.view = view;
-    Internationalization.init();
   }
 
   /**
@@ -65,8 +64,8 @@ public class GameController {
       case "save" -> new SaveCommand();
       case "pause" -> new PauseCommand(blitzTimer, game);
       case "hint" -> new HintCommand();
-      case "undo" -> new UndoCommand(this);
-      case "redo" -> new RedoCommand(this);
+      case "undo" -> new UndoCommand(this, args);
+      case "redo" -> new RedoCommand(this, args);
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
@@ -224,11 +223,16 @@ public class GameController {
     System.out.println("Séquence terminée.");
   }
 
-  public void undoGame() {
-    game.undo();
+  public void undoGame(int n) {
+    for (int i = 0; i < n; i++) {
+      game.undoManage();
+    }
   }
 
-  public void redoGame() {
-    game.redo();
+  public void redoGame(int n) {
+    for (int i = 0; i < n; i++) {
+      game.redoManage();
+    }
   }
+
 }
