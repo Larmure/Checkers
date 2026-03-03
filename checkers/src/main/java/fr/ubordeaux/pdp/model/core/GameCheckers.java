@@ -1,8 +1,10 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.core;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.ubordeaux.pdp.model.player.*;
+import fr.ubordeaux.pdp.model.tools.*;
 import fr.ubordeaux.pdp.view.GameView;
 
 /**

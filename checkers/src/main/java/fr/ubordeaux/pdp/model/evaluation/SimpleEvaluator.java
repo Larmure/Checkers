@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.model.evaluation;
 
-import fr.ubordeaux.pdp.model.Board;
+import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.tools.*;
 
 public class SimpleEvaluator implements Evaluator {
 
@@ -14,11 +15,15 @@ public class SimpleEvaluator implements Evaluator {
 
         for (int i = 0; i < board.getIndexMax(); i++) {
 
-            if (board.isBitWhitePawn(i)) score += pawn;
-            if (board.isBitWhiteChecker(i)) score += checker;
+            if (board.isBitWhitePawn(i))
+                score += pawn;
+            if (board.isBitWhiteChecker(i))
+                score += checker;
 
-            if (board.isBitBlackPawn(i)) score -= pawn;
-            if (board.isBitBlackChecker(i)) score -= checker;
+            if (board.isBitBlackPawn(i))
+                score -= pawn;
+            if (board.isBitBlackChecker(i))
+                score -= checker;
         }
 
         return score;

@@ -1,4 +1,4 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.tools;
 
 import java.text.MessageFormat;
 import java.util.Locale;

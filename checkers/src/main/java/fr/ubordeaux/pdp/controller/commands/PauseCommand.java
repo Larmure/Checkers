@@ -2,11 +2,9 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
-import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.State;
+import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.tools.*;
 import java.util.Timer;
-
-import fr.ubordeaux.pdp.model.Internationalization;
 
 public class PauseCommand implements Command, Helpable {
     private final Timer blitzTimer;

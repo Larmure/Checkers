@@ -1,4 +1,4 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.core;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +6,11 @@ import java.util.List;
 /**
  * Represents a move in a checkers game.
  *
- * <p>A move can be a simple diagonal step, a single or multi-capture sequence, and/or a promotion.
- * The move stores the starting index, the full path of squares visited, the indices of any captured
+ * <p>
+ * A move can be a simple diagonal step, a single or multi-capture sequence,
+ * and/or a promotion.
+ * The move stores the starting index, the full path of squares visited, the
+ * indices of any captured
  * pieces, and whether the move results in a promotion.
  */
 public class Move {
@@ -22,7 +25,7 @@ public class Move {
    * Creates a simple (non-capture) move between two adjacent diagonal squares.
    *
    * @param from the index of the starting square
-   * @param to the index of the destination square
+   * @param to   the index of the destination square
    */
   public Move(int from, int to) {
     this.from = from;
@@ -35,9 +38,11 @@ public class Move {
   }
 
   /**
-   * Creates a capture move with a full movement path and the list of captured piece indices.
+   * Creates a capture move with a full movement path and the list of captured
+   * piece indices.
    *
-   * @param path the full sequence of squares visited, including the starting square
+   * @param path     the full sequence of squares visited, including the starting
+   *                 square
    * @param captured the indices of all pieces captured along the path
    */
   public Move(List<Integer> path, List<Integer> captured) {
@@ -122,7 +127,8 @@ public class Move {
   /**
    * Returns whether this is a plain simple move (no captures, single step).
    *
-   * @return {@code true} if the path has exactly two squares and no captures occurred
+   * @return {@code true} if the path has exactly two squares and no captures
+   *         occurred
    */
   public boolean isSimpleMove() {
     return captured.isEmpty() && path.size() == 2;
@@ -131,8 +137,11 @@ public class Move {
   /**
    * Returns a human-readable representation of the move.
    *
-   * <p>Squares are joined by {@code "-"} for simple moves or {@code "x"} for captures. A
-   * {@code "(promotion)"} suffix is appended when applicable. Example: {@code "21x14x7
+   * <p>
+   * Squares are joined by {@code "-"} for simple moves or {@code "x"} for
+   * captures. A
+   * {@code "(promotion)"} suffix is appended when applicable. Example:
+   * {@code "21x14x7
    * (promotion)"}
    *
    * @return the string representation of this move

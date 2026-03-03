@@ -1,8 +1,7 @@
 package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
-import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.State;
+import fr.ubordeaux.pdp.model.core.*;
 
 public class ContinueCommand implements Command {
     private final GameCheckers game;
@@ -15,5 +14,5 @@ public class ContinueCommand implements Command {
     public void execute() {
         game.setState(State.IN_GAME);
         game.notifyObservers();
-    }   
+    }
 }

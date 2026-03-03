@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.model.evaluation;
 
-import fr.ubordeaux.pdp.model.Board;
+import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.tools.*;
 
 public class AdvancedEvaluator implements Evaluator {
 

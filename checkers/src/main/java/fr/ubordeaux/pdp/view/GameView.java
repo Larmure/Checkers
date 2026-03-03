@@ -1,11 +1,12 @@
 package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameCheckers;
+import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.tools.*;
 
 /**
  * Abstract representation of the game's user interface.
- * This class serves as the base for all types of views (CLI, GUI) and 
+ * This class serves as the base for all types of views (CLI, GUI) and
  * implements the {@link Observer} interface to react to model updates.
  *
  * @version 1.0
@@ -23,15 +24,16 @@ public abstract class GameView implements Observer {
    * @param controller The controller instance to be associated with this view.
    */
   public void setController(GameController controller) {
-    this.controller = controller;   
+    this.controller = controller;
   }
 
   /**
    * Initializes and starts the view's main lifecycle.
-   * For a CLI, this might launch the input loop. For a GUI, it would display the frame.
+   * For a CLI, this might launch the input loop. For a GUI, it would display the
+   * frame.
    */
   public abstract void start();
-  
+
   /**
    * Renders the current state of the game to the user.
    */

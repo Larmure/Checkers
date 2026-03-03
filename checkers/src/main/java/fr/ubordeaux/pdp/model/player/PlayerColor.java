@@ -1,4 +1,4 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.player;
 
 /**
  * Represents the two players in a draughts game.

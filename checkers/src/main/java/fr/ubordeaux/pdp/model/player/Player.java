@@ -1,9 +1,10 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.player;
 
 /**
  * Abstract representation of a participant in the Checkers game.
  * 
- * <p>Serves as the base class for both human-controlled players and AI agents.
+ * <p>
+ * Serves as the base class for both human-controlled players and AI agents.
  */
 public abstract class Player {
 
@@ -29,7 +30,8 @@ public abstract class Player {
   /**
    * Returns the remaining time allocated for this player.
    * 
-   * <p>This is specifically used in timed modes (e.g., Blitz).
+   * <p>
+   * This is specifically used in timed modes (e.g., Blitz).
    */
   public int getPlayTime() {
     return playTime;

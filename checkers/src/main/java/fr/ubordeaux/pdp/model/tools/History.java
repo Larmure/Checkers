@@ -1,15 +1,18 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.tools;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+
+import fr.ubordeaux.pdp.model.player.*;
+import fr.ubordeaux.pdp.model.core.Move;
 
 public class History {
 
   private static String HEADER = "[history]";
 
-	private final Deque<ColorMove> history;
+  private final Deque<ColorMove> history;
   private final Deque<ColorMove> redoHistory;
-    
+
   public History() {
     history = new ArrayDeque<>();
     redoHistory = new ArrayDeque<>();
@@ -22,14 +25,13 @@ public class History {
   }
 
   public void addMove(PlayerColor color, Move move) {
-		history.add(new ColorMove(color, move));
+    history.add(new ColorMove(color, move));
   }
 
   public void reMove() {
     if (history.size() != 0) {
       history.removeLast();
-    }
-    else {
+    } else {
       throw new IllegalArgumentException("History is Empty");
     }
   }
@@ -37,30 +39,27 @@ public class History {
   public Move getLastMove() {
     if (history.size() != 0) {
       return history.peekLast().getMove();
-    }
-    else {
+    } else {
       throw new IllegalArgumentException("History is Empty");
     }
   }
 
   private void loadHistory(String historyToString) {
-    // TODO. 
+    // TODO.
   }
 
-	public String historyString() {
+  public String historyString() {
     String h = "";
-		for (ColorMove cm : history) {
+    for (ColorMove cm : history) {
       String line = "";
       if (cm.getColor() == PlayerColor.WHITE) {
         line += "W " + cm.getMove();
-      }
-      else if (cm.getColor() == PlayerColor.BLACK) {
+      } else if (cm.getColor() == PlayerColor.BLACK) {
         line += "B " + cm.getMove();
       }
       if (cm.getMove().getCaptured().size() == 1) {
         line += " {Prise simple}";
-      } 
-      else if (cm.getMove().getCaptured().size() >= 1) {
+      } else if (cm.getMove().getCaptured().size() >= 1) {
         line += " {Prise multiple}";
       }
       if (cm.getMove().isPromotion()) {
@@ -70,18 +69,17 @@ public class History {
       h = line + h;
     }
     return HEADER + "\n" + h;
-	}
+  }
 
   // FONCTION REDO
   public void addMoveRedo(PlayerColor color, Move move) {
-		redoHistory.add(new ColorMove(color, move));
+    redoHistory.add(new ColorMove(color, move));
   }
 
   public Move getLastMoveRedo() {
     if (redoHistory.size() != 0) {
       return redoHistory.peekLast().getMove();
-    }
-    else {
+    } else {
       throw new IllegalArgumentException("Redo History is Empty");
     }
   }
@@ -99,12 +97,11 @@ public class History {
   public void clearRedo() {
     redoHistory.clear();
   }
-  
+
   // Vérifie si un redo est possible
   public boolean hasRedo() {
     return !redoHistory.isEmpty();
   }
-
 
   private class ColorMove {
 

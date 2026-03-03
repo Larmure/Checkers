@@ -1,7 +1,7 @@
 package fr.ubordeaux.pdp;
 
-import fr.ubordeaux.pdp.model.Utils;
-import fr.ubordeaux.pdp.model.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 
 import java.io.IOException;
 import java.io.PrintWriter;

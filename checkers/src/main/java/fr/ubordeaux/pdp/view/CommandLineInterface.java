@@ -1,9 +1,8 @@
 package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.Internationalization;
-import fr.ubordeaux.pdp.model.Utils;
+import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.tools.*;
 import java.io.IOException;
 import java.util.Arrays;
 import org.jline.reader.EndOfFileException;

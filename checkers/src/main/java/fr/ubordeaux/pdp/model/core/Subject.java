@@ -1,9 +1,11 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.core;
 
 /**
  * Interface for the Observer pattern.
  * 
- * <p>Classes implementing this interface allow {@link fr.ubordeaux.pdp.view.Observer} instances
+ * <p>
+ * Classes implementing this interface allow
+ * {@link fr.ubordeaux.pdp.view.Observer} instances
  * to register and receive notifications when the internal state changes.
  */
 public interface Subject {
@@ -11,7 +13,8 @@ public interface Subject {
   /**
    * Notifies all registered observers that the subject's state has changed.
    * 
-   * <p>This typically triggers a UI refresh or a console output update.
+   * <p>
+   * This typically triggers a UI refresh or a console output update.
    */
   void notifyObservers();
 }

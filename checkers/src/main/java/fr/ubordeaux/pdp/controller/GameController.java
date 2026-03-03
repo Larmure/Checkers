@@ -1,12 +1,11 @@
 
 package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.model.GameCheckers;
-import fr.ubordeaux.pdp.model.Configuration;
-import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.tools.*;
 import fr.ubordeaux.pdp.controller.commands.*;
-import fr.ubordeaux.pdp.model.Internationalization;
-import fr.ubordeaux.pdp.model.State;
+import fr.ubordeaux.pdp.view.GameView;
+
 import java.util.Timer;
 import java.util.TimerTask;
 

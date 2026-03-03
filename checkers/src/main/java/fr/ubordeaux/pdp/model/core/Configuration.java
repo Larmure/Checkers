@@ -1,5 +1,7 @@
 
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.core;
+
+import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
  * Configuration class that encapsulates all the settings for a game of

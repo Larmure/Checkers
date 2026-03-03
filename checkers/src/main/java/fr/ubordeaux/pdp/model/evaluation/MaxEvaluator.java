@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.model.evaluation;
 
-import fr.ubordeaux.pdp.model.Board;
+import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.tools.*;
 
 public class MaxEvaluator implements Evaluator {
 
@@ -42,13 +43,14 @@ public class MaxEvaluator implements Evaluator {
 
             int col = (i % half) * 2 + (row % 2 == 0 ? 0 : 1);
 
-            boolean inCenter =
-                row >= sizeBoard / 2 - 2 && row <= sizeBoard / 2 + 1
-                && col >= sizeBoard / 2 - 2 && col <= sizeBoard / 2 + 1;
+            boolean inCenter = row >= sizeBoard / 2 - 2 && row <= sizeBoard / 2 + 1
+                    && col >= sizeBoard / 2 - 2 && col <= sizeBoard / 2 + 1;
 
             if (inCenter) {
-                if (board.isBitWhitePawn(i) || board.isBitWhiteChecker(i)) score += center;
-                if (board.isBitBlackPawn(i) || board.isBitBlackChecker(i)) score -= center;
+                if (board.isBitWhitePawn(i) || board.isBitWhiteChecker(i))
+                    score += center;
+                if (board.isBitBlackPawn(i) || board.isBitBlackChecker(i))
+                    score -= center;
             }
         }
 
