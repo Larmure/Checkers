@@ -52,8 +52,6 @@ public class App {
 
   private static int size = Utils.DEFAULT_BOARD_SIZE;
 
-  
-
   /** Flag to enable white AI. */
   private static boolean whiteIsAI = false;
 
@@ -74,19 +72,19 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
-    } //else if (status == EXIT_GUI) {
-      //TODO
-    //}
-    
+    } // else if (status == EXIT_GUI) {
+      // TODO
+    // }
+
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
+    controller.start();
     controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteIsAI, blackIsAI));
-    controller.start(); 
     try {
-        ((CommandLineInterface) view).join();
+      ((CommandLineInterface) view).join();
     } catch (InterruptedException ex) {
-        System.exit(0);
+      System.exit(0);
     }
   }
 
@@ -105,9 +103,9 @@ public class App {
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
-    blitz = configManager.isBlitz();     
-    time = configManager.getTime();      
-    contest = configManager.isContest(); 
+    blitz = configManager.isBlitz();
+    time = configManager.getTime();
+    contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();
     // Options definition
@@ -119,13 +117,13 @@ public class App {
     options.addOption("b", "blitz", false, Internationalization.get("opt.blitz"));
     options.addOption("t", "time", true, Internationalization.get("opt.time"));
     options.addOption("g", "gui", false, Internationalization.get("opt.gui"));
-    //options.addOption("a", "ai", true, Internationalization.get("opt.ai"));
+    // options.addOption("a", "ai", true, Internationalization.get("opt.ai"));
     Option aiOption = Option.builder("a")
-      .longOpt("ai")
-      .desc(Internationalization.get("opt.ai"))
-      .hasArg()
-      .optionalArg(true)
-      .build();
+        .longOpt("ai")
+        .desc(Internationalization.get("opt.ai"))
+        .hasArg()
+        .optionalArg(true)
+        .build();
     options.addOption(aiOption);
     options.addOption("c", "contest", true, "enable contest mode");
     options.addOption("s", "size", true, "set board size (8|10|12)");
@@ -162,7 +160,7 @@ public class App {
         System.out.println(Internationalization.get("app.gui.launch"));
         // return EXIT_GUI;
       }
-      
+
       if (cmd.hasOption("b")) {
         System.out.println(Internationalization.get("opt.blitz.status"));
         blitz = true;
@@ -190,15 +188,16 @@ public class App {
         }
 
         color = color.toUpperCase();
-        if (color.equals("W")) whiteIsAI = true;
-        else if (color.equals("B")) blackIsAI = true;
+        if (color.equals("W"))
+          whiteIsAI = true;
+        else if (color.equals("B"))
+          blackIsAI = true;
         else if (color.equals("A")) {
           whiteIsAI = true;
           blackIsAI = true;
         } else if (color.equals("")) {
           whiteIsAI = true;
-        }
-        else {
+        } else {
           System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
           whiteIsAI = true;
         }
@@ -214,10 +213,10 @@ public class App {
         message = Internationalization.get("app.error.unrecognized_option") + opt;
       } else if (e instanceof MissingArgumentException) {
         org.apache.commons.cli.Option optionObj = ((MissingArgumentException) e).getOption();
-        String optName = optionObj.getOpt(); 
+        String optName = optionObj.getOpt();
         message = Internationalization.get("app.error.missing_arg") + optName;
       } else {
-        message = e.getMessage(); 
+        message = e.getMessage();
       }
       System.err.println(message);
       HelpFormatter formatter = new HelpFormatter();
@@ -255,12 +254,10 @@ public class App {
   public static int getTime() {
     return time;
   }
-  
+
   public static boolean isContest() {
     return contest;
   }
-
-
 
   /**
    * Resets the global state. Essential for isolated unit tests.

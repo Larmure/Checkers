@@ -8,7 +8,8 @@ import fr.ubordeaux.pdp.view.GameView;
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
  *
- * <p>This class acts as the central model in the MVC architecture, coordinating
+ * <p>
+ * This class acts as the central model in the MVC architecture, coordinating
  * interactions between the board, players, and game state. It implements the
  * {@link Subject} interface to notify registered views of state changes.
  */
@@ -20,34 +21,49 @@ public class GameCheckers implements Subject {
   private Player blackPlayer;
   private boolean isWhiteTurn;
   private List<GameView> observers;
-  private  Configuration configuration;
+  private Configuration configuration;
+  private ManagerUndoRedo managerUndoRedo;
 
   /**
    * Constructs a new game instance.
-   * * <p>Initializes a standard 12x12 board, sets the initial state to {@link InGameState},
+   * *
+   * <p>
+   * Initializes a standard 12x12 board, sets the initial state to
+   * {@link InGameState},
    * and grants the first turn to the white player.
    * Player types (Human or AI) are assigned based on the provided flags
    * 
    */
 
   public GameCheckers(Configuration configuration) {
-    this .configuration=configuration;
+    this.configuration = configuration;
     this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
-    this.state = new InGameState(this);
+    this.state = State.IN_GAME;
+    managerUndoRedo = new ManagerUndoRedo(this.board);
+
+    // MODE IA
     if (configuration.isWhiteIsAI() == true) {
       this.whitePlayer = new AIPlayer("White AI");
     } else {
-      this.whitePlayer = new HumanPlayer("White Player");
+      this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
     if (configuration.isBlackIsAI() == true) {
       this.blackPlayer = new AIPlayer("Black AI");
     } else {
-      this.blackPlayer = new HumanPlayer("Black Player");
+      this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
+    }
+
+    // MODE BLITZ
+    if (configuration.isBlitz() == true) {
+      int timeInSeconds = configuration.getTime() * 60;
+
+      this.whitePlayer.setPlayTime(timeInSeconds);
+      this.blackPlayer.setPlayTime(timeInSeconds);
     }
   }
 
-  public GameCheckers(){
+  public GameCheckers() {
     this(Configuration.getDefaultConfiguration());
   }
 
@@ -99,7 +115,8 @@ public class GameCheckers implements Subject {
   /**
    * Retrieves all legal moves available for the specified player.
    *
-   * <p>This method delegates to the board logic, which enforces rules such as
+   * <p>
+   * This method delegates to the board logic, which enforces rules such as
    * mandatory captures.
    *
    * @param player The player to retrieve moves for.
@@ -115,7 +132,8 @@ public class GameCheckers implements Subject {
    *
    * @param move   The move to validate.
    * @param player The player attempting the move.
-   * @return {@code true} if it is the player's turn and the move is valid; {@code false} otherwise.
+   * @return {@code true} if it is the player's turn and the move is valid;
+   *         {@code false} otherwise.
    */
   public boolean isValidMove(Move move, Player player) {
     // Prevent moves if it is not the requesting player's turn.
@@ -127,23 +145,38 @@ public class GameCheckers implements Subject {
 
   /**
    * Applies a move using algebraic notation (e.g., "32-28").
-   * Validates the move against legal moves to enforce rules like mandatory captures.
+   * Validates the move against legal moves to enforce rules like mandatory
+   * captures.
    *
-   * @param fromS   position from.
-   * @param toS position to.
+   * @param fromS position from.
+   * @param toS   position to.
    */
   public void applyMove(String fromS, String toS) {
     Move move = null;
     int from, to;
-    try {
-        from = this.board.squareToIndex(fromS);
-        to = this.board.squareToIndex(toS);
-    } catch (IllegalArgumentException e) {
-        System.err.println("Invalid square: " + e.getMessage());
-        return;
+    List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
+    PlayerColor currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
+
+    if (state == State.PAUSE) {
+      System.out.println(Internationalization.get("game.game_paused"));
+      return;
     }
 
-    for (Move m : this.getPossibleMoves(this.getCurrentPlayer())) {
+    if (state == State.FINISHED) {
+      System.out.println(Internationalization.get("game.game_is_over"));
+      return;
+    }
+
+    try {
+      from = this.board.squareToIndex(fromS);
+      to = this.board.squareToIndex(toS);
+    } catch (IllegalArgumentException e) {
+      System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+
+      return;
+    }
+
+    for (Move m : possibleMoves) {
       if (m.getFrom() == from && m.getTo() == to) {
         move = m;
         break;
@@ -151,13 +184,15 @@ public class GameCheckers implements Subject {
     }
 
     if (move == null) {
-      System.err.println("Invalid move: Rule violation or mandatory capture missing.");
-      System.out.println("Here are all valid moves for " + getCurrentPlayer().getName() + ":");
 
-      List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
+      System.err.println(Internationalization.get("game.invalid_move"));
+      System.out
+          .println(String.format(Internationalization.get("game.display_valid_moves"),
+              getCurrentPlayer().getName()));
+
       for (Move m : possibleMoves) {
         String fromSquare = this.board.indexToSquare(m.getFrom());
-        String toSquare   = this.board.indexToSquare(m.getTo());
+        String toSquare = this.board.indexToSquare(m.getTo());
         System.out.println("  -> " + fromSquare + " " + toSquare);
       }
 
@@ -165,6 +200,7 @@ public class GameCheckers implements Subject {
     }
 
     board.applyMove(move);
+    managerUndoRedo.registerMove(currentColor, move);
     this.isWhiteTurn = !this.isWhiteTurn;
     notifyObservers();
   }
@@ -172,7 +208,8 @@ public class GameCheckers implements Subject {
   /**
    * Evaluates if the game has reached an end condition.
    *
-   * <p>Currently checks if the active player has any legal moves remaining.
+   * <p>
+   * Currently checks if the active player has any legal moves remaining.
    * If not, the game transitions to {@link FinishedState}.
    *
    * @return The new state if the game is over, otherwise the current state.
@@ -182,7 +219,8 @@ public class GameCheckers implements Subject {
 
     // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
-      return new FinishedState();
+      setState(State.FINISHED);
+      return this.state;
     }
 
     return this.state;
@@ -190,7 +228,8 @@ public class GameCheckers implements Subject {
 
   @Override
   public void notifyObservers() {
-    // Guard clause to prevent NullPointerException if no observers are registered yet.
+    // Guard clause to prevent NullPointerException if no observers are registered
+    // yet.
     if (this.observers == null) {
       return;
     }
@@ -220,16 +259,16 @@ public class GameCheckers implements Subject {
   public void setWhiteTurn(boolean isWhite) {
     this.isWhiteTurn = isWhite;
   }
+
   public Configuration getConfiguration() {
     return configuration;
   }
 
-
   /**
- * Returns the white player instance.
- *
- * @return The white player.
- */
+   * Returns the white player instance.
+   *
+   * @return The white player.
+   */
   public Player getWhitePlayer() {
     return this.whitePlayer;
   }
@@ -241,5 +280,32 @@ public class GameCheckers implements Subject {
    */
   public Player getBlackPlayer() {
     return this.blackPlayer;
+  }
+
+  /**
+   * Updates the play time of the current player by decrementing it by 1 second.
+   */
+  public void timerPlayer() {
+    if (isWhiteTurn) {
+      int newTime = whitePlayer.getPlayTime() - 1;
+      whitePlayer.setPlayTime(newTime);
+    } else {
+      int newTime = blackPlayer.getPlayTime() - 1;
+      blackPlayer.setPlayTime(newTime);
+    }
+  }
+
+  public void undoManage() {
+    if (managerUndoRedo.undo(this.isWhiteTurn)) {
+      this.isWhiteTurn = !this.isWhiteTurn;
+      notifyObservers();
+    }
+  }
+
+  public void redoManage() {
+    if (managerUndoRedo.redo(this.isWhiteTurn)) {
+      this.isWhiteTurn = !this.isWhiteTurn;
+      notifyObservers();
+    }
   }
 }

@@ -2,12 +2,13 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.model.Internationalization;
 
 public class SaveCommand implements Command, Helpable {
 
   @Override
   public void execute() {
-      System.out.println("Save: This feature is not implemented yet.");
+      System.out.println(Internationalization.get("save.execute"));
 }
 
   /**
@@ -17,7 +18,7 @@ public class SaveCommand implements Command, Helpable {
    */
   @Override
   public String getHelp() {
-      return "save FILE : Save the current game.";
+      return Internationalization.get("save.help");
   }
 
 }

@@ -15,6 +15,7 @@ public class Move {
   private final int from;
   private final List<Integer> path;
   private final List<Integer> captured;
+  private final List<String> capturedColors;
   private boolean promotion;
 
   /**
@@ -27,6 +28,7 @@ public class Move {
     this.from = from;
     this.path = new ArrayList<>();
     this.captured = new ArrayList<>();
+    this.capturedColors = new ArrayList<>();
     this.path.add(from);
     this.path.add(to);
     this.promotion = false;
@@ -42,6 +44,15 @@ public class Move {
     this.from = path.get(0);
     this.path = new ArrayList<>(path);
     this.captured = new ArrayList<>(captured);
+    this.capturedColors = new ArrayList<>();
+    this.promotion = false;
+  }
+
+  public Move(List<Integer> path, List<Integer> captured, List<String> capturedColors) {
+    this.from = path.get(0);
+    this.path = new ArrayList<>(path);
+    this.captured = new ArrayList<>(captured);
+    this.capturedColors = new ArrayList<>(capturedColors);
     this.promotion = false;
   }
 
@@ -142,5 +153,9 @@ public class Move {
     }
 
     return sb.toString();
+  }
+
+  public List<String> getCapturedColors() {
+    return capturedColors;
   }
 }

@@ -10,12 +10,18 @@ import java.util.Set;
 /**
  * Represents a draughts (checkers) board encoded with bitboards.
  *
- * <p>Supports board sizes of 8, 10, and 12. Each playable (dark) square is mapped to a bit
- * index. Two 64-bit longs are used per piece type to handle boards larger than 64 playable
+ * <p>
+ * Supports board sizes of 8, 10, and 12. Each playable (dark) square is mapped
+ * to a bit
+ * index. Two 64-bit longs are used per piece type to handle boards larger than
+ * 64 playable
  * squares (e.g. the 12×12 board has 72 playable squares).
  *
- * <p>Coordinate system: rows are labelled {@code A} (bottom) to {@code L} (top); columns are
- * numbered {@code 1} (left) to {@code size} (right). Only dark squares (where {@code (row+col)}
+ * <p>
+ * Coordinate system: rows are labelled {@code A} (bottom) to {@code L} (top);
+ * columns are
+ * numbered {@code 1} (left) to {@code size} (right). Only dark squares (where
+ * {@code (row+col)}
  * is even) store pieces.
  */
 public class Board {
@@ -50,10 +56,12 @@ public class Board {
   private long blackCheckers2;
 
   /**
-   * Constructs a new board of the given size and places pieces in their starting positions.
+   * Constructs a new board of the given size and places pieces in their starting
+   * positions.
    *
    * @param size the side length of the board; must be 8, 10, or 12
-   * @throws IllegalArgumentException if {@code size} is not one of the valid values
+   * @throws IllegalArgumentException if {@code size} is not one of the valid
+   *                                  values
    */
   public Board(int size) {
     if (!Utils.VALID_SIZES.contains(size)) {
@@ -67,13 +75,16 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Initialisation
+  // Initialisation
   // ---------------------------------------------------------------------------
 
   /**
-   * Places all pawns in their standard starting positions using bitboard arithmetic.
+   * Places all pawns in their standard starting positions using bitboard
+   * arithmetic.
    *
-   * <p>White occupies the lowest-indexed rows; black occupies the highest-indexed rows. On a
+   * <p>
+   * White occupies the lowest-indexed rows; black occupies the highest-indexed
+   * rows. On a
    * 12×12 board the black bitboard overflows 64 bits and the surplus is stored in
    * {@code blackPawns2}.
    */
@@ -114,7 +125,9 @@ public class Board {
   /**
    * Initialises the diagonal offset maps for even and odd rows.
    *
-   * <p>Each direction key ({@code "NW"}, {@code "NE"}, {@code "SW"}, {@code "SE"}) maps to the
+   * <p>
+   * Each direction key ({@code "NW"}, {@code "NE"}, {@code "SW"}, {@code "SE"})
+   * maps to the
    * signed index delta that moves one step in that direction.
    */
   private void initDiag() {
@@ -131,9 +144,12 @@ public class Board {
   }
 
   /**
-   * Builds bitmasks that identify squares on the left and right edges of the board.
+   * Builds bitmasks that identify squares on the left and right edges of the
+   * board.
    *
-   * <p>These masks are used to prevent diagonal moves from "wrapping" around board edges.
+   * <p>
+   * These masks are used to prevent diagonal moves from "wrapping" around board
+   * edges.
    */
   private void initEdgeMasks() {
     leftMask1 = leftMask2 = 0L;
@@ -162,11 +178,12 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Edge detection
+  // Edge detection
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns {@code true} if the playable square at {@code index} is on the left edge.
+   * Returns {@code true} if the playable square at {@code index} is on the left
+   * edge.
    *
    * @param index bit index of the square
    * @return {@code true} when the square is on the leftmost column
@@ -179,7 +196,8 @@ public class Board {
   }
 
   /**
-   * Returns {@code true} if the playable square at {@code index} is on the right edge.
+   * Returns {@code true} if the playable square at {@code index} is on the right
+   * edge.
    *
    * @param index bit index of the square
    * @return {@code true} when the square is on the rightmost column
@@ -192,15 +210,15 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Bit-level presence queries
+  // Bit-level presence queries
   // ---------------------------------------------------------------------------
 
   /**
    * Tests whether a given bit is set in the supplied pair of bitboards.
    *
-   * @param index      bit index of the square to test
-   * @param bitboard1  low 64-bit word
-   * @param bitboard2  high 64-bit word (for indices ≥ 64)
+   * @param index     bit index of the square to test
+   * @param bitboard1 low 64-bit word
+   * @param bitboard2 high 64-bit word (for indices ≥ 64)
    * @return {@code true} if the bit at {@code index} is set
    */
   private boolean hasPawn(int index, long bitboard1, long bitboard2) {
@@ -211,7 +229,8 @@ public class Board {
   }
 
   /**
-   * Returns {@code true} if a white pawn occupies the square identified by its algebraic name.
+   * Returns {@code true} if a white pawn occupies the square identified by its
+   * algebraic name.
    *
    * @param square algebraic square name (e.g. {@code "A1"})
    * @return {@code true} if a white pawn is present
@@ -221,7 +240,8 @@ public class Board {
   }
 
   /**
-   * Returns {@code true} if a black pawn occupies the square identified by its algebraic name.
+   * Returns {@code true} if a black pawn occupies the square identified by its
+   * algebraic name.
    *
    * @param square algebraic square name (e.g. {@code "H8"})
    * @return {@code true} if a black pawn is present
@@ -290,7 +310,7 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Game-state queries
+  // Game-state queries
   // ---------------------------------------------------------------------------
 
   /**
@@ -321,7 +341,7 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Bitboard mutation helpers
+  // Bitboard mutation helpers
   // ---------------------------------------------------------------------------
 
   private void addWhitePawn(int index) {
@@ -389,14 +409,15 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Promotion
+  // Promotion
   // ---------------------------------------------------------------------------
 
   /**
    * Promotes the pawn at bit {@code index} to a checker in place.
    *
    * @param index bit index of the pawn
-   * @throws IllegalArgumentException if the index is out of bounds or no pawn is present
+   * @throws IllegalArgumentException if the index is out of bounds or no pawn is
+   *                                  present
    */
   private void promoteBit(int index) {
     if (index < 0 || index >= indexMax) {
@@ -416,11 +437,12 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Move application
+  // Move application
   // ---------------------------------------------------------------------------
 
   /**
-   * Applies a {@link Move} to the board: relocates the moving piece, removes any captured
+   * Applies a {@link Move} to the board: relocates the moving piece, removes any
+   * captured
    * pieces, and auto-promotes a pawn that has reached the opposite back rank.
    *
    * @param move the move to apply; must refer to valid squares
@@ -447,15 +469,19 @@ public class Board {
     // Remove all captured pieces.
     for (int captured : move.getCaptured()) {
       if (isBitWhitePawn(captured)) {
+        move.getCapturedColors().add("WP");
         removeWhitePawn(captured);
       }
       if (isBitBlackPawn(captured)) {
+        move.getCapturedColors().add("BP");
         removeBlackPawn(captured);
       }
       if (isBitWhiteChecker(captured)) {
+        move.getCapturedColors().add("WC");
         removeWhiteChecker(captured);
       }
       if (isBitBlackChecker(captured)) {
+        move.getCapturedColors().add("BC");
         removeBlackChecker(captured);
       }
     }
@@ -478,13 +504,15 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Diagonal-map selection
+  // Diagonal-map selection
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns the diagonal offset map appropriate for the row that contains {@code index}.
+   * Returns the diagonal offset map appropriate for the row that contains
+   * {@code index}.
    *
-   * <p>Even rows use {@link #diagsPair}; odd rows use {@link #diagsUnpair}.
+   * <p>
+   * Even rows use {@link #diagsPair}; odd rows use {@link #diagsUnpair}.
    *
    * @param index bit index of the square whose row determines the map
    * @return the diagonal offset map for that row parity
@@ -495,11 +523,12 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Simple-move target generation
+  // Simple-move target generation
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns the list of bit indices reachable by a single (non-capturing) pawn step from
+   * Returns the list of bit indices reachable by a single (non-capturing) pawn
+   * step from
    * {@code from}.
    *
    * @param from bit index of the pawn
@@ -535,7 +564,8 @@ public class Board {
   }
 
   /**
-   * Returns all squares reachable by a single (non-capturing) checker (king) slide from
+   * Returns all squares reachable by a single (non-capturing) checker (king)
+   * slide from
    * {@code from} in any diagonal direction.
    *
    * @param from bit index of the checker
@@ -574,13 +604,15 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Public move-list API
+  // Public move-list API
   // ---------------------------------------------------------------------------
 
   /**
    * Returns the list of legal moves for white in the current position.
    *
-   * <p>If any capture is available, only capturing moves are returned (mandatory-capture rule).
+   * <p>
+   * If any capture is available, only capturing moves are returned
+   * (mandatory-capture rule).
    *
    * @return non-null, possibly empty list of legal {@link Move} objects
    */
@@ -591,7 +623,9 @@ public class Board {
   /**
    * Returns the list of legal moves for black in the current position.
    *
-   * <p>If any capture is available, only capturing moves are returned (mandatory-capture rule).
+   * <p>
+   * If any capture is available, only capturing moves are returned
+   * (mandatory-capture rule).
    *
    * @return non-null, possibly empty list of legal {@link Move} objects
    */
@@ -602,10 +636,13 @@ public class Board {
   /**
    * Core move-generation routine shared by both colours.
    *
-   * <p>Captures are collected first. If any exist, simple moves are skipped and only the
+   * <p>
+   * Captures are collected first. If any exist, simple moves are skipped and only
+   * the
    * maximum-length captures are returned.
    *
-   * @param isWhite {@code true} to generate moves for white; {@code false} for black
+   * @param isWhite {@code true} to generate moves for white; {@code false} for
+   *                black
    * @return list of legal {@link Move} objects
    */
   private List<Move> getValidMoves(boolean isWhite) {
@@ -638,7 +675,7 @@ public class Board {
     for (int i = 0; i < indexMax; i++) {
       if (isWhite) {
         if (isBitWhitePawn(i)) {
-          for (int to : pawnSimpleTargets(i,true)) {
+          for (int to : pawnSimpleTargets(i, true)) {
             simples.add(new Move(List.of(i, to), List.of()));
           }
         }
@@ -649,7 +686,7 @@ public class Board {
         }
       } else {
         if (isBitBlackPawn(i)) {
-          for (int to : pawnSimpleTargets(i,false)) {
+          for (int to : pawnSimpleTargets(i, false)) {
             simples.add(new Move(List.of(i, to), List.of()));
           }
         }
@@ -665,7 +702,7 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Pawn capture generation
+  // Pawn capture generation
   // ---------------------------------------------------------------------------
 
   /**
@@ -673,7 +710,8 @@ public class Board {
    *
    * @param from    bit index of the pawn
    * @param isWhite {@code true} if the pawn belongs to white
-   * @return list of {@link Move} objects with the maximum capture count; empty if none
+   * @return list of {@link Move} objects with the maximum capture count; empty if
+   *         none
    */
   private List<Move> getBestPawnCaptures(int from, boolean isWhite) {
     List<CapturePath> all = pawnMultiCaptures(from, isWhite);
@@ -693,7 +731,8 @@ public class Board {
   }
 
   /**
-   * Enumerates all pawn multi-capture sequences from {@code from} via depth-first search.
+   * Enumerates all pawn multi-capture sequences from {@code from} via depth-first
+   * search.
    *
    * @param from    bit index of the pawn
    * @param isWhite {@code true} if the pawn belongs to white
@@ -706,7 +745,8 @@ public class Board {
   }
 
   /**
-   * Recursive DFS that explores all pawn capture continuations from {@code current}.
+   * Recursive DFS that explores all pawn capture continuations from
+   * {@code current}.
    *
    * @param current      bit index of the pawn's current position
    * @param isWhite      {@code true} if the pawn belongs to white
@@ -745,10 +785,9 @@ public class Board {
         continue;
       }
 
-      boolean enemy =
-          isWhite
-              ? (isBitBlackPawn(mid) || isBitBlackChecker(mid))
-              : (isBitWhitePawn(mid) || isBitWhiteChecker(mid));
+      boolean enemy = isWhite
+          ? (isBitBlackPawn(mid) || isBitBlackChecker(mid))
+          : (isBitWhitePawn(mid) || isBitWhiteChecker(mid));
       if (!enemy) {
         continue;
       }
@@ -787,7 +826,7 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Checker (king) capture generation
+  // Checker (king) capture generation
   // ---------------------------------------------------------------------------
 
   /**
@@ -795,7 +834,8 @@ public class Board {
    *
    * @param from    bit index of the checker
    * @param isWhite {@code true} if the checker belongs to white
-   * @return list of {@link Move} objects with the maximum capture count; empty if none
+   * @return list of {@link Move} objects with the maximum capture count; empty if
+   *         none
    */
   private List<Move> getBestCheckerCaptures(int from, boolean isWhite) {
     List<CapturePath> all = checkerMultiCaptures(from, isWhite);
@@ -815,7 +855,8 @@ public class Board {
   }
 
   /**
-   * Enumerates all checker multi-capture sequences from {@code from} via depth-first search.
+   * Enumerates all checker multi-capture sequences from {@code from} via
+   * depth-first search.
    *
    * @param from    bit index of the checker
    * @param isWhite {@code true} if the checker belongs to white
@@ -828,9 +869,11 @@ public class Board {
   }
 
   /**
-   * Recursive DFS that explores all checker capture continuations from {@code current}.
+   * Recursive DFS that explores all checker capture continuations from
+   * {@code current}.
    *
-   * <p>Unlike a pawn, a checker can slide multiple squares before and after a jump.
+   * <p>
+   * Unlike a pawn, a checker can slide multiple squares before and after a jump.
    *
    * @param current      bit index of the checker's current position
    * @param isWhite      {@code true} if the checker belongs to white
@@ -872,10 +915,9 @@ public class Board {
 
         if (!enemyFound) {
           if (isOccupied(next)) {
-            boolean enemy =
-                isWhite
-                    ? (isBitBlackPawn(next) || isBitBlackChecker(next))
-                    : (isBitWhitePawn(next) || isBitWhiteChecker(next));
+            boolean enemy = isWhite
+                ? (isBitBlackPawn(next) || isBitBlackChecker(next))
+                : (isBitWhitePawn(next) || isBitWhiteChecker(next));
             if (!enemy || captured.contains(next)) {
               break;
             }
@@ -911,13 +953,15 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Internal value type
+  // Internal value type
   // ---------------------------------------------------------------------------
 
   /**
    * Immutable value object that records a single complete capture sequence.
    *
-   * <p>Used internally by the DFS capture-generation methods before being converted into
+   * <p>
+   * Used internally by the DFS capture-generation methods before being converted
+   * into
    * {@link Move} objects.
    */
   private static class CapturePath {
@@ -934,7 +978,8 @@ public class Board {
     /**
      * Constructs a {@code CapturePath} with defensive copies of both lists.
      *
-     * @param path     sequence of bit indices (origin → intermediate squares → destination)
+     * @param path     sequence of bit indices (origin → intermediate squares →
+     *                 destination)
      * @param captured set of captured enemy bit indices
      */
     CapturePath(List<Integer> path, List<Integer> captured) {
@@ -945,11 +990,12 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Coordinate conversion utilities
+  // Coordinate conversion utilities
   // ---------------------------------------------------------------------------
 
   /**
-   * Converts a bit index to its algebraic square name (e.g. {@code 0} → {@code "A1"}).
+   * Converts a bit index to its algebraic square name (e.g. {@code 0} →
+   * {@code "A1"}).
    *
    * @param index bit index in the range {@code [0, indexMax)}
    * @return algebraic name such as {@code "A1"} or {@code "H8"}
@@ -964,12 +1010,14 @@ public class Board {
   /**
    * Converts an algebraic square name to its bit index.
    *
-   * @param square algebraic name such as {@code "A1"}; row is a letter, column is a number
+   * @param square algebraic name such as {@code "A1"}; row is a letter, column is
+   *               a number
    * @return bit index in the range {@code [0, indexMax)}
-   * @throws IllegalArgumentException if the square is outside the board or is a light square
+   * @throws IllegalArgumentException if the square is outside the board or is a
+   *                                  light square
    */
   public int squareToIndex(String square) {
-    if(square == null) {
+    if (square == null) {
       throw new IllegalArgumentException("Invalid square format: " + square);
     }
     char rowChar = Character.toUpperCase(square.charAt(0));
@@ -986,7 +1034,8 @@ public class Board {
   }
 
   /**
-   * Maps a {@code (row, col)} board position to its bit index, or {@code -1} for light squares.
+   * Maps a {@code (row, col)} board position to its bit index, or {@code -1} for
+   * light squares.
    *
    * @param row zero-based row index (0 = bottom row 'A')
    * @param col zero-based column index (0 = leftmost column)
@@ -1002,14 +1051,17 @@ public class Board {
   }
 
   // ---------------------------------------------------------------------------
-  //  Display
+  // Display
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns a human-readable ASCII representation of the board, with row letters on the left
+   * Returns a human-readable ASCII representation of the board, with row letters
+   * on the left
    * and column numbers along the bottom.
    *
-   * <p>Piece symbols: {@code w} = white pawn, {@code W} = white checker, {@code b} = black
+   * <p>
+   * Piece symbols: {@code w} = white pawn, {@code W} = white checker, {@code b} =
+   * black
    * pawn, {@code B} = black checker, {@code _} = empty or light square.
    *
    * @return multi-line string depicting the current board state
@@ -1052,15 +1104,201 @@ public class Board {
     return sb.toString();
   }
 
+  public int evaluateSimple() {
+
+    int score = 0;
+
+    int pawn = 100;
+    int checker = 350;
+
+    for (int i = 0; i < indexMax; i++) {
+
+      // ---- Blanc ----
+      if (isBitWhitePawn(i)) {
+        score += pawn;
+      }
+
+      if (isBitWhiteChecker(i)) {
+        score += checker;
+      }
+
+      // ---- Noir ----
+      if (isBitBlackPawn(i)) {
+        score -= pawn;
+      }
+
+      if (isBitBlackChecker(i)) {
+        score -= checker;
+      }
+    }
+
+    return score;
+  }
+
+  public int evaluateAdvanced() {
+
+    int score = 0;
+
+    int pawn = 100;
+    int checker = 350;
+    int avancement = 8;
+
+    int half = sizeBoard / 2;
+
+    for (int i = 0; i < indexMax; i++) {
+
+      int row = i / half;
+
+      // ---- Blanc ----
+      if (isBitWhitePawn(i)) {
+        score += pawn;
+
+        // Bonus d'avancement (plus il monte, mieux c'est)
+        score += row * avancement;
+      }
+
+      if (isBitWhiteChecker(i)) {
+        score += checker;
+      }
+
+      // ---- Noir ----
+      if (isBitBlackPawn(i)) {
+        score -= pawn;
+
+        // Bonus d'avancement noir (plus il descend, mieux c'est)
+        score -= (sizeBoard - 1 - row) * avancement;
+      }
+
+      if (isBitBlackChecker(i)) {
+        score -= checker;
+      }
+    }
+
+    return score;
+  }
+
   /**
-  * FOR TESTING PURPOSES ONLY.
-  */
+   * Evaluates the current board position.
+   *
+   * <p>
+   * A positive score indicates an advantage for white.
+   * A negative score indicates an advantage for black.
+   *
+   * <p>
+   * The evaluation is based on:
+   * <ul>
+   * <li>Material balance (pawns and checkers)</li>
+   * <li>Pawn advancement</li>
+   * <li>Center control</li>
+   * <li>Mobility (number of legal moves)</li>
+   * </ul>
+   *
+   * @return evaluation score from white's perspective
+   */
+  public int evaluateMax() {
+
+    int score = 0;
+
+    int pawn = 100;
+    int checker = 350;
+    int mobility = 5;
+    int center = 15;
+    int avancement = 8;
+
+    int half = sizeBoard / 2;
+
+    for (int i = 0; i < indexMax; i++) {
+
+      int row = i / half;
+
+      // ---- Blanc ----
+      if (isBitWhitePawn(i)) {
+        score += pawn;
+
+        // Bonus d'avancement (plus il monte, mieux c'est)
+        score += row * avancement;
+      }
+
+      if (isBitWhiteChecker(i)) {
+        score += checker;
+      }
+
+      // ---- Noir ----
+      if (isBitBlackPawn(i)) {
+        score -= pawn;
+
+        // Bonus d'avancement noir (plus il descend, mieux c'est)
+        score -= (sizeBoard - 1 - row) * avancement;
+      }
+
+      if (isBitBlackChecker(i)) {
+        score -= checker;
+      }
+
+      // ---- Bonus centre ----
+      int col = (i % half) * 2 + (row % 2 == 0 ? 0 : 1);
+
+      boolean inCenter = row >= sizeBoard / 2 - 2 && row <= sizeBoard / 2 + 1
+          && col >= sizeBoard / 2 - 2 && col <= sizeBoard / 2 + 1;
+
+      if (inCenter) {
+        if (isBitWhitePawn(i) || isBitWhiteChecker(i)) {
+          score += center;
+        }
+        if (isBitBlackPawn(i) || isBitBlackChecker(i)) {
+          score -= center;
+        }
+      }
+    }
+
+    // ---- Mobilité ----
+    score += getWhiteValidMoves().size() * mobility;
+    score -= getBlackValidMoves().size() * mobility;
+
+    return score;
+  }
+
+  public void restorePiece(int index, String type) {
+    if (index < 0 || index >= indexMax) {
+      throw new IllegalArgumentException("Index hors limites");
+    }
+    switch (type) {
+      case "WP":
+        addWhitePawn(index);
+        break;
+      case "BP":
+        addBlackPawn(index);
+        break;
+      case "WC":
+        addWhiteChecker(index);
+        break;
+      case "BC":
+        addBlackChecker(index);
+        break;
+    }
+  }
+
+  // Permet d'annuler une promotion (Dame -> Pion)
+  public void demoteBit(int index) {
+    if (isBitWhiteChecker(index)) {
+      removeWhiteChecker(index);
+      addWhitePawn(index);
+    } else if (isBitBlackChecker(index)) {
+      removeBlackChecker(index);
+      addBlackPawn(index);
+    }
+  }
+
+  /**
+   * FOR TESTING PURPOSES ONLY.
+   */
 
   /**
    * Promotes the pawn on the named square to a checker (king).
    *
    * @param square algebraic square name of the pawn to promote
-   * @throws IllegalArgumentException if the square is out of bounds or contains no pawn
+   * @throws IllegalArgumentException if the square is out of bounds or contains
+   *                                  no pawn
    */
   public void promote(String square) {
     promoteBit(squareToIndex(square));
@@ -1069,10 +1307,12 @@ public class Board {
   /**
    * Applies a simple move from one square to another.
    *
-   * <p>This helper method converts board coordinates (e.g. "C3", "D4")
+   * <p>
+   * This helper method converts board coordinates (e.g. "C3", "D4")
    * into internal indices and applies the move.
    *
-   * <p>Mainly intended for testing purposes. No move legality is checked.
+   * <p>
+   * Mainly intended for testing purposes. No move legality is checked.
    *
    * @param from source square (e.g. "C3")
    * @param to   destination square (e.g. "D4")
@@ -1080,7 +1320,7 @@ public class Board {
   public void move(String from, String to) {
     int f = squareToIndex(from);
     int t = squareToIndex(to);
-    Move m = new Move(f,t);
+    Move m = new Move(f, t);
     applyMove(m);
   }
 
@@ -1089,11 +1329,11 @@ public class Board {
    * Intended for testing setup.
    */
   public void remove(String from) {
-      int f = squareToIndex(from);
-      removeBlackChecker(f);
-      removeBlackPawn(f);
-      removeWhiteChecker(f);
-      removeWhitePawn(f);
+    int f = squareToIndex(from);
+    removeBlackChecker(f);
+    removeBlackPawn(f);
+    removeWhiteChecker(f);
+    removeWhitePawn(f);
   }
 
   /**
@@ -1101,8 +1341,8 @@ public class Board {
    * Testing helper.
    */
   public void addWhite(String square) {
-      int f = squareToIndex(square);
-      addWhitePawn(f);
+    int f = squareToIndex(square);
+    addWhitePawn(f);
   }
 
   /**
@@ -1110,14 +1350,15 @@ public class Board {
    * Testing helper.
    */
   public void addBlack(String square) {
-      int f = squareToIndex(square);
-      addBlackPawn(f);
+    int f = squareToIndex(square);
+    addBlackPawn(f);
   }
 
   /**
    * Returns the list of simple target squares for a checker on a given square.
    *
-   * <p>This method converts the board coordinate (e.g., "C3") to an internal index
+   * <p>
+   * This method converts the board coordinate (e.g., "C3") to an internal index
    * and delegates to {@link #checkerSimpleTargets(int)} to compute the targets.
    *
    * @param square the source square in standard notation (e.g., "C3")
@@ -1125,18 +1366,6 @@ public class Board {
    */
   public List<Integer> checkerSimpleTarg(String square) {
     return checkerSimpleTargets(squareToIndex(square));
-  }
-
-  public void clearBoard() {
-    for (int row = 1; row <= this.sizeBoard; row++) {
-      for (int col = 0; col < this.sizeBoard; col++) {
-        if ((row + col) % 2 != 0) {
-          char file = (char) ('A' + col);
-          String square = file + "" + row;
-          remove(square);
-        }
-      }
-    }
   }
 
 }
