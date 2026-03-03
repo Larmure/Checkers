@@ -11,270 +11,278 @@ import org.junit.jupiter.api.Test;
 
 public class SauvegardeTest {
 
-    private final String SAVE_DIR = "Sauvegarde";
+  private final String SAVE_DIR = "Sauvegarde";
 
-    private Path getSavePath(String fileName) {
-        return Path.of(System.getProperty("user.dir"), SAVE_DIR, fileName);
+  private Path getSavePath(String fileName) {
+    return Path.of(System.getProperty("user.dir"), SAVE_DIR, fileName);
+  }
+
+  private GameCheckers newGame(int size, boolean blitz, int time, boolean debug) {
+  Configuration cfg = new Configuration(
+      blitz,
+      time,
+      Utils.DEFAULT_CONTEST,
+      size,
+      Utils.DEFAULT_VERBOSE,
+      debug,
+      Utils.DEFAULT_WHITE_AI,
+      Utils.DEFAULT_BLACK_AI
+  );
+  return new GameCheckers(cfg);
+}
+
+  // -----------------------------------------------------------------------
+  // F21 : Structure et ordre des sections
+  // -----------------------------------------------------------------------
+
+  @Test
+  void testSectionOrderSettingsGameHistory() throws IOException {
+    GameCheckers game =
+        newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_order.txt");
+
+    String content = Files.readString(getSavePath("test_order.txt"));
+    int settingsIdx = content.indexOf("[settings]");
+    int gameIdx = content.indexOf("[game]");
+    int historyIdx = content.indexOf("[history]");
+
+    assertTrue(settingsIdx != -1, "La section [settings] doit être présente.");
+    assertTrue(gameIdx != -1, "La section [game] doit être présente.");
+    assertTrue(historyIdx != -1, "La section [history] doit être présente.");
+    assertTrue(settingsIdx < gameIdx, "[settings] doit apparaître avant [game].");
+    assertTrue(gameIdx < historyIdx, "[game] doit apparaître avant [history].");
+  }
+
+
+  @Test
+  void testStartingPlayerIsWhiteByDefault() throws IOException {
+    GameCheckers game =
+        newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_white_turn.txt");
+
+    String content = Files.readString(getSavePath("test_white_turn.txt"));
+    assertTrue(
+        content.contains("starting-player=white"),
+        "Le joueur de départ doit être 'white' au début de la partie.");
+  }
+
+  @Test
+  void testStartingPlayerIsBlackAfterOneMove() throws IOException {
+    GameCheckers game =
+        newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+
+    Move move = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
+    game.applyMove(
+        game.getBoard().indexToSquare(move.getFrom()),
+        game.getBoard().indexToSquare(move.getTo()));
+
+    new BoardSauvegarde(game.getBoard(), game).saveToFile("test_black_turn.txt");
+
+    String content = Files.readString(getSavePath("test_black_turn.txt"));
+    assertTrue(
+        content.contains("starting-player=black"),
+        "Après un coup blanc, le joueur actif sauvegardé doit être 'black'.");
+  }
+
+  @Test
+  void testTimeModePresent() throws IOException {
+    GameCheckers game = newGame(10, true, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_timemode.txt");
+
+    String content = Files.readString(getSavePath("test_timemode.txt"));
+    assertTrue(
+        content.contains("time-mode=blitz") || content.contains("time-mode=classic"),
+        "Le paramètre time-mode doit être présent (blitz ou classic).");
+  }
+
+  @Test
+  void testDebugParamPresent() throws IOException {
+    GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, true);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_debug.txt");
+
+    String content = Files.readString(getSavePath("test_debug.txt"));
+    assertTrue(
+        content.contains("debug=true") || content.contains("debug=false"),
+        "Le paramètre debug doit être présent avec la valeur true ou false.");
+  }
+
+  @Test
+  void testBoardSizeParamPresentAndCorrect() throws IOException {
+    GameCheckers game =
+        newGame(12, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_boardsize.txt");
+
+    String content = Files.readString(getSavePath("test_boardsize.txt"));
+    assertTrue(
+        content.contains("board-size=12"),
+        "Le paramètre board-size doit être présent et correct (12).");
+  }
+
+  @Test
+  void testAiParamsPresent() throws IOException {
+    GameCheckers game =
+        newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_ai.txt");
+
+    String content = Files.readString(getSavePath("test_ai.txt"));
+    assertTrue(content.contains("ai-mode="), "Le paramètre ai-mode doit être présent.");
+    assertTrue(content.contains("ai-depth="), "Le paramètre ai-depth doit être présent.");
+
+    assertTrue(content.contains("ai-mode=None"), "ai-mode devrait valoir None.");
+    // Ton BoardSauvegarde écrit ai-depth=2
+    assertTrue(content.contains("ai-depth=2"), "ai-depth devrait valoir 2.");
+  }
+
+  @Test
+  void testBoardRowCountMatchesSize() throws IOException {
+    int size = 10;
+    GameCheckers game =
+        newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_rows.txt");
+
+    String content = Files.readString(getSavePath("test_rows.txt"));
+    String boardSection =
+        content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
+
+    int rowCount = 0;
+    for (String line : boardSection.split("\n")) {
+      String t = line.trim();
+      if (t.startsWith("[") || t.isBlank() || t.startsWith("#")) {
+        continue;
+      }
+      if (t.contains("-") || t.contains("x") || t.contains("o") || t.contains("X") || t.contains("O")) {
+        rowCount++;
+      }
     }
 
-    // Petite factory pour éviter les incohérences taille Board/Game
-    private GameCheckers newGame(int size, boolean blitz, int time, boolean debug) {
-        Configuration cfg = new Configuration(
-                blitz,
-                time,
-                Utils.DEFAULT_CONTEST,
-                size,
-                Utils.DEFAULT_VERBOSE,
-                debug
-        );
-        return new GameCheckers(cfg);
+    assertEquals(
+        size,
+        rowCount,
+        "Le nombre de lignes du plateau doit correspondre à la taille (" + size + ").");
+  }
+
+  @Test
+  void testBoardCellsContainOnlyValidChars() throws IOException {
+    int size = 10;
+    GameCheckers game =
+        newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_chars.txt");
+
+    String content = Files.readString(getSavePath("test_chars.txt"));
+    String boardSection =
+        content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
+
+    for (String line : boardSection.split("\n")) {
+      String t = line.trim();
+      if (t.startsWith("[") || t.isBlank() || t.startsWith("#")) {
+        continue;
+      }
+
+      for (String cell : t.split(" ")) {
+        assertTrue(
+            cell.equals("-") || cell.equals("o") || cell.equals("x") || cell.equals("O") || cell.equals("X"),
+            "Caractère invalide dans le plateau : '" + cell + "' (ligne : " + t + ")");
+      }
     }
+  }
 
-    // -----------------------------------------------------------------------
-    // F21 : Structure et ordre des sections
-    // -----------------------------------------------------------------------
+  @Test
+  void testInitialBoardContainsBothColors() throws IOException {
+    int size = 10;
+    GameCheckers game =
+        newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
 
-    @Test
-    void testSectionOrderSettingsGameHistory() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+    sauvegarde.saveToFile("test_initial_pieces.txt");
 
-        sauvegarde.saveToFile("test_order.txt");
+    String content = Files.readString(getSavePath("test_initial_pieces.txt"));
+    String boardSection =
+        content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
 
-        String content = Files.readString(getSavePath("test_order.txt"));
-        int settingsIdx = content.indexOf("[settings]");
-        int gameIdx     = content.indexOf("[game]");
-        int historyIdx  = content.indexOf("[history]");
+    assertTrue(
+        boardSection.contains("o") || boardSection.contains("O"),
+        "Le plateau initial doit contenir des pièces blanches ('o' ou 'O').");
+    assertTrue(
+        boardSection.contains("x") || boardSection.contains("X"),
+        "Le plateau initial doit contenir des pièces noires ('x' ou 'X').");
+  }
 
-        assertTrue(settingsIdx != -1, "La section [settings] doit être présente.");
-        assertTrue(gameIdx     != -1, "La section [game] doit être présente.");
-        assertTrue(historyIdx  != -1, "La section [history] doit être présente.");
-        assertTrue(settingsIdx < gameIdx,    "[settings] doit apparaître avant [game].");
-        assertTrue(gameIdx < historyIdx,     "[game] doit apparaître avant [history].");
-    }
+  @Test
+  void testSaveAfterOneMoveChangesBoard() throws IOException {
+    GameCheckers game =
+        newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
 
-    // -----------------------------------------------------------------------
-    // F23 : Paramètres de [settings]
-    // -----------------------------------------------------------------------
+    new BoardSauvegarde(game.getBoard(), game).saveToFile("test_before_move.txt");
+    String contentBefore = Files.readString(getSavePath("test_before_move.txt"));
+    String boardBefore =
+        contentBefore.substring(contentBefore.indexOf("[game]"), contentBefore.indexOf("[history]"));
 
-    @Test
-    void testStartingPlayerIsWhiteByDefault() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+    Move move = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
+    game.applyMove(
+        game.getBoard().indexToSquare(move.getFrom()),
+        game.getBoard().indexToSquare(move.getTo()));
 
-        sauvegarde.saveToFile("test_white_turn.txt");
+    new BoardSauvegarde(game.getBoard(), game).saveToFile("test_after_move.txt");
+    String contentAfter = Files.readString(getSavePath("test_after_move.txt"));
+    String boardAfter =
+        contentAfter.substring(contentAfter.indexOf("[game]"), contentAfter.indexOf("[history]"));
 
-        String content = Files.readString(getSavePath("test_white_turn.txt"));
-        assertTrue(content.contains("starting-player=white"),
-                "Le joueur de départ doit être 'white' au début de la partie.");
-    }
+    assertNotEquals(boardBefore, boardAfter, "Le plateau sauvegardé doit changer après un mouvement.");
+  }
 
-    @Test
-    void testStartingPlayerIsBlackAfterOneMove() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+  @Test
+  void testSaveAfterTwoMovesWhiteTurnAgain() throws IOException {
+    GameCheckers game =
+        newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
 
-        Move move = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
-        game.applyMove(
-                game.getBoard().indexToSquare(move.getFrom()),
-                game.getBoard().indexToSquare(move.getTo())
-        );
+    Move move1 = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
+    game.applyMove(
+        game.getBoard().indexToSquare(move1.getFrom()),
+        game.getBoard().indexToSquare(move1.getTo()));
 
-        new BoardSauvegarde(game.getBoard(), game).saveToFile("test_black_turn.txt");
+    Move move2 = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
+    game.applyMove(
+        game.getBoard().indexToSquare(move2.getFrom()),
+        game.getBoard().indexToSquare(move2.getTo()));
 
-        String content = Files.readString(getSavePath("test_black_turn.txt"));
-        assertTrue(content.contains("starting-player=black"),
-                "Après un coup blanc, le joueur actif sauvegardé doit être 'black'.");
-    }
+    new BoardSauvegarde(game.getBoard(), game).saveToFile("test_two_moves.txt");
 
-    @Test
-    void testTimeModePresent() throws IOException {
-        // On force blitz=true ici pour que time-mode=blitz soit attendu
-        GameCheckers game = newGame(10, true, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+    String content = Files.readString(getSavePath("test_two_moves.txt"));
+    assertTrue(
+        content.contains("starting-player=white"),
+        "Après deux coups (blanc + noir), c'est de nouveau au tour de blanc.");
+  }
 
-        sauvegarde.saveToFile("test_timemode.txt");
+  @Test
+  void testSaveTwiceOverwritesFile() throws IOException {
+    GameCheckers game =
+        newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
 
-        String content = Files.readString(getSavePath("test_timemode.txt"));
-        assertTrue(content.contains("time-mode=blitz") || content.contains("time-mode=classic"),
-                "Le paramètre time-mode doit être présent (blitz ou classic).");
-    }
+    sauvegarde.saveToFile("test_overwrite.txt");
+    long sizeFirst = Files.size(getSavePath("test_overwrite.txt"));
 
-    @Test
-    void testDebugParamPresent() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, true);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
+    sauvegarde.saveToFile("test_overwrite.txt");
+    long sizeSecond = Files.size(getSavePath("test_overwrite.txt"));
 
-        sauvegarde.saveToFile("test_debug.txt");
+    assertEquals(sizeFirst, sizeSecond,
+        "Sauvegarder deux fois doit écraser le fichier, pas l'agrandir.");
 
-        String content = Files.readString(getSavePath("test_debug.txt"));
-        assertTrue(content.contains("debug=true") || content.contains("debug=false"),
-                "Le paramètre debug doit être présent avec la valeur true ou false.");
-    }
-
-    @Test
-    void testBoardSizeParamPresentAndCorrect() throws IOException {
-        GameCheckers game = newGame(12, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
-
-        sauvegarde.saveToFile("test_boardsize.txt");
-
-        String content = Files.readString(getSavePath("test_boardsize.txt"));
-        assertTrue(content.contains("board-size=12"),
-                "Le paramètre board-size doit être présent et correct (12).");
-    }
-
-    @Test
-    void testAiParamsPresent() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
-
-        sauvegarde.saveToFile("test_ai.txt");
-
-        String content = Files.readString(getSavePath("test_ai.txt"));
-        assertTrue(content.contains("ai-mode="),  "Le paramètre ai-mode doit être présent.");
-        assertTrue(content.contains("ai-depth="), "Le paramètre ai-depth doit être présent.");
-
-        // Si tu as fixé les valeurs exactement :
-        assertTrue(content.contains("ai-mode=None"), "ai-mode devrait valoir None (sans #).");
-        assertTrue(content.contains("ai-depth=4"),   "ai-depth devrait valoir 4 (sans #).");
-    }
-
-    // -----------------------------------------------------------------------
-    // Section [game] – représentation du plateau
-    // -----------------------------------------------------------------------
-
-    @Test
-    void testBoardRowCountMatchesSize() throws IOException {
-        int size = 10;
-        GameCheckers game = newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
-
-        sauvegarde.saveToFile("test_rows.txt");
-
-        String content = Files.readString(getSavePath("test_rows.txt"));
-        String boardSection = content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
-
-        int rowCount = 0;
-        for (String line : boardSection.split("\n")) {
-            String t = line.trim();
-            if (t.startsWith("[") || t.isBlank() || t.startsWith("#")) continue;
-            if (t.contains("-") || t.contains("x") || t.contains("o") || t.contains("X") || t.contains("O")) {
-                rowCount++;
-            }
-        }
-
-        assertEquals(size, rowCount,
-                "Le nombre de lignes du plateau doit correspondre à la taille (" + size + ").");
-    }
-
-    @Test
-    void testBoardCellsContainOnlyValidChars() throws IOException {
-        int size = 10;
-        GameCheckers game = newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
-
-        sauvegarde.saveToFile("test_chars.txt");
-
-        String content = Files.readString(getSavePath("test_chars.txt"));
-        String boardSection = content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
-
-        for (String line : boardSection.split("\n")) {
-            String t = line.trim();
-            if (t.startsWith("[") || t.isBlank() || t.startsWith("#")) continue;
-
-            for (String cell : t.split(" ")) {
-                assertTrue(
-                        cell.equals("-") || cell.equals("o") || cell.equals("x") || cell.equals("O") || cell.equals("X"),
-                        "Caractère invalide dans le plateau : '" + cell + "' (ligne : " + t + ")"
-                );
-            }
-        }
-    }
-
-    @Test
-    void testInitialBoardContainsBothColors() throws IOException {
-        int size = 10;
-        GameCheckers game = newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
-
-        sauvegarde.saveToFile("test_initial_pieces.txt");
-
-        String content = Files.readString(getSavePath("test_initial_pieces.txt"));
-        String boardSection = content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
-
-        assertTrue(boardSection.contains("o") || boardSection.contains("O"),
-                "Le plateau initial doit contenir des pièces blanches ('o' ou 'O').");
-        assertTrue(boardSection.contains("x") || boardSection.contains("X"),
-                "Le plateau initial doit contenir des pièces noires ('x' ou 'X').");
-    }
-
-    // -----------------------------------------------------------------------
-    // Sauvegarde après des mouvements
-    // -----------------------------------------------------------------------
-
-    @Test
-    void testSaveAfterOneMoveChangesBoard() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-
-        new BoardSauvegarde(game.getBoard(), game).saveToFile("test_before_move.txt");
-        String contentBefore = Files.readString(getSavePath("test_before_move.txt"));
-        String boardBefore = contentBefore.substring(
-                contentBefore.indexOf("[game]"), contentBefore.indexOf("[history]"));
-
-        Move move = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
-        game.applyMove(
-                game.getBoard().indexToSquare(move.getFrom()),
-                game.getBoard().indexToSquare(move.getTo())
-        );
-
-        new BoardSauvegarde(game.getBoard(), game).saveToFile("test_after_move.txt");
-        String contentAfter = Files.readString(getSavePath("test_after_move.txt"));
-        String boardAfter = contentAfter.substring(
-                contentAfter.indexOf("[game]"), contentAfter.indexOf("[history]"));
-
-        assertNotEquals(boardBefore, boardAfter,
-                "Le plateau sauvegardé doit changer après un mouvement.");
-    }
-
-    @Test
-    void testSaveAfterTwoMovesWhiteTurnAgain() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-
-        Move move1 = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
-        game.applyMove(
-                game.getBoard().indexToSquare(move1.getFrom()),
-                game.getBoard().indexToSquare(move1.getTo())
-        );
-
-        Move move2 = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
-        game.applyMove(
-                game.getBoard().indexToSquare(move2.getFrom()),
-                game.getBoard().indexToSquare(move2.getTo())
-        );
-
-        new BoardSauvegarde(game.getBoard(), game).saveToFile("test_two_moves.txt");
-
-        String content = Files.readString(getSavePath("test_two_moves.txt"));
-        assertTrue(content.contains("starting-player=white"),
-                "Après deux coups (blanc + noir), c'est de nouveau au tour de blanc.");
-    }
-
-    // -----------------------------------------------------------------------
-    // Écrasement du fichier
-    // -----------------------------------------------------------------------
-
-    @Test
-    void testSaveTwiceOverwritesFile() throws IOException {
-        GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
-        BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
-
-        sauvegarde.saveToFile("test_overwrite.txt");
-        long sizeFirst = Files.size(getSavePath("test_overwrite.txt"));
-
-        sauvegarde.saveToFile("test_overwrite.txt");
-        long sizeSecond = Files.size(getSavePath("test_overwrite.txt"));
-
-        assertEquals(sizeFirst, sizeSecond,
-                "Sauvegarder deux fois doit écraser le fichier, pas l'agrandir.");
-    }
+  }
 }

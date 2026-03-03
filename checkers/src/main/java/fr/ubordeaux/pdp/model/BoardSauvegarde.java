@@ -57,7 +57,7 @@ public class BoardSauvegarde {
 
             // --- SECTION 3: [history] (F21) ---
             writer.write("[history] # Move history\n");
-            writer.write("# History feature to be implemented\n");
+            writer.write(GH.getHistory().historyString()); 
 
             System.out.println("Save successful: " + file.getPath());
 

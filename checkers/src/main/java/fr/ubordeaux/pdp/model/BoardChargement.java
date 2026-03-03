@@ -18,6 +18,7 @@ public class BoardChargement {
     private boolean  seenGame=false;
     private boolean seenSettings=false;
     private boolean seenHistoriy=false;
+    private StringBuilder historyBuffer = new StringBuilder();
 
     public BoardChargement(Board board, GameCheckers game) {
         this.board = board;
@@ -44,7 +45,7 @@ public class BoardChargement {
    public void loadFromFile(String fileName) {
     Path path = Paths.get(saveDirectory, fileName);
     File file = path.toFile();
-
+    this.historyBuffer = new StringBuilder();
     // Reset state for this load
     this.gameSectionInitialized = false;
     this.currentBoardRow = 0;
@@ -105,7 +106,7 @@ public class BoardChargement {
         }
 
      
-
+        game.setHistory(new History(historyBuffer.toString()));
         System.out.println("Game successfully restored from: " + fileName);
 
     } catch (IOException e) {
@@ -136,6 +137,7 @@ public class BoardChargement {
             }
             case "[history]" -> {
                 seenHistoriy=true;
+                 historyBuffer.append(data).append("\n");
             }
             default -> {
                 return;

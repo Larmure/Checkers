@@ -143,4 +143,54 @@ public class Move {
 
     return sb.toString();
   }
+
+  public static Move fromSaveString(String text) {
+  if (text == null) {
+    throw new IllegalArgumentException("Move text is null");
+  }
+
+  String s = text.trim();
+  if (s.isEmpty()) {
+    throw new IllegalArgumentException("Move text is empty");
+  }
+
+  boolean promotion = false;
+  String promoSuffix = "(promotion)";
+
+  if (s.endsWith(promoSuffix)) {
+    promotion = true;
+    s = s.substring(0, s.length() - promoSuffix.length()).trim();
+  }
+
+  boolean isCapture = s.contains("x");
+  String delimiterRegex = isCapture ? "x" : "-";
+  String[] parts = s.split(java.util.regex.Pattern.quote(delimiterRegex));
+
+  if (parts.length < 2) {
+    throw new IllegalArgumentException("Invalid move format: " + text);
+  }
+
+  List<Integer> path = new ArrayList<>();
+  for (String part : parts) {
+    String token = part.trim();
+    if (token.isEmpty()) {
+      throw new IllegalArgumentException("Invalid move token in: " + text);
+    }
+    try {
+      path.add(Integer.parseInt(token));
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("Invalid square number '" + token + "' in: " + text, e);
+    }
+  }
+
+  Move move;
+  if (isCapture) {
+    move = new Move(path, new ArrayList<>());
+  } else {
+    move = new Move(path.get(0), path.get(path.size() - 1));
+  }
+
+  move.setPromotion(promotion);
+  return move;
+}
 }

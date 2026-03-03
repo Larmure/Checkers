@@ -41,12 +41,53 @@ public class History {
   }
 
   private void loadHistory(String historyToString) {
-    // TODO. 
+    if (historyToString == null) {
+      return;
+    }
+
+    String[] lines = historyToString.split("\\R");
+
+    for (String rawLine : lines) {
+      String line = rawLine.trim();
+
+      if (line.isEmpty()) {
+        continue;
+      }
+
+      if (line.equalsIgnoreCase(HEADER)) {
+        continue;
+      }
+
+      line = line.replaceAll("\\{.*?\\}", "").trim();
+
+      if (line.isEmpty()) {
+        continue;
+      }
+
+      char colorChar = line.charAt(0);
+      PlayerColor color;
+
+        switch (colorChar) {
+            case 'W' -> color = PlayerColor.WHITE;
+            case 'B' -> color = PlayerColor.BLACK;
+            default -> throw new IllegalArgumentException( "History line must start with W or B: " + line);
+        }
+
+      String moveText = line.substring(1).trim();
+
+      if (moveText.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Missing move after color: " + line);
+      }
+
+      Move move = Move.fromSaveString(moveText);
+      history.add(new ColorMove(color, move));
+    }
   }
 
 	public String historyString() {
     String h = "";
-		for (ColorMove cm : history) {
+    for (ColorMove cm : history) {
       String line = "";
       if (cm.getColor() == PlayerColor.WHITE) {
         line += "W " + cm.getMove();
@@ -54,19 +95,22 @@ public class History {
       else if (cm.getColor() == PlayerColor.BLACK) {
         line += "B " + cm.getMove();
       }
+
       if (cm.getMove().getCaptured().size() == 1) {
         line += " {Prise simple}";
       } 
       else if (cm.getMove().getCaptured().size() >= 1) {
         line += " {Prise multiple}";
       }
+
       if (cm.getMove().isPromotion()) {
         line += " {Promotion}";
       }
+
       line += "\n";
       h = line + h;
     }
-    return HEADER + "\n" + h;
+    return h;
 	}
 
 

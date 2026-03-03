@@ -21,7 +21,7 @@ public class GameCheckers implements Subject {
   private boolean isWhiteTurn;
   private List<GameView> observers;
   private  Configuration configuration;
-
+  private History history;
   /**
    * Constructs a new game instance.
    * * <p>Initializes a standard 12x12 board, sets the initial state to {@link InGameState},
@@ -31,6 +31,7 @@ public class GameCheckers implements Subject {
    */
 
   public GameCheckers(Configuration configuration) {
+    this.history=new History();
     this .configuration=configuration;
     this.board = new Board(configuration.getSize());
     this.isWhiteTurn = true;
@@ -241,5 +242,12 @@ public class GameCheckers implements Subject {
    */
   public Player getBlackPlayer() {
     return this.blackPlayer;
+  }
+
+  public void setHistory(History history) {
+    this.history = history;
+  }
+  public History getHistory() {
+    return this.history;
   }
 }
