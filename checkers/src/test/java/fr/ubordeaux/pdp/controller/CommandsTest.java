@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import fr.ubordeaux.pdp.model.Configuration;
-import fr.ubordeaux.pdp.model.Internationalization;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.controller.commands.*;
 
@@ -105,11 +107,11 @@ class CommandsTest {
         }
 
         @Override
-        public void display(fr.ubordeaux.pdp.model.GameCheckers g) {
+        public void display(GameCheckers g) {
         }
 
         @Override
-        public void update(fr.ubordeaux.pdp.model.GameCheckers g) {
+        public void update(GameCheckers g) {
         }
     }
 

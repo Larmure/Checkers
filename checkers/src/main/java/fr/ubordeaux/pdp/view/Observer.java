@@ -1,7 +1,6 @@
 package fr.ubordeaux.pdp.view;
 
-import fr.ubordeaux.pdp.model.core.*;
-import fr.ubordeaux.pdp.model.tools.*;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 
 /**
  * Defines a receiver for update notifications from an observable object.

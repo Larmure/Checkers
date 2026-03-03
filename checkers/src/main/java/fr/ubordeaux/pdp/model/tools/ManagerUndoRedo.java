@@ -2,8 +2,10 @@ package fr.ubordeaux.pdp.model.tools;
 
 import java.util.List;
 
-import fr.ubordeaux.pdp.model.player.*;
-import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.player.PlayerColor;
+
 
 /**
  * Manages the undo and redo operations for the Checkers game.

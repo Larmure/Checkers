@@ -1,7 +1,9 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.core;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
+
+import fr.ubordeaux.pdp.model.tools.Utils;
 
 class ConfigurationTest {
 

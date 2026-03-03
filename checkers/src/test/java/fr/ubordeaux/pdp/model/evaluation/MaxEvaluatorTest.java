@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import fr.ubordeaux.pdp.model.Board;
+import fr.ubordeaux.pdp.model.core.Board;
 
 public class MaxEvaluatorTest {
     // ===========================================================================

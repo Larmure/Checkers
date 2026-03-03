@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-import fr.ubordeaux.pdp.model.Board;
+import fr.ubordeaux.pdp.model.core.Board;
 
 /**
  * Tests for the three evaluation functions:

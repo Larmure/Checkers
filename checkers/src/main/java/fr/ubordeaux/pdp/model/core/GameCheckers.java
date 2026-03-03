@@ -3,8 +3,12 @@ package fr.ubordeaux.pdp.model.core;
 import java.util.ArrayList;
 import java.util.List;
 
-import fr.ubordeaux.pdp.model.player.*;
-import fr.ubordeaux.pdp.model.tools.*;
+import fr.ubordeaux.pdp.model.player.AIPlayer;
+import fr.ubordeaux.pdp.model.player.HumanPlayer;
+import fr.ubordeaux.pdp.model.player.Player;
+import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import fr.ubordeaux.pdp.view.GameView;
 
 /**

@@ -1,7 +1,11 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.tools;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.player.PlayerColor;
+
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 

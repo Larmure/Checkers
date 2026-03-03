@@ -1,7 +1,8 @@
 package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.GameCheckers;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

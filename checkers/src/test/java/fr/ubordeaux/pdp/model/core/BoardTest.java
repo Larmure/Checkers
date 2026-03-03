@@ -1,4 +1,4 @@
-package fr.ubordeaux.pdp.model;
+package fr.ubordeaux.pdp.model.core;
 
 import static org.junit.jupiter.api.Assertions.*;
 
