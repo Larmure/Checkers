@@ -43,6 +43,8 @@ public class GameController {
 
   private Timer blitzTimer;
 
+  private boolean unsavedChanges = false;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -72,7 +74,7 @@ public class GameController {
     Command command = switch (commandName.toLowerCase()) {
       case "new" -> new NewCommand(this, args);
       case "help" -> new HelpCommand(args);
-      case "quit" -> new QuitCommand();
+      case "quit" -> new QuitCommand(this);
       case "pause" -> new PauseCommand(blitzTimer, game);
       case "load" -> new LoadCommand(this, args);
       case "save" -> new SaveCommand(this, args);
@@ -91,6 +93,7 @@ public class GameController {
 
     if (command != null) {
       command.execute();
+      this.unsavedChanges = true;
     }
   }
 
@@ -116,6 +119,7 @@ public class GameController {
     }
 
     displayBoard();
+    this.unsavedChanges = false;
   }
 
   public void executeMove(String from, String to) {
@@ -124,7 +128,7 @@ public class GameController {
     }
 
     game.applyMove(from, to);
-
+    this.unsavedChanges = true;
     game.setState(game.checkGameOver());
     if (game.getState().equals(State.FINISHED)) {
       if (configuration.isBlitz())
@@ -214,6 +218,7 @@ public class GameController {
     this.configuration = new Configuration(cfg);
     this.game.addObserver(view);
     displayBoard();
+    this.unsavedChanges = false;
   }
 
   public boolean isWhiteIsAi() {
@@ -276,5 +281,11 @@ public class GameController {
   public boolean isBlitz() {
     return configuration.isBlitz();
   }
+  public boolean hasUnsavedChanges() {
+    return this.unsavedChanges;
+  }
 
+  public void setUnsavedChanges(boolean unsavedChanges) {
+    this.unsavedChanges = unsavedChanges;
+  }
 }
