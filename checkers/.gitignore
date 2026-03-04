@@ -5,3 +5,6 @@ target/
 .settings/
 *.prefs
 .classpath
+.idea/
+.vscode/
+checkers/Sauvegarde/*.txt

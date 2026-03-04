@@ -1,13 +1,26 @@
 
 package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.model.core.*;
-import fr.ubordeaux.pdp.model.tools.*;
-import fr.ubordeaux.pdp.controller.commands.*;
-import fr.ubordeaux.pdp.view.GameView;
-
 import java.util.Timer;
 import java.util.TimerTask;
+
+import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
+import fr.ubordeaux.pdp.controller.commands.HelpCommand;
+import fr.ubordeaux.pdp.controller.commands.HintCommand;
+import fr.ubordeaux.pdp.controller.commands.LoadCommand;
+import fr.ubordeaux.pdp.controller.commands.NewCommand;
+import fr.ubordeaux.pdp.controller.commands.PauseCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitCommand;
+import fr.ubordeaux.pdp.controller.commands.RedoCommand;
+import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.SetCommand;
+import fr.ubordeaux.pdp.controller.commands.ShowCommand;
+import fr.ubordeaux.pdp.controller.commands.UndoCommand;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.view.GameView;
 
 /**
  * Orchestrator of the game logic and user interactions.
@@ -60,9 +73,9 @@ public class GameController {
       case "new" -> new NewCommand(this, args);
       case "help" -> new HelpCommand(args);
       case "quit" -> new QuitCommand();
-      case "load" -> new LoadCommand();
-      case "save" -> new SaveCommand();
       case "pause" -> new PauseCommand(blitzTimer, game);
+      case "load" -> new LoadCommand(this, args);
+      case "save" -> new SaveCommand(this, args);
       case "hint" -> new HintCommand();
       case "undo" -> new UndoCommand(this, args);
       case "redo" -> new RedoCommand(this, args);
@@ -189,6 +202,18 @@ public class GameController {
 
   public void setVerbose(boolean verbose) {
     this.configuration = new Configuration(configuration, verbose, isDebug());
+  }
+
+  public GameCheckers getGame() {
+    return game;
+  }
+
+  public void setGame(GameCheckers loadedGame, Configuration cfg) {
+
+    this.game = loadedGame;
+    this.configuration = new Configuration(cfg);
+    this.game.addObserver(view);
+    displayBoard();
   }
 
   public boolean isWhiteIsAi() {

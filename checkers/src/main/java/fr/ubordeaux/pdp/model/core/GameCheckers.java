@@ -7,9 +7,11 @@ import fr.ubordeaux.pdp.model.player.AIPlayer;
 import fr.ubordeaux.pdp.model.player.HumanPlayer;
 import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.History;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import fr.ubordeaux.pdp.view.GameView;
+
 
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
@@ -29,7 +31,7 @@ public class GameCheckers implements Subject {
   private List<GameView> observers;
   private Configuration configuration;
   private ManagerUndoRedo managerUndoRedo;
-
+  private History history;
   /**
    * Constructs a new game instance.
    * *
@@ -41,28 +43,29 @@ public class GameCheckers implements Subject {
    * 
    */
 
-  public GameCheckers(Configuration configuration) {
-    this.configuration = configuration;
-    this.board = new Board(configuration.getSize());
+  public GameCheckers(Configuration cfg) {
+    this.history=new History();
+    this .configuration=cfg;
+    this.board = new Board(cfg.getSize());
     this.isWhiteTurn = true;
     this.state = State.IN_GAME;
     managerUndoRedo = new ManagerUndoRedo(this.board);
 
     // MODE IA
-    if (configuration.isWhiteIsAI() == true) {
+    if (cfg.isWhiteIsAI() == true) {
       this.whitePlayer = new AIPlayer("White AI");
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
-    if (configuration.isBlackIsAI() == true) {
+    if (cfg.isBlackIsAI() == true) {
       this.blackPlayer = new AIPlayer("Black AI");
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }
 
     // MODE BLITZ
-    if (configuration.isBlitz() == true) {
-      int timeInSeconds = configuration.getTime() * 60;
+    if (cfg.isBlitz() == true) {
+      int timeInSeconds = cfg.getTime() * 60;
 
       this.whitePlayer.setPlayTime(timeInSeconds);
       this.blackPlayer.setPlayTime(timeInSeconds);
@@ -161,7 +164,8 @@ public class GameCheckers implements Subject {
     Move move = null;
     int from, to;
     List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
-    PlayerColor currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
+    PlayerColor currentColor;
+      currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
 
     if (state == State.PAUSE) {
       System.out.println(Internationalization.get("game.game_paused"));
@@ -265,7 +269,6 @@ public class GameCheckers implements Subject {
   public void setWhiteTurn(boolean isWhite) {
     this.isWhiteTurn = isWhite;
   }
-
   public Configuration getConfiguration() {
     return configuration;
   }
@@ -313,5 +316,11 @@ public class GameCheckers implements Subject {
       this.isWhiteTurn = !this.isWhiteTurn;
       notifyObservers();
     }
+  }
+  public void setHistory(History history) {
+    this.history = history;
+  }
+  public History getHistory() {
+    return this.history;
   }
 }

@@ -4,8 +4,18 @@ import java.util.Map;
 import java.util.Set;
 
 import fr.ubordeaux.pdp.controller.Command;
-import fr.ubordeaux.pdp.controller.commands.*;
-
+import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
+import fr.ubordeaux.pdp.controller.commands.HelpCommand;
+import fr.ubordeaux.pdp.controller.commands.HintCommand;
+import fr.ubordeaux.pdp.controller.commands.LoadCommand;
+import fr.ubordeaux.pdp.controller.commands.NewCommand;
+import fr.ubordeaux.pdp.controller.commands.PauseCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitCommand;
+import fr.ubordeaux.pdp.controller.commands.RedoCommand;
+import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.SetCommand;
+import fr.ubordeaux.pdp.controller.commands.ShowCommand;
+import fr.ubordeaux.pdp.controller.commands.UndoCommand;
 
 /**
  * Global utility class containing game constants and the command registry.
@@ -42,8 +52,8 @@ public class Utils {
       Map.entry("new", new NewCommand(null, null)),
       Map.entry("help", new HelpCommand(null)),
       Map.entry("quit", new QuitCommand()),
-      Map.entry("load", new LoadCommand()),
-      Map.entry("save", new SaveCommand()),
+      Map.entry("load", new LoadCommand(null, null)),
+      Map.entry("save", new SaveCommand(null, null)),
       Map.entry("pause", new PauseCommand(null, null)),
       Map.entry("hint", new HintCommand()),
       Map.entry("undo", new UndoCommand(null, null)),
@@ -69,5 +79,8 @@ public class Utils {
       "show board|history|time|configuration",
       "set PARAM=VALUE"
   };
+
+  public Utils() {
+  }
 
 }

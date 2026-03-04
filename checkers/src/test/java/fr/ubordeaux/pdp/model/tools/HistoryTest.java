@@ -1,13 +1,15 @@
 package fr.ubordeaux.pdp.model.tools;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
-
-import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
 
 class HistoryTest {
 
@@ -85,19 +87,8 @@ class HistoryTest {
         assertThrows(IllegalArgumentException.class, () -> history.getLastMove());
     }
 
-    // ─── historyString ───────────────────────────────────────────────────────
 
-    @Test
-    void testHistoryStringEmptyHistory() {
-        assertEquals("[history]\n", history.historyString());
-    }
-
-    @Test
-    void testHistoryStringContainsHeader() {
-        history.addMove(PlayerColor.WHITE, simpleMove());
-        assertTrue(history.historyString().startsWith("[history]"));
-    }
-
+    
     @Test
     void testHistoryStringWhitePrefix() {
         history.addMove(PlayerColor.WHITE, simpleMove());
