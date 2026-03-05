@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+import fr.ubordeaux.pdp.model.player.PlayerColor;
+
 class BoardTest {
 
   // ----------------------------
@@ -513,8 +515,8 @@ class BoardTest {
   void testNoPiecesLeftFalseAtStart12x12() {
     Board board = new Board(12);
 
-    assertFalse(board.noPiecesLeft(true),  "White should have pieces at start");
-    assertFalse(board.noPiecesLeft(false), "Black should have pieces at start");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White should have pieces at start");
+    assertFalse(board.noPiecesLeft(PlayerColor.BLACK), "Black should have pieces at start");
   }
 
   @Test
@@ -522,8 +524,8 @@ class BoardTest {
     Board board = new Board(12);
     clearBoard(board, 12);
 
-    assertTrue(board.noPiecesLeft(true),  "White should have no pieces after clear");
-    assertTrue(board.noPiecesLeft(false), "Black should have no pieces after clear");
+    assertTrue(board.noPiecesLeft(PlayerColor.WHITE),  "White should have no pieces after clear");
+    assertTrue(board.noPiecesLeft(PlayerColor.BLACK), "Black should have no pieces after clear");
   }
 
   @Test
@@ -533,8 +535,8 @@ class BoardTest {
 
     board.addWhite("F6");
 
-    assertFalse(board.noPiecesLeft(true),  "White has a pawn — noPiecesLeft must be false");
-    assertTrue(board.noPiecesLeft(false),  "Black has no pieces — noPiecesLeft must be true");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White has a pawn — noPiecesLeft must be false");
+    assertTrue(board.noPiecesLeft(PlayerColor.BLACK),  "Black has no pieces — noPiecesLeft must be true");
   }
 
   @Test
@@ -544,8 +546,8 @@ class BoardTest {
 
     board.addBlack("G7");
 
-    assertTrue(board.noPiecesLeft(true),   "White has no pieces — noPiecesLeft must be true");
-    assertFalse(board.noPiecesLeft(false), "Black has a pawn — noPiecesLeft must be false");
+    assertTrue(board.noPiecesLeft(PlayerColor.WHITE),   "White has no pieces — noPiecesLeft must be true");
+    assertFalse(board.noPiecesLeft(PlayerColor.BLACK), "Black has a pawn — noPiecesLeft must be false");
   }
 
   @Test
@@ -556,8 +558,8 @@ class BoardTest {
     board.addWhite("F6");
     board.promote("F6");
 
-    assertFalse(board.noPiecesLeft(true),  "White has a checker — noPiecesLeft must be false");
-    assertTrue(board.noPiecesLeft(false),  "Black has no pieces — noPiecesLeft must be true");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White has a checker — noPiecesLeft must be false");
+    assertTrue(board.noPiecesLeft(PlayerColor.BLACK),  "Black has no pieces — noPiecesLeft must be true");
   }
 
   @Test
@@ -568,8 +570,8 @@ class BoardTest {
     board.addBlack("G7");
     board.promote("G7");
 
-    assertTrue(board.noPiecesLeft(true),   "White has no pieces — noPiecesLeft must be true");
-    assertFalse(board.noPiecesLeft(false), "Black has a checker — noPiecesLeft must be false");
+    assertTrue(board.noPiecesLeft(PlayerColor.WHITE),   "White has no pieces — noPiecesLeft must be true");
+    assertFalse(board.noPiecesLeft(PlayerColor.BLACK), "Black has a checker — noPiecesLeft must be false");
   }
 
   @Test
@@ -587,8 +589,8 @@ class BoardTest {
     Move capture = new Move(List.of(from, to), List.of(captured));
     board.applyMove(capture);
 
-    assertFalse(board.noPiecesLeft(true),  "White still has its pawn after capture");
-    assertTrue(board.noPiecesLeft(false),  "Black has no pieces left after being captured");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White still has its pawn after capture");
+    assertTrue(board.noPiecesLeft(PlayerColor.BLACK),  "Black has no pieces left after being captured");
   }
 
   @Test
@@ -601,7 +603,7 @@ class BoardTest {
     board.addWhite("E5");
     board.promote("E5");
 
-    assertFalse(board.noPiecesLeft(true), "White has pawn + checker — noPiecesLeft must be false");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE), "White has pawn + checker — noPiecesLeft must be false");
   }
 
   // ----------------------------

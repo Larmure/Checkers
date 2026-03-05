@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
@@ -321,8 +322,8 @@ public class Board {
    * @param isWhite {@code true} to check the white side; {@code false} for black
    * @return {@code true} when all bitboards for that colour are zero
    */
-  public boolean noPiecesLeft(boolean isWhite) {
-    if (isWhite) {
+  public boolean noPiecesLeft(PlayerColor p) {
+    if (p == PlayerColor.WHITE) {
       return whitePawns1 == 0L
           && whitePawns2 == 0L
           && whiteCheckers1 == 0L
