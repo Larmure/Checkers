@@ -35,9 +35,12 @@ public class SaveCommand implements Command, Helpable {
       return;
     }
 
-    new BoardSauvegarde(game.getBoard(), game).saveToFile(fileName);
-    controller.markAsSaved();
-    System.out.println("[DEBUG] unsavedChanges est maintenant : " + controller.hasUnsavedChanges());
+    try {
+      new BoardSauvegarde(game.getBoard(), game).saveToFile(fileName);
+      controller.markAsSaved(); 
+    } catch (Exception e) {
+      System.err.println("Save Error: " + e.getMessage());
+    }
   }
 
   @Override

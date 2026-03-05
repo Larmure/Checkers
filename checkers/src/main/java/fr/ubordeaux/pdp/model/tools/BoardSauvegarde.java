@@ -26,7 +26,7 @@ public class BoardSauvegarde {
      * MAIN SAVE METHOD
      * F21: Mandatory order [settings] -> [game] -> [history]
      */
-    public void saveToFile(String fileName) {
+    public void saveToFile(String fileName) throws Exception{
         createSaveDirectory();
         File file = new File(saveDirectory + File.separator + fileName);
         Configuration config = GH.getConfiguration();
@@ -64,8 +64,6 @@ public class BoardSauvegarde {
 
             System.out.println("Save successful: " + file.getPath());
 
-        } catch (IOException e) {
-            System.err.println("Save Error: " + e.getMessage());
         }
     }
 

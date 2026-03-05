@@ -36,6 +36,7 @@ public class QuitCommand implements Command, Helpable {
   @Override
   public void execute() {
     if (controller.hasUnsavedChanges() && controller.getGame() != null) {
+      @SuppressWarnings("resource")
       Scanner scanner = new Scanner(System.in);
       boolean handled = false;
 
@@ -49,7 +50,6 @@ public class QuitCommand implements Command, Helpable {
 
           try {
             GameCheckers game = controller.getGame();
-            // Perform the save
             new BoardSauvegarde(game.getBoard(), game).saveToFile(path);
             System.out.println("Game saved successfully.");
             handled = true;
