@@ -1077,20 +1077,8 @@ public class Board {
 
       for (int col = 0; col < sizeBoard; col++) {
         int bitIndex = boardToBitIndex(row, col);
-
-        if (bitIndex == -1) {
-          sb.append("_  ");
-        } else if (isBitWhitePawn(bitIndex)) {
-          sb.append("w  ");
-        } else if (isBitWhiteChecker(bitIndex)) {
-          sb.append("W  ");
-        } else if (isBitBlackPawn(bitIndex)) {
-          sb.append("b  ");
-        } else if (isBitBlackChecker(bitIndex)) {
-          sb.append("B  ");
-        } else {
-          sb.append("_  ");
-        }
+        sb.append(cellString(bitIndex));
+        
       }
       sb.append("\n");
     }
@@ -1099,6 +1087,44 @@ public class Board {
     for (int col = 1; col <= sizeBoard; col++) {
       sb.append(String.format("%2d ", col));
     }
+    sb.append("\n");
+
+    return sb.toString();
+  }
+
+  private String cellString(int bitIndex) {
+    String res ="";
+    if (bitIndex == -1) {
+      res = "_  ";
+    } else if (isBitWhitePawn(bitIndex)) {
+      res = "o  ";
+    } else if (isBitWhiteChecker(bitIndex)) {
+      res = "O  ";
+    } else if (isBitBlackPawn(bitIndex)) {
+      res = "x  ";
+    } else if (isBitBlackChecker(bitIndex)) {
+      res = "X  ";
+    } else {
+      res = "_  ";
+    }
+    return res;
+  }
+
+  public String boardString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("\n");
+
+    for (int row = sizeBoard - 1; row >= 0; row--) {
+
+      for (int col = 0; col < sizeBoard; col++) {
+        int bitIndex = boardToBitIndex(row, col);
+        sb.append(cellString(bitIndex));
+        
+      }
+      sb.append("\n");
+    }
+
+    sb.append("  ");
     sb.append("\n");
 
     return sb.toString();

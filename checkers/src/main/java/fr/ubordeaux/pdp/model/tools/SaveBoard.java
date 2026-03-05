@@ -59,7 +59,7 @@ public class SaveBoard {
 
             // --- SECTION 2: [game] (F21) ---
             writer.write("[game] # Current board state\n");
-            writer.write(generateBoardString());
+            writer.write(b.boardString());
             writer.write("\n");
 
             // --- SECTION 3: [history] (F21) ---
@@ -71,46 +71,6 @@ public class SaveBoard {
         } catch (IOException e) {
             System.err.println("Save Error: " + e.getMessage());
         }
-    }
-
-    /**
-     * Generates the ASCII board string
-     */
-    public String generateBoardString() {
-        StringBuilder sb = new StringBuilder();
-        for (int row = 0; row < n; row++) {
-            for (int col = 0; col < n; col++) {
-                if ((row + col) % 2 != 0) {
-                    sb.append("-"); // Light squares
-                } else {
-                    int cellIndex = (row * n + col) / 2;
-                    sb.append(getCharForCell(cellIndex));
-                }
-                if (col < n - 1)
-                    sb.append(" ");
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Fills the board with pieces based on bitboards
-     */
-    private char getCharForCell(int index) {
-        if (b.isBitBlackChecker(index)) {
-            return 'X';
-        }
-        if (b.isBitWhiteChecker(index)) {
-            return 'O';
-        }
-        if (b.isBitBlackPawn(index)) {
-            return 'x';
-        }
-        if (b.isBitWhitePawn(index)) {
-            return 'o';
-        }
-        return '-';
     }
 
     private void createSaveDirectory() {
