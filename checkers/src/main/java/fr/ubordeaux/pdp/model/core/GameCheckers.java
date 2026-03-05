@@ -211,6 +211,7 @@ public class GameCheckers implements Subject {
 
     board.applyMove(move);
     managerUndoRedo.registerMove(currentColor, move);
+    this.history.addMove(currentColor, move);
     this.isWhiteTurn = !this.isWhiteTurn;
     notifyObservers();
   }

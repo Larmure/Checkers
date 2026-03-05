@@ -1,4 +1,3 @@
-
 package fr.ubordeaux.pdp.controller;
 
 import java.util.Timer;
@@ -43,7 +42,8 @@ public class GameController {
 
   private Timer blitzTimer;
 
-  private boolean unsavedChanges = false;
+  /** History size at the time of the last save.*/
+  private int lastSavedMoveCount = 0;
 
   /**
    * Initializes the controller with the required model and view components.
@@ -85,21 +85,20 @@ public class GameController {
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
       default -> {
-        System.out.println("Unknown command: "
-            + commandName);
+        System.out.println("Unknown command: " 
+          + commandName);
         yield null;
       }
     };
 
     if (command != null) {
       command.execute();
-      this.unsavedChanges = true;
     }
   }
 
   /**
    * Business logic trigger to initialize a fresh game session.
-   *
+   * 
    * @param blitz   Whether the blitz mode (fast-paced) is enabled.
    * @param contest Whether the contest mode (tournament rules) is enabled.
    * @param time    The time limit per player in seconds (0 for no limit).
@@ -119,7 +118,7 @@ public class GameController {
     }
 
     displayBoard();
-    this.unsavedChanges = false;
+    markAsSaved();
   }
 
   public void executeMove(String from, String to) {
@@ -128,7 +127,7 @@ public class GameController {
     }
 
     game.applyMove(from, to);
-    this.unsavedChanges = true;
+
     game.setState(game.checkGameOver());
     if (game.getState().equals(State.FINISHED)) {
       if (configuration.isBlitz())
@@ -137,7 +136,7 @@ public class GameController {
       System.out.println(game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
-
+    
   }
 
   public void displayBoard() {
@@ -213,12 +212,12 @@ public class GameController {
   }
 
   public void setGame(GameCheckers loadedGame, Configuration cfg) {
-
+    
     this.game = loadedGame;
     this.configuration = new Configuration(cfg);
     this.game.addObserver(view);
     displayBoard();
-    this.unsavedChanges = false;
+    markAsSaved();
   }
 
   public boolean isWhiteIsAi() {
@@ -229,7 +228,6 @@ public class GameController {
     return configuration.isBlackIsAI();
   }
 
-  // FONCTION TEST
   /**
    * Joue une séquence de coups prédéfinie pour des tests ou une démo.
    */
@@ -254,7 +252,7 @@ public class GameController {
       String to = move[1];
 
       System.out.println("Coup joué : " + from + "-" + to);
-
+      
       executeMove(from, to);
 
       if (game.getState() == State.FINISHED) {
@@ -281,11 +279,32 @@ public class GameController {
   public boolean isBlitz() {
     return configuration.isBlitz();
   }
+
+  /**
+   * Checks if the current game state has modifications since the last save.
+   * It compares the current history size with the history size at the last save.
+   *
+   * @return true if there are unsaved moves.
+   */
   public boolean hasUnsavedChanges() {
-    return this.unsavedChanges;
+    if (game == null || game.getHistory() == null) {
+      System.out.println("[DEBUG] Le jeu ou l'historique est null !");
+      return false;
+    }
+    
+    int currentSize = game.getHistory().getSize();
+    System.out.println("[DEBUG] Taille actuelle de l'historique : " + currentSize);
+    System.out.println("[DEBUG] Taille lors de la dernière sauvegarde : " + lastSavedMoveCount);
+    
+    return currentSize != lastSavedMoveCount;
   }
 
-  public void setUnsavedChanges(boolean unsavedChanges) {
-    this.unsavedChanges = unsavedChanges;
+  /**
+   * Updates the save tracker to the current history size.
+   */
+  public void markAsSaved() {
+    if (game != null && game.getHistory() != null) {
+      this.lastSavedMoveCount = game.getHistory().getSize();
+    }
   }
 }
