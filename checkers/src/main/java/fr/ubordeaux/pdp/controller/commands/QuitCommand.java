@@ -50,7 +50,7 @@ public class QuitCommand implements Command, Helpable {
 
           try {
             GameCheckers game = controller.getGame();
-            new BoardSauvegarde(game.getBoard(), game).saveToFile(path);
+            new SaveBoard(game.getBoard(), game).saveToFile(path);
             System.out.println("Game saved successfully.");
             handled = true;
           } catch (Exception e) {

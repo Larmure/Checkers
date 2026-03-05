@@ -11,7 +11,7 @@ import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
-import fr.ubordeaux.pdp.model.tools.BoardChargement;
+import fr.ubordeaux.pdp.model.tools.LoadBoard;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 public class LoadCommand implements Command, Helpable {
@@ -111,7 +111,7 @@ public class LoadCommand implements Command, Helpable {
     GameCheckers loadedGame = new GameCheckers(cfg);
 
     // ---- Load board state into that game ----
-    new BoardChargement(loadedGame.getBoard(), loadedGame).loadFromFile(fileName);
+    new LoadBoard(loadedGame.getBoard(), loadedGame).loadFromFile(fileName);
 
     // ---- Bind to controller & view ----
     controller.setGame(loadedGame, cfg);

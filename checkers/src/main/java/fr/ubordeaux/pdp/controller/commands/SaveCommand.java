@@ -4,7 +4,7 @@ import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
-import fr.ubordeaux.pdp.model.tools.BoardSauvegarde;
+import fr.ubordeaux.pdp.model.tools.SaveBoard;
 
 public class SaveCommand implements Command, Helpable {
 
@@ -35,13 +35,15 @@ public class SaveCommand implements Command, Helpable {
       return;
     }
 
+
     try {
-      new BoardSauvegarde(game.getBoard(), game).saveToFile(fileName);
+      new SaveBoard(game.getBoard(), game).saveToFile(fileName);
       controller.markAsSaved(); 
     } catch (Exception e) {
       System.err.println("Save Error: " + e.getMessage());
     }
   }
+
 
   @Override
   public String getHelp() {

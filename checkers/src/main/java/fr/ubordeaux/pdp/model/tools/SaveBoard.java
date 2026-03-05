@@ -3,20 +3,19 @@ package fr.ubordeaux.pdp.model.tools;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 
-public class BoardSauvegarde {
+public class SaveBoard {
 
     private Board b;
     private final int n;
     private GameCheckers GH;
     private final String saveDirectory = System.getProperty("user.dir") + File.separator + "Sauvegarde";
 
-    public BoardSauvegarde(Board b, GameCheckers g) {
+    public SaveBoard(Board b, GameCheckers g) {
         this.b = b;
         this.n = b.getSizeBoard();
         this.GH = g;
@@ -30,20 +29,24 @@ public class BoardSauvegarde {
         createSaveDirectory();
         File file = new File(saveDirectory + File.separator + fileName);
         Configuration config = GH.getConfiguration();
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
 
             // --- SECTION 1: [settings] (F23) ---
-            // Values are retrieved from your ConfigManager ,Board and Gamechekers
             writer.write("[settings] # Game configuration parameters\n");
 
-            boolean tour = GH.isWhiteTurn();
-            if (tour) {
+            if (GH.isWhiteTurn()) {
                 writer.write("starting-player=white # Can be black or white\n");
             } else {
                 writer.write("starting-player=black # Can be black or white\n");
             }
 
-            String timeMode = config.isBlitz() ? "blitz" : "classic";
+            String timeMode;
+            if (config.isBlitz()) {
+                timeMode = "blitz";
+            } else {
+                timeMode = "classic";
+            }
             writer.write("time-mode=" + timeMode + "\n");
 
             writer.write("ai-mode=None\n");
@@ -92,31 +95,18 @@ public class BoardSauvegarde {
      * Fills the board with pieces based on bitboards
      */
     private char getCharForCell(int index) {
-        final long mask = 1L << (index % 64);
-        final boolean part2 = index >= 64;
-
-        final long blackPawns = part2 ? b.getBlackPawns2() : b.getBlackPawns1();
-        final long blackCheckers = part2 ? b.getBlackCheckers2() : b.getBlackCheckers1();
-
-        final long whitePawns = part2 ? b.getWhitePawns2() : b.getWhitePawns1();
-        final long whiteCheckers = part2 ? b.getWhiteCheckers2() : b.getWhiteCheckers1();
-
-        if ((blackCheckers & mask) != 0) {
+        if (b.isBitBlackChecker(index)) {
             return 'X';
         }
-
-        if ((whiteCheckers & mask) != 0) {
+        if (b.isBitWhiteChecker(index)) {
             return 'O';
         }
-
-        if ((blackPawns & mask) != 0) {
+        if (b.isBitBlackPawn(index)) {
             return 'x';
         }
-
-        if ((whitePawns & mask) != 0) {
+        if (b.isBitWhitePawn(index)) {
             return 'o';
         }
-
         return '-';
     }
 
