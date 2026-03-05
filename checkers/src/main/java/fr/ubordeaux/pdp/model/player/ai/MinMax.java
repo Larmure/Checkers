@@ -1,4 +1,4 @@
-package fr.ubordeaux.pdp.model.player.ia;
+package fr.ubordeaux.pdp.model.player.ai;
 
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;

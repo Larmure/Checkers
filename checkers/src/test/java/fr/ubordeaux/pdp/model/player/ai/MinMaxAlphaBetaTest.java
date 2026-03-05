@@ -1,4 +1,4 @@
-package fr.ubordeaux.pdp.model.player.ia;
+package fr.ubordeaux.pdp.model.player.ai;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -11,6 +11,8 @@ import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.evaluation.SimpleEvaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.player.ai.MinMax;
+import fr.ubordeaux.pdp.model.player.ai.MinMaxAlphaBeta;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 
 /**
