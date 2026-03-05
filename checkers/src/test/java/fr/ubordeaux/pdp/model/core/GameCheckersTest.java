@@ -268,4 +268,85 @@ class GameCheckersTest {
         // Ensure the game board still exists
         assertNotNull(game.getBoard(), "The board should still be accessible.");
     }
+
+    // =========================================================================
+    //  Timer Player tests
+    // =========================================================================
+    @Test
+    void testTimerPlayerDecrementsCurrentPlayerTime() {
+        // Setup initial times for both players
+        game.getWhitePlayer().setPlayTime(100);
+        game.getBlackPlayer().setPlayTime(100);
+
+        // At start, it is White's turn
+        assertTrue(game.getIsWhiteTurn(), "It should be White's turn initially.");
+        
+        // Call timerPlayer (simulating 1 second passing)
+        game.timerPlayer();
+
+        assertEquals(99, game.getWhitePlayer().getPlayTime(), "White player's time should be decremented by 1.");
+        assertEquals(100, game.getBlackPlayer().getPlayTime(), "Black player's time should remain unchanged.");
+
+        // Switch to Black's turn manually for testing
+        game.setWhiteTurn(false);
+        game.timerPlayer();
+
+        assertEquals(99, game.getWhitePlayer().getPlayTime(), "White player's time should remain unchanged.");
+        assertEquals(99, game.getBlackPlayer().getPlayTime(), "Black player's time should be decremented by 1.");
+    }
+
+    // =========================================================================
+    //  Undo / Redo Manage tests
+    // =========================================================================
+    @Test
+    void testUndoAndRedoManage() {
+        // Register a spy observer to verify that notifyObservers() is called
+        boolean[] wasNotified = {false};
+        game.addObserver(new GameView() {
+            @Override public void update(GameCheckers g) { wasNotified[0] = true; }
+            @Override public void start() {}
+            @Override public void display(GameCheckers g) {}
+        });
+
+        // 1. Play a valid move first so we have something in the history
+        List<Move> whiteMoves = game.getPossibleMoves(game.getCurrentPlayer());
+        Move firstMove = whiteMoves.get(0);
+        String fromSquare = game.getBoard().indexToSquare(firstMove.getFrom());
+        String toSquare = game.getBoard().indexToSquare(firstMove.getTo());
+        
+        game.applyMove(fromSquare, toSquare);
+        
+        // After move, turn switches to Black
+        assertFalse(game.getIsWhiteTurn(), "Turn should switch to Black after White plays.");
+        
+        // Reset observer flag before testing undo
+        wasNotified[0] = false;
+
+        // 2. Test Undo
+        game.undoManage();
+
+        assertTrue(game.getIsWhiteTurn(), "Turn should revert to White after undo.");
+        assertTrue(wasNotified[0], "Observers should be notified after a successful undo.");
+
+        // Reset observer flag before testing redo
+        wasNotified[0] = false;
+
+        // 3. Test Redo
+        game.redoManage();
+
+        assertFalse(game.getIsWhiteTurn(), "Turn should switch back to Black after redo.");
+        assertTrue(wasNotified[0], "Observers should be notified after a successful redo.");
+    }
+    
+    @Test
+    void testUndoManageFailsOnEmptyHistory() {
+        // At the very beginning of the game, history is empty.
+        assertTrue(game.getIsWhiteTurn(), "Game starts with White's turn.");
+        
+        // Try to undo when there are no moves
+        game.undoManage(); 
+        
+        // The undo should fail gracefully, meaning the turn does NOT change
+        assertTrue(game.getIsWhiteTurn(), "Turn should not change if undo fails (empty history).");
+    }
 }
