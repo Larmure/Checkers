@@ -140,6 +140,10 @@ public class GameController {
     view.display(game);
   }
 
+  public void displayHistory() {
+    System.out.println(game.getHistory().historyString());;
+  }
+
   public void displayConfiguration() {
     System.out.println(configuration);
   }

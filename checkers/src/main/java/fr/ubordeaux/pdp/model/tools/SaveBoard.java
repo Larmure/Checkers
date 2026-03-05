@@ -12,13 +12,11 @@ import fr.ubordeaux.pdp.model.core.GameCheckers;
 public class SaveBoard {
 
     private Board b;
-    private final int n;
     private GameCheckers GH;
     private final String saveDirectory = System.getProperty("user.dir") + File.separator + "Sauvegarde";
 
     public SaveBoard(Board b, GameCheckers g) {
         this.b = b;
-        this.n = b.getSizeBoard();
         this.GH = g;
     }
 
