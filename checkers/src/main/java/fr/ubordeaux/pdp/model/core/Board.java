@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
@@ -321,8 +322,8 @@ public class Board {
    * @param isWhite {@code true} to check the white side; {@code false} for black
    * @return {@code true} when all bitboards for that colour are zero
    */
-  public boolean noPiecesLeft(boolean isWhite) {
-    if (isWhite) {
+  public boolean noPiecesLeft(PlayerColor p) {
+    if (p == PlayerColor.WHITE) {
       return whitePawns1 == 0L
           && whitePawns2 == 0L
           && whiteCheckers1 == 0L
@@ -1200,12 +1201,12 @@ public class Board {
   }
 
 
-  public void clearAllBitboards() {
+  public void clearBoard() {
     whitePawns1 = whitePawns2 = 0L;
     blackPawns1 = blackPawns2 = 0L;
     whiteCheckers1 = whiteCheckers2 = 0L;
     blackCheckers1 = blackCheckers2 = 0L;
-}
+  }
 
   /**
    * Returns the list of simple target squares for a checker on a given square.
@@ -1219,18 +1220,6 @@ public class Board {
    */
   public List<Integer> checkerSimpleTarg(String square) {
     return checkerSimpleTargets(squareToIndex(square));
-  }
-
-  public void clearBoard() {
-    for (int row = 1; row <= this.sizeBoard; row++) {
-      for (int col = 0; col < this.sizeBoard; col++) {
-        if ((row + col) % 2 != 0) {
-          char file = (char) ('A' + col);
-          String square = file + "" + row;
-          remove(square);
-        }
-      }
-    }
   }
 
   public int getSizeBoard() {

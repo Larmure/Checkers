@@ -1,6 +1,5 @@
 package fr.ubordeaux.pdp.model.tools;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -40,7 +39,7 @@ public class SauvegardeTest {
   // -----------------------------------------------------------------------
 
   @Test
-  void testSectionOrderSettingsGameHistory() throws IOException {
+  void testSectionOrderSettingsGameHistory() throws Exception {
     GameCheckers game =
         newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
     BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
@@ -61,7 +60,7 @@ public class SauvegardeTest {
 
 
   @Test
-  void testStartingPlayerIsWhiteByDefault() throws IOException {
+  void testStartingPlayerIsWhiteByDefault() throws Exception {
     GameCheckers game =
         newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
     BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
@@ -75,7 +74,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testStartingPlayerIsBlackAfterOneMove() throws IOException {
+  void testStartingPlayerIsBlackAfterOneMove() throws Exception {
     GameCheckers game =
         newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
 
@@ -93,7 +92,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testTimeModePresent() throws IOException {
+  void testTimeModePresent() throws Exception {
     GameCheckers game = newGame(10, true, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
     BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
 
@@ -106,7 +105,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testDebugParamPresent() throws IOException {
+  void testDebugParamPresent() throws Exception {
     GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, true);
     BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
 
@@ -119,7 +118,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testBoardSizeParamPresentAndCorrect() throws IOException {
+  void testBoardSizeParamPresentAndCorrect() throws Exception {
     GameCheckers game =
         newGame(12, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
     BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
@@ -133,7 +132,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testAiParamsPresent() throws IOException {
+  void testAiParamsPresent() throws Exception {
     GameCheckers game =
         newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
     BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
@@ -150,7 +149,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testBoardRowCountMatchesSize() throws IOException {
+  void testBoardRowCountMatchesSize() throws Exception {
     int size = 10;
     GameCheckers game =
         newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
@@ -180,7 +179,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testBoardCellsContainOnlyValidChars() throws IOException {
+  void testBoardCellsContainOnlyValidChars() throws Exception {
     int size = 10;
     GameCheckers game =
         newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
@@ -207,7 +206,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testInitialBoardContainsBothColors() throws IOException {
+  void testInitialBoardContainsBothColors() throws Exception {
     int size = 10;
     GameCheckers game =
         newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
@@ -228,7 +227,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testSaveAfterOneMoveChangesBoard() throws IOException {
+  void testSaveAfterOneMoveChangesBoard() throws Exception {
     GameCheckers game =
         newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
 
@@ -251,7 +250,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testSaveAfterTwoMovesWhiteTurnAgain() throws IOException {
+  void testSaveAfterTwoMovesWhiteTurnAgain() throws Exception {
     GameCheckers game =
         newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
 
@@ -274,7 +273,7 @@ public class SauvegardeTest {
   }
 
   @Test
-  void testSaveTwiceOverwritesFile() throws IOException {
+  void testSaveTwiceOverwritesFile() throws Exception {
     GameCheckers game =
         newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
     BoardSauvegarde sauvegarde = new BoardSauvegarde(game.getBoard(), game);
