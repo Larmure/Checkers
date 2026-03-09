@@ -107,7 +107,7 @@ public class History {
       }
 
       line += "\n";
-      h = line + h;
+      h += line;
     }
     return h;
 	}
