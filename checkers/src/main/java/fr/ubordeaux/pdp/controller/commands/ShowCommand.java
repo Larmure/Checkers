@@ -42,7 +42,7 @@ public class ShowCommand implements Command, Helpable {
 
     switch (args[0]) {
       case "board" -> controller.displayBoard();
-      case "history" -> System.out.println(Internationalization.get("show.history"));
+      case "history" -> controller.displayHistory();
       case "time" -> controller.displayTime();
       case "configuration" -> controller.displayConfiguration();
       default -> System.out.println(args[0] + Internationalization.get("show.default"));

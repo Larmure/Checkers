@@ -19,7 +19,7 @@ public class LoadBoard {
     private boolean gameSectionInitialized = false;
     private boolean seenGame = false;
     private boolean seenSettings = false;
-    private boolean seenHistoriy = false;
+    private boolean seenHistory = false;
     private StringBuilder historyBuffer = new StringBuilder();
     private long wp1, wp2, bp1, bp2, wc1, wc2, bc1, bc2;
 
@@ -54,7 +54,7 @@ public class LoadBoard {
         this.currentBoardRow = 0;
         this.seenGame = false;
         this.seenSettings = false;
-        this.seenHistoriy = false;
+        this.seenHistory = false;
 
         if (!file.exists()) {
             System.err.println("Loading Error: File not found at " + path);
@@ -75,6 +75,9 @@ public class LoadBoard {
                 // Detect Section Headers
                 if (cleanLine.startsWith("[") && cleanLine.endsWith("]")) {
                     currentSection = cleanLine.toLowerCase();
+                    if (currentSection.equals("[history]")) {
+                        seenHistory = true;
+                    }
                     continue;
                 }
 
@@ -96,7 +99,7 @@ public class LoadBoard {
                 System.err.println("Format Error: Missing [game] section.");
                 return;
             }
-            if (!seenHistoriy) {
+            if (!seenHistory) {
                 System.err.println("Format Error: Missing [history] section.");
                 return;
             }
@@ -138,7 +141,7 @@ public class LoadBoard {
                 parseBoardLine(data);
             }
             case "[history]" -> {
-                seenHistoriy = true;
+                seenHistory = true;
                 historyBuffer.append(data).append("\n");
             }
             default -> {
