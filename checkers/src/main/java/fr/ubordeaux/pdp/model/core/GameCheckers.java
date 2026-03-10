@@ -209,7 +209,6 @@ public class GameCheckers implements Subject {
 
     board.applyMove(move);
     managerUndoRedo.registerMove(currentColor, move);
-    this.history.addMove(currentColor, move);
     this.isWhiteTurn = !this.isWhiteTurn;
     notifyObservers();
   }
@@ -323,6 +322,6 @@ public class GameCheckers implements Subject {
   }
 
   public void setHistory(History h) {
-    managerUndoRedo.seHistory(h);;
+    managerUndoRedo.seHistory(h);
   }
 }
