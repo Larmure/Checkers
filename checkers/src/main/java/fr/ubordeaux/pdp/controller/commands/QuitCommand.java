@@ -41,21 +41,21 @@ public class QuitCommand implements Command, Helpable {
       boolean handled = false;
 
       while (!handled) {
-        System.out.print("Save the game before quitting? [y/N] ");
+        System.out.print(Internationalization.get("quit.save"));
         String input = scanner.nextLine().trim();
 
         if (input.equalsIgnoreCase("y")) {
-          System.out.print("Path to save file: ");
+          System.out.print(Internationalization.get("quit.path"));
           String path = scanner.nextLine().trim();
 
           try {
             GameCheckers game = controller.getGame();
             new SaveBoard(game.getBoard(), game).saveToFile(path);
-            System.out.println("Game saved successfully.");
+            System.out.println(Internationalization.get("quit.save.ok"));
             handled = true;
           } catch (Exception e) {
             // If an error occurs, the loop continues to ask the user again
-            System.err.println("Error saving the file: " + e.getMessage());
+            System.err.println(Internationalization.get("quit.save.error", e.getMessage()));
           }
         } else {
           // Any input other than 'y' or 'Y' is treated as default 'N'

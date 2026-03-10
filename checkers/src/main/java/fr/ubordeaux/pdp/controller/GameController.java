@@ -288,14 +288,9 @@ public class GameController {
    */
   public boolean hasUnsavedChanges() {
     if (game == null || game.getHistory() == null) {
-      System.out.println("[DEBUG] Le jeu ou l'historique est null !");
       return false;
     }
-    
     int currentSize = game.getHistory().getSize();
-    System.out.println("[DEBUG] Taille actuelle de l'historique : " + currentSize);
-    System.out.println("[DEBUG] Taille lors de la dernière sauvegarde : " + lastSavedMoveCount);
-    
     return currentSize != lastSavedMoveCount;
   }
 
