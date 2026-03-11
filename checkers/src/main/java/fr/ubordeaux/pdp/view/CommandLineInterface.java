@@ -1,9 +1,10 @@
 package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.core.*;
-import fr.ubordeaux.pdp.model.tools.*;
-
+import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
 import java.io.IOException;
 import java.util.Arrays;
 import org.jline.reader.EndOfFileException;
@@ -114,7 +115,12 @@ public class CommandLineInterface extends GameView {
         System.getLogger(CommandLineInterface.class.getName())
             .log(System.Logger.Level.ERROR, (String) null, ex);
       }
-      lineReader = LineReaderBuilder.builder().terminal(terminal).build();
+      lineReader = LineReaderBuilder.builder()
+          .terminal(terminal)
+          .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
+          .build();
+
+      lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }
     inputThread = new Thread(() -> {
       while (true) {

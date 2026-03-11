@@ -3,8 +3,7 @@ package fr.ubordeaux.pdp.model.player;
 /**
  * Represents a player controlled by user input.
  * 
- * <p>
- * This class distinguishes human participants from AI or remote network
+ * <p>This class distinguishes human participants from AI or remote network
  * players.
  */
 public class HumanPlayer extends Player {

@@ -1,7 +1,7 @@
 package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.core.*;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 
 /**
  * Abstract representation of the game's user interface.

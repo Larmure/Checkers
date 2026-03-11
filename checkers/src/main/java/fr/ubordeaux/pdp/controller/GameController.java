@@ -1,8 +1,5 @@
 package fr.ubordeaux.pdp.controller;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
 import fr.ubordeaux.pdp.controller.commands.HintCommand;
@@ -20,6 +17,8 @@ import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.GameView;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Orchestrator of the game logic and user interactions.
@@ -98,7 +97,7 @@ public class GameController {
 
   /**
    * Business logic trigger to initialize a fresh game session.
-   * 
+   *
    * @param configuration The configuration options for the new game.
    */
   public void startNewGame(Configuration configuration) {
@@ -118,6 +117,15 @@ public class GameController {
     markAsSaved();
   }
 
+  /**
+   * Executes a move in the game by applying the move to the model and checking for game over 
+   * conditions. If the game is in blitz mode, it starts the blitz timer. 
+   * If the move results in a game over state, it stops the blitz timer (if applicable) and 
+   * displays appropriate messages to the user.
+   *
+   * @param from The starting position of the piece to move (e.g., "A3").
+   * @param to The target position to move the piece to (e.g., "B4").
+   */
   public void executeMove(String from, String to) {
     if (configuration.isBlitz()) {
       startBlitzTimer();
@@ -127,28 +135,44 @@ public class GameController {
 
     game.setState(game.checkGameOver());
     if (game.getState().equals(State.FINISHED)) {
-      if (configuration.isBlitz())
+      if (configuration.isBlitz()) {
         stopBlitzTimer();
+      }
       System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
+      System.out.println(game.getCurrentPlayer().getName() + " "
+          + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
 
   }
 
+  /**
+   * Displays the current state of the game board by delegating to the view.
+   */
   public void displayBoard() {
     view.display(game);
   }
 
+  /**
+   * Displays the move history of the current game by retrieving it from the model and printing it 
+   * to the console.
+   * It uses the historyString method of the History class to format the output.
+   */
   public void displayHistory() {
     System.out.println(game.getHistory().historyString());
-    ;
   }
 
+  /**
+   * Displays the current game configuration settings by printing the Configuration object to the 
+   * console.
+   */
   public void displayConfiguration() {
     System.out.println(configuration);
   }
 
+  /**
+   * Displays the remaining time for the current player if the game is in blitz mode. 
+   */
   public void displayTime() {
     if (isBlitz()) {
       int totalSeconds = game.getCurrentPlayer().getPlayTime();
@@ -179,13 +203,18 @@ public class GameController {
         // 2. On intervient dans la console UNIQUEMENT si le temps est écoulé
         if (totalSeconds <= 0) {
           stopBlitzTimer();
-          System.out.println("\n" + Internationalization.get("game.time_up") + game.getCurrentPlayer().getName());
+          System.out.println("\n" + Internationalization.get("game.time_up")
+              + game.getCurrentPlayer().getName());
           game.setState(State.FINISHED);
         }
       }
     }, 1000, 1000);
   }
 
+  /**
+   * Stops the blitz timer if it is currently running. This method is used to cancel the timer when 
+   * the game is paused or finished, ensuring that no further timer tasks are executed.
+   */
   public void stopBlitzTimer() {
     if (blitzTimer != null) {
       blitzTimer.cancel();
@@ -193,26 +222,61 @@ public class GameController {
     }
   }
 
+  /**
+   * Checks if verbose mode is enabled in the current configuration.
+   *
+   * @return true if verbose mode is enabled, false otherwise.
+   */
   public boolean isVerbose() {
     return configuration.isVerbose();
   }
 
+  /**
+   * Checks if debug mode is enabled in the current configuration.
+   *
+   * @return true if debug mode is enabled, false otherwise.
+   */
   public boolean isDebug() {
     return configuration.isDebug();
   }
 
+  /**
+   * Sets the debug mode in the current configuration by creating a new Configuration object with 
+   * the updated debug value while preserving other settings.
+   *
+   * @param debug The debug setting to be applied to the new Configuration.
+   */
   public void setDebug(boolean debug) {
     this.configuration = new Configuration(configuration, isVerbose(), debug);
   }
 
+  /**
+   * Sets the verbose mode in the current configuration by creating a new Configuration object with
+   * the updated verbose value while preserving other settings.
+   *
+   * @param verbose The verbose setting to be applied to the new Configuration.
+   */
   public void setVerbose(boolean verbose) {
     this.configuration = new Configuration(configuration, verbose, isDebug());
   }
 
+  /**
+   * Returns the current game instance.
+   *
+   * @return The current game instance.
+   */
   public GameCheckers getGame() {
     return game;
   }
 
+  /**
+   * Sets the current game instance and configuration based on a loaded game. This method is used 
+   * when loading a saved game state, allowing the controller to update its internal references to
+   * the game and configuration, and to refresh the view accordingly.
+   *
+   * @param loadedGame The GameCheckers instance representing the loaded game state.
+   * @param cfg Instance representing the settings associated with the loaded game.
+   */
   public void setGame(GameCheckers loadedGame, Configuration cfg) {
 
     this.game = loadedGame;
@@ -222,62 +286,54 @@ public class GameController {
     markAsSaved();
   }
 
+  /**
+   * Checks if the white player is controlled by an AI based on the current configuration.
+   *
+   * @return true if the white player is controlled by AI, false otherwise.
+   */
   public boolean iswhiteAi() {
     return configuration.iswhiteAi();
   }
 
+  /**
+   * Checks if the black player is controlled by an AI based on the current configuration.
+   *
+   * @return true if the black player is controlled by AI, false otherwise.
+   */
   public boolean isblackAi() {
     return configuration.isblackAi();
   }
 
   /**
-   * Joue une séquence de coups prédéfinie pour des tests ou une démo.
+   * Undoes the last n moves in the game by invoking the undoManage method on the game instance n 
+   * times.
+   *
+   * @param n The number of moves to undo.
    */
-  public void playPredefinedSequence() {
-    String[][] moves = {
-        { "c1", "d2" }, { "f4", "e3" }, { "d2", "f4" }, { "g5", "e3" },
-        { "b2", "c1" }, { "e3", "d2" }, { "c1", "e3" }, { "f2", "b2" },
-        { "a1", "c3" }, { "f6", "e5" }, { "c3", "d4" }, { "e5", "c3" },
-        { "b4", "d2" }, { "g3", "f2" }, { "d2", "e3" }, { "f2", "d4" },
-        { "c5", "e3" }, { "g1", "f2" }, { "e3", "g1" }, { "h2", "g3" },
-        { "g1", "h2" }, { "h4", "g5" }, { "h2", "e5" }, { "g5", "f4" },
-        { "e5", "g3" }, { "f8", "e7" }, { "c7", "d6" }, { "e7", "c5" },
-        { "b6", "d4" }, { "g7", "f8" }, { "d4", "e5" }, { "f8", "e7" },
-        { "e5", "f4" }, { "h6", "g5" }, { "f4", "h6" }, { "h8", "g7" },
-        { "h6", "d6" }
-    };
-
-    System.out.println("Début de la séquence d'automatisation des coups...");
-
-    for (String[] move : moves) {
-      String from = move[0];
-      String to = move[1];
-
-      System.out.println("Coup joué : " + from + "-" + to);
-
-      executeMove(from, to);
-
-      if (game.getState() == State.FINISHED) {
-        System.out.println("La partie s'est terminée avant la fin de la séquence.");
-        break;
-      }
-    }
-
-    System.out.println("Séquence terminée.");
-  }
-
   public void undoGame(int n) {
     for (int i = 0; i < n; i++) {
       game.undoManage();
     }
   }
 
+  /**
+   * Redoes the last n undone moves in the game by invoking the redoManage method on the game 
+   * instance n times.
+   *
+   * @param n The number of moves to redo.
+   */
   public void redoGame(int n) {
     for (int i = 0; i < n; i++) {
       game.redoManage();
     }
   }
 
+  /**
+   * Checks if the current game configuration is set to blitz mode, which affects the timing 
+   * mechanics of the game.
+   *
+   * @return true if the game is in blitz mode, false otherwise.
+   */
   public boolean isBlitz() {
     return configuration.isBlitz();
   }

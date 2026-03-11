@@ -1,8 +1,5 @@
 package fr.ubordeaux.pdp.model.tools;
 
-import java.util.Map;
-import java.util.Set;
-
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
@@ -16,6 +13,8 @@ import fr.ubordeaux.pdp.controller.commands.SaveCommand;
 import fr.ubordeaux.pdp.controller.commands.SetCommand;
 import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Global utility class containing game constants and the command registry.
@@ -43,8 +42,8 @@ public class Utils {
 
   /**
    * An immutable map linking command keywords to their representative instances.
-   * <p>
-   * Note: Some instances are initialized with {@code null} parameters as they
+   * 
+   * <p>Note: Some instances are initialized with {@code null} parameters as they
    * are primarily used for metadata retrieval (like help strings) rather than
    * execution.
    */

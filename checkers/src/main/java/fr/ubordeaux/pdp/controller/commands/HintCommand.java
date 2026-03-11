@@ -2,8 +2,7 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
-import fr.ubordeaux.pdp.model.core.*;
-import fr.ubordeaux.pdp.model.tools.*;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 
 /**
  * Executes the hint command by providing a hint to the player.

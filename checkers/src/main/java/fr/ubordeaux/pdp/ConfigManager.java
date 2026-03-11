@@ -1,8 +1,7 @@
 package fr.ubordeaux.pdp;
 
-import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
-
+import fr.ubordeaux.pdp.model.tools.Utils;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -10,13 +9,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+
+
 /**
  * Manages the configuration file for the Checkers game.
  *
- * Handles the {@code .checkersrc} file located in the user's home directory.
+ * <p>Handles the {@code .checkersrc} file located in the user's home directory.
  * It strictly enforces the presence of a {@code [defaults]} header and provides
  * fallback mechanisms for invalid or missing keys and values.
- * 
+ *
  * @version 1.0
  */
 public class ConfigManager {
@@ -32,7 +33,7 @@ public class ConfigManager {
   /**
    * Loads configuration settings from the {@code .checkersrc} file.
    *
-   * If the file does not exist, a default one is created. If the file is
+   * <p>If the file does not exist, a default one is created. If the file is
    * corrupted (missing header), it is reset. For specific invalid values,
    * it logs a warning and uses safe defaults from {@link Utils}.
    */
@@ -89,7 +90,8 @@ public class ConfigManager {
                 this.verbose = Boolean.parseBoolean(value);
                 foundVerbose = true;
               } else {
-                System.err.println(Internationalization.get("config.warn.invalid_value") + value);
+                System.err.println(Internationalization.get("config.warn.invalid_value")
+                    + value);
                 this.verbose = Utils.DEFAULT_VERBOSE;
               }
               break;
@@ -99,7 +101,8 @@ public class ConfigManager {
                 this.blitz = Boolean.parseBoolean(value);
                 foundBlitz = true;
               } else {
-                System.err.println(Internationalization.get("config.warn.invalid_generic", "blitz", value));
+                System.err.println(Internationalization.get(
+                    "config.warn.invalid_generic", "blitz", value));
                 this.blitz = Utils.DEFAULT_BLITZ;
               }
               break;
@@ -109,7 +112,8 @@ public class ConfigManager {
                 this.time = Integer.parseInt(value);
                 foundTimeout = true;
               } catch (NumberFormatException e) {
-                System.err.println(Internationalization.get("config.warn.invalid_generic", "timeout", value));
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "timeout", value));
                 this.time = Utils.DEFAULT_TIME;
               }
               break;
@@ -119,7 +123,8 @@ public class ConfigManager {
                 this.contest = Boolean.parseBoolean(value);
                 foundContest = true;
               } else {
-                System.err.println(Internationalization.get("config.warn.invalid_generic", "contest", value));
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "contest", value));
                 this.contest = Utils.DEFAULT_CONTEST;
               }
               break;
@@ -129,7 +134,8 @@ public class ConfigManager {
                 this.debug = Boolean.parseBoolean(value);
                 foundDebug = true;
               } else {
-                System.err.println(Internationalization.get("config.warn.invalid_generic", "debug", value));
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "debug", value));
                 this.debug = Utils.DEFAULT_DEBUG;
               }
               break;
@@ -155,27 +161,32 @@ public class ConfigManager {
       }
       // Check if keys were found
       if (!foundVerbose) {
-        System.err.println(Internationalization.get("config.warn.key_not_found", "verbose", Utils.DEFAULT_VERBOSE));
+        System.err.println(Internationalization.get("config.warn.key_not_found",
+            "verbose", Utils.DEFAULT_VERBOSE));
         this.verbose = Utils.DEFAULT_VERBOSE;
       }
 
       if (!foundContest) {
-        System.err.println(Internationalization.get("config.warn.key_not_found", "contest", Utils.DEFAULT_VERBOSE));
+        System.err.println(Internationalization.get("config.warn.key_not_found",
+            "contest", Utils.DEFAULT_VERBOSE));
         this.contest = Utils.DEFAULT_CONTEST;
       }
 
       if (!foundDebug) {
-        System.err.println(Internationalization.get("config.warn.key_not_found", "debug", Utils.DEFAULT_VERBOSE));
+        System.err.println(Internationalization.get("config.warn.key_not_found",
+            "debug", Utils.DEFAULT_VERBOSE));
         this.debug = Utils.DEFAULT_DEBUG;
       }
 
       if (!foundTimeout) {
-        System.err.println(Internationalization.get("config.warn.key_not_found", "timeout", Utils.DEFAULT_VERBOSE));
+        System.err.println(Internationalization.get("config.warn.key_not_found",
+            "timeout", Utils.DEFAULT_VERBOSE));
         this.time = Utils.DEFAULT_TIME;
       }
 
       if (!foundBlitz) {
-        System.err.println(Internationalization.get("config.warn.key_not_found", "blitz", Utils.DEFAULT_VERBOSE));
+        System.err.println(Internationalization.get("config.warn.key_not_found",
+            "blitz", Utils.DEFAULT_VERBOSE));
         this.blitz = Utils.DEFAULT_BLITZ;
       }
 

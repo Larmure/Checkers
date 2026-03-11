@@ -3,8 +3,7 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
-import fr.ubordeaux.pdp.model.core.*;
-import fr.ubordeaux.pdp.model.tools.*;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 
 /**
  * Command to set controller parameters like debug and verbose.

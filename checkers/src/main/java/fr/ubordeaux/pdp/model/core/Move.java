@@ -6,8 +6,7 @@ import java.util.List;
 /**
  * Represents a move in a checkers game.
  *
- * <p>
- * A move can be a simple diagonal step, a single or multi-capture sequence,
+ * <p>A move can be a simple diagonal step, a single or multi-capture sequence,
  * and/or a promotion.
  * The move stores the starting index, the full path of squares visited, the
  * indices of any captured
@@ -53,6 +52,15 @@ public class Move {
     this.promotion = false;
   }
 
+  /**
+   * Creates a capture move with a full movement path, the list of captured piece
+   * indices, and their colors.
+   *
+   * @param path           the full sequence of squares visited, including the
+   *                       starting square
+   * @param captured       the indices of all pieces captured along the path
+   * @param capturedColors the colors of all pieces captured along the path
+   */
   public Move(List<Integer> path, List<Integer> captured, List<String> capturedColors) {
     this.from = path.get(0);
     this.path = new ArrayList<>(path);
@@ -137,8 +145,7 @@ public class Move {
   /**
    * Returns a human-readable representation of the move.
    *
-   * <p>
-   * Squares are joined by {@code "-"} for simple moves or {@code "x"} for
+   * <p>Squares are joined by {@code "-"} for simple moves or {@code "x"} for
    * captures. A
    * {@code "(promotion)"} suffix is appended when applicable. Example:
    * {@code "21x14x7
@@ -164,56 +171,69 @@ public class Move {
     return sb.toString();
   }
 
+  /**
+   * Returns the colors of all pieces captured during this move.
+   *
+   * @return the list of captured piece colors, empty if no captures occurred
+   */
   public List<String> getCapturedColors() {
     return capturedColors;
   }
+
+  /**
+   * Creates a move instance from a string representation.
+   *
+   * @param text the string representation of the move
+   * @return the created move instance
+   * @throws IllegalArgumentException if the string format is invalid
+   */
   public static Move fromSaveString(String text) {
-  if (text == null) {
-    throw new IllegalArgumentException("Move text is null");
-  }
-
-  String s = text.trim();
-  if (s.isEmpty()) {
-    throw new IllegalArgumentException("Move text is empty");
-  }
-
-  boolean promotion = false;
-  String promoSuffix = "(promotion)";
-
-  if (s.endsWith(promoSuffix)) {
-    promotion = true;
-    s = s.substring(0, s.length() - promoSuffix.length()).trim();
-  }
-
-  boolean isCapture = s.contains("x");
-  String delimiterRegex = isCapture ? "x" : "-";
-  String[] parts = s.split(java.util.regex.Pattern.quote(delimiterRegex));
-
-  if (parts.length < 2) {
-    throw new IllegalArgumentException("Invalid move format: " + text);
-  }
-
-  List<Integer> path = new ArrayList<>();
-  for (String part : parts) {
-    String token = part.trim();
-    if (token.isEmpty()) {
-      throw new IllegalArgumentException("Invalid move token in: " + text);
+    if (text == null) {
+      throw new IllegalArgumentException("Move text is null");
     }
-    try {
-      path.add(Integer.parseInt(token));
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("Invalid square number '" + token + "' in: " + text, e);
+
+    String s = text.trim();
+    if (s.isEmpty()) {
+      throw new IllegalArgumentException("Move text is empty");
     }
-  }
 
-  Move move;
-  if (isCapture) {
-    move = new Move(path, new ArrayList<>());
-  } else {
-    move = new Move(path.get(0), path.get(path.size() - 1));
-  }
+    boolean promotion = false;
+    String promoSuffix = "(promotion)";
 
-  move.setPromotion(promotion);
-  return move;
-}
+    if (s.endsWith(promoSuffix)) {
+      promotion = true;
+      s = s.substring(0, s.length() - promoSuffix.length()).trim();
+    }
+
+    boolean isCapture = s.contains("x");
+    String delimiterRegex = isCapture ? "x" : "-";
+    String[] parts = s.split(java.util.regex.Pattern.quote(delimiterRegex));
+
+    if (parts.length < 2) {
+      throw new IllegalArgumentException("Invalid move format: " + text);
+    }
+
+    List<Integer> path = new ArrayList<>();
+    for (String part : parts) {
+      String token = part.trim();
+      if (token.isEmpty()) {
+        throw new IllegalArgumentException("Invalid move token in: " + text);
+      }
+      try {
+        path.add(Integer.parseInt(token));
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException("Invalid square number '" + token + "' in: " + text, e);
+      }
+    }
+
+    Move move;
+    if (isCapture) {
+      move = new Move(path, new ArrayList<>());
+    } else {
+      move = new Move(path.get(0), path.get(path.size() - 1));
+    }
+
+    move.setPromotion(promotion);
+    return move;
+  }
 }
