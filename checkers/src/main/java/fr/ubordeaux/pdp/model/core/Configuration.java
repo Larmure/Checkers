@@ -22,8 +22,8 @@ public class Configuration {
   private final int size;
   private final boolean verbose;
   private final boolean debug;
-  private final boolean whiteIsAI;
-  private final boolean blackIsAI;
+  private final boolean whiteAI;
+  private final boolean blackAI;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -34,23 +34,23 @@ public class Configuration {
    * configuration
    * is consistent and adheres to the expected constraints for a checkers game.
    *
-   * @param blitz     Indicates whether the game is in blitz mode, which imposes
-   *                  time limits on players.
-   * @param time      The time limit for each player in seconds, applicable only
-   *                  if blitz mode is enabled.
-   * @param contest   Indicates whether the game is in contest mode, which may
-   *                  affect scoring and rules.
-   * @param size      The size of the game board, which must be one of the valid
-   *                  sizes defined in Utils.VALID_SIZES.
-   * @param verbose   Indicates whether verbose output is enabled, providing more
-   *                  detailed information during the game.
-   * @param debug     Indicates whether debug mode is enabled, which may include
-   *                  additional logging for troubleshooting purposes.
-   * @param whiteIsAI Indicates whether the white player is controlled by AI.
-   * @param blackIsAi Indicates whether the black player is controlled by AI.
+   * @param blitz   Indicates whether the game is in blitz mode, which imposes
+   *                time limits on players.
+   * @param time    The time limit for each player in seconds, applicable only
+   *                if blitz mode is enabled.
+   * @param contest Indicates whether the game is in contest mode, which may
+   *                affect scoring and rules.
+   * @param size    The size of the game board, which must be one of the valid
+   *                sizes defined in Utils.VALID_SIZES.
+   * @param verbose Indicates whether verbose output is enabled, providing more
+   *                detailed information during the game.
+   * @param debug   Indicates whether debug mode is enabled, which may include
+   *                additional logging for troubleshooting purposes.
+   * @param whiteAI Indicates whether the white player is controlled by AI.
+   * @param blackAI Indicates whether the black player is controlled by AI.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
-      boolean verbose, boolean debug, boolean whiteIsAI, boolean blackIsAi) {
+      boolean verbose, boolean debug, boolean whiteAI, boolean blackAI) {
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
@@ -68,8 +68,8 @@ public class Configuration {
     this.size = size;
     this.verbose = verbose;
     this.debug = debug;
-    this.whiteIsAI = whiteIsAI;
-    this.blackIsAI = blackIsAi;
+    this.whiteAI = whiteAI;
+    this.blackAI = blackAI;
   }
 
   /**
@@ -89,8 +89,8 @@ public class Configuration {
     this.size = other.size;
     this.verbose = other.verbose;
     this.debug = other.debug;
-    this.whiteIsAI = other.whiteIsAI;
-    this.blackIsAI = other.blackIsAI;
+    this.whiteAI = other.whiteAI;
+    this.blackAI = other.blackAI;
   }
 
   /**
@@ -108,8 +108,8 @@ public class Configuration {
     this.size = other.size;
     this.verbose = verbose;
     this.debug = debug;
-    this.whiteIsAI = other.whiteIsAI;
-    this.blackIsAI = other.blackIsAI;
+    this.whiteAI = other.whiteAI;
+    this.blackAI = other.blackAI;
   }
 
   /**
@@ -150,18 +150,18 @@ public class Configuration {
     return debug;
   }
 
-  public boolean isBlackIsAI() {
-    return blackIsAI;
+  public boolean isblackAI() {
+    return blackAI;
   }
 
-  public boolean isWhiteIsAI() {
-    return whiteIsAI;
+  public boolean iswhiteAI() {
+    return whiteAI;
   }
 
   @Override
   public String toString() {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
-        + ", whiteAI=" + whiteIsAI + ", blackAI=" + blackIsAI;
+        + ", whiteAI=" + whiteAI + ", blackAI=" + blackAI;
   }
 }

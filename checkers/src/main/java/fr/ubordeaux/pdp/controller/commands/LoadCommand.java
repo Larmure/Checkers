@@ -52,8 +52,8 @@ public class LoadCommand implements Command, Helpable {
     int time = Utils.DEFAULT_TIME;
     boolean contest = Utils.DEFAULT_CONTEST;
     boolean debug = Utils.DEFAULT_DEBUG;
-    boolean isWhiteIsAI = Utils.DEFAULT_WHITE_AI;
-    boolean isBlackIsAI = Utils.DEFAULT_BLACK_AI;
+    boolean iswhiteAI = Utils.DEFAULT_WHITE_AI;
+    boolean isblackAI = Utils.DEFAULT_BLACK_AI;
 
     // verbose vient du controller (param runtime)
     boolean verbose = controller.isVerbose();
@@ -105,7 +105,7 @@ public class LoadCommand implements Command, Helpable {
       return;
     }
 
-    Configuration cfg = new Configuration(blitz, time, contest, size, verbose, debug, isWhiteIsAI, isBlackIsAI);
+    Configuration cfg = new Configuration(blitz, time, contest, size, verbose, debug, iswhiteAI, isblackAI);
 
     // ---- Create a new game with correct board size ----
     GameCheckers loadedGame = new GameCheckers(cfg);

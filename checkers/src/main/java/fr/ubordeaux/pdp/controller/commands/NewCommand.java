@@ -60,7 +60,7 @@ public class NewCommand implements Command, Helpable {
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
-          controller.isWhiteIsAi(), controller.isBlackIsAi()));
+          controller.iswhiteAI(), controller.isblackAI()));
 
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());

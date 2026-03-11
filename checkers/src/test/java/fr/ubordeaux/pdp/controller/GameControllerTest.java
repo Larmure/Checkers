@@ -292,8 +292,8 @@ class GameControllerTest {
 
     // Configuration getters must reflect the new config
     assertFalse(controller.isBlitz());
-    assertFalse(controller.isWhiteIsAi());
-    assertFalse(controller.isBlackIsAi());
+    assertFalse(controller.iswhiteAI());
+    assertFalse(controller.isblackAI());
   }
 
   // =========================================================

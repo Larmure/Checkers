@@ -222,12 +222,12 @@ public class GameController {
     markAsSaved();
   }
 
-  public boolean isWhiteIsAi() {
-    return configuration.isWhiteIsAI();
+  public boolean iswhiteAI() {
+    return configuration.iswhiteAI();
   }
 
-  public boolean isBlackIsAi() {
-    return configuration.isBlackIsAI();
+  public boolean isblackAI() {
+    return configuration.isblackAI();
   }
 
   /**
