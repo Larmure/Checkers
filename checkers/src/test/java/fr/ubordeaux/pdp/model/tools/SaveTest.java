@@ -164,10 +164,7 @@ public class SaveTest {
             }
         }
 
-        assertEquals(
-                size,
-                rowCount,
-                "Le nombre de lignes du plateau doit correspondre à la taille (" + size + ").");
+        assertEquals( size,rowCount,"Le nombre de lignes du plateau doit correspondre à la taille (" + size + ").");
     }
 
     @Test

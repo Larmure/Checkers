@@ -107,7 +107,7 @@ public class LoadBoardest {
     GameCheckers game = newGame(n);
     Board board = game.getBoard();
 
-    new LoadBoard(board, game).loadFromFile("load_ok.txt");
+    new LoadBoard(game).loadGameData("load_ok.txt");
 
     assertFalse(game.isWhiteTurn());
 
@@ -156,7 +156,7 @@ public class LoadBoardest {
     GameCheckers game = newGame(n);
     Board board = game.getBoard();
 
-    new LoadBoard(board, game).loadFromFile("load_bad_square.txt");
+    new LoadBoard(game).loadGameData("load_bad_square.txt");
 
     assertBoardEmpty(board);
   }
@@ -187,7 +187,7 @@ public class LoadBoardest {
     assertFalse(board.noPiecesLeft(PlayerColor.WHITE));
     assertFalse(board.noPiecesLeft(PlayerColor.BLACK));
 
-    new LoadBoard(board, game).loadFromFile("load_bad_size.txt");
+    new LoadBoard(game).loadGameData("load_bad_size.txt");
 
     // inchangé: toujours des pièces des deux côtés
     assertFalse(board.noPiecesLeft(PlayerColor.WHITE));
@@ -212,7 +212,7 @@ public class LoadBoardest {
     assertFalse(board.noPiecesLeft(PlayerColor.WHITE));
     assertFalse(board.noPiecesLeft(PlayerColor.BLACK));
 
-    new LoadBoard(board, game).loadFromFile("load_missing_game.txt");
+    new LoadBoard(game).loadGameData("load_missing_game.txt");
 
     assertFalse(board.noPiecesLeft(PlayerColor.WHITE));
     assertFalse(board.noPiecesLeft(PlayerColor.BLACK));
@@ -233,7 +233,7 @@ public class LoadBoardest {
     GameCheckers game = newGame(n);
     Board board = game.getBoard();
 
-    new LoadBoard(board, game).loadFromFile("load_missing_settings.txt");
+    new LoadBoard(game).loadGameData("load_missing_settings.txt");
 
     assertBoardEmpty(board);
   }
@@ -263,7 +263,7 @@ public class LoadBoardest {
     GameCheckers game = newGame(n);
     Board board = game.getBoard();
 
-    new LoadBoard(board, game).loadFromFile("load_missing_history.txt");
+    new LoadBoard(game).loadGameData("load_missing_history.txt");
 
     assertTrue(board.isWhitePawn("A1"));
   }

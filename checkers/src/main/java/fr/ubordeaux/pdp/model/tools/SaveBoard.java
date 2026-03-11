@@ -52,7 +52,7 @@ public class SaveBoard {
 
             writer.write("ai-mode=None\n");
             writer.write("ai-depth=2\n");
-
+            writer.write("verbose=" + config.isVerbose() + "\n");
             writer.write("debug=" + config.isDebug() + "\n");
             writer.write("board-size=" + b.getSizeBoard() + "\n");
             writer.write("\n");

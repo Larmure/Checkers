@@ -1200,6 +1200,7 @@ public class Board {
     addBlackPawn(f);
   }
 
+ 
 
   public void clearBoard() {
     whitePawns1 = whitePawns2 = 0L;
