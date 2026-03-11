@@ -19,38 +19,38 @@ import fr.ubordeaux.pdp.serveur.ClientSession;
  */
 public class QuitClientCommand implements ClientCommand, Helpable {
 
-    private final ClientSession session;
-    /** Indique si la boucle principale doit terminer le programme. */
-    private boolean exit = false;
+  private final ClientSession session;
+  /** Indique si la boucle principale doit terminer le programme. */
+  private boolean exit = false;
 
-    public QuitClientCommand(ClientSession session) {
-        this.session = session;
-    }
+  public QuitClientCommand(ClientSession session) {
+    this.session = session;
+  }
 
-    @Override
-    public void execute() {
-        if (session.isConnected()) {
-            // Notifie le serveur puis ferme la connexion locale
-            session.send("QUIT");
-            session.disconnect();
-            // On reste dans la boucle principale (retour en [local])
-        } else {
-            // En mode local → signal de sortie du programme
-            System.out.println("Exiting client. Goodbye!");
-            exit = true;
-        }
+  @Override
+  public void execute() {
+    if (session.isConnected()) {
+      // Notifie le serveur puis ferme la connexion locale
+      session.send("QUIT");
+      session.disconnect();
+      // On reste dans la boucle principale (retour en [local])
+    } else {
+      // En mode local → signal de sortie du programme
+      System.out.println("Exiting client. Goodbye!");
+      exit = true;
     }
+  }
 
-    /**
-     * @return {@code true} si la boucle principale doit terminer.
-     *         À appeler après {@link #execute()}.
-     */
-    public boolean shouldExit() {
-        return exit;
-    }
+  /**
+   * @return {@code true} si la boucle principale doit terminer.
+   *         À appeler après {@link #execute()}.
+   */
+  public boolean shouldExit() {
+    return exit;
+  }
 
-    @Override
-    public String getHelp() {
-        return "quit — Disconnects from the server (if connected) or exits the client.";
-    }
+  @Override
+  public String getHelp() {
+    return "quit — Disconnects from the server (if connected) or exits the client.";
+  }
 }

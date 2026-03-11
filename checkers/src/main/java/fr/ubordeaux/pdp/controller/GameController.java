@@ -90,11 +90,10 @@ public class GameController {
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
-      case "server list" -> new ServerListCommand();
-      case "server start" -> new ServerStartCommand(this, args);
-      case "server stop" -> new ServerStopCommand();
+      case "server" -> resolveServerCommand(args);
       default -> {
-        System.out.println("Unknown command: " + commandName);
+        System.out.println("Unknown command: " 
+          + commandName);
         yield null;
       }
     };
@@ -102,6 +101,34 @@ public class GameController {
     if (command != null) {
       command.execute();
     }
+  }
+
+  /**
+   * Resolves a server subcommand from the provided arguments.
+   *
+   * @param args the arguments passed after {@code server}
+   * @return the matching command, or {@code null} if the input is invalid
+   */
+
+  private Command resolveServerCommand(String[] args) {
+    if (args == null || args.length == 0) {
+      System.out.println("Usage: server list | server start [PORT] | server stop");
+      return null;
+    }
+
+    String subCommand = args[0].toLowerCase();
+    String[] subArgs = new String[args.length - 1];
+    System.arraycopy(args, 1, subArgs, 0, subArgs.length);
+
+    return switch (subCommand) {
+      case "list" -> new ServerListCommand();
+      case "start" -> new ServerStartCommand(this, subArgs);
+      case "stop" -> new ServerStopCommand();
+      default -> {
+        System.out.println( "Unknown server command: " + subCommand  + ". Use: list | start [PORT] | stop");
+        yield null;
+      }
+    };
   }
 
   /**

@@ -23,26 +23,25 @@ import fr.ubordeaux.pdp.controller.Helpable;
  */
 public class HelpClientCommand implements ClientCommand, Helpable {
 
-    @Override
-    public void execute() {
-        System.out.println(getHelp());
-    }
+  @Override
+  public void execute() {
+    System.out.println(getHelp());
+  }
 
-    @Override
-    public String getHelp() {
-        return  "╔══════════════════════════════════════════════════════════════╗\n"
-              + "║                  GAME CLIENT — COMMANDS                      ║\n"
-              + "╠══════════════════════════════════════════════════════════════╣\n"
-              + "║ [CLIENT]                                                     ║\n"
-              + "║  join [IP[:PORT]]    Connect to a server (default localhost) ║\n"
-              + "║  ping                Send PING, display RTT                  ║\n"
-              + "║  quit                Disconnect from server / exit client    ║\n"
-              + "║  help                Show this help                          ║\n"
-              + "╠══════════════════════════════════════════════════════════════╣\n"
-              + "║ [NETWORK — SERVER MANAGEMENT]                                ║\n"
-              + "║  server list         List available servers (30s scan)       ║\n"
-              + "║  server start [PORT] Start a local game server (def. 12345)  ║\n"
-              + "║  server stop         Stop the local game server              ║\n"
-              + "╚══════════════════════════════════════════════════════════════╝\n";
-    }
+  @Override
+  public String getHelp() {
+    return "\n[CLIENT]\n"
+          + "  join [IP[:PORT]]     Connect to a server (default: localhost:12345)\n"
+          + "  ping                 Send PING and display round-trip time\n"
+          + "  quit                 Disconnect from server / exit client\n"
+          + "  help                 Show this help message\n"
+          + "\n[NETWORK — SERVER MANAGEMENT]\n"
+          + "  server list          List available servers (30-second scan)\n"
+          + "  server start [PORT]  Start a local game server (default port: 12345)\n"
+          + "  server stop          Stop the local game server\n"
+          + "  players              List connected players and their status\n"
+          + "  scoreboard           Display win/loss statistics\n"
+          + "  status               Show server port, clients, and active games\n";
+
+  }
 }

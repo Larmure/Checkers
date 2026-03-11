@@ -2,7 +2,6 @@ package fr.ubordeaux.pdp.controller;
 
 /**
  * Marqueur sémantique pour les commandes propres au client réseau.
- *
  * Hiérarchie des commandes :
  * <pre>
  * Command (interface de base)
@@ -13,7 +12,6 @@ package fr.ubordeaux.pdp.controller;
  * └── [Client]        JoinCommand, PingCommand, QuitClientCommand, HelpClientCommand
  *                     → agissent sur ClientSession (état de connexion du client)
  * </pre>
- *
  * Les commandes client reçoivent un {@link ClientSession} pour manipuler
  * l'état de connexion sans couplage direct à la classe {@code client}.
  */

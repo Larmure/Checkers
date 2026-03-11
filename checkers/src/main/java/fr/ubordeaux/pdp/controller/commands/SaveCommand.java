@@ -6,6 +6,10 @@ import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.tools.SaveBoard;
 
+
+/**
+ * Command that saves the current game to a file.
+ */
 public class SaveCommand implements Command, Helpable {
 
   private final GameController controller;
