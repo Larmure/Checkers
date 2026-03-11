@@ -322,6 +322,6 @@ public class GameCheckers implements Subject {
   }
 
   public void setHistory(History h) {
-    managerUndoRedo.seHistory(h);
+    managerUndoRedo.setHistory(h);
   }
 }

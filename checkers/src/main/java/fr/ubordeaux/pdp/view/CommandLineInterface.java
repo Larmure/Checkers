@@ -115,7 +115,12 @@ public class CommandLineInterface extends GameView {
         System.getLogger(CommandLineInterface.class.getName())
             .log(System.Logger.Level.ERROR, (String) null, ex);
       }
-      lineReader = LineReaderBuilder.builder().terminal(terminal).build();
+      lineReader = LineReaderBuilder.builder()
+        .terminal(terminal)
+        .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
+        .build();
+
+      lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }
     inputThread = new Thread(() -> {
       while (true) {

@@ -1,17 +1,14 @@
 package fr.ubordeaux.pdp.model.tools;
 
-import java.util.List;
-
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
-
+import java.util.List;
 
 /**
  * Manages the undo and redo operations for the Checkers game.
  *
- * <p>
- * This class acts as a coordinator between the {@link Board} and the
+ * <p>This class acts as a coordinator between the {@link Board} and the
  * {@link History},
  * ensuring that moves are accurately recorded, reverted, and reapplied while
  * maintaining
@@ -20,7 +17,7 @@ import fr.ubordeaux.pdp.model.player.PlayerColor;
 public class ManagerUndoRedo {
 
   private History history;
-  private Board board;
+  private final Board board;
 
   /**
    * Constructs a new {@code ManagerUndoRedo} instance.
@@ -35,8 +32,7 @@ public class ManagerUndoRedo {
   /**
    * Registers a newly played move in the history and clears the redo stack.
    *
-   * <p>
-   * This method should be called every time a player makes a valid new move,
+   * <p>This method should be called every time a player makes a valid new move,
    * as making a new move invalidates any previously undone moves available for
    * redo.
    *
@@ -51,8 +47,7 @@ public class ManagerUndoRedo {
   /**
    * Reverts the last played move on the board and adds it to the redo stack.
    *
-   * <p>
-   * This process includes reversing the piece's trajectory, demoting a piece if
+   * <p>This process includes reversing the piece's trajectory, demoting a piece if
    * a promotion occurred during the move, and restoring any captured pieces to
    * their
    * exact previous state.
@@ -103,8 +98,7 @@ public class ManagerUndoRedo {
    * Reapplies the last undone move on the board and restores it to the main
    * history.
    *
-   * <p>
-   * The move's captured colors are cleared before reapplication to prevent
+   * <p>The move's captured colors are cleared before reapplication to prevent
    * duplicating captured piece records during the board's standard applyMove
    * phase.
    *
@@ -144,11 +138,21 @@ public class ManagerUndoRedo {
     return false;
   }
 
+  /**
+   * Accessor for the history object, primarily for testing purposes.
+   *
+   * @return the current history instance managing the undo/redo stacks
+   */
   public History getHistory() {
     return history;
   }
   
-  public void seHistory(History h) {
+  /**
+   * Mutator for the history object, allowing injection of a custom history instance.
+   *
+   * @param h the history instance to set for managing undo/redo operations
+   */
+  public void setHistory(History h) {
     history = h;
   }
 }
