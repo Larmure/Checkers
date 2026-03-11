@@ -28,8 +28,8 @@ class ConfigurationTest {
         assertEquals(10, config.getSize());
         assertTrue(config.isVerbose());
         assertFalse(config.isDebug());
-        assertTrue(config.iswhiteAI());
-        assertTrue(config.isblackAI());
+        assertTrue(config.iswhiteAi());
+        assertTrue(config.isblackAi());
     }
 
     @Test
@@ -92,7 +92,7 @@ class ConfigurationTest {
                 ", time=" + Utils.DEFAULT_TIME +
                 ", contest=" + Utils.DEFAULT_CONTEST +
                 ", size=" + Utils.DEFAULT_BOARD_SIZE +
-                ", verbose=false, debug=false, whiteAI=false, blackAI=false";
+                ", verbose=false, debug=false, whiteAi=false, blackAi=false";
 
         assertEquals(expected, config.toString(), "The toString method must reflect the object's actual state.");
     }

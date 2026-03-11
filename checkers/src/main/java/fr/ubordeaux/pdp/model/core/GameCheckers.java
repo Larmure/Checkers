@@ -47,12 +47,12 @@ public class GameCheckers implements Subject {
     managerUndoRedo = new ManagerUndoRedo(this.board);
 
     // MODE IA
-    if (cfg.iswhiteAI() == true) {
+    if (cfg.iswhiteAi() == true) {
       this.whitePlayer = new AIPlayer("White AI");
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
-    if (cfg.isblackAI() == true) {
+    if (cfg.isblackAi() == true) {
       this.blackPlayer = new AIPlayer("Black AI");
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));

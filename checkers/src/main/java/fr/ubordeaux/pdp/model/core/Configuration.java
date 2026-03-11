@@ -22,8 +22,8 @@ public class Configuration {
   private final int size;
   private final boolean verbose;
   private final boolean debug;
-  private final boolean whiteAI;
-  private final boolean blackAI;
+  private final boolean whiteAi;
+  private final boolean blackAi;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -46,11 +46,11 @@ public class Configuration {
    *                detailed information during the game.
    * @param debug   Indicates whether debug mode is enabled, which may include
    *                additional logging for troubleshooting purposes.
-   * @param whiteAI Indicates whether the white player is controlled by AI.
-   * @param blackAI Indicates whether the black player is controlled by AI.
+   * @param whiteAi Indicates whether the white player is controlled by AI.
+   * @param blackAi Indicates whether the black player is controlled by AI.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
-      boolean verbose, boolean debug, boolean whiteAI, boolean blackAI) {
+      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi) {
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
@@ -68,8 +68,8 @@ public class Configuration {
     this.size = size;
     this.verbose = verbose;
     this.debug = debug;
-    this.whiteAI = whiteAI;
-    this.blackAI = blackAI;
+    this.whiteAi = whiteAi;
+    this.blackAi = blackAi;
   }
 
   /**
@@ -89,8 +89,8 @@ public class Configuration {
     this.size = other.size;
     this.verbose = other.verbose;
     this.debug = other.debug;
-    this.whiteAI = other.whiteAI;
-    this.blackAI = other.blackAI;
+    this.whiteAi = other.whiteAi;
+    this.blackAi = other.blackAi;
   }
 
   /**
@@ -108,8 +108,8 @@ public class Configuration {
     this.size = other.size;
     this.verbose = verbose;
     this.debug = debug;
-    this.whiteAI = other.whiteAI;
-    this.blackAI = other.blackAI;
+    this.whiteAi = other.whiteAi;
+    this.blackAi = other.blackAi;
   }
 
   /**
@@ -150,18 +150,18 @@ public class Configuration {
     return debug;
   }
 
-  public boolean isblackAI() {
-    return blackAI;
+  public boolean isblackAi() {
+    return blackAi;
   }
 
-  public boolean iswhiteAI() {
-    return whiteAI;
+  public boolean iswhiteAi() {
+    return whiteAi;
   }
 
   @Override
   public String toString() {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
-        + ", whiteAI=" + whiteAI + ", blackAI=" + blackAI;
+        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi;
   }
 }

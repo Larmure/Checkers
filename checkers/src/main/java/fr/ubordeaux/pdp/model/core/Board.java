@@ -1,5 +1,7 @@
 package fr.ubordeaux.pdp.model.core;
 
+import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,21 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fr.ubordeaux.pdp.model.player.PlayerColor;
-import fr.ubordeaux.pdp.model.tools.Utils;
-
 /**
  * Represents a draughts (checkers) board encoded with bitboards.
  *
- * <p>
- * Supports board sizes of 8, 10, and 12. Each playable (dark) square is mapped
+ * <p>Supports board sizes of 8, 10, and 12. Each playable (dark) square is mapped
  * to a bit
  * index. Two 64-bit longs are used per piece type to handle boards larger than
  * 64 playable
  * squares (e.g. the 12×12 board has 72 playable squares).
  *
- * <p>
- * Coordinate system: rows are labelled {@code A} (bottom) to {@code L} (top);
+ * <p>Coordinate system: rows are labelled {@code A} (bottom) to {@code L} (top);
  * columns are
  * numbered {@code 1} (left) to {@code size} (right). Only dark squares (where
  * {@code (row+col)}
@@ -85,8 +82,8 @@ public class Board {
    * Places all pawns in their standard starting positions using bitboard
    * arithmetic.
    *
-   * <p>
-   * White occupies the lowest-indexed rows; black occupies the highest-indexed
+   *
+   * <p>White occupies the lowest-indexed rows; black occupies the highest-indexed
    * rows. On a
    * 12×12 board the black bitboard overflows 64 bits and the surplus is stored in
    * {@code blackPawns2}.
@@ -128,8 +125,8 @@ public class Board {
   /**
    * Initialises the diagonal offset maps for even and odd rows.
    *
-   * <p>
-   * Each direction key ({@code "NW"}, {@code "NE"}, {@code "SW"}, {@code "SE"})
+   *
+   * <p>Each direction key ({@code "NW"}, {@code "NE"}, {@code "SW"}, {@code "SE"})
    * maps to the
    * signed index delta that moves one step in that direction.
    */
@@ -150,8 +147,8 @@ public class Board {
    * Builds bitmasks that identify squares on the left and right edges of the
    * board.
    *
-   * <p>
-   * These masks are used to prevent diagonal moves from "wrapping" around board
+   *
+   * <p>These masks are used to prevent diagonal moves from "wrapping" around board
    * edges.
    */
   private void initEdgeMasks() {
@@ -510,8 +507,8 @@ public class Board {
    * Returns the diagonal offset map appropriate for the row that contains
    * {@code index}.
    *
-   * <p>
-   * Even rows use {@link #diagsPair}; odd rows use {@link #diagsUnpair}.
+   *
+   * <p>Even rows use {@link #diagsPair}; odd rows use {@link #diagsUnpair}.
    *
    * @param index bit index of the square whose row determines the map
    * @return the diagonal offset map for that row parity
@@ -539,10 +536,7 @@ public class Board {
 
     for (Map.Entry<String, Integer> entry : diags.entrySet()) {
       String dir = entry.getKey();
-      int delta = entry.getValue();
-      int to = from + delta;
 
-      // White moves north (NW/NE only); black moves south (SW/SE only).
       if (isWhite && (dir.equals("SW") || dir.equals("SE"))) {
         continue;
       }
@@ -555,6 +549,9 @@ public class Board {
       if ((dir.equals("NE") || dir.equals("SE")) && onRightEdge(from)) {
         continue;
       }
+
+      int delta = entry.getValue();
+      int to = from + delta;
       if (to >= 0 && to < indexMax && !isOccupied(to)) {
         targets.add(to);
       }
@@ -609,8 +606,8 @@ public class Board {
   /**
    * Returns the list of legal moves for white in the current position.
    *
-   * <p>
-   * If any capture is available, only capturing moves are returned
+   *
+   * <p>If any capture is available, only capturing moves are returned
    * (mandatory-capture rule).
    *
    * @return non-null, possibly empty list of legal {@link Move} objects
@@ -622,8 +619,8 @@ public class Board {
   /**
    * Returns the list of legal moves for black in the current position.
    *
-   * <p>
-   * If any capture is available, only capturing moves are returned
+   *
+   * <p>If any capture is available, only capturing moves are returned
    * (mandatory-capture rule).
    *
    * @return non-null, possibly empty list of legal {@link Move} objects
@@ -635,8 +632,8 @@ public class Board {
   /**
    * Core move-generation routine shared by both colours.
    *
-   * <p>
-   * Captures are collected first. If any exist, simple moves are skipped and only
+   *
+   * <p>Captures are collected first. If any exist, simple moves are skipped and only
    * the
    * maximum-length captures are returned.
    *
@@ -871,8 +868,8 @@ public class Board {
    * Recursive DFS that explores all checker capture continuations from
    * {@code current}.
    *
-   * <p>
-   * Unlike a pawn, a checker can slide multiple squares before and after a jump.
+   *
+   * <p>Unlike a pawn, a checker can slide multiple squares before and after a jump.
    *
    * @param current      bit index of the checker's current position
    * @param isWhite      {@code true} if the checker belongs to white
@@ -958,8 +955,8 @@ public class Board {
   /**
    * Immutable value object that records a single complete capture sequence.
    *
-   * <p>
-   * Used internally by the DFS capture-generation methods before being converted
+   *
+   * <p>Used internally by the DFS capture-generation methods before being converted
    * into
    * {@link Move} objects.
    */
@@ -1058,8 +1055,8 @@ public class Board {
    * on the left
    * and column numbers along the bottom.
    *
-   * <p>
-   * Piece symbols: {@code w} = white pawn, {@code W} = white checker, {@code b} =
+   *
+   * <p>Piece symbols: {@code w} = white pawn, {@code W} = white checker, {@code b} =
    * black
    * pawn, {@code B} = black checker, {@code _} = empty or light square.
    *
@@ -1109,6 +1106,12 @@ public class Board {
     return res;
   }
 
+  /**
+   * Returns a simplified board string without row/column labels, intended for testing
+   * purposes.
+   *
+   * @return multi-line string with only piece symbols and underscores for empty squares
+   */
   public String boardString() {
     StringBuilder sb = new StringBuilder();
     sb.append("\n");
@@ -1129,6 +1132,16 @@ public class Board {
     return sb.toString();
   }
 
+  /**
+  * Restores a piece on the board at the given index, based on the type string.
+  *
+  * @param index bit index of the square to restore
+  * @param type string representing the piece type:
+  *     "WP" for white pawn,
+  *     "BP" for black pawn,
+  *     "WC" for white checker,
+  *     "BC" for black checker
+  */
   public void restorePiece(int index, String type) {
     if (index < 0 || index >= indexMax) {
       throw new IllegalArgumentException("Index hors limites");
@@ -1146,10 +1159,16 @@ public class Board {
       case "BC":
         addBlackChecker(index);
         break;
+      default:
+        throw new IllegalArgumentException("Invalid piece: " + type);
     }
   }
 
-  // Permet d'annuler une promotion (Dame -> Pion)
+  /**
+   * Demotes a checker back to a pawn at the given index, if a checker is present.
+   *
+   * @param index bit index of the square to demote
+   */
   public void demoteBit(int index) {
     if (isBitWhiteChecker(index)) {
       removeWhiteChecker(index);
@@ -1159,10 +1178,6 @@ public class Board {
       addBlackPawn(index);
     }
   }
-
-  /**
-   * FOR TESTING PURPOSES ONLY.
-   */
 
   /**
    * Promotes the pawn on the named square to a checker (king).
@@ -1178,12 +1193,12 @@ public class Board {
   /**
    * Applies a simple move from one square to another.
    *
-   * <p>
-   * This helper method converts board coordinates (e.g. "C3", "D4")
+   *
+   * <p>This helper method converts board coordinates (e.g. "C3", "D4")
    * into internal indices and applies the move.
    *
-   * <p>
-   * Mainly intended for testing purposes. No move legality is checked.
+   *
+   * <p>Mainly intended for testing purposes. No move legality is checked.
    *
    * @param from source square (e.g. "C3")
    * @param to   destination square (e.g. "D4")
@@ -1225,6 +1240,9 @@ public class Board {
     addBlackPawn(f);
   }
 
+  /**
+   * Clears the board of all pieces. Testing helper.
+   */
   public void clearBoard() {
     whitePawns1 = whitePawns2 = 0L;
     blackPawns1 = blackPawns2 = 0L;
@@ -1235,8 +1253,8 @@ public class Board {
   /**
    * Returns the list of simple target squares for a checker on a given square.
    *
-   * <p>
-   * This method converts the board coordinate (e.g., "C3") to an internal index
+   *
+   * <p>This method converts the board coordinate (e.g., "C3") to an internal index
    * and delegates to {@link #checkerSimpleTargets(int)} to compute the targets.
    *
    * @param square the source square in standard notation (e.g., "C3")

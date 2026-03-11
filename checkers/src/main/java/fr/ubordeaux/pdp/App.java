@@ -51,10 +51,10 @@ public class App {
   private static int size = Utils.DEFAULT_BOARD_SIZE;
 
   /** Flag to enable white AI. */
-  private static boolean whiteAI = false;
+  private static boolean whiteAi = false;
 
   /** Flag to enable black AI. */
-  private static boolean blackAI = false;
+  private static boolean blackAi = false;
 
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
@@ -72,13 +72,13 @@ public class App {
       System.exit(1);
     } // else if (status == EXIT_GUI) {
       // TODO
-    // }
+      // }
 
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
     controller.start();
-    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteAI, blackAI));
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteAi, blackAi));
     try {
       ((CommandLineInterface) view).join();
     } catch (InterruptedException ex) {
@@ -187,17 +187,17 @@ public class App {
 
         color = color.toUpperCase();
         if (color.equals("W"))
-          whiteAI = true;
+          whiteAi = true;
         else if (color.equals("B"))
-          blackAI = true;
+          blackAi = true;
         else if (color.equals("A")) {
-          whiteAI = true;
-          blackAI = true;
+          whiteAi = true;
+          blackAi = true;
         } else if (color.equals("")) {
-          whiteAI = true;
+          whiteAi = true;
         } else {
           System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
-          whiteAI = true;
+          whiteAi = true;
         }
       }
       System.out.println(Internationalization.get("app.welcome"));
