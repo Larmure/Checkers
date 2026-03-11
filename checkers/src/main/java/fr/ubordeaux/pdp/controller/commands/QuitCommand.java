@@ -1,12 +1,12 @@
 package fr.ubordeaux.pdp.controller.commands;
 
-import java.util.Scanner;
-
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
-import fr.ubordeaux.pdp.model.core.*;
-import fr.ubordeaux.pdp.model.tools.*;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.SaveBoard;
+import java.util.Scanner;
 
 /**
  * Concrete implementation of {@link Command} used to terminate the application.
