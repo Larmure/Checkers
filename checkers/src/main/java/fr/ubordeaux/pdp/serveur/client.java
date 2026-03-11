@@ -1,251 +1,148 @@
 package fr.ubordeaux.pdp.serveur;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.List;
 import java.util.Scanner;
 
+import fr.ubordeaux.pdp.controller.commands.HelpClientCommand;
+import fr.ubordeaux.pdp.controller.commands.JoinCommand;
+import fr.ubordeaux.pdp.controller.commands.PingCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
+
 /**
- * Client de jeu avec support de la découverte de serveurs
- * Commandes disponibles:
- * - server_list: Affiche la liste des serveurs disponibles
- * - join [IP:PORT]: Se connecte à un serveur
- * - ping: Teste la connexion
- * - quit: Quitte le serveur (ou mode local si non connecté)
+ * Point d'entrée du client de jeu réseau.
+ *
+ * <p>Rôle unique : lire les saisies utilisateur et les dispatcher
+ * vers la {@link fr.ubordeaux.pdp.controller.commands.ClientCommand} appropriée.
+ * Toute la logique est encapsulée dans les classes Command correspondantes.
+ *
+ * <p>Hiérarchie des commandes dispatchées :
+ * <pre>
+ * [CLIENT]          JoinCommand · PingCommand · QuitClientCommand · HelpClientCommand
+ * [RÉSEAU SERVEUR]  ServerListCommand · ServerStartCommand · ServerStopCommand
+ * [JEU]             Transmises telles quelles au serveur via ClientSession.send()
+ * </pre>
+ *
+ * @see ClientSession
  */
 public class client {
 
-    private Socket socket;
-    private BufferedReader in;
-    private PrintWriter out;
-    private boolean connected = false;
-    private String currentServer = null;
+    /** État de connexion partagé entre toutes les commandes client. */
+    private final ClientSession session = new ClientSession();
 
-    /**
-     * Affiche la liste des serveurs disponibles
-     */
-    private void listServers() {
-        System.out.println("\nSearching for available servers...");
-        List<String> servers = ServerListService.discoverServers();
+    // -------------------------------------------------------------------------
+    // Boucle principale
+    // -------------------------------------------------------------------------
 
-        if (servers.isEmpty()) {
-            System.out.println("No game servers found on the network.");
-        } else {
-            System.out.println("\n╔════════════════════════════════════╗");
-            System.out.println("║   Available Game Servers          ║");
-            System.out.println("╠════════════════════════════════════╣");
-            for (int i = 0; i < servers.size(); i++) {
-                String[] parts = servers.get(i).split(":");
-                // Format réel : nom:ip:port (3 parties)
-                String name = parts.length > 0 ? parts[0] : "Unknown";
-                String ip   = parts.length > 1 ? parts[1] : "?";
-                String port = parts.length > 2 ? parts[2] : "?";
-                System.out.printf("║ %d. %-15s %s:%-6s║%n", (i + 1), name, ip, port);
-            }
-            System.out.println("╚════════════════════════════════════╝\n");
-            // Indique le bon format à l'utilisateur
-            System.out.println("Use 'join <ip>:<port>' to connect");
-            System.out.println("Example: join 192.168.1.42:12345");
-        }
-    }
-
-    /**
-     * Se connecte à un serveur
-     * @param address Format: "host:port" ou juste "localhost:12345"
-     */
-    private void joinServer(String address) {
-        if (connected) {
-            System.out.println("Already connected to " + currentServer);
-            return;
-        }
-
-        try {
-            String[] parts = address.split(":");
-            if (parts.length != 2) {
-                System.out.println("Invalid address format. Use: host:port");
-                return;
-            }
-
-            String host = parts[0].trim();
-            int port = Integer.parseInt(parts[1].trim());
-
-            System.out.println("Connecting to " + host + ":" + port + "...");
-
-            socket = new Socket(host, port);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
-
-            connected = true;
-            currentServer = address;
-
-            System.out.println("✓ Successfully connected to server!");
-            System.out.println("You can now use 'ping' to test the connection or 'quit' to disconnect.");
-
-            // --- NOUVEAU : Thread d'écoute en arrière-plan ---
-            new Thread(() -> {
-                try {
-                    String response;
-                    // On lit les messages du serveur en permanence
-                    while ((response = in.readLine()) != null) {
-                        if ("PONG".equals(response)) {
-                            System.out.println("\n✓ Server responded: PONG");
-                        } else if ("BYE".equals(response)) {
-                            System.out.println("\nServer: " + response);
-                        } else {
-                            System.out.println("\nServer: " + response);
-                        }
-                        // Réaffiche le prompt pour que ce soit propre
-                        if (connected) System.out.print("[" + currentServer + "] > ");
-                    }
-                } catch (IOException e) {
-                    // Cette exception s'active quand le serveur coupe brutalement
-                } finally {
-                    // Dès que le serveur s'arrête, on arrive ici instantanément
-                    if (connected) {
-                        System.out.println("\n\n[!] ATTENTION : Le serveur s'est arrêté brutalement !");
-                        disconnect();
-                        // On force l'affichage du prompt local sans attendre
-                        System.out.print("[local] > ");
-                    }
-                }
-            }).start();
-            // --------------------------------------------------
-
-        } catch (Exception e) {
-            System.out.println("✗ Connection failed: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Envoie une commande ping au serveur
-     */
-    private void ping() {
-        if (!connected) {
-            System.out.println("Not connected to any server.");
-            return;
-        }
-        // On envoie juste le PING, le Thread d'écoute s'occupera d'afficher le PONG
-        out.println("PING");
-    }
-
-    /**
-     * Déconnecte du serveur ou quitte le client
-     */
-    private void quit() {
-        if (connected) {
-            out.println("QUIT");
-            disconnect(); // On force la déconnexion locale
-        } else {
-            System.out.println("Not connected to any server.");
-        }
-    }
-
-    /**
-     * Ferme la connexion
-     */
-    private void disconnect() {
-        connected = false;
-        currentServer = null;
-        try {
-            if (in != null) in.close();
-            if (out != null) out.close();
-            if (socket != null && !socket.isClosed()) socket.close();
-        } catch (IOException e) {
-            // Ignorer les erreurs de fermeture
-        }
-        System.out.println("Disconnected from server.");
-    }
-
-    /**
-     * Affiche l'aide des commandes disponibles
-     */
-    private void showHelp() {
-        System.out.println("\n╔════════════════════════════════════════════════════╗");
-        System.out.println("║              GAME CLIENT - COMMANDS                ║");
-        System.out.println("╠════════════════════════════════════════════════════╣");
-        System.out.println("║ server_list          - List available servers      ║");
-        System.out.println("║ join <host>:<port>   - Connect to a server         ║");
-        System.out.println("║ ping                 - Test server connection      ║");
-        System.out.println("║ quit                 - Disconnect/Exit client      ║");
-        System.out.println("║ help                 - Show this help message      ║");
-        System.out.println("╚════════════════════════════════════════════════════╝\n");
-    }
-
-    /**
-     * Boucle principale du client
-     */
     public void run() {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("╔════════════════════════════════════════════════════╗");
-        System.out.println("║           GAME CLIENT - WELCOME                    ║");
-        System.out.println("╚════════════════════════════════════════════════════╝");
+        System.out.println("╔══════════════════════════════════════════════════════════════╗");
+        System.out.println("║                  GAME CLIENT — WELCOME                       ║");
+        System.out.println("╚══════════════════════════════════════════════════════════════╝");
         System.out.println("Type 'help' to see available commands\n");
 
         while (true) {
-            if (connected) {
-                System.out.print("[" + currentServer + "] > ");
-            } else {
-                System.out.print("[local] > ");
-            }
+            // Prompt contextuel
+            System.out.print(session.isConnected()
+                    ? "[" + session.getCurrentServer() + "] > "
+                    : "[local] > ");
 
             String input = scanner.nextLine().trim();
+            if (input.isEmpty()) continue;
 
-            if (input.isEmpty()) {
+            // Découpe : mot1 [mot2 [reste...]]
+            String[] tokens = input.split("\\s+", 3);
+            String   word1  = tokens[0].toLowerCase();
+            String   word2  = tokens.length > 1 ? tokens[1].toLowerCase() : "";
+            String   rest   = tokens.length > 2 ? tokens[2] : "";
+
+            // ------------------------------------------------------------------
+            // Commandes à deux mots : server <sous-commande>
+            // ------------------------------------------------------------------
+            if ("server".equals(word1)) {
+                dispatchServerCommand(word2, rest);
                 continue;
             }
 
-            String[] parts = input.split("\\s+", 2);
-            String command = parts[0].toLowerCase();
+            // ------------------------------------------------------------------
+            // Commandes client à un mot
+            // ------------------------------------------------------------------
+            switch (word1) {
 
-            switch (command) {
-                case "server_list":
-                    listServers();
-                    break;
+                case "join" -> {
+                    // Reconstitue l'adresse (ex: "join 192.168.1.1 12345" → "192.168.1.1:12345")
+                    String addr = word2.isBlank() ? null : word2 + (rest.isBlank() ? "" : ":" + rest);
+                    new JoinCommand(session, addr).execute();
+                }
 
-                case "join":
-                    if (parts.length < 2) {
-                        System.out.println("Usage: join <host>:<port>");
-                        System.out.println("Example: join localhost:12345");
-                    } else {
-                        joinServer(parts[1]);
-                    }
-                    break;
+                case "ping" ->
+                    new PingCommand(session).execute();
 
-                case "ping":
-                    ping();
-                    break;
+                case "help" ->
+                    new HelpClientCommand().execute();
 
-                case "quit":
-                    if (connected) {
-                        // On se déconnecte du serveur (l'affichage repassera en [local] >)
-                        quit();
-                    } else {
-                        // Si on est DÉJÀ en local, on quitte le programme
-                        System.out.println("Exiting client. Goodbye!");
+                case "quit" -> {
+                    QuitClientCommand quitCmd = new QuitClientCommand(session);
+                    quitCmd.execute();
+                    if (quitCmd.shouldExit()) {
                         scanner.close();
-                        return;
+                        return; // Sortie propre du programme
                     }
-                    break;
+                }
 
-                case "help":
-                    showHelp();
-                    break;
-
-                default:
-                    System.out.println("Unknown command: " + command);
-                    System.out.println("Type 'help' to see available commands");
+                default -> {
+                    if (session.isConnected()) {
+                        // Commande de jeu → transmise au serveur (GameController s'en charge)
+                        session.send(input);
+                    } else {
+                        System.out.println("Unknown command: '" + word1 + "'.");
+                        System.out.println("Type 'help' to see available commands.");
+                    }
+                }
             }
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Dispatch server <sous-commande>
+    // -------------------------------------------------------------------------
+
+    /**
+     * Distribue les commandes {@code server list / start / stop}.
+     *
+     * @param sub  Sous-commande ({@code list}, {@code start}, {@code stop}).
+     * @param args Arguments supplémentaires (ex. numéro de port).
+     */
+    private void dispatchServerCommand(String sub, String args) {
+        switch (sub) {
+
+            case "list" ->
+                new ServerListCommand().execute();
+
+            case "start" -> {
+                String portArg = args.isBlank() ? null : args.trim();
+                String[] startArgs = portArg == null ? new String[0] : new String[]{ portArg };
+                // null = pas de GameController côté client autonome.
+                // Pour un serveur complet avec logique de jeu, lancer GameServer directement.
+                new ServerStartCommand(null, startArgs).execute();
+            }
+
+            case "stop" ->
+                new ServerStopCommand().execute();
+
+            default ->
+                System.out.println("Unknown server command: '" + sub + "'."
+                        + " Use: server list | server start [PORT] | server stop");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Main
+    // -------------------------------------------------------------------------
+
     public static void main(String[] args) {
-        client client = new client();
-        client.run();
+        new client().run();
     }
 }

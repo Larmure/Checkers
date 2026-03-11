@@ -5,64 +5,88 @@ import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-
+/**
+ * Discovery service for game servers available on the local network.
+ * Listens for UDP broadcasts for 30 seconds and automatically removes
+ * servers whose last message is older than 30 seconds.
+ */
 public class ServerListService {
 
     private static final int DISCOVERY_PORT = 12346;
-    private static final int TIMEOUT_MS = 5000; // attendre 5 secondes maximum
+    /** Total listening duration: 30 seconds as specified. */
+    private static final int LISTEN_DURATION_MS = 30_000;
+    /** Short socket timeout to remain responsive in the loop. */
+    private static final int SOCKET_TIMEOUT_MS = 1_000;
+    /** A server is considered dead if it has not broadcast for 30 seconds. */
+    private static final int SERVER_EXPIRY_MS = 30_000;
 
     /**
-     * Écoute les broadcasts UDP et retourne la liste des serveurs disponibles
-     * @return Liste des informations serveur (nom:port)
+     * Listens for UDP broadcasts for {@value #LISTEN_DURATION_MS} ms
+     * and returns the list of still-active servers (message received within
+     * the last {@value #SERVER_EXPIRY_MS} ms).
+     *
+     * @return List of strings in the format {@code name:ip:port}.
      */
     public static List<String> discoverServers() {
-        List<String> servers = new ArrayList<>();
+        // key = "name:ip:port", value = timestamp of the last received message
+        Map<String, Long> serverTimestamps = new ConcurrentHashMap<>();
 
         try (DatagramSocket socket = new DatagramSocket(DISCOVERY_PORT)) {
-            socket.setSoTimeout(TIMEOUT_MS);
+            socket.setSoTimeout(SOCKET_TIMEOUT_MS);
 
             byte[] buffer = new byte[1024];
             long startTime = System.currentTimeMillis();
 
-            System.out.println("Listening for server broadcasts...");
+            System.out.println("Listening for server broadcasts (30s)...");
 
-            // Écouter pendant 5 secondes
-            while (System.currentTimeMillis() - startTime < TIMEOUT_MS) {
+            while (System.currentTimeMillis() - startTime < LISTEN_DURATION_MS) {
                 try {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     socket.receive(packet);
 
-                    String message = new String(packet.getData(), 0, packet.getLength());
+                    String message = new String(packet.getData(), 0, packet.getLength()).trim();
+                    long now = System.currentTimeMillis();
 
-                    // On vérifie si c'est un nouveau serveur
-                    if (!servers.contains(message)) {
-                        servers.add(message);
+                    boolean isNew = !serverTimestamps.containsKey(message);
+                    serverTimestamps.put(message, now);
 
-                        // Affichage immédiat lors de la découverte
+                    if (isNew) {
                         String[] parts = message.split(":");
                         if (parts.length == 3) {
-                            System.out.println("Nouveau serveur trouvé : " + parts[0] + " à l'adresse " + parts[1] + ":" + parts[2]);
+                            System.out.println("Server found: " + parts[0]
+                                    + " at " + parts[1] + ":" + parts[2]);
                         }
                     }
+
                 } catch (SocketTimeoutException e) {
-                    continue;
+                    // No packet received during the time window — continue normally
                 }
+
+                // Remove expired servers (no message received for more than 30 seconds)
+                long now = System.currentTimeMillis();
+                serverTimestamps.entrySet().removeIf(entry -> {
+                    boolean expired = (now - entry.getValue()) > SERVER_EXPIRY_MS;
+                    if (expired) {
+                        System.out.println("Server expired: " + entry.getKey());
+                    }
+                    return expired;
+                });
             }
 
-            if (servers.isEmpty()) {
-                System.out.println("No servers found.");
-            }
-
+        } catch (java.net.BindException e) {
+            System.err.println("Port " + DISCOVERY_PORT + " already in use (another discovery running?).");
         } catch (Exception e) {
             System.err.println("Error during server discovery: " + e.getMessage());
         }
 
-        return servers;
+        return new ArrayList<>(serverTimestamps.keySet());
     }
 
     /**
-     * Affiche la liste des serveurs disponibles
+     * Displays the list of available servers in a formatted way.
      */
     public static void displayAvailableServers() {
         List<String> servers = discoverServers();
@@ -74,15 +98,10 @@ public class ServerListService {
             for (String s : servers) {
                 String[] parts = s.split(":");
                 if (parts.length == 3) {
-                    System.out.println("- " + parts[0] + " | Adresse à taper: " + parts[1] + ":" + parts[2]);
+                    System.out.println("- " + parts[0] + " | Address: " + parts[1] + ":" + parts[2]);
                 }
             }
             System.out.println("==============================\n");
         }
-    }
-
-    public static void main(String[] args) {
-        // Test de découverte de serveurs
-        displayAvailableServers();
     }
 }

@@ -8,72 +8,135 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.CommandProtocol;
 
-
+/**
+ * TCP game server.
+ *
+ * Responsibility: network connections only.
+ * Game logic is entirely delegated to the {@link GameController}.
+ *
+ * Network features:
+ * - Accepts multiple clients simultaneously.
+ * - Unexpected disconnection timeout: 1 minute (SO_TIMEOUT).
+ * - {@code server stop} notifies all connected clients before closing.
+ * - Explicit error if the TCP port is already in use.
+ */
 public class GameServer {
 
-    private final int tcpPort;
+    private static final int DEFAULT_PORT    = 12345;
+    /** Client socket timeout: 1 minute as specified. */
+    private static final int CLIENT_TIMEOUT_MS = 60_000;
+
+    private final int    tcpPort;
     private final String serverName;
-    private Thread discoveryThread;
+
+    private Thread       discoveryThread;
     private ServerSocket serverSocket;
     private volatile boolean running = false;
 
-    public GameServer(String serverName, int tcpPort) {
-        this.serverName = serverName;
-        this.tcpPort = tcpPort;
-    }
+    /** Set of active writers used to notify all clients when the server stops. */
+    private final Set<PrintWriter> connectedClients =
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    private final GameController controller;
+
+    // -------------------------------------------------------------------------
+    // Construction
+    // -------------------------------------------------------------------------
 
     /**
-     * Démarre le serveur de jeu avec le service de découverte
+     * @param serverName Name broadcast through UDP.
+     * @param tcpPort    TCP listening port.
+     * @param controller Already initialized game controller (injected from outside).
+     */
+    public GameServer(String serverName, int tcpPort, GameController controller) {
+        this.serverName = serverName;
+        this.tcpPort    = tcpPort;
+        this.controller = controller;
+    }
+
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
+
+    /**
+     * Starts the TCP server and the UDP discovery service.
+     * Throws an {@link IOException} with an explicit message if the port is already in use.
      */
     public void start() throws IOException {
         if (running) {
-            System.out.println("Server is already running!");
+            System.out.println("Server is already running on port " + tcpPort + "!");
             return;
         }
 
-        serverSocket = new ServerSocket(tcpPort);
+        // Explicit check for occupied port
+        try {
+            serverSocket = new ServerSocket(tcpPort);
+        } catch (java.net.BindException e) {
+            throw new IOException(
+                "Port " + tcpPort + " is already in use. "
+                + "Choose another port or stop the existing server.", e);
+        }
+
         running = true;
 
-        // Démarrer le service de découverte UDP
+        // UDP discovery service (daemon → stops with the JVM)
         DiscoveryService discoveryService = new DiscoveryService(serverName, tcpPort);
-        discoveryThread = new Thread(discoveryService);
+        discoveryThread = new Thread(discoveryService, "discovery-thread");
         discoveryThread.setDaemon(true);
         discoveryThread.start();
 
         System.out.println("Game server '" + serverName + "' started on port " + tcpPort);
-        System.out.println("Discovery service broadcasting on UDP port 12346");
+        System.out.println("Discovery broadcasting on UDP 12346");
 
-        // Boucle d'acceptation des clients
+        // Accept loop
         while (running) {
             try {
                 Socket client = serverSocket.accept();
+                // 1-minute timeout for unexpected disconnections
+                client.setSoTimeout(CLIENT_TIMEOUT_MS);
                 System.out.println("Client connected: " + client.getInetAddress());
 
-                // Gérer chaque client dans un thread séparé
-                Thread clientThread = new Thread(() -> handleClient(client));
-                clientThread.start();
+                Thread t = new Thread(() -> handleClient(client), "client-" + client.getInetAddress());
+                t.start();
 
             } catch (IOException e) {
                 if (running) {
                     System.err.println("Error accepting client: " + e.getMessage());
                 }
+                // If running == false, stop() closed the socket → normal behavior
             }
         }
     }
 
     /**
-     * Arrête le serveur de jeu
+     * Gracefully stops the server:
+     * 1. Notifies all connected clients with {@code BYE}.
+     * 2. Closes the server socket.
+     * 3. Interrupts the UDP discovery thread.
      */
     public void stop() {
         if (!running) {
-            System.out.println("Server is not running!");
+            System.out.println("Server is not running.");
             return;
         }
 
         running = false;
+
+        // Notify all connected clients
+        for (PrintWriter clientOut : connectedClients) {
+            try {
+                clientOut.println(CommandProtocol.BYE);
+            } catch (Exception ignored) { }
+        }
+        connectedClients.clear();
 
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
@@ -90,79 +153,84 @@ public class GameServer {
         System.out.println("Game server stopped.");
     }
 
-    /**
-     * Gère la communication avec un client connecté
-     */
+    public boolean isRunning() { return running; }
+    public int     getPort()   { return tcpPort;  }
+
+    // -------------------------------------------------------------------------
+    // Connected client handling
+    // -------------------------------------------------------------------------
+
     private void handleClient(Socket client) {
         try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)
+            BufferedReader in  = new BufferedReader(
+                new InputStreamReader(client.getInputStream()));
+            PrintWriter    out = new PrintWriter(
+                new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)
         ) {
+            connectedClients.add(out);
             String line;
 
             while ((line = in.readLine()) != null) {
                 System.out.println("Received: " + line);
 
-                try {
-                    CommandProtocol command = CommandProtocol.valueOf(line.toUpperCase());
+                // --- Network protocol commands ---
+                CommandProtocol netCmd = tryParseProtocol(line.split("\\s+")[0]);
 
-                    switch (command) {
+                if (netCmd != null) {
+                    switch (netCmd) {
+
                         case PING:
-                            out.println(CommandProtocol.PONG);
-                            System.out.println("Sent: PONG");
+                            // The client sends PING, we reply with PONG TIME=<ms>
+                            long t0 = System.currentTimeMillis();
+                            // (server processing time — client-side RTT will be measured separately)
+                            long elapsed = System.currentTimeMillis() - t0;
+                            out.println("PONG TIME=" + elapsed + "ms");
+                            System.out.println("Sent: PONG TIME=" + elapsed + "ms");
                             break;
 
                         case QUIT:
                             out.println(CommandProtocol.BYE);
-                            System.out.println("Sent: BYE");
-                            System.out.println("Client disconnected gracefully");
+                            System.out.println("Client disconnected gracefully.");
+                            connectedClients.remove(out);
                             return;
 
                         default:
                             out.println(CommandProtocol.ERROR);
-                            System.out.println("Sent: ERROR (unknown command)");
                     }
+                    continue;
+                }
 
-                } catch (IllegalArgumentException e) {
-                    out.println(CommandProtocol.ERROR);
-                    System.out.println("Sent: ERROR (invalid command: " + line + ")");
+                // --- Game commands → delegated to the GameController ---
+                String[] tokens      = line.trim().split("\\s+", 2);
+                String   commandName = tokens[0];
+                String[] args        = tokens.length > 1
+                                       ? tokens[1].split("\\s+")
+                                       : new String[0];
+                try {
+                    controller.executeCommand(commandName, args);
+                    out.println("OK");
+                } catch (Exception e) {
+                    out.println("ERROR: " + e.getMessage());
+                    System.err.println("Command error: " + e.getMessage());
                 }
             }
 
+        } catch (SocketTimeoutException e) {
+            System.out.println("Client timed out after 1 minute of inactivity.");
         } catch (IOException e) {
-            System.out.println("Client disconnected: " + e.getMessage());
+            System.out.println("Client disconnected unexpectedly: " + e.getMessage());
         }
     }
 
-    public static void main(String[] args) {
-        String serverName = "GameServer-1";
-        int port = 12345;
+    // -------------------------------------------------------------------------
+    // Utilities
+    // -------------------------------------------------------------------------
 
-        // Parser les arguments de ligne de commande si fournis
-        if (args.length >= 1) {
-            serverName = args[0];
-        }
-        if (args.length >= 2) {
-            try {
-                port = Integer.parseInt(args[1]);
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid port number. Using default: 12345");
-            }
-        }
-
-        GameServer server = new GameServer(serverName, port);
-
-        // Ajouter un shutdown hook pour arrêter proprement le serveur
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("\nShutting down server...");
-            server.stop();
-        }));
-
+    private CommandProtocol tryParseProtocol(String token) {
         try {
-            server.start();
-        } catch (IOException e) {
-            System.err.println("Failed to start server: " + e.getMessage());
-            e.printStackTrace();
+            return CommandProtocol.valueOf(token.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 }

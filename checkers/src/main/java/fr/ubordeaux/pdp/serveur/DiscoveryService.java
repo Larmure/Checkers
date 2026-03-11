@@ -19,7 +19,7 @@ public class DiscoveryService implements Runnable {
     @Override
     public void run() {
         try (DatagramSocket socket = new DatagramSocket()) {
-            socket.setBroadcast(true); // activation du broadcast
+            socket.setBroadcast(true); 
             InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255"); // broadcast
 
             String localIp = InetAddress.getLocalHost().getHostAddress();

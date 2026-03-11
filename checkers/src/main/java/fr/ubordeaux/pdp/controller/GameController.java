@@ -12,6 +12,9 @@ import fr.ubordeaux.pdp.controller.commands.PauseCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitCommand;
 import fr.ubordeaux.pdp.controller.commands.RedoCommand;
 import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.controller.commands.SetCommand;
 import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
@@ -28,7 +31,10 @@ import fr.ubordeaux.pdp.view.GameView;
  * It interprets user inputs as {@link Command} objects and updates the game
  * state.
  *
- * @version 1.0
+ * This version also supports server-related commands such as *
+ * {@code server list}, {@code server start}, and {@code server stop}.
+ *
+ * @version 2.0
  */
 public class GameController {
 
@@ -84,9 +90,11 @@ public class GameController {
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
+      case "server list" -> new ServerListCommand();
+      case "server start" -> new ServerStartCommand(this, args);
+      case "server stop" -> new ServerStopCommand();
       default -> {
-        System.out.println("Unknown command: " 
-          + commandName);
+        System.out.println("Unknown command: " + commandName);
         yield null;
       }
     };
@@ -144,7 +152,7 @@ public class GameController {
   }
 
   public void displayHistory() {
-    System.out.println(game.getHistory().historyString());;
+    System.out.println(game.getHistory().historyString());
   }
 
   public void displayConfiguration() {
@@ -216,7 +224,6 @@ public class GameController {
   }
 
   public void setGame(GameCheckers loadedGame, Configuration cfg) {
-    
     this.game = loadedGame;
     this.configuration = new Configuration(cfg);
     this.game.addObserver(view);
@@ -249,23 +256,23 @@ public class GameController {
         { "h6", "d6" }
     };
 
-    System.out.println("Début de la séquence d'automatisation des coups...");
+    System.out.println("Starting move sequence...");
 
     for (String[] move : moves) {
       String from = move[0];
       String to = move[1];
 
-      System.out.println("Coup joué : " + from + "-" + to);
+      System.out.println("Move played: " + from + "-" + to);
       
       executeMove(from, to);
 
       if (game.getState() == State.FINISHED) {
-        System.out.println("La partie s'est terminée avant la fin de la séquence.");
+        System.out.println("The game ended before the sequence was completed.");
         break;
       }
     }
 
-    System.out.println("Séquence terminée.");
+    System.out.println("Sequence completed.");
   }
 
   public void undoGame(int n) {
