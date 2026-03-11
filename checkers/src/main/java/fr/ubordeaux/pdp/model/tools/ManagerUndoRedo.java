@@ -19,8 +19,8 @@ import fr.ubordeaux.pdp.model.player.PlayerColor;
  */
 public class ManagerUndoRedo {
 
-  private final History history;
-  private final Board board;
+  private History history;
+  private Board board;
 
   /**
    * Constructs a new {@code ManagerUndoRedo} instance.
@@ -142,5 +142,13 @@ public class ManagerUndoRedo {
     }
 
     return false;
+  }
+
+  public History getHistory() {
+    return history;
+  }
+  
+  public void seHistory(History h) {
+    history = h;
   }
 }

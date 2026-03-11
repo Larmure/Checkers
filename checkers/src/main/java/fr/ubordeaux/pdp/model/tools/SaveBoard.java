@@ -3,7 +3,6 @@ package fr.ubordeaux.pdp.model.tools;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
@@ -12,13 +11,11 @@ import fr.ubordeaux.pdp.model.core.GameCheckers;
 public class SaveBoard {
 
     private Board b;
-    private final int n;
     private GameCheckers GH;
     private final String saveDirectory = System.getProperty("user.dir") + File.separator + "Sauvegarde";
 
     public SaveBoard(Board b, GameCheckers g) {
         this.b = b;
-        this.n = b.getSizeBoard();
         this.GH = g;
     }
 
@@ -26,7 +23,7 @@ public class SaveBoard {
      * MAIN SAVE METHOD
      * F21: Mandatory order [settings] -> [game] -> [history]
      */
-    public void saveToFile(String fileName) {
+    public void saveToFile(String fileName) throws Exception{
         createSaveDirectory();
         File file = new File(saveDirectory + File.separator + fileName);
         Configuration config = GH.getConfiguration();
@@ -59,7 +56,7 @@ public class SaveBoard {
 
             // --- SECTION 2: [game] (F21) ---
             writer.write("[game] # Current board state\n");
-            writer.write(generateBoardString());
+            writer.write(b.boardString());
             writer.write("\n");
 
             // --- SECTION 3: [history] (F21) ---
@@ -68,49 +65,7 @@ public class SaveBoard {
 
             System.out.println("Save successful: " + file.getPath());
 
-        } catch (IOException e) {
-            System.err.println("Save Error: " + e.getMessage());
         }
-    }
-
-    /**
-     * Generates the ASCII board string
-     */
-    public String generateBoardString() {
-        StringBuilder sb = new StringBuilder();
-        for (int row = 0; row < n; row++) {
-            for (int col = 0; col < n; col++) {
-                if ((row + col) % 2 != 0) {
-                    sb.append("-"); // Light squares
-                } else {
-                    int cellIndex = (row * n + col) / 2;
-                    sb.append(getCharForCell(cellIndex));
-                }
-                if (col < n - 1)
-                    sb.append(" ");
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Fills the board with pieces based on bitboards
-     */
-    private char getCharForCell(int index) {
-        if (b.isBitBlackChecker(index)) {
-            return 'X';
-        }
-        if (b.isBitWhiteChecker(index)) {
-            return 'O';
-        }
-        if (b.isBitBlackPawn(index)) {
-            return 'x';
-        }
-        if (b.isBitWhitePawn(index)) {
-            return 'o';
-        }
-        return '-';
     }
 
     private void createSaveDirectory() {

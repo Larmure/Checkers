@@ -117,7 +117,7 @@ class CommandsTest {
 
     @Test
     void testQuitCommandHelp() {
-        QuitCommand quit = new QuitCommand();
+        QuitCommand quit = new QuitCommand(controller);
         String help = quit.getHelp();
         assertNotNull(help);
         assertEquals(Internationalization.get("quit.help"), help);

@@ -35,8 +35,15 @@ public class SaveCommand implements Command, Helpable {
       return;
     }
 
-    new SaveBoard(game.getBoard(), game).saveToFile(fileName);
+
+    try {
+      new SaveBoard(game.getBoard(), game).saveToFile(fileName);
+      controller.markAsSaved(); 
+    } catch (Exception e) {
+      System.err.println("Save Error: " + e.getMessage());
+    }
   }
+
 
   @Override
   public String getHelp() {

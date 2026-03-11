@@ -8,8 +8,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import fr.ubordeaux.pdp.model.core.Board;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
-import fr.ubordeaux.pdp.model.core.Configuration;;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;;
 public class LoadBoard {
 
     private Board board;

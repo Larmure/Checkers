@@ -107,7 +107,7 @@ public class History {
       }
 
       line += "\n";
-      h = line + h;
+      h += line;
     }
     return h;
 	}
@@ -161,6 +161,10 @@ public class History {
     public Move getMove() {
       return move;
     }
+  }
+
+  public int getSize() {
+    return history.size();
   }
 
 }

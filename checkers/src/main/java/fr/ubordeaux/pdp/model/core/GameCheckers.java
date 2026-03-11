@@ -31,7 +31,6 @@ public class GameCheckers implements Subject {
   private List<GameView> observers;
   private Configuration configuration;
   private ManagerUndoRedo managerUndoRedo;
-  private History history;
   /**
    * Constructs a new game instance.
    * *
@@ -44,7 +43,6 @@ public class GameCheckers implements Subject {
    */
 
   public GameCheckers(Configuration cfg) {
-    this.history=new History();
     this .configuration=cfg;
     this.board = new Board(cfg.getSize());
     this.isWhiteTurn = true;
@@ -317,10 +315,13 @@ public class GameCheckers implements Subject {
       notifyObservers();
     }
   }
-  public void setHistory(History history) {
-    this.history = history;
-  }
+
+
   public History getHistory() {
-    return this.history;
+    return managerUndoRedo.getHistory();
+  }
+
+  public void setHistory(History h) {
+    managerUndoRedo.seHistory(h);
   }
 }

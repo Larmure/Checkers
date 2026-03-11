@@ -51,7 +51,7 @@ public class Utils {
   public static final Map<String, Command> COMMANDS_MAP = Map.ofEntries(
       Map.entry("new", new NewCommand(null, null)),
       Map.entry("help", new HelpCommand(null)),
-      Map.entry("quit", new QuitCommand()),
+      Map.entry("quit", new QuitCommand(null)),
       Map.entry("load", new LoadCommand(null, null)),
       Map.entry("save", new SaveCommand(null, null)),
       Map.entry("pause", new PauseCommand(null, null)),
