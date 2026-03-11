@@ -42,7 +42,7 @@ public class GameController {
 
   private Timer blitzTimer;
 
-  /** History size at the time of the last save.*/
+  /** History size at the time of the last save. */
   private int lastSavedMoveCount = 0;
 
   /**
@@ -85,8 +85,8 @@ public class GameController {
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
       default -> {
-        System.out.println("Unknown command: " 
-          + commandName);
+        System.out.println("Unknown command: "
+            + commandName);
         yield null;
       }
     };
@@ -99,10 +99,7 @@ public class GameController {
   /**
    * Business logic trigger to initialize a fresh game session.
    * 
-   * @param blitz   Whether the blitz mode (fast-paced) is enabled.
-   * @param contest Whether the contest mode (tournament rules) is enabled.
-   * @param time    The time limit per player in seconds (0 for no limit).
-   * @param size    The board dimension (standard is 8).
+   * @param configuration The configuration options for the new game.
    */
   public void startNewGame(Configuration configuration) {
     System.out.println("Initializing new game with options: " + configuration);
@@ -136,7 +133,7 @@ public class GameController {
       System.out.println(game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
-    
+
   }
 
   public void displayBoard() {
@@ -144,7 +141,8 @@ public class GameController {
   }
 
   public void displayHistory() {
-    System.out.println(game.getHistory().historyString());;
+    System.out.println(game.getHistory().historyString());
+    ;
   }
 
   public void displayConfiguration() {
@@ -216,7 +214,7 @@ public class GameController {
   }
 
   public void setGame(GameCheckers loadedGame, Configuration cfg) {
-    
+
     this.game = loadedGame;
     this.configuration = new Configuration(cfg);
     this.game.addObserver(view);
@@ -256,7 +254,7 @@ public class GameController {
       String to = move[1];
 
       System.out.println("Coup joué : " + from + "-" + to);
-      
+
       executeMove(from, to);
 
       if (game.getState() == State.FINISHED) {

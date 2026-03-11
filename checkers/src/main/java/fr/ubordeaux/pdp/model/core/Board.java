@@ -319,7 +319,7 @@ public class Board {
   /**
    * Returns {@code true} if the given side has no pieces remaining on the board.
    *
-   * @param isWhite {@code true} to check the white side; {@code false} for black
+   * @param p the player color to check
    * @return {@code true} when all bitboards for that colour are zero
    */
   public boolean noPiecesLeft(PlayerColor p) {
@@ -338,7 +338,6 @@ public class Board {
   public int getIndexMax() {
     return this.indexMax;
   }
-
 
   // ---------------------------------------------------------------------------
   // Bitboard mutation helpers
@@ -1078,7 +1077,7 @@ public class Board {
       for (int col = 0; col < sizeBoard; col++) {
         int bitIndex = boardToBitIndex(row, col);
         sb.append(cellString(bitIndex));
-        
+
       }
       sb.append("\n");
     }
@@ -1093,7 +1092,7 @@ public class Board {
   }
 
   private String cellString(int bitIndex) {
-    String res ="";
+    String res = "";
     if (bitIndex == -1) {
       res = "_  ";
     } else if (isBitWhitePawn(bitIndex)) {
@@ -1119,7 +1118,7 @@ public class Board {
       for (int col = 0; col < sizeBoard; col++) {
         int bitIndex = boardToBitIndex(row, col);
         sb.append(cellString(bitIndex));
-        
+
       }
       sb.append("\n");
     }
@@ -1226,7 +1225,6 @@ public class Board {
     addBlackPawn(f);
   }
 
-
   public void clearBoard() {
     whitePawns1 = whitePawns2 = 0L;
     blackPawns1 = blackPawns2 = 0L;
@@ -1252,6 +1250,4 @@ public class Board {
     return sizeBoard;
   }
 
-
-  
 }

@@ -70,7 +70,6 @@ public class CommandLineInterface extends GameView {
 
   /**
    * Reacts to notifications from the observed model.
-   * Typically triggers a new {@link #display()} to show updated game state.
    */
   @Override
   public void update(GameCheckers gameCheckers) {
