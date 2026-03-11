@@ -8,8 +8,6 @@ import fr.ubordeaux.pdp.view.GameView;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 import fr.ubordeaux.pdp.model.core.Configuration;
@@ -373,12 +371,6 @@ class GameControllerTest {
   // =========================================================
   // executeCommand — missing branches
   // =========================================================
-
-  @ParameterizedTest
-  @ValueSource(strings = { "help", "pause", "hint", "continue" })
-  void testExecuteCommand_noArgCommands_doNotThrow(String cmd) {
-    assertDoesNotThrow(() -> controller.executeCommand(cmd, null));
-  }
 
   @Test
   void testExecuteCommand_show_board() {

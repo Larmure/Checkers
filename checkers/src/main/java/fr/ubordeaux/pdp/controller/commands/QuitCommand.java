@@ -19,13 +19,21 @@ public class QuitCommand implements Command, Helpable {
 
   private final GameController controller;
 
+  private final Runnable exitAction;
+
   /**
    * Constructs a QuitCommand with the given game controller.
    *
-   * @param controller the game controller to access game state and save functionality
+   * @param controller the game controller to access game state and save
+   *                   functionality
    */
   public QuitCommand(GameController controller) {
+    this(controller, () -> System.exit(0));
+  }
+
+  public QuitCommand(GameController controller, Runnable exitAction) {
     this.controller = controller;
+    this.exitAction = exitAction;
   }
 
   /**
@@ -65,7 +73,7 @@ public class QuitCommand implements Command, Helpable {
     }
 
     System.out.println(Internationalization.get("quit.execute"));
-    System.exit(0);
+    exitAction.run();
   }
 
   /**
