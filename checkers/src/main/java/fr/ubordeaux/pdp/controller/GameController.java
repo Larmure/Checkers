@@ -1,4 +1,3 @@
-
 package fr.ubordeaux.pdp.controller;
 
 import java.util.Timer;
@@ -43,6 +42,9 @@ public class GameController {
 
   private Timer blitzTimer;
 
+  /** History size at the time of the last save.*/
+  private int lastSavedMoveCount = 0;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -72,7 +74,7 @@ public class GameController {
     Command command = switch (commandName.toLowerCase()) {
       case "new" -> new NewCommand(this, args);
       case "help" -> new HelpCommand(args);
-      case "quit" -> new QuitCommand();
+      case "quit" -> new QuitCommand(this);
       case "pause" -> new PauseCommand(blitzTimer, game);
       case "load" -> new LoadCommand(this, args);
       case "save" -> new SaveCommand(this, args);
@@ -83,8 +85,8 @@ public class GameController {
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
       default -> {
-        System.out.println("Unknown command: "
-            + commandName);
+        System.out.println("Unknown command: " 
+          + commandName);
         yield null;
       }
     };
@@ -96,7 +98,7 @@ public class GameController {
 
   /**
    * Business logic trigger to initialize a fresh game session.
-   *
+   * 
    * @param blitz   Whether the blitz mode (fast-paced) is enabled.
    * @param contest Whether the contest mode (tournament rules) is enabled.
    * @param time    The time limit per player in seconds (0 for no limit).
@@ -116,6 +118,7 @@ public class GameController {
     }
 
     displayBoard();
+    markAsSaved();
   }
 
   public void executeMove(String from, String to) {
@@ -133,7 +136,7 @@ public class GameController {
       System.out.println(game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
-
+    
   }
 
   public void displayBoard() {
@@ -213,11 +216,12 @@ public class GameController {
   }
 
   public void setGame(GameCheckers loadedGame, Configuration cfg) {
-
+    
     this.game = loadedGame;
     this.configuration = new Configuration(cfg);
     this.game.addObserver(view);
     displayBoard();
+    markAsSaved();
   }
 
   public boolean isWhiteIsAi() {
@@ -244,4 +248,26 @@ public class GameController {
     return configuration.isBlitz();
   }
 
+  /**
+   * Checks if the current game state has modifications since the last save.
+   * It compares the current history size with the history size at the last save.
+   *
+   * @return true if there are unsaved moves.
+   */
+  public boolean hasUnsavedChanges() {
+    if (game == null || game.getHistory() == null) {
+      return false;
+    }
+    int currentSize = game.getHistory().getSize();
+    return currentSize != lastSavedMoveCount;
+  }
+
+  /**
+   * Updates the save tracker to the current history size.
+   */
+  public void markAsSaved() {
+    if (game != null && game.getHistory() != null) {
+      this.lastSavedMoveCount = game.getHistory().getSize();
+    }
+  }
 }

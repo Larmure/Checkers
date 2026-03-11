@@ -1,6 +1,9 @@
 package fr.ubordeaux.pdp.controller.commands;
 
+import java.util.Scanner;
+
 import fr.ubordeaux.pdp.controller.Command;
+import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.core.*;
 import fr.ubordeaux.pdp.model.tools.*;
@@ -14,16 +17,53 @@ import fr.ubordeaux.pdp.model.tools.*;
  */
 public class QuitCommand implements Command, Helpable {
 
+  private final GameController controller;
+
+  /**
+   * Constructs a QuitCommand with the given game controller.
+   *
+   * @param controller the game controller to access game state and save functionality
+   */
+  public QuitCommand(GameController controller) {
+    this.controller = controller;
+  }
+
   /**
    * Executes the quit sequence.
-   * Displays a termination message and shuts down the Java Virtual Machine (JVM)
-   * with a status code of 0 (successful termination).
-   *
-   * <p>
-   * TODO: We should ask if the user want to save before leaving. [F16]
+   * Prompts the user to save if there are unsaved changes. Displays a termination
+   * message and exit with a status code of 0.
    */
   @Override
   public void execute() {
+    if (controller.hasUnsavedChanges() && controller.getGame() != null) {
+      @SuppressWarnings("resource")
+      Scanner scanner = new Scanner(System.in);
+      boolean handled = false;
+
+      while (!handled) {
+        System.out.print(Internationalization.get("quit.save"));
+        String input = scanner.nextLine().trim();
+
+        if (input.equalsIgnoreCase("y")) {
+          System.out.print(Internationalization.get("quit.path"));
+          String path = scanner.nextLine().trim();
+
+          try {
+            GameCheckers game = controller.getGame();
+            new SaveBoard(game.getBoard(), game).saveToFile(path);
+            System.out.println(Internationalization.get("quit.save.ok"));
+            handled = true;
+          } catch (Exception e) {
+            // If an error occurs, the loop continues to ask the user again
+            System.err.println(Internationalization.get("quit.save.error", e.getMessage()));
+          }
+        } else {
+          // Any input other than 'y' or 'Y' is treated as default 'N'
+          handled = true;
+        }
+      }
+    }
+
     System.out.println(Internationalization.get("quit.execute"));
     System.exit(0);
   }

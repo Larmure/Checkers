@@ -163,4 +163,8 @@ public class History {
     }
   }
 
+  public int getSize() {
+    return history.size();
+  }
+
 }

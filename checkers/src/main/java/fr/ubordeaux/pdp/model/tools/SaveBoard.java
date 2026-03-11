@@ -3,7 +3,6 @@ package fr.ubordeaux.pdp.model.tools;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
@@ -24,7 +23,7 @@ public class SaveBoard {
      * MAIN SAVE METHOD
      * F21: Mandatory order [settings] -> [game] -> [history]
      */
-    public void saveToFile(String fileName) {
+    public void saveToFile(String fileName) throws Exception{
         createSaveDirectory();
         File file = new File(saveDirectory + File.separator + fileName);
         Configuration config = GH.getConfiguration();
@@ -66,8 +65,6 @@ public class SaveBoard {
 
             System.out.println("Save successful: " + file.getPath());
 
-        } catch (IOException e) {
-            System.err.println("Save Error: " + e.getMessage());
         }
     }
 
