@@ -14,7 +14,7 @@ import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.*;
 import fr.ubordeaux.pdp.model.tools.*;
 import fr.ubordeaux.pdp.view.*;
-import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -35,7 +35,7 @@ public class App {
 
   /** Exit code for GUI. */
   public static final int EXIT_GUI = 3;
-
+  
   /** Flag to enable verbose. */
   private static boolean verbose = Utils.DEFAULT_VERBOSE;
 
@@ -70,19 +70,27 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
-    } // else if (status == EXIT_GUI) {
-      // TODO
-    // }
+    } 
 
     // Status EXIT_SUCCESS means continue execution normally
-    GameView view = new CommandLineInterface(verbose, debug);
+    
+    GameView view;
+    if (status == EXIT_GUI) {
+        view = new GraphicalUserInterface(); 
+    } else {
+        view = new CommandLineInterface(verbose, debug);
+    }
     GameController controller = new GameController(view);
     controller.start();
+
     controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteIsAI, blackIsAI));
-    try {
-      ((CommandLineInterface) view).join();
-    } catch (InterruptedException ex) {
-      System.exit(0);
+
+    if (status != EXIT_GUI) {
+        try {
+            ((CommandLineInterface) view).join();
+        } catch (InterruptedException ex) {
+            System.exit(0);
+        }
     }
   }
 
@@ -156,7 +164,8 @@ public class App {
 
       if (cmd.hasOption("g")) {
         System.out.println(Internationalization.get("app.gui.launch"));
-        // return EXIT_GUI;
+        //isGui = true;
+        return EXIT_GUI;
       }
 
       if (cmd.hasOption("b")) {
