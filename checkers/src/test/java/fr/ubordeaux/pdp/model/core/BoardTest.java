@@ -241,9 +241,8 @@ class BoardTest {
     int fromWhite = board.squareToIndex("C3");
     int toWhite = board.squareToIndex("E5");
 
-    Move whiteCapture =
-        new Move(List.of(fromWhite, toWhite),
-            List.of(board.squareToIndex("D4")));
+    Move whiteCapture = new Move(List.of(fromWhite, toWhite),
+        List.of(board.squareToIndex("D4")));
     board.applyMove(whiteCapture);
 
     assertFalse(board.isWhiteChecker("C3"),
@@ -263,9 +262,8 @@ class BoardTest {
     int fromBlack = board.squareToIndex("H8");
     int toBlack = board.squareToIndex("F6");
 
-    Move blackCapture =
-        new Move(List.of(fromBlack, toBlack),
-            List.of(board.squareToIndex("G7")));
+    Move blackCapture = new Move(List.of(fromBlack, toBlack),
+        List.of(board.squareToIndex("G7")));
     board.applyMove(blackCapture);
 
     assertFalse(board.isBlackChecker("H8"),
@@ -275,7 +273,6 @@ class BoardTest {
     assertFalse(board.isWhitePawn("G7"),
         "G7 must be empty after capture");
   }
-
 
   // ----------------------------
   // GET VALID MOVES (12x12)
@@ -397,8 +394,10 @@ class BoardTest {
 
     for (Move move : moves) {
       int toRow = move.getTo() / (12 / 2);
-      if (toRow > fromRow) hasForward = true;
-      if (toRow < fromRow) hasBackward = true;
+      if (toRow > fromRow)
+        hasForward = true;
+      if (toRow < fromRow)
+        hasBackward = true;
     }
 
     assertTrue(hasForward, "Checker must be able to move forward");
@@ -472,7 +471,8 @@ class BoardTest {
     Board board = new Board(12);
     clearBoard(board, 12);
 
-    // Checker in corner A1 — on a 12x12 board, NE diagonal has up to 11 free squares.
+    // Checker in corner A1 — on a 12x12 board, NE diagonal has up to 11 free
+    // squares.
     board.addWhite("A1");
     board.promote("A1");
 
@@ -489,7 +489,8 @@ class BoardTest {
     List<Move> whiteMoves = board.getWhiteValidMoves();
     List<Move> blackMoves = board.getBlackValidMoves();
 
-    // On a 12x12 board, the front row of white has 6 pawns, each with up to 2 moves.
+    // On a 12x12 board, the front row of white has 6 pawns, each with up to 2
+    // moves.
     assertTrue(whiteMoves.size() >= 6 && whiteMoves.size() <= 24,
         "White should have between 6 and 24 simple moves at start of 12x12");
     assertTrue(blackMoves.size() >= 6 && blackMoves.size() <= 24,
@@ -515,7 +516,7 @@ class BoardTest {
   void testNoPiecesLeftFalseAtStart12x12() {
     Board board = new Board(12);
 
-    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White should have pieces at start");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE), "White should have pieces at start");
     assertFalse(board.noPiecesLeft(PlayerColor.BLACK), "Black should have pieces at start");
   }
 
@@ -524,7 +525,7 @@ class BoardTest {
     Board board = new Board(12);
     clearBoard(board, 12);
 
-    assertTrue(board.noPiecesLeft(PlayerColor.WHITE),  "White should have no pieces after clear");
+    assertTrue(board.noPiecesLeft(PlayerColor.WHITE), "White should have no pieces after clear");
     assertTrue(board.noPiecesLeft(PlayerColor.BLACK), "Black should have no pieces after clear");
   }
 
@@ -535,8 +536,8 @@ class BoardTest {
 
     board.addWhite("F6");
 
-    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White has a pawn — noPiecesLeft must be false");
-    assertTrue(board.noPiecesLeft(PlayerColor.BLACK),  "Black has no pieces — noPiecesLeft must be true");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE), "White has a pawn — noPiecesLeft must be false");
+    assertTrue(board.noPiecesLeft(PlayerColor.BLACK), "Black has no pieces — noPiecesLeft must be true");
   }
 
   @Test
@@ -546,7 +547,7 @@ class BoardTest {
 
     board.addBlack("G7");
 
-    assertTrue(board.noPiecesLeft(PlayerColor.WHITE),   "White has no pieces — noPiecesLeft must be true");
+    assertTrue(board.noPiecesLeft(PlayerColor.WHITE), "White has no pieces — noPiecesLeft must be true");
     assertFalse(board.noPiecesLeft(PlayerColor.BLACK), "Black has a pawn — noPiecesLeft must be false");
   }
 
@@ -558,8 +559,8 @@ class BoardTest {
     board.addWhite("F6");
     board.promote("F6");
 
-    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White has a checker — noPiecesLeft must be false");
-    assertTrue(board.noPiecesLeft(PlayerColor.BLACK),  "Black has no pieces — noPiecesLeft must be true");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE), "White has a checker — noPiecesLeft must be false");
+    assertTrue(board.noPiecesLeft(PlayerColor.BLACK), "Black has no pieces — noPiecesLeft must be true");
   }
 
   @Test
@@ -570,7 +571,7 @@ class BoardTest {
     board.addBlack("G7");
     board.promote("G7");
 
-    assertTrue(board.noPiecesLeft(PlayerColor.WHITE),   "White has no pieces — noPiecesLeft must be true");
+    assertTrue(board.noPiecesLeft(PlayerColor.WHITE), "White has no pieces — noPiecesLeft must be true");
     assertFalse(board.noPiecesLeft(PlayerColor.BLACK), "Black has a checker — noPiecesLeft must be false");
   }
 
@@ -589,8 +590,8 @@ class BoardTest {
     Move capture = new Move(List.of(from, to), List.of(captured));
     board.applyMove(capture);
 
-    assertFalse(board.noPiecesLeft(PlayerColor.WHITE),  "White still has its pawn after capture");
-    assertTrue(board.noPiecesLeft(PlayerColor.BLACK),  "Black has no pieces left after being captured");
+    assertFalse(board.noPiecesLeft(PlayerColor.WHITE), "White still has its pawn after capture");
+    assertTrue(board.noPiecesLeft(PlayerColor.BLACK), "Black has no pieces left after being captured");
   }
 
   @Test
@@ -622,8 +623,7 @@ class BoardTest {
     board.addBlack("F6");
 
     List<Move> moves = board.getWhiteValidMoves();
-    List<Move> captures =
-        moves.stream().filter(Move::isCapture).toList();
+    List<Move> captures = moves.stream().filter(Move::isCapture).toList();
 
     assertFalse(captures.isEmpty(),
         "White pawn should have a multiple capture");
@@ -672,8 +672,8 @@ class BoardTest {
     // Récupérer tous les coups valides pour les blancs
     List<Move> moves = board.getWhiteValidMoves();
     List<Move> captures = moves.stream()
-                              .filter(Move::isCapture)
-                              .toList();
+        .filter(Move::isCapture)
+        .toList();
 
     assertFalse(captures.isEmpty(), "Le checker blanc devrait avoir au moins une capture");
 
@@ -682,8 +682,10 @@ class BoardTest {
 
     for (Move move : captures) {
       for (int captured : move.getCaptured()) {
-        if (captured == board.squareToIndex("D4")) foundBlack1 = true;
-        if (captured == board.squareToIndex("F6")) foundBlack2 = true;
+        if (captured == board.squareToIndex("D4"))
+          foundBlack1 = true;
+        if (captured == board.squareToIndex("F6"))
+          foundBlack2 = true;
       }
     }
 
@@ -709,8 +711,8 @@ class BoardTest {
     // Récupérer tous les coups valides pour les noirs
     List<Move> moves = board.getBlackValidMoves();
     List<Move> captures = moves.stream()
-                              .filter(Move::isCapture)
-                              .toList();
+        .filter(Move::isCapture)
+        .toList();
 
     assertFalse(captures.isEmpty(), "Le checker noir doit avoir au moins une capture");
 
@@ -720,9 +722,12 @@ class BoardTest {
 
     for (Move move : captures) {
       for (int captured : move.getCaptured()) {
-        if (captured == board.squareToIndex("G7")) capturedPawn1 = true;
-        if (captured == board.squareToIndex("E5")) capturedPawn2 = true;
-        if (captured == board.squareToIndex("C3")) capturedChecker = true;
+        if (captured == board.squareToIndex("G7"))
+          capturedPawn1 = true;
+        if (captured == board.squareToIndex("E5"))
+          capturedPawn2 = true;
+        if (captured == board.squareToIndex("C3"))
+          capturedChecker = true;
       }
     }
 
@@ -791,9 +796,12 @@ class BoardTest {
     boolean found1 = false, found2 = false, found3 = false;
     for (Move move : captures) {
       for (int cap : move.getCaptured()) {
-        if (cap == white1) found1 = true;
-        if (cap == white2) found2 = true;
-        if (cap == white3) found3 = true;
+        if (cap == white1)
+          found1 = true;
+        if (cap == white2)
+          found2 = true;
+        if (cap == white3)
+          found3 = true;
       }
     }
 
@@ -958,16 +966,16 @@ class BoardTest {
   void testToStringContainsWhitePawnSymbol12x12() {
     Board board = new Board(12);
 
-    assertTrue(board.toString().contains("w"),
-        "toString must contain 'w' for white pawns at start");
+    assertTrue(board.toString().contains("o"),
+        "toString must contain 'o' for white pawns at start");
   }
 
   @Test
   void testToStringContainsBlackPawnSymbol12x12() {
     Board board = new Board(12);
 
-    assertTrue(board.toString().contains("b"),
-        "toString must contain 'b' for black pawns at start");
+    assertTrue(board.toString().contains("x"),
+        "toString must contain 'x' for black pawns at start");
   }
 
   @Test
@@ -986,8 +994,8 @@ class BoardTest {
     board.addWhite("F6");
     board.promote("F6");
 
-    assertTrue(board.toString().contains("W"),
-        "toString must contain 'W' for a white checker");
+    assertTrue(board.toString().contains("O"),
+        "toString must contain 'O' for a white checker");
   }
 
   @Test
@@ -1015,7 +1023,7 @@ class BoardTest {
     assertFalse(withoutRowLabels.contains("W"), "Empty board must not contain white checker symbol");
     assertFalse(withoutRowLabels.contains("b"), "Empty board must not contain black pawn symbol");
     assertFalse(withoutRowLabels.contains("B"), "Empty board must not contain black checker symbol");
-    assertTrue(board.toString().contains("_"),  "Empty board must still contain '_' for squares");
+    assertTrue(board.toString().contains("_"), "Empty board must still contain '_' for squares");
   }
 
   @Test
@@ -1043,7 +1051,7 @@ class BoardTest {
 
     // After the move, C3 row/col area should show '_' and D4 should show 'w'.
     // We verify the global symbol counts shifted (one 'w' present, none at C3).
-    assertTrue(output.contains("w"),
+    assertTrue(output.contains("o"),
         "toString must still contain 'w' after a move");
   }
 
@@ -1052,9 +1060,10 @@ class BoardTest {
     Board board = new Board(12);
     String output = board.toString();
 
-    // On a 12x12 board: 5 rows × 6 pawns per row = 30 white pawns and 30 black pawns.
-    long whiteCount = output.chars().filter(c -> c == 'w').count();
-    long blackCount = output.chars().filter(c -> c == 'b').count();
+    // On a 12x12 board: 5 rows × 6 pawns per row = 30 white pawns and 30 black
+    // pawns.
+    long whiteCount = output.chars().filter(c -> c == 'o').count();
+    long blackCount = output.chars().filter(c -> c == 'x').count();
 
     assertEquals(30, whiteCount,
         "There must be exactly 30 white pawns ('w') at the start of a 12x12 game");
