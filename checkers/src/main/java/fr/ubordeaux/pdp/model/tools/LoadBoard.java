@@ -1,5 +1,8 @@
 package fr.ubordeaux.pdp.model.tools;
 
+import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -7,272 +10,377 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import fr.ubordeaux.pdp.model.core.Board;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
-
+/**
+ * Loads a saved game from a structured text file.
+ *
+ * <p>The file contains three mandatory sections:
+ *
+ * <ul>
+ *   <li>{@code [settings]} for configuration values</li>
+ *   <li>{@code [game]} for the board layout</li>
+ *   <li>{@code [history]} for move history</li>
+ * </ul>
+ *
+ * <p>Comments are removed before parsing:
+ *
+ * <ul>
+ *   <li>{@code # ...} for inline comments</li>
+ *   <li>{@code { ... }} for block comments</li>
+ * </ul>
+ */
 public class LoadBoard {
 
-    private Board board;
-    private GameCheckers game;
-    private final String saveDirectory = System.getProperty("user.dir") + File.separator + "Sauvegarde";
-    private int currentBoardRow = 0;
-    private boolean gameSectionInitialized = false;
-    private boolean seenGame = false;
-    private boolean seenSettings = false;
-    private boolean seenHistory = false;
-    private StringBuilder historyBuffer = new StringBuilder();
-    private long wp1, wp2, bp1, bp2, wc1, wc2, bc1, bc2;
+  private static final String SAVE_DIRECTORY =
+        System.getProperty("user.dir") + File.separator + "Sauvegarde";
 
-    public LoadBoard(Board board, GameCheckers game) {
-        this.board = board;
-        this.game = game;
+  private final GameCheckers game;
+  private final Board board;
+
+  private boolean seenGame = false;
+  private boolean seenSettings = false;
+  private boolean seenHistory = false;
+
+  private boolean gameSectionInitialized = false;
+  private int currentBoardRow = 0;
+
+  private Configuration loadedConfiguration = null;
+  private Boolean loadedStartingWhite = null;
+  private int loadedBoardSize = 0;
+  private Boolean loadedBlitz = null;
+  private Boolean loadedDebug = null;
+  private Boolean loadedVerbose = null;
+
+  private StringBuilder historyBuffer = new StringBuilder();
+
+  /**
+   * Creates a loader for the given game.
+   *
+   * @param game the game to restore
+   */
+  public LoadBoard(GameCheckers game) {
+    this.game = game;
+    this.board = game.getBoard();
+  }
+
+  /**
+   * Loads game data from a file in the save directory.
+   *
+   * <p>Stops at the first format error and prints a descriptive message.
+   *
+   * @param fileName the save file name
+   */
+  public void loadGameData(String fileName) {
+    Path path = Paths.get(SAVE_DIRECTORY, fileName);
+    File file = path.toFile();
+
+    resetState();
+
+    if (!file.exists()) {
+      System.err.println("Loading error: file not found at " + path);
+      return;
     }
 
-    /**
-     * F22: Removes inline (#) and block ({}) comments.
-     */
-    private String stripComments(String line) {
-        // Remove block comments { ... }
-        line = line.replaceAll("\\{.*?\\}", "");
-        // Remove inline comments # ...
-        int hashIndex = line.indexOf('#');
-        if (hashIndex != -1) {
-            line = line.substring(0, hashIndex);
+    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+      String currentSection = "";
+      String line;
+      int lineNum = 0;
+
+      while ((line = reader.readLine()) != null) {
+        lineNum++;
+        String clean = stripComments(line);
+        if (clean.isEmpty()) {
+          continue;
         }
-        return line.trim();
+
+        if (clean.startsWith("[") && clean.endsWith("]")) {
+          currentSection = clean.toLowerCase();
+          continue;
+        }
+
+        try {
+          processSectionData(currentSection, clean);
+        } catch (Exception e) {
+          System.err.println(
+                "Format error at line "
+                      + lineNum
+                      + " ["
+                      + currentSection
+                      + "]: "
+                      + e.getMessage());
+          return;
+        }
+      }
+
+      if (!validateSections()) {
+        return;
+      }
+
+      loadedConfiguration = buildLoadedConfiguration();
+      game.setHistory(new History(historyBuffer.toString()));
+
+    } catch (IOException e) {
+      System.err.println("Critical I/O error: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Returns the loaded configuration.
+   *
+   * <p>Valid only after a successful call to {@link #loadGameData(String)}.
+   *
+   * @return the reconstructed configuration
+   */
+  public Configuration getLoadedConfiguration() {
+    return loadedConfiguration;
+  }
+
+  /** Resets parser state before loading a new file. */
+  private void resetState() {
+    historyBuffer = new StringBuilder();
+    gameSectionInitialized = false;
+    currentBoardRow = 0;
+    seenGame = false;
+    seenSettings = false;
+    seenHistory = false;
+    loadedConfiguration = null;
+    loadedStartingWhite = null;
+    loadedBoardSize = 0;
+    loadedBlitz = null;
+    loadedDebug = null;
+    loadedVerbose = null;
+  }
+
+  /**
+   * Removes inline and block comments from a line.
+   *
+   * @param line the raw input line
+   * @return the cleaned line
+   */
+  private String stripComments(String line) {
+    line = line.replaceAll("\\{.*?\\}", "");
+    int hashIndex = line.indexOf('#');
+    if (hashIndex != -1) {
+      line = line.substring(0, hashIndex);
+    }
+    return line.trim();
+  }
+
+  /**
+   * Dispatches a line to the correct section parser.
+   *
+   * @param section the current section
+   * @param data the cleaned line content
+   * @throws Exception if the data is invalid
+   */
+  private void processSectionData(String section, String data) throws Exception {
+    if (section == null || section.isEmpty()) {
+      throw new Exception("Data found outside any section header.");
     }
 
-    /**
-     * F21: Loads the file and handles sections [settings], [game], [history].
-     */
-    public void loadFromFile(String fileName) {
-        Path path = Paths.get(saveDirectory, fileName);
-        File file = path.toFile();
-        this.historyBuffer = new StringBuilder();
-        // Reset state for this load
-        this.gameSectionInitialized = false;
-        this.currentBoardRow = 0;
-        this.seenGame = false;
-        this.seenSettings = false;
-        this.seenHistory = false;
-
-        if (!file.exists()) {
-            System.err.println("Loading Error: File not found at " + path);
-            return;
+    switch (section) {
+      case "[settings]" -> {
+        seenSettings = true;
+        parseSetting(data);
+      }
+      case "[game]" -> {
+        seenGame = true;
+        if (!gameSectionInitialized) {
+          board.clearBoard();
+          currentBoardRow = 0;
+          gameSectionInitialized = true;
         }
+        parseBoardLine(data);
+      }
+      case "[history]" -> {
+        seenHistory = true;
+        historyBuffer.append(data).append("\n");
+      }
+      default -> {
+        // Unknown sections are ignored.
+      }
+    }
+  }
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            String currentSection = "";
-            int lineNum = 0;
+  /**
+   * Checks that all mandatory sections were found.
+   *
+   * @return {@code true} if the file is valid
+   */
+  private boolean validateSections() {
+    if (!seenGame) {
+      System.err.println("Format error: missing [game] section.");
+      return false;
+    }
+    if (!seenSettings) {
+      System.err.println("Format error: missing [settings] section.");
+      return false;
+    }
+    if (!seenHistory) {
+      System.err.println("Format error: missing [history] section.");
+      return false;
+    }
+    if (gameSectionInitialized && currentBoardRow != board.getSizeBoard()) {
+      System.err.println(
+            "Format error: incomplete board - expected "
+                  + board.getSizeBoard()
+                  + " rows, got "
+                  + currentBoardRow
+                  + ".");
+      return false;
+    }
+    return true;
+  }
 
-            while ((line = reader.readLine()) != null) {
-                lineNum++;
-                String cleanLine = stripComments(line);
-                if (cleanLine.isEmpty())
-                    continue;
-
-                // Detect Section Headers
-                if (cleanLine.startsWith("[") && cleanLine.endsWith("]")) {
-                    currentSection = cleanLine.toLowerCase();
-                    if (currentSection.equals("[history]")) {
-                        seenHistory = true;
-                    }
-                    continue;
-                }
-
-                try {
-                    processSectionData(currentSection, cleanLine);
-                } catch (Exception e) {
-                    System.err.println(
-                            "Format Error at line " + lineNum + " [" + currentSection + "]: " + e.getMessage());
-                    return; // stop loading on first error
-                }
-            }
-
-            // --- Final validations (tolerant mode) ---
-            if (!seenGame) {
-                System.err.println("Format Error: Missing [game] section.");
-                return;
-            }
-            if (!seenSettings) {
-                System.err.println("Format Error: Missing [game] section.");
-                return;
-            }
-            if (!seenHistory) {
-                System.err.println("Format Error: Missing [history] section.");
-                return;
-            }
-
-            if (gameSectionInitialized && currentBoardRow != board.getSizeBoard()) {
-                System.err.println("Format Error: Missing board rows in [game] section. Expected "
-                        + board.getSizeBoard() + ", got " + currentBoardRow + ".");
-                return;
-            }
-
-            game.setHistory(new History(historyBuffer.toString()));
-            System.out.println("Game successfully restored from: " + fileName);
-
-        } catch (IOException e) {
-            System.err.println("Critical IO Error: " + e.getMessage());
-        }
+  /**
+   * Parses one {@code key=value} line from the settings section.
+   *
+   * @param data the input line
+   * @throws Exception if the format or value is invalid
+   */
+  private void parseSetting(String data) throws Exception {
+    String[] parts = data.split("=", 2);
+    if (parts.length < 2) {
+      throw new Exception("Invalid key-value format (missing '=').");
     }
 
-    /**
-     * Dispatches data to specific parsers.
-     */
-    private void processSectionData(String section, String data) throws Exception {
-        if (section == null || section.isEmpty()) {
-            throw new Exception("Data found outside any section header");
-        }
-        switch (section) {
-            case "[settings]" -> {
-                seenSettings = true;
-                parseSetting(data);
-            }
-            case "[game]" -> {
-                seenGame = true;
-                if (!gameSectionInitialized) {
-                    resetBoardBitboards();
-                    wp1 = wp2 = bp1 = bp2 = wc1 = wc2 = bc1 = bc2 = 0L;
-                    currentBoardRow = 0;
-                    gameSectionInitialized = true;
-                }
-                parseBoardLine(data);
-            }
-            case "[history]" -> {
-                seenHistory = true;
-                historyBuffer.append(data).append("\n");
-            }
-            default -> {
-                return;
-            }
+    String key = parts[0].trim();
+    String value = parts[1].trim();
 
+    switch (key) {
+      case "starting-player" -> {
+        if (value.equalsIgnoreCase("white")) {
+          loadedStartingWhite = true;
+          game.setWhiteTurn(true);
+        } else if (value.equalsIgnoreCase("black")) {
+          loadedStartingWhite = false;
+          game.setWhiteTurn(false);
+        } else {
+          throw new Exception("Invalid starting player: '" + value + "'.");
         }
-        // parseHistory(data);
+      }
+      case "board-size" -> {
+        int size = Integer.parseInt(value);
+        loadedBoardSize = size;
+        if (size != board.getSizeBoard()) {
+          throw new Exception(
+                "Board size mismatch: file has "
+                      + size
+                      + ", current board is "
+                      + board.getSizeBoard()
+                      + ".");
+        }
+      }
+      case "time-mode" -> {
+        if (value.equalsIgnoreCase("blitz")) {
+          loadedBlitz = true;
+        } else if (value.equalsIgnoreCase("classic")) {
+          loadedBlitz = false;
+        } else {
+          throw new Exception("Invalid time-mode: '" + value + "'.");
+        }
+      }
+      case "debug" -> {
+        if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+          loadedDebug = Boolean.valueOf(value);
+        } else {
+          throw new Exception(
+                "Invalid debug value: '" + value + "' (expected true/false).");
+        }
+      }
+      case "verbose" -> {
+        if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+          loadedVerbose = Boolean.valueOf(value);
+        } else {
+          throw new Exception(
+                "Invalid verbose value: '" + value + "' (expected true/false).");
+        }
+      }
+      default -> {
+        // Unknown keys are ignored.
+      }
+    }
+  }
+
+  /**
+   * Rebuilds one board row from an ASCII line.
+   *
+   * @param data one board row
+   * @throws Exception if the row is invalid
+   */
+  private void parseBoardLine(String data) throws Exception {
+    String cells = data.replace(" ", "");
+    int n = board.getSizeBoard();
+
+    if (currentBoardRow >= n) {
+      throw new Exception("Too many board rows (expected " + n + ").");
+    }
+    if (cells.length() != n) {
+      throw new Exception(
+            "Board row must have " + n + " cells, got " + cells.length() + ".");
     }
 
-    private void resetBoardBitboards() {
-        board.clearBoard();
-    }
+    for (int col = 0; col < n; col++) {
+      char c = cells.charAt(col);
+      boolean playable = ((currentBoardRow + col) % 2 == 0);
 
-    /**
-     * F23: Parses key-value pairs for settings.
-     */
-    private void parseSetting(String data) throws Exception {
-        String[] parts = data.split("=", 2);
-        if (parts.length < 2) {
-            throw new Exception("Invalid key-value format (missing '=')");
+      if (!playable) {
+        if (c != '-') {
+          throw new Exception(
+                "Piece '"
+                      + c
+                      + "' on non-playable square at row "
+                      + currentBoardRow
+                      + ", col "
+                      + col
+                      + ".");
         }
-        String key = parts[0].trim();
-        String value = parts[1].trim();
+        continue;
+      }
 
-        switch (key) {
-            case "starting-player" -> {
-                if (value.equalsIgnoreCase("white")) {
-                    game.setWhiteTurn(true);
-                } else if (value.equalsIgnoreCase("black")) {
-                    game.setWhiteTurn(false);
-                } else {
-                    // F21: Robustness - if the value is wrong, we report it
-                    throw new Exception("Invalid player color: " + value);
-                }
-            }
-            case "board-size" -> {
-                int size = Integer.parseInt(value);
-                if (size != board.getSizeBoard())
-                    throw new Exception("Board size mismatch");
-            }
-            case "time-mode" -> {
-                //
-            }
-            case "debug" -> {
-                //
-            }
-            default -> {
+      if ("xoXO-".indexOf(c) == -1) {
+        throw new Exception("Invalid board character: '" + c + "'.");
+      }
 
-            }
-
-        }
-    }
-
-    /**
-     * Reconstructs the board bitboards from ASCII characters.
-     */
-    private void parseBoardLine(String data) throws Exception {
-        String cells = data.replace(" ", "");
-        int n = board.getSizeBoard();
-
-        if (currentBoardRow >= n) {
-            throw new Exception("Too many board rows (expected " + n + ")");
-        }
-
-        if (cells.length() != n) {
-            throw new Exception("Board line must have " + n + " cells, got " + cells.length());
-        }
-
-        for (int col = 0; col < n; col++) {
-            char c = cells.charAt(col);
-            boolean playable = ((currentBoardRow + col) % 2 == 0);
-
-            if (!playable) {
-                if (c != '-') {
-                    throw new Exception("Piece '" + c + "' on non-playable square at row "
-                            + currentBoardRow + ", col " + col);
-                }
-                continue;
-            }
-
-            if ("xoXO-".indexOf(c) == -1) {
-                throw new Exception("Invalid board character: '" + c + "'");
-            }
-
-            if (c != '-') {
-                int index = (currentBoardRow * n + col) / 2;
-                updateBitboard(c, index);
-            }
-        }
-
-        currentBoardRow++;
-    }
-
-    private void updateBitboard(char c, int index) {
-        long mask = 1L << (index % 64);
-        boolean part2 = index >= 64;
-
+      if (c != '-') {
+        int index = (currentBoardRow * n + col) / 2;
         switch (c) {
-            case 'x' -> {
-                if (part2) {
-                    bp2 |= mask;
-                } else {
-                    bp1 |= mask;
-                }
-            }
-            case 'o' -> {
-                if (part2) {
-                    wp2 |= mask;
-                } else {
-                    wp1 |= mask;
-                }
-            }
-            case 'X' -> {
-                if (part2) {
-                    bc2 |= mask;
-                } else {
-                    bc1 |= mask;
-                }
-            }
-            case 'O' -> {
-                if (part2) {
-                    wc2 |= mask;
-                } else {
-                    wc1 |= mask;
-                }
-            }
-            case '-' -> {
-                // no-op
-            }
-            default -> throw new IllegalArgumentException("Unknown piece char: " + c);
+          case 'x' -> board.restorePiece(index, "BP");
+          case 'o' -> board.restorePiece(index, "WP");
+          case 'X' -> board.restorePiece(index, "BC");
+          case 'O' -> board.restorePiece(index, "WC");
+          default -> {
+            // Already validated above.
+          }
         }
+      }
     }
+
+    currentBoardRow++;
+  }
+
+  /**
+   * Builds a configuration from loaded values.
+   *
+   * <p>Missing values fall back to defaults.
+   *
+   * @return the reconstructed configuration
+   */
+  public Configuration buildLoadedConfiguration() {
+    Configuration defaults = Configuration.getDefaultConfiguration();
+
+    boolean blitz = loadedBlitz != null ? loadedBlitz : defaults.isBlitz();
+    boolean verbose = loadedVerbose != null ? loadedVerbose : defaults.isVerbose();
+    boolean debug = loadedDebug != null ? loadedDebug : defaults.isDebug();
+    int size = loadedBoardSize > 0 ? loadedBoardSize : defaults.getSize();
+
+    return new Configuration(
+          blitz,
+          defaults.getTime(),
+          defaults.isContest(),
+          size,
+          verbose,
+          debug,
+          defaults.iswhiteAi(),
+          defaults.isblackAi());
+  }
 }

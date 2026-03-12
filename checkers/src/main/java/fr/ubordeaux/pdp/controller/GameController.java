@@ -9,6 +9,9 @@ import fr.ubordeaux.pdp.controller.commands.PauseCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitCommand;
 import fr.ubordeaux.pdp.controller.commands.RedoCommand;
 import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.controller.commands.SetCommand;
 import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
@@ -27,7 +30,10 @@ import java.util.TimerTask;
  * It interprets user inputs as {@link Command} objects and updates the game
  * state.
  *
- * @version 1.0
+ * <p>This version also supports server-related commands such as *
+ * {@code server list}, {@code server start}, and {@code server stop}.
+ *
+ * @version 2.0
  */
 public class GameController {
 
@@ -83,6 +89,7 @@ public class GameController {
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
       case "continue" -> new ContinueCommand(game);
+      case "server" -> resolveServerCommand(args);
       default -> {
         System.out.println("Unknown command: "
             + commandName);
@@ -93,6 +100,35 @@ public class GameController {
     if (command != null) {
       command.execute();
     }
+  }
+
+  /**
+   * Resolves a server subcommand from the provided arguments.
+   *
+   * @param args the arguments passed after {@code server}
+   * @return the matching command, or {@code null} if the input is invalid
+   */
+
+  private Command resolveServerCommand(String[] args) {
+    if (args == null || args.length == 0) {
+      System.out.println("Usage: server list | server start [PORT] | server stop");
+      return null;
+    }
+
+    String subCommand = args[0].toLowerCase();
+    String[] subArgs = new String[args.length - 1];
+    System.arraycopy(args, 1, subArgs, 0, subArgs.length);
+
+    return switch (subCommand) {
+      case "list" -> new ServerListCommand();
+      case "start" -> new ServerStartCommand(this, subArgs);
+      case "stop" -> new ServerStopCommand();
+      default -> {
+        System.out.println("Unknown server command: " + subCommand  
+            + ". Use: list | start [PORT] | stop");
+        yield null;
+      }
+    };
   }
 
   /**
@@ -278,7 +314,7 @@ public class GameController {
    * @param cfg Instance representing the settings associated with the loaded game.
    */
   public void setGame(GameCheckers loadedGame, Configuration cfg) {
-
+    
     this.game = loadedGame;
     this.configuration = new Configuration(cfg);
     this.game.addObserver(view);
@@ -305,8 +341,44 @@ public class GameController {
   }
 
   /**
-   * Undoes the last n moves in the game by invoking the undoManage method on the game instance n 
-   * times.
+   * Joue une séquence de coups prédéfinie pour des tests ou une démo.
+   */
+  public void playPredefinedSequence() {
+    String[][] moves = {
+        { "c1", "d2" }, { "f4", "e3" }, { "d2", "f4" }, { "g5", "e3" },
+        { "b2", "c1" }, { "e3", "d2" }, { "c1", "e3" }, { "f2", "b2" },
+        { "a1", "c3" }, { "f6", "e5" }, { "c3", "d4" }, { "e5", "c3" },
+        { "b4", "d2" }, { "g3", "f2" }, { "d2", "e3" }, { "f2", "d4" },
+        { "c5", "e3" }, { "g1", "f2" }, { "e3", "g1" }, { "h2", "g3" },
+        { "g1", "h2" }, { "h4", "g5" }, { "h2", "e5" }, { "g5", "f4" },
+        { "e5", "g3" }, { "f8", "e7" }, { "c7", "d6" }, { "e7", "c5" },
+        { "b6", "d4" }, { "g7", "f8" }, { "d4", "e5" }, { "f8", "e7" },
+        { "e5", "f4" }, { "h6", "g5" }, { "f4", "h6" }, { "h8", "g7" },
+        { "h6", "d6" }
+    };
+
+    System.out.println("Début de la séquence d'automatisation des coups...");
+
+    for (String[] move : moves) {
+      String from = move[0];
+      String to = move[1];
+
+      System.out.println("Coup joué : " + from + "-" + to);
+      
+      executeMove(from, to);
+
+      if (game.getState() == State.FINISHED) {
+        System.out.println("La partie s'est terminée avant la fin de la séquence.");
+        break;
+      }
+    }
+
+    System.out.println("Séquence terminée.");
+  }
+
+  /**
+   * Undoes the last n moves in the game by invoking the undoManage method on the game 
+   * instance n times. 
    *
    * @param n The number of moves to undo.
    */

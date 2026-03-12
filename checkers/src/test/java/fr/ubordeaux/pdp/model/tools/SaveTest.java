@@ -1,6 +1,5 @@
 package fr.ubordeaux.pdp.model.tools;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -164,6 +163,7 @@ public class SaveTest {
             }
         }
 
+        assertEquals( size,rowCount,"Le nombre de lignes du plateau doit correspondre à la taille (" + size + ").");
         /*assertEquals(
                 size,
                 rowCount,

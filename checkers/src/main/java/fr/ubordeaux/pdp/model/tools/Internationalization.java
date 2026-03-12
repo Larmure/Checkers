@@ -8,7 +8,7 @@ import java.util.ResourceBundle;
  * Handles application internationalization (i18n).
  * This class manages language detection based on system environment variables
  * (LANG or LC_ALL) and provides localized strings using Resource Bundles.
- * 
+ *
  * @version 1.0
  */
 public class Internationalization {

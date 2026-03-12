@@ -1,134 +1,92 @@
 package fr.ubordeaux.pdp.controller.commands;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.tools.LoadBoard;
-import fr.ubordeaux.pdp.model.tools.Utils;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+/**
+ * Loads a previously saved game from a file in the save directory.
+ *
+ * <p>The load process runs in two passes:
+ *
+ * <ol>
+ *   <li>A first pass reads the configuration from {@code [settings]} to determine
+ *       the board size and game options.</li>
+ *   <li>A second pass reconstructs the full game state (board + history) using
+ *       a {@link GameCheckers} built from the loaded configuration.</li>
+ * </ol>
+ *
+ * <p>On success, the controller is updated via
+ * {@link GameController#setGame(GameCheckers, Configuration)}.
+ */
 public class LoadCommand implements Command, Helpable {
+
+  private static final String SAVE_DIRECTORY =
+        System.getProperty("user.dir") + File.separator + "Sauvegarde";
 
   private final GameController controller;
   private final String[] args;
-
-  private final String saveDirectory = System.getProperty("user.dir") + File.separator + "Sauvegarde";
 
   public LoadCommand(GameController controller, String[] args) {
     this.controller = controller;
     this.args = args;
   }
 
+  /**
+   * Executes the load command.
+   *
+   * <p>Expected argument: the file name (e.g. {@code mygame.txt}).
+   * The file must exist in the save directory.
+   */
   @Override
   public void execute() {
-    if (args == null || args.length == 0) {
+    if (args == null || args.length == 0 || args[0].trim().isEmpty()) {
       System.out.println(getHelp());
       return;
     }
 
     String fileName = args[0].trim();
-    if (fileName.isEmpty()) {
-      System.out.println(getHelp());
+    Path path = Paths.get(SAVE_DIRECTORY, fileName);
+
+    if (!path.toFile().exists()) {
+      System.out.println("Loading error: file not found: " + path);
       return;
     }
 
-    Path path = Paths.get(saveDirectory, fileName);
-    File file = path.toFile();
-    if (!file.exists()) {
-      System.out.println("Loading Error: File not found: " + path);
+    // Pass 1: read configuration from [settings]
+    Configuration defaultConfig = Configuration.getDefaultConfiguration();
+    LoadBoard firstPass = new LoadBoard(new GameCheckers(defaultConfig));
+    firstPass.loadGameData(fileName);
+
+    Configuration loadedConfig = firstPass.getLoadedConfiguration();
+    if (loadedConfig == null) {
+      System.out.println("Loading error: could not read configuration.");
       return;
     }
 
-    // ---- Read settings first to build Configuration ----
-    Integer size = null;
-    boolean blitz = Utils.DEFAULT_BLITZ;
-    int time = Utils.DEFAULT_TIME;
-    boolean contest = Utils.DEFAULT_CONTEST;
-    boolean debug = Utils.DEFAULT_DEBUG;
-    boolean iswhiteAi = Utils.DEFAULT_WHITE_AI;
-    boolean isblackAi = Utils.DEFAULT_BLACK_AI;
+    // Pass 2: reconstruct full game state with the correct configuration
+    GameCheckers loadedGame = new GameCheckers(loadedConfig);
+    LoadBoard secondPass = new LoadBoard(loadedGame);
+    secondPass.loadGameData(fileName);
 
-    // verbose vient du controller (param runtime)
-    boolean verbose = controller.isVerbose();
-
-    String section = "";
-
-    try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-      String line;
-      while ((line = br.readLine()) != null) {
-        line = stripComments(line);
-        if (line.isEmpty())
-          continue;
-
-        if (line.startsWith("[") && line.endsWith("]")) {
-          section = line.toLowerCase();
-          // on s'arrête après settings dès qu'on passe à game/history
-          if (!section.equals("[settings]") && size != null)
-            break;
-          continue;
-        }
-
-        if (!section.equals("[settings]"))
-          continue;
-
-        String[] parts = line.split("=", 2);
-        if (parts.length < 2)
-          continue;
-
-        String key = parts[0].trim().toLowerCase();
-        String value = parts[1].trim();
-
-        switch (key) {
-          case "board-size" -> size = Integer.parseInt(value);
-          case "time-mode" -> blitz = value.equalsIgnoreCase("blitz");
-          case "debug" -> debug = Boolean.parseBoolean(value);
-
-          default -> {
-            // ignore starting-player, ai-mode, ai-depth, etc.
-          }
-        }
-      }
-    } catch (Exception e) {
-      System.out.println("Loading Error: cannot read settings: " + e.getMessage());
+    if (secondPass.getLoadedConfiguration() == null) {
+      System.out.println("Loading error: could not restore game state.");
       return;
     }
 
-    if (size == null) {
-      System.out.println("Format Error: Missing board-size in [settings].");
-      return;
-    }
-
-    Configuration cfg = new Configuration(blitz, time, contest, size, verbose, debug, iswhiteAi, isblackAi);
-
-    // ---- Create a new game with correct board size ----
-    GameCheckers loadedGame = new GameCheckers(cfg);
-
-    // ---- Load board state into that game ----
-    new LoadBoard(loadedGame.getBoard(), loadedGame).loadFromFile(fileName);
-
-    // ---- Bind to controller & view ----
-    controller.setGame(loadedGame, cfg);
-
+    controller.setGame(loadedGame, loadedConfig);
     System.out.println("Game loaded: " + fileName);
-  }
-
-  private String stripComments(String line) {
-    line = line.replaceAll("\\{.*?\\}", "");
-    int hashIndex = line.indexOf('#');
-    if (hashIndex != -1)
-      line = line.substring(0, hashIndex);
-    return line.trim();
   }
 
   @Override
   public String getHelp() {
-    return "load FILE : Load a game from a file.\nExample: load mygame.txt";
+    return "load <file> — Loads a saved game from the save directory.\n"
+      + "Example: load mygame.txt";
   }
 }

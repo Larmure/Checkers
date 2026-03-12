@@ -10,6 +10,9 @@ import fr.ubordeaux.pdp.controller.commands.PauseCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitCommand;
 import fr.ubordeaux.pdp.controller.commands.RedoCommand;
 import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.controller.commands.SetCommand;
 import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
@@ -59,7 +62,11 @@ public class Utils {
       Map.entry("redo", new RedoCommand(null, null)),
       Map.entry("show", new ShowCommand(null, null)),
       Map.entry("set", new SetCommand(null, null)),
+      Map.entry("server list", new ServerListCommand()),
+      Map.entry("server start", new ServerStartCommand(null, null)),
+      Map.entry("server stop", new ServerStopCommand()),
       Map.entry("continue", new ContinueCommand(null)));
+      
 
   /**
    * A formatted list of all available commands and their expected syntax.
@@ -76,7 +83,10 @@ public class Utils {
       "undo [N]",
       "redo [N]",
       "show board|history|time|configuration",
-      "set PARAM=VALUE"
+      "set PARAM=VALUE",
+      "server list",
+      "server start [PORT]",
+      "server stop"
   };
 
   public Utils() {
