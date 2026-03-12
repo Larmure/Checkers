@@ -35,7 +35,7 @@ import java.util.List;
  * <li>Time-limited search with iterative deepening
  * </ul>
  */
-public class MinMaxAlphaBeta extends AI {
+public class MinMaxAlphaBeta extends Ai {
 
   /**
    * Creates a MinMaxAlphaBeta AI with default depth and time settings.

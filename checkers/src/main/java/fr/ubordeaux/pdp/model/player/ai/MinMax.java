@@ -8,7 +8,7 @@ import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 
-public class MinMax extends AI {
+public class MinMax extends Ai {
 
   public MinMax() {
     super();

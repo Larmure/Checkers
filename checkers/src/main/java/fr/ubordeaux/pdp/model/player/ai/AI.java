@@ -26,7 +26,7 @@ import java.util.List;
  * <li>Template method pattern for common AI operations
  * </ul>
  */
-public abstract class AI {
+public abstract class Ai {
 
   /** Default search depth for MinMax-based algorithms. */
   protected static final int DEFAULT_DEPTH = 3;
@@ -52,7 +52,7 @@ public abstract class AI {
   /**
    * Creates an AI with default depth and time settings.
    */
-  protected AI() {
+  protected Ai() {
     this(DEFAULT_DEPTH, DEFAULT_MAX_TIME_MS);
   }
 
@@ -61,7 +61,7 @@ public abstract class AI {
    *
    * @param maxDepth the maximum search depth
    */
-  protected AI(int maxDepth) {
+  protected Ai(int maxDepth) {
     this(maxDepth, DEFAULT_MAX_TIME_MS);
   }
 
@@ -71,7 +71,7 @@ public abstract class AI {
    * @param maxDepth  the maximum search depth
    * @param maxTimeMs the maximum thinking time in milliseconds
    */
-  protected AI(int maxDepth, long maxTimeMs) {
+  protected Ai(int maxDepth, long maxTimeMs) {
     validateDepth(maxDepth);
     validateTime(maxTimeMs);
     this.maxDepth = maxDepth;

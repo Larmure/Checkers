@@ -4,7 +4,7 @@ import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.evaluation.SimpleEvaluator;
-import fr.ubordeaux.pdp.model.player.ai.AI;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.MinMaxAlphaBeta;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 
@@ -37,10 +37,10 @@ import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
  * Move bestMove = aiPlayer.getBestMove(undoManager, board, PlayerColor.WHITE);
  * }</pre>
  */
-public class AIPlayer extends Player {
+public class AiPlayer extends Player {
 
   /** The AI algorithm used to determine the best moves. */
-  private AI algorithm;
+  private Ai algorithm;
 
   /** The evaluation function used to score board positions. */
   private Evaluator evaluator;
@@ -53,7 +53,7 @@ public class AIPlayer extends Player {
    * @param evaluator the evaluation function to score board positions
    * @throws IllegalArgumentException if algorithm or evaluator is null
    */
-  public AIPlayer(String name, AI algorithm, Evaluator evaluator) {
+  public AiPlayer(String name, Ai algorithm, Evaluator evaluator) {
     super(name);
     if (algorithm == null) {
       throw new IllegalArgumentException("AI algorithm cannot be null");
@@ -65,7 +65,7 @@ public class AIPlayer extends Player {
     this.evaluator = evaluator;
   }
 
-  public AIPlayer(String name) {
+  public AiPlayer(String name) {
     super(name);
     this.algorithm = new MinMaxAlphaBeta(); // Initialiser d'abord
     this.evaluator = new SimpleEvaluator(); // Puis initialiser
@@ -104,7 +104,7 @@ public class AIPlayer extends Player {
    * @param algorithm the new AI algorithm to use
    * @throws IllegalArgumentException if algorithm is null
    */
-  public void setAlgorithm(AI algorithm) {
+  public void setAlgorithm(Ai algorithm) {
     if (algorithm == null) {
       throw new IllegalArgumentException("AI algorithm cannot be null");
     }
@@ -129,7 +129,7 @@ public class AIPlayer extends Player {
    *
    * @return the current AI algorithm
    */
-  public AI getAlgorithm() {
+  public Ai getAlgorithm() {
     return algorithm;
   }
 

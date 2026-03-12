@@ -13,7 +13,7 @@ import fr.ubordeaux.pdp.model.player.ai.MinMax;
 import fr.ubordeaux.pdp.model.player.ai.MinMaxAlphaBeta;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 
-class AIPlayerTest {
+class AiPlayerTest {
 
   private MinMaxAlphaBeta testAlgorithm;
   private SimpleEvaluator testEvaluator;
@@ -29,9 +29,9 @@ class AIPlayerTest {
   }
 
   @Test
-  @DisplayName("Constructor with valid parameters should create AIPlayer")
+  @DisplayName("Constructor with valid parameters should create AiPlayer")
   void testConstructorWithValidParameters() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test AI", testAlgorithm, testEvaluator);
 
     assertEquals("Test AI", aiPlayer.getName());
     assertEquals(testAlgorithm, aiPlayer.getAlgorithm());
@@ -43,7 +43,7 @@ class AIPlayerTest {
   void testConstructorWithNullAlgorithm() {
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
-        () -> new AIPlayer("Test AI", null, testEvaluator));
+        () -> new AiPlayer("Test AI", null, testEvaluator));
     assertEquals("AI algorithm cannot be null", exception.getMessage());
   }
 
@@ -52,16 +52,16 @@ class AIPlayerTest {
   void testConstructorWithNullEvaluator() {
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
-        () -> new AIPlayer("Test AI", testAlgorithm, null));
+        () -> new AiPlayer("Test Ai", testAlgorithm, null));
     assertEquals("Evaluator cannot be null", exception.getMessage());
   }
 
   @Test
-  @DisplayName("Constructor with default parameters should create AIPlayer with defaults")
+  @DisplayName("Constructor with default parameters should create AiPlayer with defaults")
   void testConstructorWithDefaults() {
-    AIPlayer aiPlayer = new AIPlayer("Default AI");
+    AiPlayer aiPlayer = new AiPlayer("Default Ai");
 
-    assertEquals("Default AI", aiPlayer.getName());
+    assertEquals("Default Ai", aiPlayer.getName());
     assertNotNull(aiPlayer.getAlgorithm());
     assertTrue(aiPlayer.getAlgorithm() instanceof MinMaxAlphaBeta);
     assertNotNull(aiPlayer.getEvaluator());
@@ -71,7 +71,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("getBestMove with valid parameters should return a move")
   void testGetBestMoveWithValidParameters() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
 
     Move result = aiPlayer.getBestMove(testUndo, testBoard, PlayerColor.WHITE);
 
@@ -85,7 +85,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("getBestMove with null undo should throw IllegalArgumentException")
   void testGetBestMoveWithNullUndo() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
 
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
@@ -96,7 +96,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("getBestMove with null board should throw IllegalArgumentException")
   void testGetBestMoveWithNullBoard() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
 
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
@@ -107,7 +107,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("getBestMove with null player should throw IllegalArgumentException")
   void testGetBestMoveWithNullPlayer() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
 
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
@@ -118,7 +118,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("setAlgorithm with valid algorithm should update algorithm")
   void testSetAlgorithmWithValidAlgorithm() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
     MinMax newAlgorithm = new MinMax(3);
 
     aiPlayer.setAlgorithm(newAlgorithm);
@@ -129,7 +129,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("setAlgorithm with null algorithm should throw IllegalArgumentException")
   void testSetAlgorithmWithNullAlgorithm() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
 
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
@@ -140,7 +140,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("setEvaluator with valid evaluator should update evaluator")
   void testSetEvaluatorWithValidEvaluator() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
     SimpleEvaluator newEvaluator = new SimpleEvaluator();
 
     aiPlayer.setEvaluator(newEvaluator);
@@ -151,7 +151,7 @@ class AIPlayerTest {
   @Test
   @DisplayName("setEvaluator with null evaluator should throw IllegalArgumentException")
   void testSetEvaluatorWithNullEvaluator() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
 
     IllegalArgumentException exception = assertThrows(
         IllegalArgumentException.class,
@@ -164,7 +164,7 @@ class AIPlayerTest {
   void testIntegrationWithRealComponents() {
     Board realBoard = new Board(8);
     ManagerUndoRedo realUndo = new ManagerUndoRedo(realBoard);
-    AIPlayer aiPlayer = new AIPlayer("Integration AI",
+    AiPlayer aiPlayer = new AiPlayer("Integration Ai",
         new MinMaxAlphaBeta(2), new SimpleEvaluator());
 
     Move move = aiPlayer.getBestMove(realUndo, realBoard, PlayerColor.WHITE);
@@ -177,11 +177,11 @@ class AIPlayerTest {
   }
 
   @Test
-  @DisplayName("AIPlayer should inherit from Player")
-  void testAIPlayerInheritance() {
-    AIPlayer aiPlayer = new AIPlayer("Test AI", testAlgorithm, testEvaluator);
+  @DisplayName("AiPlayer should inherit from Player")
+  void testAiPlayerInheritance() {
+    AiPlayer aiPlayer = new AiPlayer("Test Ai", testAlgorithm, testEvaluator);
 
     assertTrue(aiPlayer instanceof Player);
-    assertEquals("Test AI", aiPlayer.getName());
+    assertEquals("Test Ai", aiPlayer.getName());
   }
 }
