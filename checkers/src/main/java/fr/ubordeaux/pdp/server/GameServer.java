@@ -1,7 +1,7 @@
 package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.controller.CommandProtocol;
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.CommandProtocol;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -14,6 +14,7 @@ import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * TCP game server.

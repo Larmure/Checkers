@@ -303,7 +303,7 @@ class BoardTest {
   @Test
   void testGetValidMovesCaptureIsMandatory12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("C3");
     board.addBlack("D4"); // capturable, landing E5 free
@@ -318,7 +318,7 @@ class BoardTest {
   @Test
   void testGetValidMovesNoCaptureFallsBackToSimple12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("F6"); // isolated white pawn, no enemy nearby
 
@@ -332,7 +332,7 @@ class BoardTest {
   @Test
   void testGetValidMovesEmptyBoardReturnsNothing12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     assertTrue(board.getWhiteValidMoves().isEmpty(),
         "No moves for white on empty 12x12 board");
@@ -343,7 +343,7 @@ class BoardTest {
   @Test
   void testGetValidMovesWhitePawnMovesForwardOnly12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("D4");
 
@@ -361,7 +361,7 @@ class BoardTest {
   @Test
   void testGetValidMovesBlackPawnMovesForwardOnly12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addBlack("I9");
 
@@ -379,7 +379,7 @@ class BoardTest {
   @Test
   void testGetValidMovesCheckerMovesInAllDirections12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("F6");
     board.promote("F6");
@@ -407,7 +407,7 @@ class BoardTest {
   @Test
   void testGetValidMovesOnlyMaxCaptures12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // C3 captures D4 → lands E5, then captures F6 → lands G7: 2-capture chain.
     board.addWhite("C3");
@@ -436,7 +436,7 @@ class BoardTest {
   @Test
   void testGetValidMovesPawnBlockedByOwnPiece12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("C3");
     board.addWhite("D4"); // own piece blocks NE diagonal
@@ -453,7 +453,7 @@ class BoardTest {
   @Test
   void testGetValidMovesCheckerCaptureIsMandatory12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("F6");
     board.promote("F6");
@@ -469,7 +469,7 @@ class BoardTest {
   @Test
   void testGetValidMovesCheckerSlideRange12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // Checker in corner A1 — on a 12x12 board, NE diagonal has up to 11 free
     // squares.
@@ -523,7 +523,7 @@ class BoardTest {
   @Test
   void testNoPiecesLeftTrueAfterClearWhite12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     assertTrue(board.noPiecesLeft(PlayerColor.WHITE), "White should have no pieces after clear");
     assertTrue(board.noPiecesLeft(PlayerColor.BLACK), "Black should have no pieces after clear");
@@ -532,7 +532,7 @@ class BoardTest {
   @Test
   void testNoPiecesLeftWhiteOnlyPawn12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("F6");
 
@@ -543,7 +543,7 @@ class BoardTest {
   @Test
   void testNoPiecesLeftBlackOnlyPawn12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addBlack("G7");
 
@@ -554,7 +554,7 @@ class BoardTest {
   @Test
   void testNoPiecesLeftWhiteOnlyChecker12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("F6");
     board.promote("F6");
@@ -566,7 +566,7 @@ class BoardTest {
   @Test
   void testNoPiecesLeftBlackOnlyChecker12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addBlack("G7");
     board.promote("G7");
@@ -578,7 +578,7 @@ class BoardTest {
   @Test
   void testNoPiecesLeftAfterCapturingLastPiece12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // White pawn on C3, black pawn on D4 — white captures the only black piece.
     board.addWhite("C3");
@@ -597,7 +597,7 @@ class BoardTest {
   @Test
   void testNoPiecesLeftMixedPieceTypes12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // White has both a pawn and a checker.
     board.addWhite("C3");
@@ -615,7 +615,7 @@ class BoardTest {
   void testWhitePawnMultiCapture12x12() {
     Board board = new Board(12);
 
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addWhite("C3");
 
@@ -660,7 +660,7 @@ class BoardTest {
     Board board = new Board(12);
 
     // Nettoyer le plateau
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // Ajouter un checker blanc
     board.addWhite("C3");
@@ -698,7 +698,7 @@ class BoardTest {
     Board board = new Board(12);
 
     // Nettoyer le plateau
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // Ajouter un checker noir
     board.addBlack("H8");
@@ -742,7 +742,7 @@ class BoardTest {
   @Test
   void testDfsCheckerNoCapture() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addBlack("H8");
 
@@ -755,7 +755,7 @@ class BoardTest {
   @Test
   void testDfsCheckerSingleCaptureForward() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addBlack("H8");
     board.promote("H8");
@@ -776,7 +776,7 @@ class BoardTest {
   @Test
   void testDfsCheckerMultiCaptureChain() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     board.addBlack("H8");
     board.promote("H8");
@@ -813,7 +813,7 @@ class BoardTest {
   @Test
   void testDfsCheckerBlockedByOwnPiece() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // Black checker on A1 (corner, only NE diagonal available).
     // Own black pawn on B2 blocks that diagonal.
@@ -842,7 +842,7 @@ class BoardTest {
   @Test
   void testDfsCheckerDoesNotRecaptureAlreadyCaptured() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // Black checker on H8, two whites in a line — cannot loop back
     board.addBlack("H8");
@@ -868,7 +868,7 @@ class BoardTest {
   @Test
   void testDfsCheckerBestCaptureCountIsMaximum() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // One path captures 2 (G7 + E5), another only 1 (G7 only going another way).
     // The DFS must return only the longest sequence.
@@ -898,7 +898,7 @@ class BoardTest {
   @Test
   void testDfsCheckerSlideBeforeCapture() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // Checker at H8 must slide to reach the enemy placed far away
     board.addBlack("H8");
@@ -972,15 +972,13 @@ class BoardTest {
    * }
    */
 
-  /*
-   * @Test
-   * void testToStringContainsBlackPawnSymbol12x12() {
-   * Board board = new Board(12);
-   * 
-   * assertTrue(board.toString().contains("b"),
-   * "toString must contain 'b' for black pawns at start");
-   * }
-   */
+  @Test
+  void testToStringContainsBlackPawnSymbol12x12() {
+    Board board = new Board(12);
+
+    assertTrue(board.toString().contains("x"),
+        "toString must contain 'x' for black pawns at start");
+  }
 
   @Test
   void testToStringContainsEmptySquareSymbol12x12() {
@@ -990,25 +988,22 @@ class BoardTest {
         "toString must contain '_' for empty or light squares");
   }
 
-  /*
-   * @Test
-   * void testToStringWhiteCheckerSymbol12x12() {
-   * Board board = new Board(12);
-   * clearBoard(board, 12);
-   * 
-   * board.addWhite("F6");
-   * board.promote("F6");
-   * 
-   * assertTrue(board.toString().contains("W"),
-   * "toString must contain 'W' for a white checker");
-   * }
-   */
+  @Test
+  void testToStringWhiteCheckerSymbol12x12() {
+    Board board = new Board(12);
+    board.clearBoard();
+
+    board.addWhite("F6");
+    board.promote("F6");
+
+    assertTrue(board.toString().contains("O"),
+        "toString must contain 'O' for a white checker");
+  }
 
   @Test
   void testToStringBlackCheckerSymbol12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
-
+    board.clearBoard();
     board.addBlack("G7");
     board.promote("G7");
 
@@ -1019,7 +1014,7 @@ class BoardTest {
   @Test
   void testToStringEmptyBoardOnlyUnderscores12x12() {
     Board board = new Board(12);
-    clearBoard(board, 12);
+    board.clearBoard();
 
     // Remove row labels (A–L at line start) before checking for piece symbols,
     // because "B" also appears as the row-B label.
@@ -1047,52 +1042,34 @@ class BoardTest {
 
     @Test
   void testToStringAfterMovePieceDisappears12x12() {
-  Board board = new Board(12);
-  clearBoard(board, 12);
-  
-  board.addWhite("C3");
-  board.move("C3", "D4");
-  
-  String output = board.toString();
-  
-  // After the move, C3 row/col area should show '_' and D4 should show 'w'.
-  // We verify the global symbol counts shifted (one 'w' present, none at C3).
-  assertTrue(output.contains("w"),
-  "toString must still contain 'w' after a move");
+    Board board = new Board(12);
+    board.clearBoard();
+
+    board.addWhite("C3");
+    board.move("C3", "D4");
+
+    String output = board.toString();
+
+    // After the move, C3 row/col area should show '_' and D4 should show 'w'.
+    // We verify the global symbol counts shifted (one 'w' present, none at C3).
+    assertTrue(output.contains("o"),
+        "toString must still contain 'w' after a move");
   }
   
 
   @Test
   void testToStringSymbolCountAtStart12x12() {
-  Board board = new Board(12);
-  String output = board.toString();
-  
-  // On a 12x12 board: 5 rows × 6 pawns per row = 30 white pawns and 30 black
-  // pawns.
-  long whiteCount = output.chars().filter(c -> c == 'w').count();
-  long blackCount = output.chars().filter(c -> c == 'b').count();
-  
-  assertEquals(30, whiteCount,
-  "There must be exactly 30 white pawns ('w') at the start of a 12x12 game");
-  assertEquals(30, blackCount,
-  "There must be exactly 30 black pawns ('b') at the start of a 12x12 game");
-  }
-  
+    Board board = new Board(12);
+    String output = board.toString();
 
-  // ----------------------------
-  // HELPER
-  // ----------------------------
+    // On a 12x12 board: 5 rows × 6 pawns per row = 30 white pawns and 30 black
+    // pawns.
+    long whiteCount = output.chars().filter(c -> c == 'o').count();
+    long blackCount = output.chars().filter(c -> c == 'x').count();
 
-  /** Removes all pieces from all squares via reflection. */
-  private void clearBoard(Board board, int size) {
-    for (int row = 1; row <= size; row++) {
-      for (int col = 0; col < size; col++) {
-        if ((row + col) % 2 != 0) { // seulement les cases jouables
-          char file = (char) ('A' + col);
-          String square = file + "" + row;
-          board.remove(square);
-        }
-      }
-    }
+    assertEquals(30, whiteCount,
+        "There must be exactly 30 white pawns ('w') at the start of a 12x12 game");
+    assertEquals(30, blackCount,
+        "There must be exactly 30 black pawns ('b') at the start of a 12x12 game");
   }
 }
