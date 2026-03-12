@@ -1045,41 +1045,39 @@ class BoardTest {
         "Row L (top) must appear before row A (bottom) in toString output");
   }
 
-  /*
-   * @Test
-   * void testToStringAfterMovePieceDisappears12x12() {
-   * Board board = new Board(12);
-   * clearBoard(board, 12);
-   * 
-   * board.addWhite("C3");
-   * board.move("C3", "D4");
-   * 
-   * String output = board.toString();
-   * 
-   * // After the move, C3 row/col area should show '_' and D4 should show 'w'.
-   * // We verify the global symbol counts shifted (one 'w' present, none at C3).
-   * assertTrue(output.contains("w"),
-   * "toString must still contain 'w' after a move");
-   * }
-   */
+    @Test
+  void testToStringAfterMovePieceDisappears12x12() {
+  Board board = new Board(12);
+  clearBoard(board, 12);
+  
+  board.addWhite("C3");
+  board.move("C3", "D4");
+  
+  String output = board.toString();
+  
+  // After the move, C3 row/col area should show '_' and D4 should show 'w'.
+  // We verify the global symbol counts shifted (one 'w' present, none at C3).
+  assertTrue(output.contains("w"),
+  "toString must still contain 'w' after a move");
+  }
+  
 
-  /*
-   * @Test
-   * void testToStringSymbolCountAtStart12x12() {
-   * Board board = new Board(12);
-   * String output = board.toString();
-   * 
-   * // On a 12x12 board: 5 rows × 6 pawns per row = 30 white pawns and 30 black
-   * pawns.
-   * long whiteCount = output.chars().filter(c -> c == 'w').count();
-   * long blackCount = output.chars().filter(c -> c == 'b').count();
-   * 
-   * assertEquals(30, whiteCount,
-   * "There must be exactly 30 white pawns ('w') at the start of a 12x12 game");
-   * assertEquals(30, blackCount,
-   * "There must be exactly 30 black pawns ('b') at the start of a 12x12 game");
-   * }
-   */
+  @Test
+  void testToStringSymbolCountAtStart12x12() {
+  Board board = new Board(12);
+  String output = board.toString();
+  
+  // On a 12x12 board: 5 rows × 6 pawns per row = 30 white pawns and 30 black
+  // pawns.
+  long whiteCount = output.chars().filter(c -> c == 'w').count();
+  long blackCount = output.chars().filter(c -> c == 'b').count();
+  
+  assertEquals(30, whiteCount,
+  "There must be exactly 30 white pawns ('w') at the start of a 12x12 game");
+  assertEquals(30, blackCount,
+  "There must be exactly 30 black pawns ('b') at the start of a 12x12 game");
+  }
+  
 
   // ----------------------------
   // HELPER
