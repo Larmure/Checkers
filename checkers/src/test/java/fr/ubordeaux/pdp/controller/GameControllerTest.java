@@ -567,45 +567,46 @@ class GameControllerTest {
 
     @Test
     void testPlayPredefinedSequence() throws Exception {
-        Configuration config = Configuration.getDefaultConfiguration();
-        controller.startNewGame(config);
+      Configuration config = Configuration.getDefaultConfiguration();
+      controller.startNewGame(config);
 
-        java.lang.reflect.Field gameField = GameController.class.getDeclaredField("game");
-        gameField.setAccessible(true);
-        GameCheckers gameModel = (GameCheckers) gameField.get(controller);
+      java.lang.reflect.Field gameField = GameController.class.getDeclaredField("game");
+      gameField.setAccessible(true);
+      GameCheckers gameModel = (GameCheckers) gameField.get(controller);
 
-        String[][] moves = {
-            { "c1", "d2" }, { "f4", "e3" }, { "d2", "f4" }, { "g5", "e3" },
-            { "b2", "c1" }, { "e3", "d2" }, { "c1", "e3" }, { "f2", "b2" },
-            { "a1", "c3" }, { "f6", "e5" }, { "c3", "d4" }, { "e5", "c3" },
-            { "b4", "d2" }, { "g3", "f2" }, { "d2", "e3" }, { "f2", "d4" },
-            { "c5", "e3" }, { "g1", "f2" }, { "e3", "g1" }, { "h2", "g3" },
-            { "g1", "h2" }, { "h4", "g5" }, { "h2", "e5" }, { "g5", "f4" },
-            { "e5", "g3" }, { "f8", "e7" }, { "c7", "d6" }, { "e7", "c5" },
-            { "b6", "d4" }, { "g7", "f8" }, { "d4", "e5" }, { "f8", "e7" },
-            { "e5", "f4" }, { "h6", "g5" }, { "f4", "h6" }, { "h8", "g7" },
-            { "h6", "d6" }
-        };
+      String[][] moves = {
+          { "c1", "d2" }, { "f4", "e3" }, { "d2", "f4" }, { "g5", "e3" },
+          { "b2", "c1" }, { "e3", "d2" }, { "c1", "e3" }, { "f2", "b2" },
+          { "a1", "c3" }, { "f6", "e5" }, { "c3", "d4" }, { "e5", "c3" },
+          { "b4", "d2" }, { "g3", "f2" }, { "d2", "e3" }, { "f2", "d4" },
+          { "c5", "e3" }, { "g1", "f2" }, { "e3", "g1" }, { "h2", "g3" },
+          { "g1", "h2" }, { "h4", "g5" }, { "h2", "e5" }, { "g5", "f4" },
+          { "e5", "g3" }, { "f8", "e7" }, { "c7", "d6" }, { "e7", "c5" },
+          { "b6", "d4" }, { "g7", "f8" }, { "d4", "e5" }, { "f8", "e7" },
+          { "e5", "f4" }, { "h6", "g5" }, { "f4", "h6" }, { "h8", "g7" },
+          { "h6", "d6" }
+      };
 
-        System.out.println("Début de la séquence d'automatisation des coups...");
+      System.out.println("Début de la séquence d'automatisation des coups...");
 
-        for (String[] move : moves) {
-            String from = move[0];
-            String to = move[1];
+      for (String[] move : moves) {
+        String from = move[0];
+        String to = move[1];
 
-            System.out.println("Coup joué : " + from + "-" + to);
+        System.out.println("Coup joué : " + from + "-" + to);
 
-            controller.executeMove(from, to);
+        controller.executeMove(from, to);
 
-            if (gameModel.getState() == State.FINISHED) {
-                System.out.println("La partie s'est terminée avant la fin de la séquence.");
-                break;
-            }
+        if (gameModel.getState() == State.FINISHED) {
+          System.out.println("La partie s'est terminée avant la fin de la séquence.");
+          break;
         }
+      }
 
-        System.out.println("Séquence terminée.");
-        
-        assertDoesNotThrow(() -> controller.displayBoard(), 
-            "L'affichage du plateau après la séquence ne doit pas générer d'erreur.");
+      System.out.println("Séquence terminée.");
+
+      assertDoesNotThrow(() -> controller.displayBoard(),
+          "L'affichage du plateau après la séquence ne doit pas générer d'erreur.");
     }
+  }
 }
