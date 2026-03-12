@@ -67,14 +67,8 @@ public class AIPlayer extends Player {
 
   public AIPlayer(String name) {
     super(name);
-    if (algorithm == null) {
-      throw new IllegalArgumentException("AI algorithm cannot be null");
-    }
-    if (evaluator == null) {
-      throw new IllegalArgumentException("Evaluator cannot be null");
-    }
-    this.algorithm = new MinMaxAlphaBeta();
-    this.evaluator = new SimpleEvaluator();
+    this.algorithm = new MinMaxAlphaBeta(); // Initialiser d'abord
+    this.evaluator = new SimpleEvaluator(); // Puis initialiser
   }
 
   /**
