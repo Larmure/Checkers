@@ -1,20 +1,22 @@
 package fr.ubordeaux.pdp;
 
+
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.GameView;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.core.*;
-import fr.ubordeaux.pdp.model.tools.*;
-import fr.ubordeaux.pdp.view.*;
-import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -71,14 +73,15 @@ public class App {
     } else if (status == EXIT_ERROR) {
       System.exit(1);
     } // else if (status == EXIT_GUI) {
-      // TODO
-      // }
+    // TODO
+    // }
 
     // Status EXIT_SUCCESS means continue execution normally
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
     controller.start();
-    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteAi, blackAi));
+    controller.startNewGame(new Configuration(blitz, time, contest, 
+        size, verbose, debug, whiteAi, blackAi));
     try {
       ((CommandLineInterface) view).join();
     } catch (InterruptedException ex) {
@@ -130,7 +133,8 @@ public class App {
       CommandLine cmd = parser.parse(options, args);
 
       if (!cmd.getArgList().isEmpty()) {
-        throw new ParseException(Internationalization.get("app.error.unrecognized_arg") + cmd.getArgList());
+        throw new ParseException(Internationalization.get("app.error.unrecognized_arg") 
+          + cmd.getArgList());
       }
 
       if (cmd.hasOption("h")) {
@@ -186,11 +190,11 @@ public class App {
         }
 
         color = color.toUpperCase();
-        if (color.equals("W"))
+        if (color.equals("W")) {
           whiteAi = true;
-        else if (color.equals("B"))
+        } else if (color.equals("B")) {
           blackAi = true;
-        else if (color.equals("A")) {
+        } else if (color.equals("A")) {
           whiteAi = true;
           blackAi = true;
         } else if (color.equals("")) {
