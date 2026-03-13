@@ -209,19 +209,39 @@ public abstract class Ai {
   }
 
   // Getters et setters
+  /**
+   * Returns the maximum search depth for this AI instance.
+   *
+   * @return the maximum search depth
+   */
   public int getMaxDepth() {
     return maxDepth;
   }
 
+  /**
+   * Returns the maximum thinking time in milliseconds for this AI instance.
+   *
+   * @return the maximum thinking time in milliseconds
+   */
   public long getMaxTimeMs() {
     return maxTimeMs;
   }
 
+  /**
+   * Sets the maximum search depth for this AI instance.
+   *
+   * @param maxDepth the maximum search depth to set
+   */
   public void setMaxDepth(int maxDepth) {
     validateDepth(maxDepth);
     this.maxDepth = maxDepth;
   }
 
+  /**
+   * Sets the maximum thinking time in milliseconds for this AI instance.
+   *
+   * @param maxTimeMs the maximum thinking time in milliseconds to set
+   */
   public void setMaxTimeMs(long maxTimeMs) {
     validateTime(maxTimeMs);
     this.maxTimeMs = maxTimeMs;

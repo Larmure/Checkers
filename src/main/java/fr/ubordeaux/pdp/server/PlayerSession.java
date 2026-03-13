@@ -9,7 +9,7 @@ import java.io.PrintWriter;
  * output stream used to send messages back to the client.
  *
  * <p>Thread safety: status and score fields are updated under synchronization
- * in {@link GameRegistry}.
+ * in GameRegistry.
  */
 public class PlayerSession {
 

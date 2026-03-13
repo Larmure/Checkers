@@ -21,7 +21,7 @@ import fr.ubordeaux.pdp.server.ClientSession;
  * </ul>
  */
 public class PingCommand implements ClientCommand, Helpable {
-
+  /** The client session to which this command belongs. */
   private final ClientSession session;
 
   /**
@@ -33,6 +33,12 @@ public class PingCommand implements ClientCommand, Helpable {
     this.session = session;
   }
 
+  /**
+   * Executes the ping command by sending a {@code PING} message to the server and
+   * measuring the round-trip time (RTT) on the client side. The server's response
+   * is handled by the listener thread in {@link ClientSession}, which displays the
+   * server processing time.
+   */
   @Override
   public void execute() {
     if (!session.isConnected()) {
@@ -49,6 +55,11 @@ public class PingCommand implements ClientCommand, Helpable {
     System.out.println("PING sent. RTT (client-side): " + rtt + "ms");
   }
 
+  /**
+   * Returns the help message for this command.
+   *
+   * @return a string describing how to use the ping command
+   */
   @Override
   public String getHelp() {
     return "ping - Sends a PING to the server and displays the round-trip time (RTT).";

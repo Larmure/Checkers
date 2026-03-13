@@ -29,15 +29,26 @@ import java.util.Set;
  */
 public class Utils {
 
+  /* Default game settings */
+
+  /** The default size of the game board. */
   public static final int DEFAULT_BOARD_SIZE = 8;
+  /** The default debug mode setting. */
   public static final boolean DEFAULT_DEBUG = false;
+  /** The default verbose mode setting. */
   public static final boolean DEFAULT_VERBOSE = false;
+  /** The default blitz mode setting. */
   public static final boolean DEFAULT_BLITZ = false;
+  /** The default time limit for each player's turn. */
   public static final int DEFAULT_TIME = 30;
+  /** The default contest mode setting. */
   public static final boolean DEFAULT_CONTEST = false;
+  /** The default setting for whether the white player is controlled by AI. */
   public static final boolean DEFAULT_WHITE_AI = false;
+  /** The default setting for whether the black player is controlled by AI. */
   public static final boolean DEFAULT_BLACK_AI = false;
 
+  /** Regular expression for validating move syntax. */
   public static final String MOVE_REGEX = "^[a-zA-Z]\\d{1,2}\\s[a-zA-Z]\\d{1,2}$";
 
   /** Set of board sizes accepted by the constructor. */
@@ -66,7 +77,6 @@ public class Utils {
       Map.entry("server start", new ServerStartCommand(null, null)),
       Map.entry("server stop", new ServerStopCommand()),
       Map.entry("continue", new ContinueCommand(null)));
-      
 
   /**
    * A formatted list of all available commands and their expected syntax.
@@ -88,8 +98,5 @@ public class Utils {
       "server start [PORT]",
       "server stop"
   };
-
-  public Utils() {
-  }
 
 }

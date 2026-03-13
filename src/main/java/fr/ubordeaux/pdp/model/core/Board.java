@@ -270,18 +270,42 @@ public class Board {
     return isBitBlackChecker(squareToIndex(square));
   }
 
+  /**
+   * Returns {@code true} if the square at {@code index} is occupied by a white pawn.
+   *
+   * @param index bit index of the square
+   * @return {@code true} if a white pawn is present at that index
+   */
   public boolean isBitWhitePawn(int index) {
     return hasPawn(index, whitePawns1, whitePawns2);
   }
 
+  /**
+   * Returns {@code true} if the square at {@code index} is occupied by a black pawn.
+   *
+   * @param index bit index of the square
+   * @return {@code true} if a black pawn is present at that index
+   */
   public boolean isBitBlackPawn(int index) {
     return hasPawn(index, blackPawns1, blackPawns2);
   }
 
+  /**
+   * Returns {@code true} if the square at {@code index} is occupied by a white checker.
+   *
+   * @param index bit index of the square
+   * @return {@code true} if a white checker is present at that index
+   */
   public boolean isBitWhiteChecker(int index) {
     return hasPawn(index, whiteCheckers1, whiteCheckers2);
   }
 
+  /**
+   * Returns {@code true} if the square at {@code index} is occupied by a black checker.
+   *
+   * @param index bit index of the square
+   * @return {@code true} if a black checker is present at that index
+   */
   public boolean isBitBlackChecker(int index) {
     return hasPawn(index, blackCheckers1, blackCheckers2);
   }
@@ -332,6 +356,12 @@ public class Board {
         && blackCheckers2 == 0L;
   }
 
+  /**
+   * Returns the total number of playable squares on the board, which is the upper
+   * bound for valid square indices.
+   *
+   * @return the maximum index of a playable square
+   */
   public int getIndexMax() {
     return this.indexMax;
   }
@@ -340,6 +370,11 @@ public class Board {
   // Bitboard mutation helpers
   // ---------------------------------------------------------------------------
 
+  /**
+   * Sets the bit at {@code index} in the appropriate bitboard to add a white pawn.
+   *
+   * @param index bit index of the square where the white pawn should be added
+   */
   private void addWhitePawn(int index) {
     if (index < 64) {
       whitePawns1 |= (1L << index);
@@ -348,6 +383,12 @@ public class Board {
     }
   }
 
+  /**
+   * Clears the bit at {@code index} in the appropriate bitboard to remove a white
+   * pawn.
+   *
+   * @param index bit index of the square where the white pawn should be removed
+   */
   private void removeWhitePawn(int index) {
     if (index < 64) {
       whitePawns1 &= ~(1L << index);
@@ -356,6 +397,11 @@ public class Board {
     }
   }
 
+  /**
+   * Sets the bit at {@code index} in the appropriate bitboard to add a black pawn.
+   *
+   * @param index bit index of the square where the black pawn should be added
+   */
   private void addBlackPawn(int index) {
     if (index < 64) {
       blackPawns1 |= (1L << index);
@@ -364,6 +410,12 @@ public class Board {
     }
   }
 
+  /**
+   * Clears the bit at {@code index} in the appropriate bitboard to remove a black
+   * pawn.
+   *
+   * @param index bit index of the square where the black pawn should be removed
+   */
   private void removeBlackPawn(int index) {
     if (index < 64) {
       blackPawns1 &= ~(1L << index);
@@ -372,6 +424,11 @@ public class Board {
     }
   }
 
+  /**
+   * Sets the bit at {@code index} in the appropriate bitboard to add a white checker.
+   *
+   * @param index bit index of the square where the white checker should be added
+   */
   private void addWhiteChecker(int index) {
     if (index < 64) {
       whiteCheckers1 |= (1L << index);
@@ -380,6 +437,12 @@ public class Board {
     }
   }
 
+  /**
+   * Clears the bit at {@code index} in the appropriate bitboard to remove a white*
+   * checker.
+   *
+   * @param index bit index of the square where the white checker should be removed
+   */
   private void removeWhiteChecker(int index) {
     if (index < 64) {
       whiteCheckers1 &= ~(1L << index);
@@ -388,6 +451,11 @@ public class Board {
     }
   }
 
+  /**
+   * Sets the bit at {@code index} in the appropriate bitboard to add a black checker.
+   *
+   * @param index bit index of the square where the black checker should be added
+   */
   private void addBlackChecker(int index) {
     if (index < 64) {
       blackCheckers1 |= (1L << index);
@@ -396,6 +464,12 @@ public class Board {
     }
   }
 
+  /**
+   * Clears the bit at {@code index} in the appropriate bitboard to remove a black
+   * checker.
+   *
+   * @param index bit index of the square where the black checker should be removed
+   */
   private void removeBlackChecker(int index) {
     if (index < 64) {
       blackCheckers1 &= ~(1L << index);
@@ -1213,6 +1287,8 @@ public class Board {
   /**
    * Removes any piece (white/black, pawn/checker) from the given square.
    * Intended for testing setup.
+   *
+   * @param from algebraic square name (e.g. "C3") of the piece to remove
    */
   public void remove(String from) {
     int f = squareToIndex(from);
@@ -1225,6 +1301,8 @@ public class Board {
   /**
    * Adds a white pawn on the given square.
    * Testing helper.
+   *
+   * @param square algebraic square name (e.g. "C3") where the white pawn should be placed
    */
   public void addWhite(String square) {
     int f = squareToIndex(square);
@@ -1234,6 +1312,8 @@ public class Board {
   /**
    * Adds a black pawn on the given square.
    * Testing helper.
+   *
+   * @param square algebraic square name (e.g. "C3") where the black pawn should be placed
    */
   public void addBlack(String square) {
     int f = squareToIndex(square);
@@ -1264,6 +1344,11 @@ public class Board {
     return checkerSimpleTargets(squareToIndex(square));
   }
 
+  /**
+   * Returns the size of the board (e.g., 8 for an 8x8 board).
+   *
+   * @return the dimension of the board
+   */
   public int getSizeBoard() {
     return sizeBoard;
   }

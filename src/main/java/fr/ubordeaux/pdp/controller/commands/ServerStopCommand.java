@@ -11,6 +11,9 @@ import fr.ubordeaux.pdp.controller.Helpable;
  */
 public class ServerStopCommand implements Command, Helpable {
 
+  /**
+   * Executes the server stop command by stopping the currently running game server.
+   */
   @Override
   public void execute() {
     if (ServerStartCommand.activeServer == null
@@ -24,6 +27,11 @@ public class ServerStopCommand implements Command, Helpable {
     System.out.println("Server stopped.");
   }
 
+  /**
+   * Returns the help message for this command.
+   *
+   * @return a string describing how to use the server stop command
+   */
   @Override
   public String getHelp() {
     return "server stop - Stops the running game server and notifies all connected clients.";

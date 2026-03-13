@@ -11,7 +11,9 @@ import fr.ubordeaux.pdp.model.tools.Internationalization;
  * This command allows the user to redo moves that were undone, providing a way to navigate through
  */
 public class RedoCommand implements Command, Helpable {
+  /** The game controller to operate on. */
   private final GameController controller;
+  /** The arguments for the redo command. */
   private final String[] args;
 
   /**

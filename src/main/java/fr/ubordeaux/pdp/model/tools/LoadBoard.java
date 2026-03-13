@@ -30,26 +30,40 @@ import java.nio.file.Paths;
  */
 public class LoadBoard {
 
-  private static final String SAVE_DIRECTORY =
-        System.getProperty("user.dir") + File.separator + "Sauvegarde";
+  /** The directory where save files are stored. */
+  private static final String SAVE_DIRECTORY = System.getProperty("user.dir") + File.separator
+      + "Sauvegarde";
 
+  /** The game being loaded. */
   private final GameCheckers game;
+  /** The board being loaded. */
   private final Board board;
-
+  /** The state of the loaded game. */
   private boolean seenGame = false;
+  /** The state of the loaded settings. */
   private boolean seenSettings = false;
+  /** The state of the loaded history. */
   private boolean seenHistory = false;
 
+  /** The state of the game section initialization. */
   private boolean gameSectionInitialized = false;
+  /** The current row being processed in the board section. */
   private int currentBoardRow = 0;
 
+  /** The loaded configuration. */
   private Configuration loadedConfiguration = null;
+  /** The loaded starting color. */
   private Boolean loadedStartingWhite = null;
+  /** The loaded board size. */
   private int loadedBoardSize = 0;
+  /** The loaded blitz mode flag. */
   private Boolean loadedBlitz = null;
+  /** The loaded debug mode flag. */
   private Boolean loadedDebug = null;
+  /** The loaded verbose mode flag. */
   private Boolean loadedVerbose = null;
 
+  /** The buffer for storing move history. */
   private StringBuilder historyBuffer = new StringBuilder();
 
   /**
@@ -101,12 +115,12 @@ public class LoadBoard {
           processSectionData(currentSection, clean);
         } catch (Exception e) {
           System.err.println(
-                "Format error at line "
-                      + lineNum
-                      + " ["
-                      + currentSection
-                      + "]: "
-                      + e.getMessage());
+              "Format error at line "
+                  + lineNum
+                  + " ["
+                  + currentSection
+                  + "]: "
+                  + e.getMessage());
           return;
         }
       }
@@ -221,11 +235,11 @@ public class LoadBoard {
     }
     if (gameSectionInitialized && currentBoardRow != board.getSizeBoard()) {
       System.err.println(
-            "Format error: incomplete board - expected "
-                  + board.getSizeBoard()
-                  + " rows, got "
-                  + currentBoardRow
-                  + ".");
+          "Format error: incomplete board - expected "
+              + board.getSizeBoard()
+              + " rows, got "
+              + currentBoardRow
+              + ".");
       return false;
     }
     return true;
@@ -263,11 +277,11 @@ public class LoadBoard {
         loadedBoardSize = size;
         if (size != board.getSizeBoard()) {
           throw new Exception(
-                "Board size mismatch: file has "
-                      + size
-                      + ", current board is "
-                      + board.getSizeBoard()
-                      + ".");
+              "Board size mismatch: file has "
+                  + size
+                  + ", current board is "
+                  + board.getSizeBoard()
+                  + ".");
         }
       }
       case "time-mode" -> {
@@ -284,7 +298,7 @@ public class LoadBoard {
           loadedDebug = Boolean.valueOf(value);
         } else {
           throw new Exception(
-                "Invalid debug value: '" + value + "' (expected true/false).");
+              "Invalid debug value: '" + value + "' (expected true/false).");
         }
       }
       case "verbose" -> {
@@ -292,7 +306,7 @@ public class LoadBoard {
           loadedVerbose = Boolean.valueOf(value);
         } else {
           throw new Exception(
-                "Invalid verbose value: '" + value + "' (expected true/false).");
+              "Invalid verbose value: '" + value + "' (expected true/false).");
         }
       }
       default -> {
@@ -316,7 +330,7 @@ public class LoadBoard {
     }
     if (cells.length() != n) {
       throw new Exception(
-            "Board row must have " + n + " cells, got " + cells.length() + ".");
+          "Board row must have " + n + " cells, got " + cells.length() + ".");
     }
 
     for (int col = 0; col < n; col++) {
@@ -326,13 +340,13 @@ public class LoadBoard {
       if (!playable) {
         if (c != '-') {
           throw new Exception(
-                "Piece '"
-                      + c
-                      + "' on non-playable square at row "
-                      + currentBoardRow
-                      + ", col "
-                      + col
-                      + ".");
+              "Piece '"
+                  + c
+                  + "' on non-playable square at row "
+                  + currentBoardRow
+                  + ", col "
+                  + col
+                  + ".");
         }
         continue;
       }
@@ -374,13 +388,13 @@ public class LoadBoard {
     int size = loadedBoardSize > 0 ? loadedBoardSize : defaults.getSize();
 
     return new Configuration(
-          blitz,
-          defaults.getTime(),
-          defaults.isContest(),
-          size,
-          verbose,
-          debug,
-          defaults.iswhiteAi(),
-          defaults.isblackAi());
+        blitz,
+        defaults.getTime(),
+        defaults.isContest(),
+        size,
+        verbose,
+        debug,
+        defaults.iswhiteAi(),
+        defaults.isblackAi());
   }
 }

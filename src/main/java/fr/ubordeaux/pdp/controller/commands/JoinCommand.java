@@ -15,8 +15,10 @@ import fr.ubordeaux.pdp.server.ClientSession;
  */
 public class JoinCommand implements ClientCommand, Helpable {
 
+  /** The client session to which this command belongs. */
   private final ClientSession session;
-  private final String        address; // peut être null → valeurs par défaut
+  /** The address provided by the user. */
+  private final String address; // peut être null → valeurs par défaut
 
   /**
    * Creates a join command for the current client session.
@@ -30,10 +32,11 @@ public class JoinCommand implements ClientCommand, Helpable {
     this.address = address;
   }
 
+  /** Executes the join command. */
   @Override
   public void execute() {
     String host = session.getDefaultHost();
-    int    port = session.getDefaultPort();
+    int port = session.getDefaultPort();
 
     if (address != null && !address.isBlank()) {
       String[] parts = address.split(":");
@@ -43,7 +46,7 @@ public class JoinCommand implements ClientCommand, Helpable {
           port = Integer.parseInt(parts[1].trim());
         } catch (NumberFormatException e) {
           System.out.println("Invalid port in '" + address
-                + "'. Using default: " + session.getDefaultPort());
+              + "'. Using default: " + session.getDefaultPort());
         }
       }
     }
@@ -51,9 +54,10 @@ public class JoinCommand implements ClientCommand, Helpable {
     session.connect(host, port);
   }
 
+  /** Returns the help message for this command. */
   @Override
   public String getHelp() {
     return "join [IP[:PORT]] — Connects to a game server. "
-          + "Defaults to localhost:12345 if no address is given.";
+        + "Defaults to localhost:12345 if no address is given.";
   }
 }

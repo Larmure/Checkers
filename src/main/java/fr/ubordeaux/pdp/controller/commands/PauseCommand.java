@@ -15,7 +15,9 @@ import java.util.Timer;
  * @version 1.0
  */
 public class PauseCommand implements Command, Helpable {
+  /** The timer used for blitz mode. */
   private final Timer blitzTimer;
+  /** The game instance to operate on. */
   private final GameCheckers game;
 
   /**

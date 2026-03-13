@@ -13,6 +13,11 @@ import java.util.List;
  */
 public class ServerListCommand implements Command, Helpable {
 
+  /**
+   * Executes the server list command by discovering active game servers on the local network
+   * and displaying them in a formatted list. If no servers are found, it informs the
+   * user accordingly.
+   */
   @Override
   public void execute() {
     List<String> servers = ServerListService.discoverServers();
@@ -36,6 +41,11 @@ public class ServerListCommand implements Command, Helpable {
     System.out.println("Use 'join <ip>:<port>' to connect\n");
   }
 
+  /**
+   * Returns the help message for this command.
+   *
+   * @return a string describing how to use the server list command
+   */
   @Override
   public String getHelp() {
     return "server list - Lists all game servers on the local network (30-second scan).";

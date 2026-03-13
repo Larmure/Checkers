@@ -21,6 +21,8 @@ public abstract class Player {
 
   /**
    * Returns the player's identifier.
+   *
+   * @return the player's name
    */
   public String getName() {
     return name;
@@ -30,6 +32,8 @@ public abstract class Player {
    * Returns the remaining time allocated for this player.
    * 
    * <p>This is specifically used in timed modes (e.g., Blitz).
+   *
+   * @return the remaining play time in seconds (or ticks)
    */
   public int getPlayTime() {
     return playTime;
@@ -37,6 +41,8 @@ public abstract class Player {
 
   /**
    * Updates the player's display name.
+   *
+   * @param name the new name to set for the player
    */
   public void setName(String name) {
     this.name = name;

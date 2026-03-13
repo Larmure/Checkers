@@ -16,9 +16,9 @@ import java.util.Scanner;
  * @version 1.0
  */
 public class QuitCommand implements Command, Helpable {
-
+  /** The game controller to access game state and save functionality. */
   private final GameController controller;
-
+  /** The action to perform when quitting the application. */
   private final Runnable exitAction;
 
   /**
@@ -31,6 +31,13 @@ public class QuitCommand implements Command, Helpable {
     this(controller, () -> System.exit(0));
   }
 
+  /**
+   * Constructs a QuitCommand with the given game controller and exit action.
+   *
+   * @param controller the game controller to access game state and save functionality
+   * @param exitAction the action to perform when quitting the application,
+   *     allowing for custom behavior in tests or alternative exit strategies
+   */
   public QuitCommand(GameController controller, Runnable exitAction) {
     this.controller = controller;
     this.exitAction = exitAction;

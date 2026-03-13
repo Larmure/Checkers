@@ -15,14 +15,24 @@ import fr.ubordeaux.pdp.server.ClientSession;
  * @version 1.0
  */
 public class QuitClientCommand implements ClientCommand, Helpable {
+  /** The client session to which this command belongs. */
   private final ClientSession session;
   /** Indicates whether the client should exit. */
   private boolean exit = false;
 
+  /**
+   * Constructs a QuitClientCommand with the given client session.
+   *
+   * @param session the current client session, used to manage connection state
+   */
   public QuitClientCommand(ClientSession session) {
     this.session = session;
   }
 
+  /**
+   * Executes the quit command by disconnecting from the server if currently connected, or
+   * exiting the client application if not connected. 
+   */
   @Override
   public void execute() {
     if (session.isConnected()) {
@@ -46,6 +56,11 @@ public class QuitClientCommand implements ClientCommand, Helpable {
     return exit;
   }
 
+  /**
+   * Returns the help message for this command.
+   *
+   * @return a string describing how to use the quit command
+   */
   @Override
   public String getHelp() {
     return "quit — Disconnects from the server (if connected) or exits the client.";

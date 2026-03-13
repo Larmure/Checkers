@@ -43,8 +43,10 @@ public class GameController {
   /** The core game engine containing rules and board state. */
   private GameCheckers game;
 
+  /** The configuration options for the game. */
   private Configuration configuration;
 
+  /** The timer for managing the blitz mode. */
   private Timer blitzTimer;
 
   /** History size at the time of the last save. */
@@ -124,7 +126,7 @@ public class GameController {
       case "start" -> new ServerStartCommand(this, subArgs);
       case "stop" -> new ServerStopCommand();
       default -> {
-        System.out.println("Unknown server command: " + subCommand  
+        System.out.println("Unknown server command: " + subCommand
             + ". Use: list | start [PORT] | stop");
         yield null;
       }
@@ -225,6 +227,13 @@ public class GameController {
     }
   }
 
+  /**
+   * Starts the blitz timer for the current game. 
+   * This method initializes a new Timer that schedules a task to run every second. 
+   * The task updates the game logic related to player timing and checks if the current player's 
+   * time has run out. If the time is up, it stops the timer, sets the game state to FINISHED, 
+   * and notifies the user that their time has expired.
+   */
   private void startBlitzTimer() {
     stopBlitzTimer();
     blitzTimer = new Timer(true); // daemon = s'arrête avec le programme
@@ -314,7 +323,7 @@ public class GameController {
    * @param cfg Instance representing the settings associated with the loaded game.
    */
   public void setGame(GameCheckers loadedGame, Configuration cfg) {
-    
+
     this.game = loadedGame;
     this.configuration = new Configuration(cfg);
     this.game.addObserver(view);
@@ -364,7 +373,7 @@ public class GameController {
       String to = move[1];
 
       System.out.println("Coup joué : " + from + "-" + to);
-      
+
       executeMove(from, to);
 
       if (game.getState() == State.FINISHED) {

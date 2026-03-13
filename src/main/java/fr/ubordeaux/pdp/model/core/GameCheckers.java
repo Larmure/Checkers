@@ -20,25 +20,28 @@ import java.util.List;
  */
 public class GameCheckers implements Subject {
 
+  /** The current state of the game. */
   private State state;
+  /** The game board. */
   private Board board;
+  /** The white player. */
   private Player whitePlayer;
+  /** The black player. */
   private Player blackPlayer;
+  /** Indicates whether it is the white player's turn. */
   private boolean isWhiteTurn;
+  /** The list of observers (views) interested in game state changes. */
   private List<GameView> observers;
+  /** The configuration options for the game. */
   private Configuration configuration;
+  /** The manager for handling undo and redo operations. */
   private ManagerUndoRedo managerUndoRedo;
 
   /**
-   * Constructs a new game instance.
-   * 
-   * <p>Initializes a standard 12x12 board, sets the initial state to
-   * InGameState,
-   * and grants the first turn to the white player.
-   * Player types (Human or Ai) are assigned based on the provided flags
-   * 
+   * Initializes a new game instance with the specified configuration.
+   *
+   * @param cfg the configuration settings for the game
    */
-
   public GameCheckers(Configuration cfg) {
     this.configuration = cfg;
     this.board = new Board(cfg.getSize());
@@ -67,6 +70,9 @@ public class GameCheckers implements Subject {
     }
   }
 
+  /**
+   * Initializes a new game instance with the default configuration.
+   */
   public GameCheckers() {
     this(Configuration.getDefaultConfiguration());
   }
@@ -232,6 +238,10 @@ public class GameCheckers implements Subject {
     return this.state;
   }
 
+  /**
+   * Notifies all registered observers (views) of a state change, prompting them to
+   * update their display accordingly.
+   */
   @Override
   public void notifyObservers() {
     // Guard clause to prevent NullPointerException if no observers are registered
@@ -258,14 +268,29 @@ public class GameCheckers implements Subject {
     this.observers.add(observer);
   }
 
+  /**
+   * Returns whether it is currently the white player's turn.
+   *
+   * @return {@code true} if it is the white player's turn
+   */
   public boolean isWhiteTurn() {
     return isWhiteTurn;
   }
 
+  /**
+   * Sets the turn to the specified player color.
+   *
+   * @param isWhite if {@code true}, sets the turn to the white player
+   */
   public void setWhiteTurn(boolean isWhite) {
     this.isWhiteTurn = isWhite;
   }
 
+  /**
+   * Returns the current game configuration.
+   *
+   * @return The active {@link Configuration} instance containing game settings.
+   */
   public Configuration getConfiguration() {
     return configuration;
   }
@@ -323,10 +348,22 @@ public class GameCheckers implements Subject {
     }
   }
 
+  /**
+   * Returns the current history of moves, which can be used for undo/redo operations or
+   * for displaying move history to the user.
+   *
+   * @return The current {@link History} instance containing the sequence of moves made in the game.
+   */
   public History getHistory() {
     return managerUndoRedo.getHistory();
   }
 
+  /**
+   * Sets the history of moves to a specific state, allowing for features like loading a game
+   * from a saved state or resetting the move history.
+   *
+   * @param h The {@link History} instance to set as the current move history.
+   */
   public void setHistory(History h) {
     managerUndoRedo.setHistory(h);
   }

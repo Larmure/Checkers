@@ -13,25 +13,36 @@ import fr.ubordeaux.pdp.server.GameServer;
  * to the current {@link GameController}.
  */
 public class ServerStartCommand implements Command, Helpable {
-
+  /** The default port on which the server will run. */
   private static final int DEFAULT_PORT = 12345;
-
+  /** The game controller to access game state and save functionality. */
   private final GameController controller;
+  /** The arguments for the server start command. */
   private final String[] args;
 
   /** Static reference allowing {@link ServerStopCommand} to stop the server. */
   public static GameServer activeServer = null;
 
+  /**
+   * Constructs a ServerStartCommand with the given game controller and arguments.
+   *
+   * @param controller the game controller to access game state and save functionality
+   * @param args the arguments for the server start command, where args[0] can optionally specify 
+   *     the port to start the server on
+   */
   public ServerStartCommand(GameController controller, String[] args) {
     this.controller = controller;
     this.args = args;
   }
 
+  /**
+   * Executes the server start command by starting a new game server on the specified port.
+   */
   @Override
   public void execute() {
     if (activeServer != null && activeServer.isRunning()) {
       System.out.println("A server is already running on port "
-            + activeServer.getPort() + ".");
+          + activeServer.getPort() + ".");
       return;
     }
 
@@ -41,7 +52,7 @@ public class ServerStartCommand implements Command, Helpable {
         port = Integer.parseInt(args[0].trim());
       } catch (NumberFormatException e) {
         System.out.println("Invalid port '" + args[0]
-              + "'. Using default port: " + DEFAULT_PORT);
+            + "'. Using default port: " + DEFAULT_PORT);
       }
     }
 
@@ -73,9 +84,14 @@ public class ServerStartCommand implements Command, Helpable {
     }
   }
 
+  /**
+   * Returns the help message for this command.
+   *
+   * @return a string describing how to use the server start command
+   */
   @Override
   public String getHelp() {
     return "server start [PORT] — Starts a game server on port PORT "
-          + "(default: 12345). Displays an error if the port is already in use.";
+        + "(default: 12345). Displays an error if the port is already in use.";
   }
 }

@@ -1,6 +1,5 @@
 package fr.ubordeaux.pdp;
 
-
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
@@ -16,7 +15,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
-
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -44,12 +42,16 @@ public class App {
   /** Flag to enable debug mode. */
   private static boolean debug = Utils.DEFAULT_DEBUG;
 
+  /** Flag to enable blitz mode. */
   private static boolean blitz = Utils.DEFAULT_BLITZ;
 
+  /** Flag to set the time limit for each player's turn. */
   private static int time = Utils.DEFAULT_TIME;
 
+  /** Flag to enable contest mode. */
   private static boolean contest = Utils.DEFAULT_CONTEST;
 
+  /** Flag to set the board size. */
   private static int size = Utils.DEFAULT_BOARD_SIZE;
 
   /** Flag to enable white AI. */
@@ -80,7 +82,7 @@ public class App {
     GameView view = new CommandLineInterface(verbose, debug);
     GameController controller = new GameController(view);
     controller.start();
-    controller.startNewGame(new Configuration(blitz, time, contest, 
+    controller.startNewGame(new Configuration(blitz, time, contest,
         size, verbose, debug, whiteAi, blackAi));
     try {
       ((CommandLineInterface) view).join();
@@ -133,8 +135,8 @@ public class App {
       CommandLine cmd = parser.parse(options, args);
 
       if (!cmd.getArgList().isEmpty()) {
-        throw new ParseException(Internationalization.get("app.error.unrecognized_arg") 
-          + cmd.getArgList());
+        throw new ParseException(Internationalization.get("app.error.unrecognized_arg")
+            + cmd.getArgList());
       }
 
       if (cmd.hasOption("h")) {
@@ -245,18 +247,38 @@ public class App {
     return debug;
   }
 
+  /**
+   * Checks if blitz mode is enabled.
+   *
+   * @return true if blitz is on.
+   */
   public static boolean isBlitz() {
     return blitz;
   }
 
+  /**
+   * Returns the time limit for blitz mode.
+   *
+   * @return the time limit in seconds.
+   */
   public static int getSize() {
     return size;
   }
 
+  /**
+   * Returns the time limit for blitz mode.
+   *
+   * @return the time limit in seconds.
+   */
   public static int getTime() {
     return time;
   }
 
+  /**
+   * Checks if contest mode is enabled.
+   *
+   * @return true if contest mode is on.
+   */
   public static boolean isContest() {
     return contest;
   }

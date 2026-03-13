@@ -21,8 +21,11 @@ import org.jline.reader.ParsedLine;
  */
 public class BashStyleCompleter implements Completer {
 
+  /** A sentinel value to indicate no match was found. */
   private static final String NO_MATCH_SENTINEL = "\0";
+  /** The collection of valid command strings for completion. */
   private final Collection<String> commands;
+  /** The last ambiguous word that triggered a completion alert. */
   private String lastAmbiguousWord = null;
 
   /**
@@ -45,11 +48,10 @@ public class BashStyleCompleter implements Completer {
   public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
     String word = line.word();
 
-    List<String> matches =
-        commands.stream()
-            .filter(cmd -> cmd.startsWith(word))
-            .sorted()
-            .collect(Collectors.toList());
+    List<String> matches = commands.stream()
+        .filter(cmd -> cmd.startsWith(word))
+        .sorted()
+        .collect(Collectors.toList());
 
     if (matches.isEmpty()) {
       handleNoMatch(reader);
@@ -81,6 +83,12 @@ public class BashStyleCompleter implements Completer {
 
   /**
    * Manages the "Double-Tab" logic for multiple possible matches.
+   *
+   * @param word the current input prefix that triggered the completion.
+   * @param matches the list of matching command strings.
+   * @param candidates the list to be populated with matching {@link Candidate} objects if the
+   *     user confirms the ambiguous completion.
+   * @param reader the active line reader.
    */
   private void handleAmbiguousMatch(
       String word, List<String> matches, List<Candidate> candidates, LineReader reader) {
@@ -101,19 +109,19 @@ public class BashStyleCompleter implements Completer {
    */
   private void notifyUser(LineReader reader) {
     new Thread(
-            () -> {
-              try {
-                String errorMessage = Internationalization.get("cli.command_not_found");
-                reader.printAbove("\033[31m  [!] " + errorMessage + "\033[0m");
-                Thread.sleep(800);
-                // ANSI escape codes to clear the temporary message line
-                reader.printAbove("\033[A\033[2K");
-                reader.callWidget(LineReader.REDRAW_LINE);
-                reader.callWidget(LineReader.REDISPLAY);
-              } catch (Exception ignored) {
-                // Thread interruption or JLine internal issues are ignored for feedback
-              }
-            })
+        () -> {
+          try {
+            String errorMessage = Internationalization.get("cli.command_not_found");
+            reader.printAbove("\033[31m  [!] " + errorMessage + "\033[0m");
+            Thread.sleep(800);
+            // ANSI escape codes to clear the temporary message line
+            reader.printAbove("\033[A\033[2K");
+            reader.callWidget(LineReader.REDRAW_LINE);
+            reader.callWidget(LineReader.REDISPLAY);
+          } catch (Exception ignored) {
+            // Thread interruption or JLine internal issues are ignored for feedback
+          }
+        })
         .start();
   }
 }

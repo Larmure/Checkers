@@ -78,7 +78,7 @@ public class MinMax extends Ai {
    * @param board    the current state of the game board
    * @param player  the color of the current player
    * @param evaluator the evaluation function to score board positions
-   * @param validMoves the list of valid moves for the current player
+   * @param moves the list of valid moves for the current player
    * @param depth    the current search depth
    * @param startTime the time when the search started, used for time limit checks
    * @return the best move found at the specified depth, or null if no moves are

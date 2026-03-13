@@ -27,12 +27,21 @@ import java.nio.file.Paths;
  */
 public class LoadCommand implements Command, Helpable {
 
-  private static final String SAVE_DIRECTORY =
-        System.getProperty("user.dir") + File.separator + "Sauvegarde";
+  /** The directory where save files are stored. */
+  private static final String SAVE_DIRECTORY = System.getProperty("user.dir") + File.separator
+      + "Sauvegarde";
 
+  /** The game controller. */
   private final GameController controller;
+  /** The command arguments, expected to contain the file name. */
   private final String[] args;
 
+  /**
+   * Constructs a new LoadCommand with the specified controller and arguments.
+   *
+   * @param controller the game controller to update upon successful loading
+   * @param args the command arguments, expected to contain the file name
+   */
   public LoadCommand(GameController controller, String[] args) {
     this.controller = controller;
     this.args = args;
@@ -84,9 +93,14 @@ public class LoadCommand implements Command, Helpable {
     System.out.println("Game loaded: " + fileName);
   }
 
+  /**
+   * Returns the help message for the load command.
+   *
+   * @return the help message
+   */
   @Override
   public String getHelp() {
     return "load <file> — Loads a saved game from the save directory.\n"
-      + "Example: load mygame.txt";
+        + "Example: load mygame.txt";
   }
 }
