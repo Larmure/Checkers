@@ -16,6 +16,8 @@ public interface Observer {
    * Invoked when the observed object's state has changed.
    * Implementing classes (like {@link GameView}) should use this method
    * to refresh their display or process the new state.
+   *
+   * @param game the updated game state that the observer should process and display
    */
   void update(GameCheckers game);
 

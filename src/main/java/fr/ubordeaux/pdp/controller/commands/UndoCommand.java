@@ -24,6 +24,9 @@ public class UndoCommand implements Command, Helpable {
 
   /** 
    * Creates an undo command with the specified game controller and arguments. 
+   *
+   * @param controller the game controller to operate on
+   * @param args optional arguments for the undo command (e.g., number of moves to undo)
    */
   public UndoCommand(GameController controller, String[] args) {
     this.controller = controller;

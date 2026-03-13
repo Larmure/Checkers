@@ -24,7 +24,7 @@ import org.jline.terminal.TerminalBuilder;
  * @version 1.1
  */
 public class CommandLineInterface extends GameView {
-
+  /** Thread for handling user input. */
   private Thread inputThread;
 
   /** Flag to enable verbose. */
@@ -33,8 +33,10 @@ public class CommandLineInterface extends GameView {
   /** Flag to enable debug. */
   private boolean debug = false;
 
+  /** The terminal for user interaction. */
   private Terminal terminal;
 
+  /** The line reader for handling user input. */
   private LineReader lineReader;
 
   /**
@@ -146,6 +148,11 @@ public class CommandLineInterface extends GameView {
     this.controller = controller;
   }
 
+  /**
+   * Sets the LineReader for this view.
+   *
+   * @param lineReader The LineReader instance to be used for reading user input
+   */
   public void setLineReader(LineReader lineReader) {
     this.lineReader = lineReader;
   }

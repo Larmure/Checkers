@@ -15,8 +15,9 @@ import java.util.List;
  * the correct state of the board (including captured pieces and promotions).
  */
 public class ManagerUndoRedo {
-
+  /** The history of moves for undo/redo operations. */
   private History history;
+  /** The game board on which the moves will be applied and reverted. */
   private final Board board;
 
   /**
@@ -146,7 +147,7 @@ public class ManagerUndoRedo {
   public History getHistory() {
     return history;
   }
-  
+
   /**
    * Mutator for the history object, allowing injection of a custom history instance.
    *

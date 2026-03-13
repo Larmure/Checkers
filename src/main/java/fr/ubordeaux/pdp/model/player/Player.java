@@ -6,8 +6,9 @@ package fr.ubordeaux.pdp.model.player;
  * <p>Serves as the base class for both human-controlled players and AI agents.
  */
 public abstract class Player {
-
+  /** The display name of the player. */
   private String name;
+  /** The time allocated for the player's turn. */
   private int playTime;
 
   /**

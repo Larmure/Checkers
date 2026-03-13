@@ -16,13 +16,21 @@ import fr.ubordeaux.pdp.model.tools.Utils;
  * @version 1.0
  */
 public class Configuration {
+  /** Indicates whether the game is in blitz mode. */
   private final boolean blitz;
+  /** The time limit for each player in seconds. */
   private final int time;
+  /** Indicates whether the game is in contest mode. */
   private final boolean contest;
+  /** The size of the game board. */
   private final int size;
+  /** Indicates whether verbose output is enabled. */
   private final boolean verbose;
+  /** Indicates whether debug mode is enabled. */
   private final boolean debug;
+  /** Indicates whether the white player is controlled by AI. */
   private final boolean whiteAi;
+  /** Indicates whether the black player is controlled by AI. */
   private final boolean blackAi;
 
   /**
@@ -126,38 +134,91 @@ public class Configuration {
         Utils.DEFAULT_BLACK_AI);
   }
 
+  /**
+   * Returns whether the game is in blitz mode, which imposes time limits on
+   * players.
+   *
+   * @return true if the game is in blitz mode, false otherwise.
+   */
   public boolean isBlitz() {
     return blitz;
   }
 
+  /**
+   * Returns the time limit for each player in seconds, applicable only if blitz
+   * mode is enabled.
+   *
+   * @return the time limit for each player in seconds.
+   */
   public int getTime() {
     return time;
   }
 
+  /**
+   * Returns whether the game is in contest mode, which may affect scoring and
+   * rules.
+   *
+   * @return true if the game is in contest mode, false otherwise.
+   */
   public boolean isContest() {
     return contest;
   }
 
+  /**
+   * Returns the size of the game board, which must be one of the valid sizes
+   * defined in Utils.VALID_SIZES.
+   *
+   * @return the size of the game board.
+   */
   public int getSize() {
     return size;
   }
 
+  /** Returns whether verbose output is enabled, providing more detailed information
+   * during the game.
+   *
+   * @return true if verbose output is enabled, false otherwise.
+   */
   public boolean isVerbose() {
     return verbose;
   }
 
+  /**
+   * Returns whether debug mode is enabled, which may include additional logging for
+   * troubleshooting purposes.
+   *
+   * @return true if debug mode is enabled, false otherwise.
+   */
   public boolean isDebug() {
     return debug;
   }
 
-  public boolean isblackAi() {
-    return blackAi;
-  }
-
+  /**
+   * Returns whether the white player is controlled by AI.
+   *
+   * @return true if the white player is controlled by AI, false otherwise.
+   */
   public boolean iswhiteAi() {
     return whiteAi;
   }
 
+  /**
+   * Returns whether the black player is controlled by AI.
+   *
+   * @return true if the black player is controlled by AI, false otherwise.
+   */
+  public boolean isblackAi() {
+    return blackAi;
+  }
+
+  /**
+   * Returns a string representation of the Configuration object, including all
+   * the settings and their current values. This method is useful for debugging
+   * and logging purposes, allowing developers to easily see the configuration
+   * state at any point in time.
+   *
+   * @return a string representation of the Configuration object.
+   */
   @Override
   public String toString() {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest

@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ServerListService {
 
+  /** The UDP port for discovery broadcasts. */
   private static final int DISCOVERY_PORT = 12346;
   /** Total listening duration: 30 seconds as specified. */
   private static final int LISTEN_DURATION_MS = 30_000;
@@ -57,7 +58,7 @@ public class ServerListService {
             String[] parts = message.split(":");
             if (parts.length == 3) {
               System.out.println("Server found: " + parts[0]
-                    + " at " + parts[1] + ":" + parts[2]);
+                  + " at " + parts[1] + ":" + parts[2]);
             }
           }
 
@@ -78,7 +79,7 @@ public class ServerListService {
 
     } catch (java.net.BindException e) {
       System.err.println("Port " + DISCOVERY_PORT
-            + " already in use (another discovery running?).");
+          + " already in use (another discovery running?).");
     } catch (Exception e) {
       System.err.println("Error during server discovery: " + e.getMessage());
     }

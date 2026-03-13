@@ -8,6 +8,10 @@ package fr.ubordeaux.pdp.model.core;
  * and finished, without the controller needing complex conditional logic.
  */
 public enum State {
-
-  IN_GAME, FINISHED, PAUSE;
+  /** The game is currently in progress. */
+  IN_GAME,
+  /** The game has been finished. */
+  FINISHED,
+  /** The game is paused. */
+  PAUSE;
 }

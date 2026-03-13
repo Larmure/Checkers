@@ -14,10 +14,15 @@ import java.util.List;
  */
 public class Move {
 
+  /** The index of the starting square. */
   private final int from;
+  /** The full sequence of squares visited during the move, including the starting square. */
   private final List<Integer> path;
+  /** The indices of all pieces captured during this move. */
   private final List<Integer> captured;
+  /** The colors of all pieces captured during this move. */
   private final List<String> capturedColors;
+  /** Whether this move results in a promotion. */
   private boolean promotion;
 
   /**

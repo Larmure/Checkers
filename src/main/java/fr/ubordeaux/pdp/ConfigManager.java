@@ -9,8 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-
-
 /**
  * Manages the configuration file for the Checkers game.
  *
@@ -21,13 +19,20 @@ import java.util.List;
  * @version 1.0
  */
 public class ConfigManager {
+  /** The name of the configuration file. */
   private static final String CONFIG_FILE = ".checkersrc";
 
+  /** The default values for the configuration settings. */
   private boolean verbose = Utils.DEFAULT_VERBOSE;
+  /** The default value for the blitz setting. */
   private boolean blitz = Utils.DEFAULT_BLITZ;
+  /** The default value for the time setting. */
   private int time = Utils.DEFAULT_TIME;
+  /** The default value for the contest setting. */
   private boolean contest = Utils.DEFAULT_CONTEST;
+  /** The default value for the board size setting. */
   private int size = Utils.DEFAULT_BOARD_SIZE;
+  /** The default value for the debug setting. */
   private boolean debug = Utils.DEFAULT_DEBUG;
 
   /**
@@ -232,22 +237,47 @@ public class ConfigManager {
     return this.verbose;
   }
 
+  /**
+   * Checks if blitz mode is enabled.
+   *
+   * @return true if blitz mode is active, false otherwise.
+   */
   public boolean isBlitz() {
     return this.blitz;
   }
 
+  /**
+   * Returns the configured time limit for blitz mode.
+   *
+   * @return the time limit in seconds, or the default if not set or invalid.
+   */
   public int getTime() {
     return this.time;
   }
 
+  /**
+   * Checks if contest mode is enabled.
+   *
+   * @return true if contest mode is active, false otherwise.
+   */
   public boolean isContest() {
     return this.contest;
   }
 
+  /**
+   * Returns the configured board size.
+   *
+   * @return the board size, or the default if not set or invalid.
+   */
   public int getSize() {
     return this.size;
   }
 
+  /**
+   * Checks if debug mode is enabled.
+   *
+   * @return true if debug mode is active, false otherwise.
+   */
   public boolean isDebug() {
     return this.debug;
   }

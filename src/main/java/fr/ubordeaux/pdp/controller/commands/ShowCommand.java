@@ -19,6 +19,13 @@ public class ShowCommand implements Command, Helpable {
   /** The controller to which the game initialization is delegated. */
   private final GameController controller;
 
+  /**
+   * Constructs a ShowCommand with the specified game controller and arguments.
+   *
+   * @param gc the GameController instance to operate on
+   * @param args the arguments for the show command, where args[0] should specify what to show
+   *     (e.g., "board", "history", "time", "configuration")
+   */
   public ShowCommand(GameController gc, String[] args) {
     this.controller = gc;
     this.args = args;

@@ -7,9 +7,14 @@ package fr.ubordeaux.pdp.controller;
  * handling errors.
  */
 public enum CommandProtocol {
+    /** A ping command to check connectivity. */
     PING,
+    /** A pong command as a response to a ping. */
     PONG,
+    /** A quit command to leave the game. */
     QUIT,
+    /** A bye command to indicate the end of a session. */
     BYE,
+    /** An error command to signal an error condition. */
     ERROR;
 }

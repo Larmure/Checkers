@@ -35,6 +35,8 @@ public abstract class GameView implements Observer {
 
   /**
    * Renders the current state of the game to the user.
+   *
+   * @param game the current game state to be displayed, provided by the model update
    */
   public abstract void display(GameCheckers game);
 }

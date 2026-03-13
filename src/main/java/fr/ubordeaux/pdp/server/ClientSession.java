@@ -23,14 +23,20 @@ import java.net.Socket;
  * </ul>
  */
 public class ClientSession {
-
+  /** The default host to connect to. */
   private static final String DEFAULT_HOST = "localhost";
+  /** The default port to connect to. */
   private static final int DEFAULT_PORT = 12345;
 
+  /** The active TCP socket for the connection. */
   private Socket socket;
+  /** The input stream for reading server responses. */
   private BufferedReader in;
+  /** The output stream for sending messages to the server. */
   private PrintWriter out;
+  /** Indicates whether the client is currently connected to a server. */
   private boolean connected = false;
+  /** The address of the currently connected server. */
   private String currentServer = null;
 
   /**
@@ -44,8 +50,8 @@ public class ClientSession {
   public void connect(String host, int port) {
     if (connected) {
       System.out.println(
-            "Already connected to " + currentServer
-                  + ". Type 'quit' to disconnect first.");
+          "Already connected to " + currentServer
+              + ". Type 'quit' to disconnect first.");
       return;
     }
 
@@ -54,43 +60,42 @@ public class ClientSession {
     try {
       socket = new Socket(host, port);
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-      out =
-            new PrintWriter(
-                  new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
-                  true);
+      out = new PrintWriter(
+          new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
+          true);
       connected = true;
       currentServer = host + ":" + port;
 
       System.out.println("Connected to " + currentServer);
 
       new Thread(
-            () -> {
-              try {
-                String response;
-                while ((response = in.readLine()) != null) {
-                  if (response.startsWith("PONG")) {
-                    System.out.println("\nServer: " + response);
-                  } else if ("BYE".equals(response)) {
-                    System.out.println("\nServer: BYE");
-                  } else {
-                    System.out.println("\nServer: " + response);
-                  }
-
-                  if (connected) {
-                    System.out.print("[" + currentServer + "] > ");
-                  }
+          () -> {
+            try {
+              String response;
+              while ((response = in.readLine()) != null) {
+                if (response.startsWith("PONG")) {
+                  System.out.println("\nServer: " + response);
+                } else if ("BYE".equals(response)) {
+                  System.out.println("\nServer: BYE");
+                } else {
+                  System.out.println("\nServer: " + response);
                 }
-              } catch (IOException e) {
-                // Socket closed normally or by the server.
-              } finally {
+
                 if (connected) {
-                  System.out.println("\nServer stopped unexpectedly.");
-                  disconnect();
-                  System.out.print("[local] > ");
+                  System.out.print("[" + currentServer + "] > ");
                 }
               }
-            },
-            "server-listener").start();
+            } catch (IOException e) {
+              // Socket closed normally or by the server.
+            } finally {
+              if (connected) {
+                System.out.println("\nServer stopped unexpectedly.");
+                disconnect();
+                System.out.print("[local] > ");
+              }
+            }
+          },
+          "server-listener").start();
 
     } catch (IOException e) {
       System.out.println("Connection failed: " + e.getMessage());
@@ -130,18 +135,38 @@ public class ClientSession {
     }
   }
 
+  /**
+   * Checks if the client is currently connected to a server.
+   *
+   * @return true if connected, false otherwise.
+   */
   public boolean isConnected() {
     return connected;
   }
 
+  /**
+   * Returns the address of the currently connected server, or null if not connected.
+   *
+   * @return the current server address in "host:port" format, or null if not connected.
+   */
   public String getCurrentServer() {
     return currentServer;
   }
 
+  /**
+   * Returns the default host for connections.
+   *
+   * @return the default host as a string.
+   */
   public String getDefaultHost() {
     return DEFAULT_HOST;
   }
 
+  /**
+   * Returns the default port for connections.
+   *
+   * @return the default port as an integer.
+   */
   public int getDefaultPort() {
     return DEFAULT_PORT;
   }

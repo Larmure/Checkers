@@ -27,9 +27,13 @@ import java.util.Set;
 public class Board {
 
   // ---- Edge masks (one bit per left/right-edge playable square) ----
+  /** Mask for the left edge of the board. */
   private long leftMask1;
+  /** Mask for the left edge of the board (high bits for boards > 64 squares). */
   private long leftMask2;
+  /** Mask for the right edge of the board. */
   private long rightMask1;
+  /** Mask for the right edge of the board (high bits for boards > 64 squares). */
   private long rightMask2;
 
   /** Diagonal offsets (index deltas) for even rows. */
@@ -45,14 +49,22 @@ public class Board {
   private int indexMax;
 
   // ---- Bitboards (low 64 bits then high bits for boards > 64 squares) ----
+  /** Bitboard for white pawns (low 64 bits). */
   private long whitePawns1;
+  /** Bitboard for white checkers (low 64 bits). */
   private long whiteCheckers1;
+  /** Bitboard for black pawns (low 64 bits). */
   private long blackPawns1;
+  /** Bitboard for black checkers (low 64 bits). */
   private long blackCheckers1;
 
+  /** Bitboard for white pawns (high 64 bits). */
   private long whitePawns2;
+  /** Bitboard for white checkers (high 64 bits). */
   private long whiteCheckers2;
+  /** Bitboard for black pawns (high 64 bits). */
   private long blackPawns2;
+  /** Bitboard for black checkers (high 64 bits). */
   private long blackCheckers2;
 
   /**
@@ -602,6 +614,7 @@ public class Board {
    * {@code from}.
    *
    * @param from bit index of the pawn
+   * @param isWhite {@code true} if the pawn is white (moves up)
    * @return mutable list of destination indices; may be empty
    */
   private List<Integer> pawnSimpleTargets(int from, boolean isWhite) {
@@ -1162,6 +1175,12 @@ public class Board {
     return sb.toString();
   }
 
+  /**
+   * Helper method to convert a bit index to its corresponding cell string for display.
+   *
+   * @param bitIndex bit index of the square, or -1 for light squares
+   * @return string representation of the cell's contents ("o  ", "O  ", "x  ", "X  ", or "_  ")
+   */
   private String cellString(int bitIndex) {
     String res = "";
     if (bitIndex == -1) {

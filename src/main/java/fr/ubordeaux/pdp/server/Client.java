@@ -132,6 +132,11 @@ public class Client {
     }
   }
 
+  /**
+   * Main method: creates a Client instance and starts the command loop.
+   *
+   * @param args Command-line arguments (not used).
+   */
   public static void main(String[] args) {
     new Client().run();
   }

@@ -23,11 +23,12 @@ import java.io.IOException;
  * directory.
  */
 public class SaveBoard {
-
-  private static final String SAVE_DIRECTORY =
-        System.getProperty("user.dir") + File.separator + "Sauvegarde";
-
+  /** The directory where save files will be stored. */
+  private static final String SAVE_DIRECTORY = System.getProperty("user.dir") + File.separator
+      + "Sauvegarde";
+  /** The game board to save. */
   private final Board board;
+  /** The game instance to save. */
   private final GameCheckers game;
 
   /**
@@ -75,7 +76,7 @@ public class SaveBoard {
    * @throws IOException if the write fails
    */
   private void writeSettings(BufferedWriter writer, Configuration config)
-        throws IOException {
+      throws IOException {
     writer.write("[settings] # Game configuration parameters\n");
 
     String startingPlayer = game.isWhiteTurn() ? "white" : "black";

@@ -13,6 +13,7 @@ import fr.ubordeaux.pdp.model.core.State;
  * @version 1.0
  */
 public class ContinueCommand implements Command {
+  /** The game instance on which this command operates. */
   private final GameCheckers game;
 
   /**

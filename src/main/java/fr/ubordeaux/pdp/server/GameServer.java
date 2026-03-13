@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 /**
  * TCP game server.
  *
@@ -31,23 +30,29 @@ import java.util.concurrent.ConcurrentHashMap;
  * </ul>
  */
 public class GameServer {
-
+  /** The default TCP port for the server. */
   private static final int DEFAULT_PORT = 12345;
 
   /** Client socket timeout: 1 minute. */
   private static final int CLIENT_TIMEOUT_MS = 60_000;
 
+  /** The TCP port for the server. */
   private final int tcpPort;
+  /** The name of the game server. */
   private final String serverName;
+  /** The game controller. */
   private final GameController controller;
 
+  /** The thread for the UDP discovery service. */
   private Thread discoveryThread;
+  /** The server socket for handling client connections. */
   private ServerSocket serverSocket;
+  /** Indicates whether the server is currently running. */
   private volatile boolean running = false;
 
   /** Active writers used to notify all clients when the server stops. */
-  private final Set<PrintWriter> connectedClients =
-        Collections.newSetFromMap(new ConcurrentHashMap<>());
+  private final Set<PrintWriter> connectedClients = Collections.newSetFromMap(
+      new ConcurrentHashMap<>());
 
   /**
    * Creates a game server.
@@ -80,9 +85,9 @@ public class GameServer {
       serverSocket = new ServerSocket(tcpPort);
     } catch (java.net.BindException e) {
       throw new IOException(
-            "Port " + tcpPort + " is already in use. "
-                  + "Choose another port or stop the existing server.",
-            e);
+          "Port " + tcpPort + " is already in use. "
+              + "Choose another port or stop the existing server.",
+          e);
     }
 
     running = true;
@@ -101,10 +106,9 @@ public class GameServer {
         client.setSoTimeout(CLIENT_TIMEOUT_MS);
         System.out.println("Client connected: " + client.getInetAddress());
 
-        Thread thread =
-              new Thread(
-                    () -> handleClient(client),
-                    "client-" + client.getInetAddress());
+        Thread thread = new Thread(
+            () -> handleClient(client),
+            "client-" + client.getInetAddress());
         thread.start();
 
       } catch (IOException e) {
@@ -153,10 +157,20 @@ public class GameServer {
     System.out.println("Game server stopped.");
   }
 
+  /**
+   * Checks if the server is currently running.
+   *
+   * @return true if the server is active, false otherwise
+   */
   public boolean isRunning() {
     return running;
   }
 
+  /**
+   * Returns the TCP port the server is listening on.
+   *
+   * @return the TCP port number
+   */
   public int getPort() {
     return tcpPort;
   }
@@ -168,12 +182,10 @@ public class GameServer {
    */
   private void handleClient(Socket client) {
     try (
-          BufferedReader in =
-                new BufferedReader(new InputStreamReader(client.getInputStream()));
-          PrintWriter out =
-                new PrintWriter(
-                      new BufferedWriter(new OutputStreamWriter(client.getOutputStream())),
-                      true)) {
+        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+        PrintWriter out = new PrintWriter(
+            new BufferedWriter(new OutputStreamWriter(client.getOutputStream())),
+            true)) {
       connectedClients.add(out);
       String line;
 
@@ -206,8 +218,8 @@ public class GameServer {
         String[] tokens = line.trim().split("\\s+", 2);
         String commandName = tokens[0];
         String[] args = tokens.length > 1
-              ? tokens[1].split("\\s+")
-              : new String[0];
+            ? tokens[1].split("\\s+")
+            : new String[0];
 
         try {
           controller.executeCommand(commandName, args);
