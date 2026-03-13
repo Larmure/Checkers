@@ -53,23 +53,6 @@ public class Move {
   }
 
   /**
-   * Creates a capture move with a full movement path, the list of captured piece
-   * indices, and their colors.
-   *
-   * @param path           the full sequence of squares visited, including the
-   *                       starting square
-   * @param captured       the indices of all pieces captured along the path
-   * @param capturedColors the colors of all pieces captured along the path
-   */
-  public Move(List<Integer> path, List<Integer> captured, List<String> capturedColors) {
-    this.from = path.get(0);
-    this.path = new ArrayList<>(path);
-    this.captured = new ArrayList<>(captured);
-    this.capturedColors = new ArrayList<>(capturedColors);
-    this.promotion = false;
-  }
-
-  /**
    * Returns the index of the starting square.
    *
    * @return the starting square index
