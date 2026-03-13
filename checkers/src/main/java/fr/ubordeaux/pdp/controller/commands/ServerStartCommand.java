@@ -3,35 +3,50 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
+import fr.ubordeaux.pdp.serveur.ClientSession;
 import fr.ubordeaux.pdp.serveur.GameServer;
 
 /**
- * Network command: {@code server start [PORT]}
- * Starts a TCP game server on the specified port (default: 12345).
- * Displays an explicit error message if the port is already in use.
- * The server runs in a daemon thread and delegates game logic
- * to the current {@link GameController}.
+ * Server management command: {@code server start [PORT]}
+ *
+ * <p>Starts a game server on the specified TCP port (default: 12345).
+ * On success, switches the session to {@link fr.ubordeaux.pdp.serveur.ClientMode#SERVER},
+ * which disables all client commands ({@code join}, {@code ping}) until the server is stopped.
+ *
+ * <p>Displays a clear error message if the port is already in use.
+ *
+ * <p>Category: [NETWORK — SERVER MANAGEMENT]
  */
 public class ServerStartCommand implements Command, Helpable {
 
   private static final int DEFAULT_PORT = 12345;
 
-  private final GameController controller;
-  private final String[] args;
-
-  /** Static reference allowing {@link ServerStopCommand} to stop the server. */
+  /**
+   * Reference shared with {@link ServerStopCommand} so the latter can stop
+   * the server that this command started.
+   */
   public static GameServer activeServer = null;
 
-  public ServerStartCommand(GameController controller, String[] args) {
+  private final GameController controller;
+  private final String[] args;
+  private final ClientSession session;
+
+  /**
+   * @param controller the game controller to inject into the server (may be {@code null}
+   *                   in standalone client mode).
+   * @param args       optional first element is the port number as a string.
+   * @param session    the client session whose mode will be updated on start.
+   */
+  public ServerStartCommand(GameController controller, String[] args, ClientSession session) {
     this.controller = controller;
     this.args = args;
+    this.session = session;
   }
 
   @Override
   public void execute() {
     if (activeServer != null && activeServer.isRunning()) {
-      System.out.println("A server is already running on port "
-            + activeServer.getPort() + ".");
+      System.out.println("A server is already running on port " + activeServer.getPort() + ".");
       return;
     }
 
@@ -40,42 +55,47 @@ public class ServerStartCommand implements Command, Helpable {
       try {
         port = Integer.parseInt(args[0].trim());
       } catch (NumberFormatException e) {
-        System.out.println("Invalid port '" + args[0]
-              + "'. Using default port: " + DEFAULT_PORT);
+        System.out.println("Invalid port '" + args[0] + "'. Using default: " + DEFAULT_PORT);
       }
     }
 
     final int finalPort = port;
     activeServer = new GameServer("GameServer", finalPort, controller);
-
     GameServer ref = activeServer;
+
     Thread serverThread = new Thread(() -> {
       try {
         ref.start();
       } catch (java.io.IOException e) {
-        // Explicit message returned by GameServer if the port is already in use
-        System.out.println("✗ Unable to start the server: " + e.getMessage());
+        System.out.println("Cannot start server: " + e.getMessage());
         activeServer = null;
+        // Restore LOCAL mode if startup failed
+        if (session != null) {
+          session.exitServerMode();
+        }
       }
     }, "game-server-thread");
     serverThread.setDaemon(true);
     serverThread.start();
 
-    // Short delay to give the server time to initialize
+    // Brief wait to let the server socket initialize
     try {
       Thread.sleep(300);
     } catch (InterruptedException ignored) {
-      Thread.currentThread().interrupt();
     }
 
     if (activeServer != null && activeServer.isRunning()) {
-      System.out.println("✓ Server started on port " + finalPort);
+      System.out.println("Server started on port " + finalPort + ".");
+      // Switch to SERVER mode: client commands are now disabled
+      if (session != null) {
+        session.enterServerMode();
+      }
     }
   }
 
   @Override
   public String getHelp() {
-    return "server start [PORT] — Starts a game server on port PORT "
-          + "(default: 12345). Displays an error if the port is already in use.";
+    return "server start [PORT] — Starts a game server on PORT (default: 12345).\n"
+      + "                       Client commands (join, ping) are disabled while the server runs.";
   }
 }

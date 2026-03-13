@@ -9,17 +9,17 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 /**
- * Encapsulates the TCP connection state of the client.
+ * Holds the TCP connection state and current operating mode for the game client.
  *
- * <p>All client commands receive a reference to this session so they can read
- * and update the connection state without depending directly on the client
- * entry-point class.
+ * <p>All {@link fr.ubordeaux.pdp.controller.commands.ClientCommand} implementations
+ * receive a reference to this session to read or modify state without depending
+ * on the {@code client} runner class directly.
  *
- * <p>This helps keep responsibilities separated:
+ * <p>The {@link ClientMode} controls which commands are permitted at any time:
  * <ul>
- *   <li>{@code Client} handles the input loop and command dispatch</li>
- *   <li>{@code ClientSession} stores network state</li>
- *   <li>Command classes implement individual actions</li>
+ *   <li>{@link ClientMode#LOCAL}     — all commands available (default).</li>
+ *   <li>{@link ClientMode#SERVER}    — server is running; client commands blocked.</li>
+ *   <li>{@link ClientMode#CONNECTED} — connected to a server; server-start blocked.</li>
  * </ul>
  */
 public class ClientSession {
@@ -33,19 +33,20 @@ public class ClientSession {
   private boolean connected = false;
   private String currentServer = null;
 
+  /** Current operating mode — drives command availability in the client loop. */
+  private ClientMode mode = ClientMode.LOCAL;
+
   /**
-   * Opens a TCP connection to {@code host:port}.
+   * Opens a TCP connection to the given host and port, sets the mode to
+   * {@link ClientMode#CONNECTED}, then starts a background listener thread.
    *
-   * <p>Starts a background listener thread for server responses.
-   *
-   * @param host target host
-   * @param port target TCP port
+   * @param host target host.
+   * @param port target port.
    */
   public void connect(String host, int port) {
     if (connected) {
       System.out.println(
-            "Already connected to " + currentServer
-                  + ". Type 'quit' to disconnect first.");
+        "Already connected to " + currentServer + ". Type 'quit' to disconnect first.");
       return;
     }
 
@@ -54,75 +55,41 @@ public class ClientSession {
     try {
       socket = new Socket(host, port);
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-      out =
-            new PrintWriter(
-                  new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
-                  true);
+      out = new PrintWriter(
+        new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
       connected = true;
       currentServer = host + ":" + port;
+      mode = ClientMode.CONNECTED;
 
       System.out.println("Connected to " + currentServer);
-
-      new Thread(
-            () -> {
-              try {
-                String response;
-                while ((response = in.readLine()) != null) {
-                  if (response.startsWith("PONG")) {
-                    System.out.println("\nServer: " + response);
-                  } else if ("BYE".equals(response)) {
-                    System.out.println("\nServer: BYE");
-                  } else {
-                    System.out.println("\nServer: " + response);
-                  }
-
-                  if (connected) {
-                    System.out.print("[" + currentServer + "] > ");
-                  }
-                }
-              } catch (IOException e) {
-                // Socket closed normally or by the server.
-              } finally {
-                if (connected) {
-                  System.out.println("\nServer stopped unexpectedly.");
-                  disconnect();
-                  System.out.print("[local] > ");
-                }
-              }
-            },
-            "server-listener").start();
+      startListenerThread();
 
     } catch (IOException e) {
       System.out.println("Connection failed: " + e.getMessage());
     }
   }
 
-  /** Closes the TCP connection and resets the state. */
+  /**
+   * Closes the TCP socket, resets connection state, and returns the mode
+   * to {@link ClientMode#LOCAL}.
+   */
   public void disconnect() {
     connected = false;
     currentServer = null;
-
+    mode = ClientMode.LOCAL;
     try {
-      if (in != null) {
-        in.close();
-      }
-      if (out != null) {
-        out.close();
-      }
-      if (socket != null && !socket.isClosed()) {
-        socket.close();
-      }
-    } catch (IOException e) {
-      // Ignore close failure during cleanup.
+      if (in != null) in.close();
+      if (out != null) out.close();
+      if (socket != null && !socket.isClosed()) socket.close();
+    } catch (IOException ignored) {
     }
-
     System.out.println("Disconnected from server.");
   }
 
   /**
-   * Sends one line of text to the server.
+   * Sends a text line to the connected server.
    *
-   * @param message the text to send
+   * @param message the line to send.
    */
   public void send(String message) {
     if (out != null) {
@@ -130,19 +97,77 @@ public class ClientSession {
     }
   }
 
+  /**
+   * Switches the mode to {@link ClientMode#SERVER}.
+   * Called by {@link fr.ubordeaux.pdp.controller.commands.ServerStartCommand}
+   * once the server is successfully started.
+   */
+  public void enterServerMode() {
+    mode = ClientMode.SERVER;
+    System.out.println(
+      "[mode] Now in SERVER mode. Client commands are disabled.\n"
+      + "       Use 'server stop' to return to local mode.");
+  }
+
+  /**
+   * Returns the mode to {@link ClientMode#LOCAL}.
+   * Called by {@link fr.ubordeaux.pdp.controller.commands.ServerStopCommand}.
+   */
+  public void exitServerMode() {
+    mode = ClientMode.LOCAL;
+    System.out.println("[mode] Server stopped. Back to LOCAL mode.");
+  }
+
+  /** @return the current operating mode. */
+  public ClientMode getMode() {
+    return mode;
+  }
+
+  /** @return {@code true} if the TCP socket is currently open. */
   public boolean isConnected() {
     return connected;
   }
 
+  /** @return the {@code "host:port"} string of the current server, or {@code null}. */
   public String getCurrentServer() {
     return currentServer;
   }
 
+  /** @return the default host used when no address is given to join. */
   public String getDefaultHost() {
     return DEFAULT_HOST;
   }
 
+  /** @return the default port used when no address is given to join. */
   public int getDefaultPort() {
     return DEFAULT_PORT;
+  }
+
+  /**
+   * Starts a daemon thread that continuously reads lines from the server and
+   * prints them to stdout. Handles unexpected server shutdown gracefully by
+   * calling {@link #disconnect()} and restoring LOCAL mode.
+   */
+  private void startListenerThread() {
+    Thread listener = new Thread(() -> {
+      try {
+        String response;
+        while ((response = in.readLine()) != null) {
+          System.out.println("\nServer: " + response);
+          if (connected) {
+            System.out.print("[" + currentServer + "] > ");
+          }
+        }
+      } catch (IOException ignored) {
+      } finally {
+        if (connected) {
+          System.out.println("\n[!] Server stopped unexpectedly.");
+          disconnect();
+          System.out.print("[local] > ");
+        }
+      }
+    }, "server-listener");
+    listener.setDaemon(true);
+    listener.start();
   }
 }

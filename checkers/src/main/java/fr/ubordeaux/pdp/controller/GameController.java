@@ -122,8 +122,8 @@ public class GameController {
 
     return switch (subCommand) {
       case "list" -> new ServerListCommand();
-      case "start" -> new ServerStartCommand(this, subArgs);
-      case "stop" -> new ServerStopCommand();
+      case "start" -> new ServerStartCommand(this, subArgs, null);
+      case "stop" -> new ServerStopCommand(null);
       default -> {
         System.out.println( "Unknown server command: " + subCommand  + ". Use: list | start [PORT] | stop");
         yield null;

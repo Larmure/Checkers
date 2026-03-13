@@ -1,14 +1,15 @@
 package fr.ubordeaux.pdp.model.tools;
 
-import fr.ubordeaux.pdp.model.core.Board;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 
 /**
  * Loads a saved game from a structured text file.
@@ -94,6 +95,13 @@ public class LoadBoard {
 
         if (clean.startsWith("[") && clean.endsWith("]")) {
           currentSection = clean.toLowerCase();
+          switch (currentSection) {
+            case "[settings]" -> seenSettings = true;
+            case "[game]" -> seenGame = true;
+            case "[history]" -> seenHistory = true;
+            default -> {
+            }
+          }
           continue;
         }
 
@@ -173,33 +181,26 @@ public class LoadBoard {
    * @throws Exception if the data is invalid
    */
   private void processSectionData(String section, String data) throws Exception {
-    if (section == null || section.isEmpty()) {
-      throw new Exception("Data found outside any section header.");
-    }
+  if (section == null || section.isEmpty()) {
+    throw new Exception("Data found outside any section header.");
+  }
 
-    switch (section) {
-      case "[settings]" -> {
-        seenSettings = true;
-        parseSetting(data);
+  switch (section) {
+    case "[settings]" -> parseSetting(data);
+    case "[game]" -> {
+      if (!gameSectionInitialized) {
+        board.clearBoard();
+        currentBoardRow = 0;
+        gameSectionInitialized = true;
       }
-      case "[game]" -> {
-        seenGame = true;
-        if (!gameSectionInitialized) {
-          board.clearBoard();
-          currentBoardRow = 0;
-          gameSectionInitialized = true;
-        }
-        parseBoardLine(data);
-      }
-      case "[history]" -> {
-        seenHistory = true;
-        historyBuffer.append(data).append("\n");
-      }
-      default -> {
-        // Unknown sections are ignored.
-      }
+      parseBoardLine(data);
+    }
+    case "[history]" -> historyBuffer.append(data).append("\n");
+    default -> {
+      // Unknown sections are ignored.
     }
   }
+}
 
   /**
    * Checks that all mandatory sections were found.
@@ -321,10 +322,10 @@ public class LoadBoard {
 
     for (int col = 0; col < n; col++) {
       char c = cells.charAt(col);
-      boolean playable = ((currentBoardRow + col) % 2 == 0);
+      boolean playable = ((currentBoardRow + col) % 2 != 0);
 
       if (!playable) {
-        if (c != '-') {
+        if (c != '_') {
           throw new Exception(
                 "Piece '"
                       + c

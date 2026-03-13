@@ -64,8 +64,8 @@ public class Utils {
       Map.entry("show", new ShowCommand(null, null)),
       Map.entry("set", new SetCommand(null, null)),
       Map.entry("server list", new ServerListCommand()),
-      Map.entry("server start", new ServerStartCommand(null, null)),
-      Map.entry("server stop", new ServerStopCommand()),
+      Map.entry("server start", new ServerStartCommand(null, null, null)),
+      Map.entry("server stop", new ServerStopCommand(null)),
       Map.entry("continue", new ContinueCommand(null)));
       
 

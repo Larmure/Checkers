@@ -5,24 +5,28 @@ import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.serveur.ClientSession;
 
 /**
- * Commande CLIENT : {@code quit}
+ * Client command: {@code quit}
  *
- * Comportement contextuel :
- * - Si connecté à un serveur → envoie {@code QUIT} (le serveur répond {@code BYE})
- *   puis ferme la connexion locale. Le client revient en mode local.
- * - Si déjà en mode local → retourne {@code true} via {@link #shouldExit()}
- *   pour signaler à la boucle principale qu'il faut quitter l'application.
+ * <p>Context-sensitive behaviour:
+ * <ul>
+ *   <li>If connected to a server — sends {@code QUIT}, disconnects, and returns the
+ *       session to {@link fr.ubordeaux.pdp.serveur.ClientMode#LOCAL}.</li>
+ *   <li>If in LOCAL mode — signals the main loop to exit the program via
+ *       {@link #shouldExit()}.</li>
+ * </ul>
  *
- * Distinction des responsabilités :
- * - Cette classe gère la logique de déconnexion et le signal de sortie.
- * - La fermeture effective du socket est déléguée à {@link ClientSession}.
+ * <p>Category: [CLIENT]
  */
 public class QuitClientCommand implements ClientCommand, Helpable {
 
   private final ClientSession session;
-  /** Indique si la boucle principale doit terminer le programme. */
+
+  /** Set to {@code true} when the program should terminate. */
   private boolean exit = false;
 
+  /**
+   * @param session the current client session.
+   */
   public QuitClientCommand(ClientSession session) {
     this.session = session;
   }
@@ -30,20 +34,19 @@ public class QuitClientCommand implements ClientCommand, Helpable {
   @Override
   public void execute() {
     if (session.isConnected()) {
-      // Notifie le serveur puis ferme la connexion locale
+      // Notify the server then close the local socket.
+      // disconnect() internally resets the mode to LOCAL.
       session.send("QUIT");
       session.disconnect();
-      // On reste dans la boucle principale (retour en [local])
     } else {
-      // En mode local → signal de sortie du programme
       System.out.println("Exiting client. Goodbye!");
       exit = true;
     }
   }
 
   /**
-   * @return {@code true} si la boucle principale doit terminer.
-   *         À appeler après {@link #execute()}.
+   * @return {@code true} if the main loop should terminate the program.
+   *         Must be called after {@link #execute()}.
    */
   public boolean shouldExit() {
     return exit;

@@ -1092,23 +1092,23 @@ public class Board {
     return sb.toString();
   }
 
-  private String cellString(int bitIndex) {
-    String res ="";
-    if (bitIndex == -1) {
-      res = "_  ";
-    } else if (isBitWhitePawn(bitIndex)) {
-      res = "o  ";
-    } else if (isBitWhiteChecker(bitIndex)) {
-      res = "O  ";
-    } else if (isBitBlackPawn(bitIndex)) {
-      res = "x  ";
-    } else if (isBitBlackChecker(bitIndex)) {
-      res = "X  ";
-    } else {
-      res = "_  ";
-    }
-    return res;
+ private String cellString(int bitIndex) {
+  String res = "";
+  if (bitIndex == -1) {
+    res = "_  ";
+  } else if (isBitWhitePawn(bitIndex)) {
+    res = "o  ";
+  } else if (isBitWhiteChecker(bitIndex)) {
+    res = "O  ";
+  } else if (isBitBlackPawn(bitIndex)) {
+    res = "x  ";
+  } else if (isBitBlackChecker(bitIndex)) {
+    res = "X  ";
+  } else {
+    res = "_  ";
   }
+  return res;
+}
 
   public String boardString() {
     StringBuilder sb = new StringBuilder();
