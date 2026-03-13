@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "fr.ubordeaux.pdp.App",
+            "projectName": ""
+        },
+        {
+            "type": "java",
             "name": "client",
             "request": "launch",
             "mainClass": "fr.ubordeaux.pdp.serveur.client",
