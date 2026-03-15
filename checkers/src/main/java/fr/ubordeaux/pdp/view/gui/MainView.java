@@ -154,6 +154,25 @@ public class MainView extends BorderPane {
   }
 
   /**
+   * Opens the Save dialog from MenuView.
+   * Called by {@link GraphicalUserInterface#requestQuit()} when the user
+   * chooses to save before quitting.
+   */
+  public void openSaveDialog() {
+    menuView.openSaveDialog();
+  }
+  
+  /**
+   * Passes the {@link GraphicalUserInterface} reference to {@link MenuView}
+   * so the Quit menu item can delegate to
+   * {@link GraphicalUserInterface#requestQuit()} instead of a raw exit.
+   *
+   * @param gui the GUI instance; must not be {@code null}
+   */
+  public void passGuiToMenu(GraphicalUserInterface gui) {
+    menuView.setGui(gui);
+  }
+  /**
    * Delegates responsive cell-size binding to {@link PlayView}.
    *
    * <p>Must be called after the {@link Scene} is created so that the board's

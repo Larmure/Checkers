@@ -5,6 +5,8 @@ import fr.ubordeaux.pdp.view.GameView;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
@@ -35,18 +37,8 @@ import javafx.stage.Stage;
  * </ol>
  *
  * <h3>Update flow</h3>
- * <pre>
- * GameCheckers.notifyObservers()
- *   → GraphicalUserInterface.update(game)   [model thread]
- *     → Platform.runLater(...)              [hand-off to JavaFX thread]
- *       → MainView.update(game)             [JavaFX Application Thread]
- * </pre>
  */
 public class GraphicalUserInterface extends GameView {
-
-  // ---------------------------------------------------------------------------
-  // State
-  // ---------------------------------------------------------------------------
 
   /** The application's primary window. Created in {@link #start()}. */
   private Stage stage;
@@ -56,10 +48,6 @@ public class GraphicalUserInterface extends GameView {
    * JavaFX Application Thread.
    */
   private MainView mainView;
-
-  // ---------------------------------------------------------------------------
-  // GameView implementation
-  // ---------------------------------------------------------------------------
 
   /**
    * Bootstraps the JavaFX runtime, creates the primary window, and shows it.
@@ -99,6 +87,13 @@ public class GraphicalUserInterface extends GameView {
 
       // Pass the stage to MenuView *after* show() so dialogs have a visible owner.
       mainView.passStageToMenu(stage);
+      mainView.passGuiToMenu(this);
+ 
+      // Intercept the window close button (X) — same logic as the Quit menu item.
+      stage.setOnCloseRequest(e -> {
+        e.consume(); // prevent immediate close
+        requestQuit();
+      });
     });
   }
 
@@ -134,5 +129,47 @@ public class GraphicalUserInterface extends GameView {
   @Override
   public void display(GameCheckers game) {
     update(game);
+  }
+
+  /**
+   * Handles a quit request from the menu or the window close button.
+   *
+   * <p>If the current game has unsaved changes, an {@link Alert} asks the user
+   * to confirm before exiting. If the user confirms (or there are no unsaved
+   * changes), the JavaFX platform is shut down cleanly before calling
+   * {@code System.exit(0)}.
+   *
+   * <p>Must be called on the JavaFX Application Thread.
+   */
+  public void requestQuit() {
+    if (controller.getGame() != null && controller.hasUnsavedChanges()) {
+      Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+      confirm.initOwner(stage);
+      confirm.setTitle("Quit");
+      confirm.setHeaderText("Current game has unsaved changes.");
+      confirm.setContentText("Save before quitting?");
+      confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
+ 
+      confirm.showAndWait().ifPresent(response -> {
+        if (response == ButtonType.YES) {
+          mainView.openSaveDialog(); // delegate to MenuView's save dialog
+          doQuit();
+        } else if (response == ButtonType.NO) {
+          doQuit();
+        }
+        // CANCEL — do nothing, user stays in the game.
+      });
+    } else {
+      doQuit();
+    }
+  }
+ 
+  /**
+   * Performs the actual shutdown: closes the JavaFX platform cleanly then
+   * exits the JVM.
+   */
+  private void doQuit() {
+    Platform.exit();
+    System.exit(0);
   }
 }

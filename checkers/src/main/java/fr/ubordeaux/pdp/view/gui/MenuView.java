@@ -55,6 +55,9 @@ public class MenuView extends MenuBar {
   /** Controller that receives all menu action commands. */
   private final GameController controller;
 
+  /** GUI entry point — used to delegate the quit flow. */
+  private GraphicalUserInterface gui;
+
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
    * {@code stage.show()} so that modal dialogs have a proper owner window.
@@ -86,6 +89,16 @@ public class MenuView extends MenuBar {
    */
   public void setStage(Stage stage) {
     this.stage = stage;
+  }
+
+  /**
+   * Sets the GUI reference so the Quit item can delegate to
+   * {@link GraphicalUserInterface#requestQuit()}.
+   *
+   * @param gui the application's GUI entry point
+   */
+  public void setGui(GraphicalUserInterface gui) {
+    this.gui = gui;
   }
 
   /** Adds the File and Game menus to this menu bar. */
@@ -121,7 +134,7 @@ public class MenuView extends MenuBar {
 
     MenuItem saveItem = new MenuItem("Save Game");
     saveItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
-    saveItem.setOnAction(e -> handleSave());
+    saveItem.setOnAction(e -> openSaveDialog());
 
     MenuItem configItem = new MenuItem("Configuration");
     configItem.setAccelerator(
@@ -134,7 +147,15 @@ public class MenuView extends MenuBar {
 
     MenuItem quitItem = new MenuItem("Quit");
     quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
-    quitItem.setOnAction(e -> controller.executeCommand("quit", new String[0]));
+    // Delegate to the GUI so the JavaFX confirmation dialog is shown.
+    // Falls back to controller.executeCommand if gui is not yet set.
+    quitItem.setOnAction(e -> {
+      if (gui != null) {
+        gui.requestQuit();
+      } else {
+        controller.executeCommand("quit", new String[0]);
+      }
+    });
 
     fileMenu.getItems().addAll(
         newItem, loadItem, saveItem,
@@ -199,7 +220,7 @@ public class MenuView extends MenuBar {
 
       confirm.showAndWait().ifPresent(response -> {
         if (response == ButtonType.YES) {
-          handleSave();
+          openSaveDialog();;
           openLoadDialog();
         } else if (response == ButtonType.NO) {
           openLoadDialog();
@@ -257,26 +278,27 @@ public class MenuView extends MenuBar {
    * <p>A success or failure alert is displayed after the command completes,
    * based on whether the expected file was actually created on disk.
    */
-  private void handleSave() {
+  /** Opens the save dialog. Also called externally by MainView when quitting. */
+  public void openSaveDialog() {
     if (controller.getGame() == null) {
       showError("No game in progress", "Start a new game before saving.");
       return;
     }
-
+ 
     TextInputDialog dialog = new TextInputDialog();
     dialog.setTitle("Save Game");
     dialog.setHeaderText("Save to: " + SAVE_DIR.getPath());
     dialog.setContentText("File name:");
-
+ 
     dialog.showAndWait().ifPresent(name -> {
       name = name.trim();
       if (name.isEmpty()) {
         return;
       }
-
+ 
       // SaveBoard reconstructs the full path from the file name alone.
       controller.executeCommand("save", new String[]{name});
-
+ 
       // Confirm that the file was actually written to disk.
       File saved = new File(SAVE_DIR, name);
       if (saved.exists()) {
@@ -313,7 +335,7 @@ public class MenuView extends MenuBar {
         "Universite de Bordeaux\n"
             + "Master Informatique — Projet de Programmation 2025-2026\n\n"
             + "A checkers game with CLI and GUI interfaces.\n"
-            + "Built with Java 21 + JavaFX.");
+            + "Built with Java 17 + JavaFX.");
     alert.showAndWait();
   }
 
