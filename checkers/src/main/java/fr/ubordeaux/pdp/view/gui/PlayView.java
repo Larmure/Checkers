@@ -23,6 +23,9 @@ import javafx.scene.layout.StackPane;
  * <h3>Update flow</h3>
  * {@link #update(GameCheckers)} is the single entry point for model changes.
  * It delegates to both {@link BoardView#refresh} and {@link LogView#update}.
+ *
+ * <p>Visual styles are defined in {@code style.css} (class:
+ * {@code board-wrapper}).
  */
 public class PlayView extends HBox {
 
@@ -69,7 +72,8 @@ public class PlayView extends HBox {
     StackPane boardWrapper = new StackPane(boardView);
     boardWrapper.setPadding(new Insets(24));
     boardWrapper.setAlignment(Pos.CENTER);
-    boardWrapper.setStyle("-fx-background-color: #2C2C2E;");
+    // style.css : .board-wrapper
+    boardWrapper.getStyleClass().add("board-wrapper");
     HBox.setHgrow(boardWrapper, Priority.ALWAYS);
 
     this.getChildren().addAll(boardWrapper, logView);

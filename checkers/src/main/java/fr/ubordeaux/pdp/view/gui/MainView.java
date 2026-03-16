@@ -28,6 +28,10 @@ import javafx.stage.Stage;
  *   <li>Call {@link #passStageToMenu(Stage)} so {@link MenuView} can open
  *       modal dialogs.</li>
  * </ol>
+ *
+ * <p>Visual styles are defined in {@code style.css} (classes:
+ * {@code root-pane}, {@code toolbar}, {@code toolbar-button},
+ * {@code toolbar-button:hover}, {@code turn-label}).
  */
 public class MainView extends BorderPane {
 
@@ -54,7 +58,8 @@ public class MainView extends BorderPane {
   public MainView(GameController controller) {
     this.controller = controller;
     buildLayout();
-    this.setStyle("-fx-background-color: #2C2C2E;");
+    // style.css : .root-pane
+    this.getStyleClass().add("root-pane");
   }
 
   /**
@@ -84,10 +89,8 @@ public class MainView extends BorderPane {
     HBox toolbar = new HBox(10);
     toolbar.setPadding(new Insets(10, 20, 10, 20));
     toolbar.setAlignment(Pos.CENTER_LEFT);
-    toolbar.setStyle(
-        "-fx-background-color: #1C1C1E; "
-            + "-fx-border-color: #3A3A3C; "
-            + "-fx-border-width: 1 0 0 0;");
+    // style.css : .toolbar
+    toolbar.getStyleClass().add("toolbar");
 
     Button undoBtn =
         toolbarButton("Undo", () -> controller.executeCommand("undo", new String[]{"1"}));
@@ -103,19 +106,19 @@ public class MainView extends BorderPane {
     HBox.setHgrow(spacer, Priority.ALWAYS);
 
     turnLabel = new Label("Turn: BLACK");
-    turnLabel.setStyle(
-        "-fx-text-fill: #EBEBF5; -fx-font-size: 13px; -fx-font-weight: bold;");
+    // style.css : .turn-label
+    turnLabel.getStyleClass().add("turn-label");
 
     toolbar.getChildren().addAll(undoBtn, redoBtn, pauseBtn, hintBtn, spacer, turnLabel);
     return toolbar;
   }
 
   /**
-   * Creates a styled toolbar button with a hover effect.
+   * Creates a styled toolbar button.
    *
-   * <p>The button uses inline CSS because JavaFX stylesheets are not bundled
-   * with this project. The hover colour is applied via
-   * {@code setOnMouseEntered} / {@code setOnMouseExited} handlers.
+   * <p>Hover effect is handled by the {@code .toolbar-button:hover} rule in
+   * {@code style.css}, so no {@code setOnMouseEntered}/{@code setOnMouseExited}
+   * handlers are needed here.
    *
    * @param text   button label
    * @param action action executed when the button is clicked
@@ -124,19 +127,8 @@ public class MainView extends BorderPane {
   private Button toolbarButton(String text, Runnable action) {
     Button btn = new Button(text);
     btn.setOnAction(e -> action.run());
-
-    String base =
-        "-fx-background-color: #814e5c; -fx-text-fill: #EBEBF5; "
-            + "-fx-font-size: 12px; -fx-background-radius: 6; "
-            + "-fx-cursor: hand; -fx-padding: 6 14 6 14;";
-    String hover =
-        "-fx-background-color: #bf769c; -fx-text-fill: #FFFFFF; "
-            + "-fx-font-size: 12px; -fx-background-radius: 6; "
-            + "-fx-cursor: hand; -fx-padding: 6 14 6 14;";
-
-    btn.setStyle(base);
-    btn.setOnMouseEntered(e -> btn.setStyle(hover));
-    btn.setOnMouseExited(e -> btn.setStyle(base));
+    // style.css : .toolbar-button  /  .toolbar-button:hover
+    btn.getStyleClass().add("toolbar-button");
     return btn;
   }
 
@@ -161,7 +153,7 @@ public class MainView extends BorderPane {
   public void openSaveDialog() {
     menuView.openSaveDialog();
   }
-  
+
   /**
    * Passes the {@link GraphicalUserInterface} reference to {@link MenuView}
    * so the Quit menu item can delegate to
@@ -172,6 +164,7 @@ public class MainView extends BorderPane {
   public void passGuiToMenu(GraphicalUserInterface gui) {
     menuView.setGui(gui);
   }
+
   /**
    * Delegates responsive cell-size binding to {@link PlayView}.
    *

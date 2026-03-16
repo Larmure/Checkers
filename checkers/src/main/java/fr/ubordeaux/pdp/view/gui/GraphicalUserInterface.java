@@ -71,6 +71,11 @@ public class GraphicalUserInterface extends GameView {
 
       Scene scene = new Scene(mainView, initW, initH);
 
+      // Load the CSS stylesheet — src/main/resources/
+      scene.getStylesheets().add(
+          getClass().getResource("/style.css").toExternalForm()
+      );
+
       stage.setScene(scene);
       stage.setTitle("Checkers — Universite de Bordeaux");
       stage.setMinWidth(720);

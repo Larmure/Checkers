@@ -37,6 +37,11 @@ import javafx.scene.shape.Rectangle;
  * <h3>Responsive sizing</h3>
  * Call {@link #bindCellSize(DoubleBinding)} to make cell size track the window
  * dimensions. The board redraws automatically whenever the binding value changes.
+ *
+ * <p>Visual styles are defined in {@code style.css} (classes:
+ * {@code board-grid}, {@code coord-label}).
+ * Square and piece colours remain in Java because {@link Rectangle#setFill}
+ * and {@link Circle#setFill} are not controllable via CSS.
  */
 public class BoardView extends GridPane {
 
@@ -60,7 +65,6 @@ public class BoardView extends GridPane {
 
   /** Fill colour for the crown marker drawn on king pieces. */
   private static final Color CROWN_FILL = Color.web("#FFD700");
-
 
   /** Default cell size in pixels, used before any responsive binding is set. */
   private static final double DEFAULT_CELL = 68.0;
@@ -114,7 +118,8 @@ public class BoardView extends GridPane {
   public BoardView(GameController controller) {
     this.controller = controller;
     this.setAlignment(Pos.CENTER);
-    this.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 6);");
+    // style.css: .board-grid (drop shadow)
+    this.getStyleClass().add("board-grid");
     cellSize.addListener((obs, oldV, newV) -> redraw());
     drawEmpty(8);
   }
@@ -224,6 +229,7 @@ public class BoardView extends GridPane {
     boolean isSelected = (gRow == selRow && gCol == selCol);
 
     // Background rectangle — blue tint when selected, otherwise normal colour.
+    // Square colours stay in Java because Rectangle.setFill() is not CSS-controllable.
     Rectangle bg = new Rectangle(cell, cell);
     bg.setFill(isSelected ? SELECTED_SQ : (isDark ? DARK_SQ : LIGHT_SQ));
     pane.getChildren().add(bg);
@@ -327,6 +333,10 @@ public class BoardView extends GridPane {
   /**
    * Creates a single coordinate label centred in a square of the given size.
    *
+   * <p>Font size is computed dynamically (proportional to {@code size}) and
+   * stays in Java; the remaining style is declared in {@code style.css}
+   * via the {@code coord-label} class.
+   *
    * @param text the label text (letter or digit)
    * @param size the width and height of the label cell in pixels
    * @return a configured {@link Label}
@@ -336,10 +346,11 @@ public class BoardView extends GridPane {
     lbl.setPrefSize(size, size);
     lbl.setAlignment(Pos.CENTER);
     lbl.setPadding(new Insets(1));
+    // Dynamic font size — cannot be expressed in static CSS.
     double fontSize = Math.max(8, size * 0.50);
-    lbl.setStyle(
-        "-fx-font-size: " + fontSize + "px; -fx-font-weight: bold; "
-            + "-fx-text-fill: #999999; -fx-font-family: 'Georgia';");
+    lbl.setStyle("-fx-font-size: " + fontSize + "px;");
+    // style.css: .coord-label (font-weight, text-fill, font-family)
+    lbl.getStyleClass().add("coord-label");
     return lbl;
   }
 

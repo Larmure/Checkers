@@ -28,6 +28,11 @@ import javafx.scene.shape.Circle;
  * <p>Call {@link #update(GameCheckers)} on every model notification to
  * refresh timers and move history. This method must be called on the
  * JavaFX Application Thread.
+ *
+ * <p>Visual styles are defined in {@code style.css} (classes:
+ * {@code log-panel}, {@code player-card}, {@code player-name},
+ * {@code player-timer}, {@code log-divider}, {@code log-title},
+ * {@code log-area}).
  */
 public class LogView extends VBox {
 
@@ -53,7 +58,8 @@ public class LogView extends VBox {
     this.setMinWidth(WIDTH);
     this.setMaxWidth(WIDTH);
     this.setPadding(new Insets(16));
-    this.setStyle("-fx-background-color: #1C1C1E;");
+    // style.css : .log-panel
+    this.getStyleClass().add("log-panel");
 
     this.getChildren().addAll(
         buildPlayerCard("BLACK", true),
@@ -104,28 +110,23 @@ public class LogView extends VBox {
   private VBox buildPlayerCard(String name, boolean isBlack) {
     VBox card = new VBox(6);
     card.setPadding(new Insets(10, 12, 10, 12));
-    card.setStyle(
-        "-fx-background-color: #6d4751; "
-            + "-fx-background-radius: 8; "
-            + "-fx-border-color: #3A3A3C; "
-            + "-fx-border-radius: 8; "
-            + "-fx-border-width: 1;");
+    // style.css : .player-card
+    card.getStyleClass().add("player-card");
 
     // Colour dot — a plain JavaFX circle avoids emoji rendering issues on Linux.
     Circle dot = new Circle(7);
     dot.setFill(isBlack ? Color.web("#1C1C2E") : Color.WHITE);
 
     Label nameLabel = new Label(name);
-    nameLabel.setStyle(
-        "-fx-text-fill: #EBEBF5; -fx-font-size: 13px; -fx-font-weight: bold;");
+    // style.css : .player-name
+    nameLabel.getStyleClass().add("player-name");
 
     HBox header = new HBox(8, dot, nameLabel);
     header.setAlignment(Pos.CENTER_LEFT);
 
     Label timeLabel = new Label("--:--");
-    timeLabel.setStyle(
-        "-fx-text-fill: #EBEBF5; -fx-font-size: 12px; "
-            + "-fx-font-family: 'Courier New'; -fx-padding: 0 0 0 22;");
+    // style.css : .player-timer
+    timeLabel.getStyleClass().add("player-timer");
 
     // Store a reference so update() can setText() on it later.
     if (isBlack) {
@@ -149,22 +150,16 @@ public class LogView extends VBox {
     VBox.setVgrow(box, Priority.ALWAYS);
 
     Label title = new Label("Move History");
-    title.setStyle(
-        "-fx-text-fill: #8E8E93; -fx-font-size: 11px; -fx-font-weight: bold;");
+    // style.css : .log-title
+    title.getStyleClass().add("log-title");
 
     logArea = new TextArea();
     logArea.setEditable(false);
     logArea.setWrapText(true);
     logArea.setPromptText("No moves yet...");
     VBox.setVgrow(logArea, Priority.ALWAYS);
-    logArea.setStyle(
-        "-fx-control-inner-background: #2e2c2d; "
-            + "-fx-text-fill: #EBEBF5; "
-            + "-fx-font-family: 'Courier New'; "
-            + "-fx-font-size: 12px; "
-            + "-fx-border-color: #3A3A3C; "
-            + "-fx-border-radius: 6; "
-            + "-fx-background-radius: 6;");
+    // style.css : .log-area
+    logArea.getStyleClass().add("log-area");
 
     box.getChildren().addAll(title, logArea);
     return box;
@@ -179,7 +174,8 @@ public class LogView extends VBox {
   private Region buildDivider() {
     Region sep = new Region();
     sep.setPrefHeight(1);
-    sep.setStyle("-fx-background-color: #3A3A3C;");
+    // style.css : .log-divider
+    sep.getStyleClass().add("log-divider");
     return sep;
   }
 
