@@ -15,8 +15,9 @@ class BoardTest {
 
   @Test
   void testInvalidBoardSize() {
-    assertThrows(IllegalArgumentException.class, () -> new Board(6));
+    assertThrows(IllegalArgumentException.class, () -> new Board(5));
     assertThrows(IllegalArgumentException.class, () -> new Board(9));
+    assertThrows(IllegalArgumentException.class, () -> new Board(13));
   }
 
   @Test
@@ -1040,7 +1041,7 @@ class BoardTest {
         "Row L (top) must appear before row A (bottom) in toString output");
   }
 
-    @Test
+  @Test
   void testToStringAfterMovePieceDisappears12x12() {
     Board board = new Board(12);
     board.clearBoard();
@@ -1055,7 +1056,6 @@ class BoardTest {
     assertTrue(output.contains("o"),
         "toString must still contain 'w' after a move");
   }
-  
 
   @Test
   void testToStringSymbolCountAtStart12x12() {
