@@ -51,12 +51,12 @@ public class GameCheckers implements Subject {
 
     // MODE IA
     if (cfg.iswhiteAi() == true) {
-      this.whitePlayer = new AiPlayer("White Ai");
+      this.whitePlayer = new AiPlayer(Internationalization.get("game.white_ai_player"));
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
     if (cfg.isblackAi() == true) {
-      this.blackPlayer = new AiPlayer("Black Ai");
+      this.blackPlayer = new AiPlayer(Internationalization.get("game.black_ai_player"));
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }
@@ -166,6 +166,8 @@ public class GameCheckers implements Subject {
     int from;
     int to;
     PlayerColor currentColor;
+    List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
+
     currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
 
     if (state == State.PAUSE) {
@@ -187,7 +189,6 @@ public class GameCheckers implements Subject {
       return;
     }
 
-    List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
     for (Move m : possibleMoves) {
       if (m.getFrom() == from && m.getTo() == to) {
         move = m;
@@ -231,6 +232,12 @@ public class GameCheckers implements Subject {
 
     // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
+      setState(State.FINISHED);
+      return this.state;
+    }
+
+    // If both players have no moves, the game is also finished (draw).
+    if (getPossibleMoves(whitePlayer).isEmpty() && getPossibleMoves(blackPlayer).isEmpty()) {
       setState(State.FINISHED);
       return this.state;
     }
@@ -367,4 +374,13 @@ public class GameCheckers implements Subject {
   public void setHistory(History h) {
     managerUndoRedo.setHistory(h);
   }
+
+  public ManagerUndoRedo getManagerUndoRedo() {
+    return managerUndoRedo;
+  }
+
+  public PlayerColor getCurrentColor() {
+    return isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
+  }
+
 }
