@@ -22,7 +22,7 @@ import javafx.scene.shape.Rectangle;
  * clickable cell. Coordinate labels (A–H along the rows, 1–8 along the columns)
  * are drawn around the grid.
  *
- * <h3>Coordinate mapping</h3>
+ * <h2>Coordinate mapping</h2>
  * <ul>
  *   <li>Grid row 0 = model row {@code size - 1} = letter 'H' (top of the board).</li>
  *   <li>Grid row {@code size - 1} = model row 0 = letter 'A' (bottom of the board).</li>
@@ -30,11 +30,11 @@ import javafx.scene.shape.Rectangle;
  *   <li>Bitboard index = {@code (modelRow * size + modelCol) / 2}.</li>
  * </ul>
  *
- * <h3>Click handling</h3>
+ * <h2>Click handling</h2>
  * Two-click selection: first click selects a piece (highlighted in blue), second
  * click on a destination triggers {@link GameController#executeMove(String, String)}.
  *
- * <h3>Responsive sizing</h3>
+ * <h2>Responsive sizing</h2>
  * Call {@link #bindCellSize(DoubleBinding)} to make cell size track the window
  * dimensions. The board redraws automatically whenever the binding value changes.
  *

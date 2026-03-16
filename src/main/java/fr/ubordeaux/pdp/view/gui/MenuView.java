@@ -15,14 +15,14 @@ import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
 
 /**
- * <h3>Menus</h3>
+ * <h2>Menus</h2>
  * <ul>
  *   <li><b>File</b>: New Game, Load Game, Save Game, Configuration, Info,
  *       Quit.</li>
  *   <li><b>Game</b>: Undo, Redo, Pause, Hint.</li>
  * </ul>
  *
- * <h3>Load / Save dialogs</h3>
+ * <h2>Load / Save dialogs</h2>
  * Both dialogs use a {@link TextInputDialog} (rather than a native
  * {@code FileChooser}) to avoid a WSL2 / Windows path incompatibility where
  * the native Windows file picker cannot list files stored under a
@@ -37,7 +37,7 @@ import javafx.stage.Stage;
  *       {@code controller.executeCommand("load", …)}.</li>
  * </ul>
  *
- * <h3>Stage reference</h3>
+ * <h2>Stage reference</h2>
  * Call {@link #setStage(Stage)} after {@code stage.show()} so that
  * {@link Alert} dialogs are owned by the main window (modal behaviour).
  */

@@ -19,7 +19,7 @@ import javafx.stage.Stage;
  * <p>{@code MainView} owns only the toolbar. All game-state rendering is
  * delegated to {@link PlayView}, keeping this class lightweight.
  *
- * <h3>Initialisation sequence</h3>
+ * <h2>Initialisation sequence</h2>
  * <ol>
  *   <li>Instantiate {@code MainView}.</li>
  *   <li>Create the {@link Scene} and call {@link #bindToScene(Scene)} so the

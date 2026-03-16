@@ -22,7 +22,7 @@ import javafx.stage.Stage;
  *       {@link Platform#runLater}, which is required by JavaFX.</li>
  * </ul>
  *
- * <h3>Startup sequence</h3>
+ * <h2>Startup sequence</h2>
  * <ol>
  *   <li>{@link #start()} is called by {@link fr.ubordeaux.pdp.App} when the
  *       {@code --gui} flag is present.</li>
@@ -36,7 +36,7 @@ import javafx.stage.Stage;
  *       can open modal dialogs.</li>
  * </ol>
  *
- * <h3>Update flow</h3>
+ * <h2>Update flow</h2>
  */
 public class GraphicalUserInterface extends GameView {
 

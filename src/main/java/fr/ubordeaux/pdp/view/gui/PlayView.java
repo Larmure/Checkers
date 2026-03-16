@@ -14,13 +14,13 @@ import javafx.scene.layout.StackPane;
 /**
  * Central game area displayed in the middle of {@link MainView}.
  *
- * <h3>Responsive sizing</h3>
+ * <h2>Responsive sizing</h2>
  * Call {@link #bindToScene(Scene)} once after the {@link Scene} has been
  * created. This sets up a {@link DoubleBinding} that keeps the board's cell
  * size proportional to the available window area, recomputing live whenever
  * the user resizes the window.
  *
- * <h3>Update flow</h3>
+ * <h2>Update flow</h2>
  * {@link #update(GameCheckers)} is the single entry point for model changes.
  * It delegates to both {@link BoardView#refresh} and {@link LogView#update}.
  *
