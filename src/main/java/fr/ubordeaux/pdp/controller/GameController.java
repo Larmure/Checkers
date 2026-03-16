@@ -19,13 +19,12 @@ import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
-
 import java.util.Timer;
 import java.util.TimerTask;
-
-import fr.ubordeaux.pdp.model.player.AiPlayer;
 
 /**
  * Orchestrator of the game logic and user interactions.
@@ -56,6 +55,12 @@ public class GameController {
   /** History size at the time of the last save. */
   private int lastSavedMoveCount = 0;
 
+  /** Dedicated thread running the main game loop for the CLI. */
+  private Thread gameLoopThread;
+
+  /** Flag controlling the lifecycle of the main game loop. */
+  private volatile boolean gameLoopRunning;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -71,6 +76,73 @@ public class GameController {
   public void start() {
     view.setController(this);
     view.start();
+    startGameLoop();
+  }
+
+  /**
+   * Starts the controller-driven game loop when the active view is interactive.
+   */
+  private void startGameLoop() {
+    if (!(view instanceof CommandLineInterface) || gameLoopRunning) {
+      return;
+    }
+
+    gameLoopRunning = true;
+    gameLoopThread = new Thread(this::runGameLoop, "checkers-game-loop");
+    gameLoopThread.start();
+  }
+
+  /**
+   * Runs the main game loop.
+   * If the current player is a human, the loop waits for input.
+   * If the current player is an AI, the loop plays the AI move automatically.
+   */
+  private void runGameLoop() {
+    CommandLineInterface cli = (CommandLineInterface) view;
+
+    while (gameLoopRunning) {
+      if (game == null) {
+        sleepBriefly();
+        continue;
+      }
+
+      if (game.getState() != State.IN_GAME || !(game.getCurrentPlayer() instanceof AiPlayer)) {
+        String input = cli.readInput();
+        if (input == null) {
+          gameLoopRunning = false;
+          break;
+        }
+        cli.handleInput(input);
+        continue;
+      }
+
+      playAiTurn((AiPlayer) game.getCurrentPlayer());
+    }
+
+    stopBlitzTimer();
+  }
+
+  /**
+   * Waits for the game loop to finish.
+   *
+   * @throws InterruptedException if the current thread is interrupted while waiting
+   */
+  public void joinGameLoop() throws InterruptedException {
+    if (gameLoopThread != null) {
+      gameLoopThread.join();
+    }
+  }
+
+  /**
+   * Sleeps briefly when the loop has no active game to process.
+   */
+  private void sleepBriefly() {
+    try {
+      Thread.sleep(50);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      gameLoopRunning = false;
+    }
   }
 
   /**
@@ -105,6 +177,13 @@ public class GameController {
 
     if (command != null) {
       command.execute();
+
+      if ("continue".equalsIgnoreCase(commandName)
+          && game != null
+          && configuration != null
+          && configuration.isBlitz()) {
+        startBlitzTimer();
+      }
     }
   }
 
@@ -157,18 +236,6 @@ public class GameController {
       startBlitzTimer();
     }
 
-    if (configuration.iswhiteAi()) {
-      String fromIA;
-      String toIA;
-      Move m = ((AiPlayer) game.getCurrentPlayer()).getBestMove(game.getManagerUndoRedo(),
-          game.getBoard(), game.getCurrentColor());
-
-      fromIA = game.getBoard().indexToSquare(m.getFrom());
-      toIA = game.getBoard().indexToSquare(m.getTo());
-
-      game.applyMove(fromIA, toIA);
-    }
-
     markAsSaved();
   }
 
@@ -190,24 +257,33 @@ public class GameController {
 
     game.setState(game.checkGameOver());
     handleGameOver();
+  }
 
-    if (game.getCurrentPlayer() instanceof AiPlayer aiPlayer && game.getState() != State.FINISHED) {
-      String fromIA;
-      String toIA;
-      Move m = aiPlayer.getBestMove(game.getManagerUndoRedo(),
-          game.getBoard(), game.getCurrentColor());
-
-      if (m == null)
-        System.err.println("No IA move");
-
-      fromIA = game.getBoard().indexToSquare(m.getFrom());
-      toIA = game.getBoard().indexToSquare(m.getTo());
-
-      game.applyMove(fromIA, toIA);
-      game.setState(game.checkGameOver());
-      handleGameOver();
+  /**
+   * Plays one move for the current AI player.
+   *
+   * @param aiPlayer the AI player that must play
+   */
+  private void playAiTurn(AiPlayer aiPlayer) {
+    if (configuration.isBlitz()) {
+      startBlitzTimer();
     }
 
+    Move move = aiPlayer.getBestMove(game.getManagerUndoRedo(),
+        game.getBoard(), game.getCurrentColor());
+
+    if (move == null) {
+      System.err.println("No IA move");
+      game.setState(game.checkGameOver());
+      handleGameOver();
+      return;
+    }
+
+    String from = game.getBoard().indexToSquare(move.getFrom());
+    String to = game.getBoard().indexToSquare(move.getTo());
+    game.applyMove(from, to);
+    game.setState(game.checkGameOver());
+    handleGameOver();
   }
 
   /**
@@ -235,19 +311,24 @@ public class GameController {
   }
 
   /**
-   * Displays the remaining time for the current player if the game is in blitz mode. 
+   * Displays the remaining time for both players if the game is in blitz mode.
    */
   public void displayTime() {
     if (isBlitz()) {
-      int totalSeconds = game.getCurrentPlayer().getPlayTime();
-      int minutes = totalSeconds / 60;
-      int seconds = totalSeconds % 60;
-
-      String formattedTime = String.format("%02d:%02d", minutes, seconds);
-
       String template = Internationalization.get("game.time_remaining");
 
-      System.out.println(String.format(template, game.getCurrentPlayer().getName(), formattedTime));
+      int whiteTotalSeconds = game.getWhitePlayer().getPlayTime();
+      int whiteMinutes = whiteTotalSeconds / 60;
+      int whiteSeconds = whiteTotalSeconds % 60;
+      String whiteFormattedTime = String.format("%02d:%02d", whiteMinutes, whiteSeconds);
+
+      int blackTotalSeconds = game.getBlackPlayer().getPlayTime();
+      int blackMinutes = blackTotalSeconds / 60;
+      int blackSeconds = blackTotalSeconds % 60;
+      String blackFormattedTime = String.format("%02d:%02d", blackMinutes, blackSeconds);
+
+      System.out.println(String.format(template, game.getWhitePlayer().getName(), whiteFormattedTime));
+      System.out.println(String.format(template, game.getBlackPlayer().getName(), blackFormattedTime));
     } else {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }

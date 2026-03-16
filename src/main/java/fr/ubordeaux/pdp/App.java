@@ -85,7 +85,7 @@ public class App {
     controller.startNewGame(new Configuration(blitz, time, contest,
         size, verbose, debug, whiteAi, blackAi));
     try {
-      ((CommandLineInterface) view).join();
+      controller.joinGameLoop();
     } catch (InterruptedException ex) {
       System.exit(0);
     }
@@ -192,18 +192,24 @@ public class App {
         }
 
         color = color.toUpperCase();
-        if (color.equals("W")) {
-          whiteAi = true;
-        } else if (color.equals("B")) {
-          blackAi = true;
-        } else if (color.equals("A")) {
-          whiteAi = true;
-          blackAi = true;
-        } else if (color.equals("")) {
-          whiteAi = true;
-        } else {
-          System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
-          whiteAi = true;
+        switch (color) {
+          case "W":
+            whiteAi = true;
+            break;
+          case "B":
+            blackAi = true;
+            break;
+          case "A":
+            whiteAi = true;
+            blackAi = true;
+            break;
+          case "":
+            whiteAi = true;
+            break;
+          default:
+            System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
+            whiteAi = true;
+            break;
         }
       }
       System.out.println(Internationalization.get("app.welcome"));
