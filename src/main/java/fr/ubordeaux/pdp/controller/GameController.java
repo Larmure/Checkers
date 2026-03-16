@@ -166,7 +166,7 @@ public class GameController {
       case "redo" -> new RedoCommand(this, args);
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
-      case "continue" -> new ContinueCommand(game);
+      case "continue" -> new ContinueCommand(this);
       case "server" -> resolveServerCommand(args);
       default -> {
         System.out.println("Unknown command: "
@@ -177,13 +177,6 @@ public class GameController {
 
     if (command != null) {
       command.execute();
-
-      if ("continue".equalsIgnoreCase(commandName)
-          && game != null
-          && configuration != null
-          && configuration.isBlitz()) {
-        startBlitzTimer();
-      }
     }
   }
 
@@ -327,8 +320,10 @@ public class GameController {
       int blackSeconds = blackTotalSeconds % 60;
       String blackFormattedTime = String.format("%02d:%02d", blackMinutes, blackSeconds);
 
-      System.out.println(String.format(template, game.getWhitePlayer().getName(), whiteFormattedTime));
-      System.out.println(String.format(template, game.getBlackPlayer().getName(), blackFormattedTime));
+      System.out.println(String.format(template, game.getWhitePlayer().getName(),
+          whiteFormattedTime));
+      System.out.println(String.format(template, game.getBlackPlayer().getName(),
+          blackFormattedTime));
     } else {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }
@@ -341,7 +336,7 @@ public class GameController {
    * time has run out. If the time is up, it stops the timer, sets the game state to FINISHED, 
    * and notifies the user that their time has expired.
    */
-  private void startBlitzTimer() {
+  public void startBlitzTimer() {
     stopBlitzTimer();
     blitzTimer = new Timer(true); // daemon = s'arrête avec le programme
     blitzTimer.scheduleAtFixedRate(new TimerTask() {
@@ -513,6 +508,10 @@ public class GameController {
     }
   }
 
+  /**
+   * Handles the game over state by checking if the game has finished and displaying appropriate
+   * messages to the user. 
+   */
   public void handleGameOver() {
     if (game.getState().equals(State.FINISHED)) {
       if (configuration.isBlitz()) {

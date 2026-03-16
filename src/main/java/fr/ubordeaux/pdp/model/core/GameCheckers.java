@@ -166,7 +166,6 @@ public class GameCheckers implements Subject {
     int from;
     int to;
     PlayerColor currentColor;
-    List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
 
     currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
 
@@ -189,6 +188,7 @@ public class GameCheckers implements Subject {
       return;
     }
 
+    List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
     for (Move m : possibleMoves) {
       if (m.getFrom() == from && m.getTo() == to) {
         move = m;
