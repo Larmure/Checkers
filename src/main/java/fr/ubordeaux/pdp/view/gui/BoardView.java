@@ -193,13 +193,13 @@ public class BoardView extends GridPane {
 
     addCoordinateLabels(cell, label);
 
-    for (int gRow = 0; gRow < size; gRow++) {
-      for (int gCol = 0; gCol < size; gCol++) {
+    for (int row = 0; row < size; row++) {
+      for (int col = 0; col < size; col++) {
         // Convert grid coordinates to model coordinates.
         // Grid row 0 is the top of the screen (= model row size-1 = letter H).
-        int modelRow = (size - 1) - gRow;
-        int modelCol = gCol;
-        this.add(buildCell(gRow, gCol, modelRow, modelCol, cell), gCol + 1, gRow + 1);
+        int modelRow = (size - 1) - row;
+        int modelCol = col;
+        this.add(buildCell(row, col, modelRow, modelCol, cell), col + 1, row + 1);
       }
     }
   }
@@ -210,15 +210,15 @@ public class BoardView extends GridPane {
    * <p>Dark squares receive a piece (if any), a hover overlay, and a click
    * handler. Light squares are purely decorative.
    *
-   * @param gRow     grid row (0 = top)
-   * @param gCol     grid column (0 = left)
+   * @param row     grid row (0 = top)
+   * @param col     grid column (0 = left)
    * @param modelRow model row used to look up piece data and square notation
    * @param modelCol model column used to look up piece data and square notation
    * @param cell     current cell size in pixels
    * @return a fully configured {@link StackPane} representing this square
    */
   private StackPane buildCell(
-      int gRow, int gCol, int modelRow, int modelCol, double cell) {
+      int row, int col, int modelRow, int modelCol, double cell) {
 
     StackPane pane = new StackPane();
     pane.setPrefSize(cell, cell);
@@ -226,7 +226,7 @@ public class BoardView extends GridPane {
     pane.setMaxSize(cell, cell);
 
     boolean isDark = (modelRow + modelCol) % 2 == 0;
-    boolean isSelected = (gRow == selRow && gCol == selCol);
+    boolean isSelected = (row == selRow && col == selCol);
 
     // Background rectangle — blue tint when selected, otherwise normal colour.
     // Square colours stay in Java because Rectangle.setFill() is not CSS-controllable.
@@ -247,8 +247,8 @@ public class BoardView extends GridPane {
       pane.getChildren().add(hover);
 
       // Capture grid/model coords in effectively-final locals for the lambdas.
-      final int fr = gRow;
-      final int fc = gCol;
+      final int fr = row;
+      final int fc = col;
       final int mr = modelRow;
       final int mc = modelCol;
 
@@ -279,10 +279,6 @@ public class BoardView extends GridPane {
    * @return a {@link StackPane} containing all circles for this piece
    */
   private StackPane buildPiece(char ch, double cell) {
-    StackPane stack = new StackPane();
-
-    boolean isWhite = (ch == 'o' || ch == 'O');
-    boolean isKing = (ch == 'O' || ch == 'X');
     double r = cell * 0.36;
 
     // Drop shadow: slightly oversized circle shifted downward.
@@ -291,12 +287,15 @@ public class BoardView extends GridPane {
     shadow.setTranslateY(cell * 0.04);
 
     // Piece body.
+    boolean isWhite = (ch == 'o' || ch == 'O');
     Circle body = new Circle(r);
     body.setFill(isWhite ? WHITE_FILL : BLACK_FILL);
 
+    StackPane stack = new StackPane();
     stack.getChildren().addAll(shadow, body);
 
     // Crown marker for king pieces.
+    boolean isKing = (ch == 'O' || ch == 'X');
     if (isKing) {
       Circle crown = new Circle(r * 0.27);
       crown.setFill(CROWN_FILL);
@@ -323,10 +322,10 @@ public class BoardView extends GridPane {
       this.add(coordLabel(String.valueOf(c + 1), label), c + 1, size + 1);
     }
     // Row letters — left and right.
-    for (int gRow = 0; gRow < size; gRow++) {
-      char letter = (char) ('A' + (size - 1 - gRow));
-      this.add(coordLabel(String.valueOf(letter), label), 0, gRow + 1);
-      this.add(coordLabel(String.valueOf(letter), label), size + 1, gRow + 1);
+    for (int row = 0; row < size; row++) {
+      char letter = (char) ('A' + (size - 1 - row));
+      this.add(coordLabel(String.valueOf(letter), label), 0, row + 1);
+      this.add(coordLabel(String.valueOf(letter), label), size + 1, row + 1);
     }
   }
 
@@ -366,12 +365,12 @@ public class BoardView extends GridPane {
    *       {@link GameController#executeMove(String, String)}.</li>
    * </ol>
    *
-   * @param gRow     grid row of the clicked cell
-   * @param gCol     grid column of the clicked cell
+   * @param row     grid row of the clicked cell
+   * @param col     grid column of the clicked cell
    * @param modelRow model row of the clicked cell
    * @param modelCol model column of the clicked cell
    */
-  private void handleClick(int gRow, int gCol, int modelRow, int modelCol) {
+  private void handleClick(int row, int col, int modelRow, int modelCol) {
     if (board == null) {
       return;
     }
@@ -379,8 +378,8 @@ public class BoardView extends GridPane {
     if (selRow == -1) {
       // No piece selected yet — select this cell only if it contains a piece.
       if (getPieceChar(modelRow, modelCol) != '_') {
-        selRow = gRow;
-        selCol = gCol;
+        selRow = row;
+        selCol = col;
         redraw();
       }
     } else {
@@ -416,10 +415,18 @@ public class BoardView extends GridPane {
       return '_';
     }
     int index = (modelRow * size + modelCol) / 2;
-    if (board.isBitWhiteChecker(index)) return 'O';
-    if (board.isBitWhitePawn(index))    return 'o';
-    if (board.isBitBlackChecker(index)) return 'X';
-    if (board.isBitBlackPawn(index))    return 'x';
+    if (board.isBitWhiteChecker(index)) {
+      return 'O';
+    }
+    if (board.isBitWhitePawn(index)) {
+      return 'o';
+    }
+    if (board.isBitBlackChecker(index)) {
+      return 'X';
+    }
+    if (board.isBitBlackPawn(index)) {
+      return 'x';
+    }
     return '_';
   }
 

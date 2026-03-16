@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.view.gui;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import java.io.File;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Menu;
@@ -12,8 +13,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
-
-import java.io.File;
 
 /**
  * <h3>Menus</h3>
@@ -49,8 +48,8 @@ public class MenuView extends MenuBar {
    * save files. Mirrored here so the Load dialog can list available saves
    * without duplicating the path logic.
    */
-  private static final File SAVE_DIR =
-      new File(System.getProperty("user.dir") + File.separator + "Sauvegarde");
+  private static final File SAVE_DIR = new File(System.getProperty("user.dir")
+      + File.separator + "Sauvegarde");
 
   /** Controller that receives all menu action commands. */
   private final GameController controller;
@@ -122,8 +121,6 @@ public class MenuView extends MenuBar {
    * @return the configured {@link Menu}
    */
   private Menu buildFileMenu() {
-    Menu fileMenu = new Menu("_File");
-
     MenuItem newItem = new MenuItem("New Game");
     newItem.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
     newItem.setOnAction(e -> controller.executeCommand("new", new String[0]));
@@ -157,6 +154,7 @@ public class MenuView extends MenuBar {
       }
     });
 
+    Menu fileMenu = new Menu("_File");
     fileMenu.getItems().addAll(
         newItem, loadItem, saveItem,
         new SeparatorMenuItem(),
@@ -180,15 +178,13 @@ public class MenuView extends MenuBar {
    * @return the configured {@link Menu}
    */
   private Menu buildGameMenu() {
-    Menu gameMenu = new Menu("_Game");
-
     MenuItem undoItem = new MenuItem("Undo");
     undoItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.CONTROL_DOWN));
-    undoItem.setOnAction(e -> controller.executeCommand("undo", new String[]{"1"}));
+    undoItem.setOnAction(e -> controller.executeCommand("undo", new String[] { "1" }));
 
     MenuItem redoItem = new MenuItem("Redo");
     redoItem.setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN));
-    redoItem.setOnAction(e -> controller.executeCommand("redo", new String[]{"1"}));
+    redoItem.setOnAction(e -> controller.executeCommand("redo", new String[] { "1" }));
 
     MenuItem pauseItem = new MenuItem("Pause");
     pauseItem.setAccelerator(new KeyCodeCombination(KeyCode.P, KeyCombination.CONTROL_DOWN));
@@ -198,6 +194,7 @@ public class MenuView extends MenuBar {
     hintItem.setAccelerator(new KeyCodeCombination(KeyCode.H, KeyCombination.CONTROL_DOWN));
     hintItem.setOnAction(e -> controller.executeCommand("hint", new String[0]));
 
+    Menu gameMenu = new Menu("_Game");
     gameMenu.getItems().addAll(
         undoItem, redoItem, new SeparatorMenuItem(), pauseItem, hintItem);
     return gameMenu;
@@ -220,7 +217,8 @@ public class MenuView extends MenuBar {
 
       confirm.showAndWait().ifPresent(response -> {
         if (response == ButtonType.YES) {
-          openSaveDialog();;
+          openSaveDialog();
+          ;
           openLoadDialog();
         } else if (response == ButtonType.NO) {
           openLoadDialog();
@@ -266,7 +264,7 @@ public class MenuView extends MenuBar {
       name = name.trim();
       if (!name.isEmpty()) {
         // LoadBoard reconstructs the full path from the file name alone.
-        controller.executeCommand("load", new String[]{name});
+        controller.executeCommand("load", new String[] { name });
       }
     });
   }
@@ -278,27 +276,26 @@ public class MenuView extends MenuBar {
    * <p>A success or failure alert is displayed after the command completes,
    * based on whether the expected file was actually created on disk.
    */
-  /** Opens the save dialog. Also called externally by MainView when quitting. */
   public void openSaveDialog() {
     if (controller.getGame() == null) {
       showError("No game in progress", "Start a new game before saving.");
       return;
     }
- 
+
     TextInputDialog dialog = new TextInputDialog();
     dialog.setTitle("Save Game");
     dialog.setHeaderText("Save to: " + SAVE_DIR.getPath());
     dialog.setContentText("File name:");
- 
+
     dialog.showAndWait().ifPresent(name -> {
       name = name.trim();
       if (name.isEmpty()) {
         return;
       }
- 
+
       // SaveBoard reconstructs the full path from the file name alone.
-      controller.executeCommand("save", new String[]{name});
- 
+      controller.executeCommand("save", new String[] { name });
+
       // Confirm that the file was actually written to disk.
       File saved = new File(SAVE_DIR, name);
       if (saved.exists()) {

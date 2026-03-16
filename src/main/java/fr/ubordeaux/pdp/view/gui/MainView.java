@@ -92,15 +92,6 @@ public class MainView extends BorderPane {
     // style.css : .toolbar
     toolbar.getStyleClass().add("toolbar");
 
-    Button undoBtn =
-        toolbarButton("Undo", () -> controller.executeCommand("undo", new String[]{"1"}));
-    Button redoBtn =
-        toolbarButton("Redo", () -> controller.executeCommand("redo", new String[]{"1"}));
-    Button pauseBtn =
-        toolbarButton("Pause", () -> controller.executeCommand("pause", new String[0]));
-    Button hintBtn =
-        toolbarButton("Hint", () -> controller.executeCommand("hint", new String[0]));
-
     // Spacer pushes the turn label to the right edge.
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -108,6 +99,15 @@ public class MainView extends BorderPane {
     turnLabel = new Label("Turn: BLACK");
     // style.css : .turn-label
     turnLabel.getStyleClass().add("turn-label");
+
+    Button undoBtn = toolbarButton("Undo", () -> controller.executeCommand("undo",
+        new String[] { "1" }));
+    Button redoBtn = toolbarButton("Redo", () -> controller.executeCommand("redo",
+        new String[] { "1" }));
+    Button pauseBtn = toolbarButton("Pause", () -> controller.executeCommand("pause",
+        new String[0]));
+    Button hintBtn = toolbarButton("Hint", () -> controller.executeCommand("hint",
+        new String[0]));
 
     toolbar.getChildren().addAll(undoBtn, redoBtn, pauseBtn, hintBtn, spacer, turnLabel);
     return toolbar;

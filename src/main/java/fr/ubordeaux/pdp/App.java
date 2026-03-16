@@ -7,7 +7,6 @@ import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -89,7 +88,8 @@ public class App {
     GameController controller = new GameController(view);
     controller.start();
 
-    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose, debug, whiteAi, blackAi));
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose,
+        debug, whiteAi, blackAi));
 
     if (status != EXIT_GUI) {
       try {
