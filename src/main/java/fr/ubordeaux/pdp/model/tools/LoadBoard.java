@@ -395,6 +395,7 @@ public class LoadBoard {
         verbose,
         debug,
         defaults.iswhiteAi(),
-        defaults.isblackAi());
+        defaults.isblackAi(),
+        defaults.getAiTime());
   }
 }

@@ -58,12 +58,15 @@ public class NewCommand implements Command, Helpable {
       int size = Integer.parseInt(cmd.getOptionValue("s",
           String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
       String aiPlayers = cmd.getOptionValue("ai", "none");
+      int aiTime = Integer.parseInt(cmd.getOptionValue("at",
+          String.valueOf(Utils.DEFAULT_AI_TIME)));
 
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
           "a".equals(aiPlayers) || "w".equals(aiPlayers), "a".equals(aiPlayers)
-              || "b".equals(aiPlayers)));
+              || "b".equals(aiPlayers),
+          aiTime));
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());
     }
@@ -87,6 +90,7 @@ public class NewCommand implements Command, Helpable {
     opts.addOption("t", "time", true, "Time limit");
     opts.addOption("s", "size", true, "Board size");
     opts.addOption("ai", "artificial-intelligence", true, "AI players (a=all, b=black, w=white)");
+    opts.addOption("at", "ai-time", true, "AI time limit in seconds");
     return opts;
   }
 

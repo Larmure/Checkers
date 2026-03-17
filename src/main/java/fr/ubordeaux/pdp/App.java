@@ -60,6 +60,9 @@ public class App {
   /** Flag to enable black AI. */
   private static boolean blackAi = false;
 
+  /** Flag to set the time limit for AI moves. */
+  private static int aiTime = Utils.DEFAULT_AI_TIME;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -83,7 +86,7 @@ public class App {
     GameController controller = new GameController(view);
     controller.start();
     controller.startNewGame(new Configuration(blitz, time, contest,
-        size, verbose, debug, whiteAi, blackAi));
+        size, verbose, debug, whiteAi, blackAi, aiTime));
     try {
       controller.joinGameLoop();
     } catch (InterruptedException ex) {
@@ -130,6 +133,7 @@ public class App {
     options.addOption(aiOption);
     options.addOption("c", "contest", true, "enable contest mode");
     options.addOption("s", "size", true, "set board size (8|10|12)");
+    options.addOption("at", "ai-time", true, "set AI time limit in seconds");
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -212,6 +216,12 @@ public class App {
             break;
         }
       }
+
+      if (cmd.hasOption("at")) {
+        aiTime = Integer.parseInt(cmd.getOptionValue("at"));
+        System.out.println(Internationalization.get("opt.ai.time.status", aiTime));
+      }
+
       System.out.println(Internationalization.get("app.welcome"));
       return EXIT_SUCCESS;
 

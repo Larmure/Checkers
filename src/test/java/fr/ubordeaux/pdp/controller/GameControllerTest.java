@@ -506,7 +506,7 @@ class GameControllerTest {
    * Adapt the constructor signature to match your actual Configuration class.
    */
   private Configuration buildBlitzConfig(int seconds) {
-    return new Configuration(true, seconds, false, 8, false, false, false, false);
+    return new Configuration(true, seconds, false, 8, false, false, false, false, 10);
   }
 
   // =========================================================

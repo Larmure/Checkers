@@ -375,10 +375,22 @@ public class GameCheckers implements Subject {
     managerUndoRedo.setHistory(h);
   }
 
+  /**
+   * Returns the manager responsible for handling undo and redo operations, 
+   * which maintains the move history and allows for reverting or reapplying moves as needed.
+   *
+   * @return The active {@link ManagerUndoRedo} instance managing the undo/redo functionality for 
+   *     the game.
+   */
   public ManagerUndoRedo getManagerUndoRedo() {
     return managerUndoRedo;
   }
 
+  /**
+   * Returns the color of the current player based on whose turn it is.
+   *
+   * @return  The {@link PlayerColor} corresponding to the current player's turn (WHITE or BLACK).
+   */
   public PlayerColor getCurrentColor() {
     return isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
   }
