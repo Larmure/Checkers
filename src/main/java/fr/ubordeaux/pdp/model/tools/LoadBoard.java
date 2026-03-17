@@ -1,15 +1,14 @@
 package fr.ubordeaux.pdp.model.tools;
 
+import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import fr.ubordeaux.pdp.model.core.Board;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
 
 /**
  * Loads a saved game from a structured text file.
@@ -327,51 +326,55 @@ public class LoadBoard {
    * @param data one board row
    * @throws Exception if the row is invalid
    */
-private void parseBoardLine(String data) throws Exception {
-  String cells = data.replace(" ", "");
-  int n = board.getSizeBoard();
+  private void parseBoardLine(String data) throws Exception {
+    String cells = data.replace(" ", "");
+    int n = board.getSizeBoard();
 
-  if (currentBoardRow >= n) {
-    throw new Exception("Too many board rows (expected " + n + ").");
-  }
-  if (cells.length() != n) {
-    throw new Exception(
-          "Board row must have " + n + " cells, got " + cells.length() + ".");
-  }
+    if (currentBoardRow >= n) {
+      throw new Exception("Too many board rows (expected " + n + ").");
+    }
+    if (cells.length() != n) {
+      throw new Exception(
+            "Board row must have " + n + " cells, got " + cells.length() + ".");
+    }
 
-  int boardRow = n - 1 - currentBoardRow;
+    int boardRow = n - 1 - currentBoardRow;
 
-  for (int col = 0; col < n; col++) {
-    char c = cells.charAt(col);
-    boolean playable = ((boardRow + col) % 2 == 0);
+    for (int col = 0; col < n; col++) {
+      char c = cells.charAt(col);
+      boolean playable = ((boardRow + col) % 2 == 0);
 
-    if (!playable) {
+      if (!playable) {
+        if (c != '_') {
+          throw new Exception(
+                "Piece '" + c + "' on non-playable square at row "
+                      + currentBoardRow
+                      + ", col "
+                      + col
+                      + ".");
+        }
+        continue;
+      }
+
+      if ("xoXO_".indexOf(c) == -1) {
+        throw new Exception("Invalid board character: '" + c + "'.");
+      }
+
       if (c != '_') {
-        throw new Exception(
-              "Piece '" + c + "' on non-playable square at row "
-                    + currentBoardRow + ", col " + col + ".");
-      }
-      continue;
-    }
-
-    if ("xoXO_".indexOf(c) == -1) {
-      throw new Exception("Invalid board character: '" + c + "'.");
-    }
-
-    if (c != '_') {
-      int index = (boardRow * n + col) / 2;
-      switch (c) {
-        case 'x' -> board.restorePiece(index, "BP");
-        case 'o' -> board.restorePiece(index, "WP");
-        case 'X' -> board.restorePiece(index, "BC");
-        case 'O' -> board.restorePiece(index, "WC");
-        default -> { }
+        int index = (boardRow * n + col) / 2;
+        switch (c) {
+          case 'x' -> board.restorePiece(index, "BP");
+          case 'o' -> board.restorePiece(index, "WP");
+          case 'X' -> board.restorePiece(index, "BC");
+          case 'O' -> board.restorePiece(index, "WC");
+          default -> {
+          }
+        }
       }
     }
+
+    currentBoardRow++;
   }
-
-  currentBoardRow++;
-}
   /**
    * Builds a configuration from loaded values.
    *
