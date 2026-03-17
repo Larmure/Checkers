@@ -123,7 +123,7 @@ public class MenuView extends MenuBar {
   private Menu buildFileMenu() {
     MenuItem newItem = new MenuItem("New Game");
     newItem.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
-    newItem.setOnAction(e -> controller.executeCommand("new", new String[0]));
+    newItem.setOnAction(e -> openConfigDialog());
 
     MenuItem loadItem = new MenuItem("Load Game");
     loadItem.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
@@ -307,18 +307,24 @@ public class MenuView extends MenuBar {
   }
 
   /**
-   * Shows the Configuration dialog.
+   * Opens the game configuration dialog and starts a new game if the user
+   * confirms. Called by both the "New Game" menu item and the Configuration
+   * menu item.
    *
-   * <p>This is a placeholder. The full configuration UI (board size, blitz
-   * mode, AI settings, custom shortcuts) will be implemented in a later
-   * iteration.
+   * <p>Blocks until the user closes the dialog. If the user clicks
+   * "Start Game", the resulting {@link Configuration} is forwarded to
+   * {@link fr.ubordeaux.pdp.controller.GameController#startNewGame}.
    */
+  private void openConfigDialog() {
+    ConfigDialog dialog = new ConfigDialog();
+    dialog.showAndWait().ifPresent(cfg -> controller.startNewGame(cfg));
+  }
+
+  /**
+  * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
+  */
   private void showConfigDialog() {
-    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-    alert.setTitle("Configuration");
-    alert.setHeaderText("Game Configuration");
-    alert.setContentText("Configuration dialog — to be implemented.");
-    alert.showAndWait();
+    openConfigDialog();
   }
 
   /**
