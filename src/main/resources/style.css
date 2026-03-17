@@ -1,0 +1,166 @@
+/* Root pane background.
+   Used in MainView constructor via: this.getStyleClass().add("root-pane") */
+.root-pane {
+    background-color: #2C2C2E;
+    -fx-background-color: #2C2C2E;
+}
+
+/* Bottom HBox holding the Undo/Redo/Pause/Hint buttons and the turn label.
+   Visually separated from the board by a top border.
+   Used in MainView#buildToolbar via: toolbar.getStyleClass().add("toolbar") */
+.toolbar {
+    background-color: #1C1C1E;
+    -fx-background-color: #1C1C1E;
+    border-color: #3A3A3C;
+    -fx-border-color: #3A3A3C;
+    border-width: 1px 0 0 0;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Undo, Redo, Pause and Hint buttons — normal state.
+   Used in MainView#toolbarButton via: btn.getStyleClass().add("toolbar-button") */
+.toolbar-button {
+    background-color: #814e5c;
+    -fx-background-color: #814e5c;
+    color: #EBEBF5;
+    -fx-text-fill: #EBEBF5;
+    font-size: 12px;
+    -fx-font-size: 12px;
+    border-radius: 6px;
+    -fx-background-radius: 6;
+    cursor: pointer;
+    -fx-cursor: hand;
+    padding: 6px 14px 6px 14px;
+    -fx-padding: 6 14 6 14;
+}
+
+/* Toolbar buttons — hover state.
+   Replaces the setOnMouseEntered/setOnMouseExited handlers that were required
+   with inline styles. Applied automatically by JavaFX on mouse over. */
+.toolbar-button:hover {
+    background-color: #bf769c;
+    -fx-background-color: #bf769c;
+    color: #FFFFFF;
+    -fx-text-fill: #FFFFFF;
+}
+
+/* "Turn: BLACK / WHITE" label on the right side of the toolbar.
+   Used in MainView#buildToolbar via: turnLabel.getStyleClass().add("turn-label") */
+.turn-label {
+    color: #EBEBF5;
+    -fx-text-fill: #EBEBF5;
+    font-size: 13px;
+    -fx-font-size: 13px;
+    font-weight: bold;
+    -fx-font-weight: bold;
+}
+
+/* Main board GridPane — drop shadow effect.
+   Used in BoardView constructor via: this.getStyleClass().add("board-grid") */
+.board-grid {
+    filter: drop-shadow(0px 6px 20px rgba(0,0,0,0.5));
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 6);
+}
+
+/* A–H (rows) and 1–8 (columns) labels around the board.
+   Font size is computed dynamically in Java (proportional to cellSize) and
+   applied via setStyle(); only the fixed properties are declared here.
+   Used in BoardView#coordLabel via: lbl.getStyleClass().add("coord-label") */
+.coord-label {
+    font-weight: bold;
+    -fx-font-weight: bold;
+    color: #999999;
+    -fx-text-fill: #999999;
+    font-family: 'Georgia', serif;
+    -fx-font-family: 'Georgia';
+}
+
+/* StackPane surrounding BoardView — provides the central area background.
+   Used in PlayView constructor via: boardWrapper.getStyleClass().add("board-wrapper") */
+.board-wrapper {
+    background-color: #2C2C2E;
+    -fx-background-color: #2C2C2E;
+}
+
+/* Outer VBox of the side panel.
+   Used in LogView constructor via: this.getStyleClass().add("log-panel") */
+.log-panel {
+    background-color: #1C1C1E;
+    -fx-background-color: #1C1C1E;
+}
+
+/* Individual VBox card for BLACK and WHITE players.
+   Used in LogView#buildPlayerCard via: card.getStyleClass().add("player-card") */
+.player-card {
+    background-color: #6d4751;
+    -fx-background-color: #6d4751;
+    border-radius: 8px;
+    -fx-background-radius: 8;
+    border-color: #3A3A3C;
+    -fx-border-color: #3A3A3C;
+    -fx-border-radius: 8;
+    border-width: 1px;
+    -fx-border-width: 1;
+}
+
+/* "BLACK" / "WHITE" name label inside the player card.
+   Used in LogView#buildPlayerCard via: nameLabel.getStyleClass().add("player-name") */
+.player-name {
+    color: #EBEBF5;
+    -fx-text-fill: #EBEBF5;
+    font-size: 13px;
+    -fx-font-size: 13px;
+    font-weight: bold;
+    -fx-font-weight: bold;
+}
+
+/* Play time label in mm:ss format inside the player card.
+   Used in LogView#buildPlayerCard via: timeLabel.getStyleClass().add("player-timer") */
+.player-timer {
+    color: #EBEBF5;
+    -fx-text-fill: #EBEBF5;
+    font-size: 12px;
+    -fx-font-size: 12px;
+    font-family: 'Courier New', monospace;
+    -fx-font-family: 'Courier New';
+    padding: 0 0 0 22px;
+    -fx-padding: 0 0 0 22;
+}
+
+/* 1 px horizontal separator between the player cards and the history log.
+   Used in LogView#buildDivider via: sep.getStyleClass().add("log-divider") */
+.log-divider {
+    background-color: #3A3A3C;
+    -fx-background-color: #3A3A3C;
+    height: 1px;
+    -fx-pref-height: 1;
+}
+
+/* "Move History" section title above the text area.
+   Used in LogView#buildLogPanel via: title.getStyleClass().add("log-title") */
+.log-title {
+    color: #8E8E93;
+    -fx-text-fill: #8E8E93;
+    font-size: 11px;
+    -fx-font-size: 11px;
+    font-weight: bold;
+    -fx-font-weight: bold;
+}
+
+/* Read-only TextArea listing all moves played so far.
+   Used in LogView#buildLogPanel via: logArea.getStyleClass().add("log-area") */
+.log-area {
+    background-color: #2e2c2d;
+    -fx-control-inner-background: #2e2c2d;
+    color: #EBEBF5;
+    -fx-text-fill: #EBEBF5;
+    font-family: 'Courier New', monospace;
+    -fx-font-family: 'Courier New';
+    font-size: 12px;
+    -fx-font-size: 12px;
+    border-color: #3A3A3C;
+    -fx-border-color: #3A3A3C;
+    border-radius: 6px;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}

@@ -6,6 +6,7 @@ import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -74,20 +75,28 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
-    } // else if (status == EXIT_GUI) {
-    // TODO
-    // }
+    }
 
     // Status EXIT_SUCCESS means continue execution normally
-    GameView view = new CommandLineInterface(verbose, debug);
+
+    GameView view;
+    if (status == EXIT_GUI) {
+      view = new GraphicalUserInterface();
+    } else {
+      view = new CommandLineInterface(verbose, debug);
+    }
     GameController controller = new GameController(view);
     controller.start();
-    controller.startNewGame(new Configuration(blitz, time, contest,
-        size, verbose, debug, whiteAi, blackAi));
-    try {
-      ((CommandLineInterface) view).join();
-    } catch (InterruptedException ex) {
-      System.exit(0);
+
+    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose,
+        debug, whiteAi, blackAi));
+
+    if (status != EXIT_GUI) {
+      try {
+        ((CommandLineInterface) view).join();
+      } catch (InterruptedException ex) {
+        System.exit(0);
+      }
     }
   }
 
@@ -162,7 +171,7 @@ public class App {
 
       if (cmd.hasOption("g")) {
         System.out.println(Internationalization.get("app.gui.launch"));
-        // return EXIT_GUI;
+        return EXIT_GUI;
       }
 
       if (cmd.hasOption("b")) {
