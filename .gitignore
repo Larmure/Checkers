@@ -5,3 +5,10 @@
 .project
 checkers/Sauvegarde/*
 .vscode/
+Sauvegarde/*
+target/
+*.class
+.project
+.idea/
+.vscode/
+
