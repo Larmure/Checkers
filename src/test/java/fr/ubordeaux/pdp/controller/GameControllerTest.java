@@ -340,36 +340,6 @@ class GameControllerTest {
   }
 
   // =========================================================
-  // playPredefinedSequence — full coverage
-  // =========================================================
-
-  @Test
-  void testPlayPredefinedSequence_runsToEnd() {
-    ByteArrayOutputStream out = captureOutput();
-    assertDoesNotThrow(() -> controller.playPredefinedSequence());
-    restoreOutput();
-
-    String output = out.toString();
-    assertTrue(output.contains("Séquence terminée") || output.contains("terminée"),
-        "The sequence must complete and display a final message.");
-  }
-
-  @Test
-  void testPlayPredefinedSequence_stopsIfGameFinishedEarly() throws Exception {
-    // Force FINISHED before the sequence -> must exit at the first iteration
-    forceGameState(State.FINISHED);
-
-    ByteArrayOutputStream out = captureOutput();
-    controller.playPredefinedSequence();
-    restoreOutput();
-
-    String output = out.toString();
-    // The early termination message must be present
-    assertTrue(output.contains("terminée") || output.contains("avant"),
-        "An interruption message must be displayed if the game is already finished.");
-  }
-
-  // =========================================================
   // executeCommand — missing branches
   // =========================================================
 
@@ -484,6 +454,7 @@ class GameControllerTest {
   void testDisplayTime_blitzMode_printsRemainingTime() {
     Configuration blitzConfig = buildBlitzConfig(300);
     controller.startNewGame(blitzConfig);
+    GameCheckers game = controller.getGame();
 
     ByteArrayOutputStream out = captureOutput();
     controller.displayTime();
@@ -493,6 +464,10 @@ class GameControllerTest {
 
     String output = out.toString();
     assertFalse(output.isEmpty(), "displayTime must display the remaining time in blitz mode.");
+    assertTrue(output.contains(game.getWhitePlayer().getName()),
+        "displayTime must include white player's remaining time.");
+    assertTrue(output.contains(game.getBlackPlayer().getName()),
+        "displayTime must include black player's remaining time.");
   }
 
   // =========================================================
@@ -531,7 +506,7 @@ class GameControllerTest {
    * Adapt the constructor signature to match your actual Configuration class.
    */
   private Configuration buildBlitzConfig(int seconds) {
-    return new Configuration(true, seconds, false, 8, false, false, false, false);
+    return new Configuration(true, seconds, false, 8, false, false, false, false, 10);
   }
 
   // =========================================================

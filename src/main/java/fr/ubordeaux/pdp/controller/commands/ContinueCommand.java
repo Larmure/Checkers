@@ -1,7 +1,7 @@
 package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.State;
 
 /**
@@ -14,15 +14,15 @@ import fr.ubordeaux.pdp.model.core.State;
  */
 public class ContinueCommand implements Command {
   /** The game instance on which this command operates. */
-  private final GameCheckers game;
+  private final GameController gc;
 
   /**
    * Constructs a ContinueCommand with the given game instance.
    *
-   * @param game the GameCheckers instance to operate on when the command is executed
+   * @param gc the GameController instance to operate on when the command is executed
    */
-  public ContinueCommand(GameCheckers game) {
-    this.game = game;
+  public ContinueCommand(GameController gc) {
+    this.gc = gc;
   }
 
   /**
@@ -31,7 +31,8 @@ public class ContinueCommand implements Command {
    */
   @Override
   public void execute() {
-    game.setState(State.IN_GAME);
-    game.notifyObservers();
+    gc.startBlitzTimer();
+    gc.getGame().setState(State.IN_GAME);
+    gc.getGame().notifyObservers();
   }
 }
