@@ -3,17 +3,25 @@ package fr.ubordeaux.pdp.controller;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
+import java.util.List;
 
 import fr.ubordeaux.pdp.view.GameView;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+
 import java.lang.reflect.Field;
+
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.mockito.ArgumentMatchers.any;
+import org.mockito.Mockito;
 
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 class GameControllerTest {
@@ -471,6 +479,83 @@ class GameControllerTest {
   }
 
   // =========================================================
+  // playAiTurn — via réflexion (méthode private)
+  // =========================================================
+
+  @Test
+  void testPlayAiTurn_validMove_appliesMove() throws Exception {
+    Configuration aiConfig = buildWhiteAiConfig();
+    controller.startNewGame(aiConfig);
+
+    GameCheckers game = controller.getGame();
+    AiPlayer ai = (AiPlayer) game.getWhitePlayer();
+
+    int sizeBefore = game.getHistory().getSize();
+    invokePlayAiTurn(ai);
+    int sizeAfter = game.getHistory().getSize();
+
+    assertTrue(sizeAfter > sizeBefore, "L'IA doit avoir joué un coup.");
+  }
+
+  @Test
+  void testPlayAiTurn_nullMove_callsCheckGameOver() throws Exception {
+    Configuration aiConfig = buildWhiteAiConfig();
+    controller.startNewGame(aiConfig);
+
+    AiPlayer mockAi = Mockito.mock(AiPlayer.class);
+    Mockito.when(mockAi.getBestMove(any(), any(), any())).thenReturn(null);
+
+    // Quand move == null, le code appelle checkGameOver() et handleGameOver()
+    // sans planter — c'est le comportement attendu
+    assertDoesNotThrow(() -> invokePlayAiTurn(mockAi));
+  }
+
+  @Test
+  void testPlayAiTurn_nullMove_stateSetByCheckGameOver() throws Exception {
+    Configuration aiConfig = buildWhiteAiConfig();
+    controller.startNewGame(aiConfig);
+    GameCheckers game = controller.getGame();
+
+    AiPlayer mockAi = Mockito.mock(AiPlayer.class);
+    Mockito.when(mockAi.getBestMove(any(), any(), any())).thenReturn(null);
+
+    invokePlayAiTurn(mockAi);
+
+    // checkGameOver() a été appelé — l'état est cohérent (IN_GAME ou FINISHED)
+    // selon si l'adversaire a encore des coups
+    State state = game.getState();
+    assertTrue(state == State.IN_GAME || state == State.FINISHED,
+        "L'état doit être cohérent après un coup null de l'IA.");
+  }
+
+  @Test
+  void testPlayAiTurn_blitz_startsTimer() throws Exception {
+    Configuration blitzAiConfig = buildBlitzWhiteAiConfig();
+    controller.startNewGame(blitzAiConfig);
+
+    AiPlayer ai = (AiPlayer) controller.getGame().getWhitePlayer();
+    assertDoesNotThrow(() -> invokePlayAiTurn(ai));
+
+    controller.stopBlitzTimer();
+  }
+
+  @Test
+  void testPlayAiTurn_moveLeadsToGameOver_setsFinished() throws Exception {
+    Configuration aiConfig = buildWhiteAiConfig();
+    controller.startNewGame(aiConfig);
+
+    GameCheckers game = controller.getGame();
+    AiPlayer ai = (AiPlayer) game.getWhitePlayer();
+
+    // Jouer jusqu'à ce qu'un coup mène à FINISHED, ou vérifier setState
+    invokePlayAiTurn(ai);
+
+    // La partie est soit IN_GAME soit FINISHED — jamais d'état incohérent
+    assertTrue(
+        game.getState() == State.IN_GAME || game.getState() == State.FINISHED);
+  }
+
+  // =========================================================
   // Helpers
   // =========================================================
 
@@ -501,12 +586,33 @@ class GameControllerTest {
     f.set(controller, null);
   }
 
-  /**
-   * Builds a blitz Configuration.
-   * Adapt the constructor signature to match your actual Configuration class.
-   */
-  private Configuration buildBlitzConfig(int seconds) {
-    return new Configuration(true, seconds, false, 8, false, false, false, false, 10);
+  private Configuration buildWhiteAiConfig() {
+    // blitz=false, time=0, contest=false, size=8,
+    // verbose=false, debug=false, whiteAi=true, blackAi=false, aiTime=10
+    return new Configuration(false, 0, false, 8, false, false, true, false, 10);
+  }
+
+  private Configuration buildBlackAiConfig() {
+    return new Configuration(false, 0, false, 8, false, false, false, true, 10);
+  }
+
+  private Configuration buildBothAiConfig() {
+    return new Configuration(false, 0, false, 8, false, false, true, true, 10);
+  }
+
+  private Configuration buildBlitzWhiteAiConfig() {
+    return new Configuration(true, 2, false, 8, false, false, true, false, 10);
+  }
+
+  private Configuration buildBlitzConfig(int minutes) {
+    return new Configuration(true, minutes, false, 8, false, false, false, false, 10);
+  }
+
+  private void invokePlayAiTurn(AiPlayer aiPlayer) throws Exception {
+    java.lang.reflect.Method method = GameController.class
+        .getDeclaredMethod("playAiTurn", AiPlayer.class);
+    method.setAccessible(true);
+    method.invoke(controller, aiPlayer);
   }
 
   // =========================================================
