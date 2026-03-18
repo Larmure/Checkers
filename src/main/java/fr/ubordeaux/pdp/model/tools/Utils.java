@@ -29,6 +29,13 @@ import java.util.Set;
  */
 public class Utils {
 
+  /**
+   * Private constructor to prevent instantiation of this utility class.
+   * This class is not meant to be instantiated, as it only contains static members.
+   */
+  private Utils() {
+  }
+
   /* Default game settings */
 
   /** The default size of the game board. */
