@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>Validates that a {@code MOVE} comes from the correct player.
  *   <li>Routes {@code OPPONENT_MOVE} notifications to all other participants.
  *   <li>Delegates move legality to {@link GameController}.
- *   <li>Records wins and losses when the session ends.
+ *   <li>Records wins, losses, and draws when the session ends.
  * </ul>
  *
  * <p>Thread-safety: {@link #handleMove} and {@link #end} are {@code synchronized} to
@@ -101,7 +101,13 @@ public class GameSession {
   }
 
   /**
-   * Ends the session, records scores, and returns all players to {@code IDLE} status.
+   * Ends the session, records scores, notifies all players, and returns them to {@code IDLE}.
+   *
+   * <p>Score rules:
+   * <ul>
+   *   <li>If {@code winnerId} is non-null, the matching player gets a win; all others get a loss.
+   *   <li>If {@code winnerId} is {@code null} (draw), every player gets a draw — NOT a loss.
+   * </ul>
    *
    * @param winnerId the ID of the winning player, or {@code null} for a draw.
    */
@@ -111,33 +117,53 @@ public class GameSession {
     }
     active = false;
 
+    boolean isDraw = (winnerId == null);
+
     for (PlayerSession player : players) {
-      if (winnerId != null && player.getId().equals(winnerId)) {
+      if (isDraw) {
+        player.recordDraw();
+      } else if (player.getId().equals(winnerId)) {
         player.recordWin();
       } else {
         player.recordLoss();
       }
       player.setStatus(PlayerSession.Status.IDLE);
-      player.send("GAME_OVER" + (winnerId != null ? " WINNER=" + winnerId : " DRAW"));
+      player.send("GAME_OVER" + (isDraw ? " DRAW" : " WINNER=" + winnerId));
     }
   }
 
-  /** @return the unique session identifier. */
+  /**
+   * Returns the unique session identifier.
+   *
+   * @return the unique session identifier
+   */
   public String getSessionId() {
     return sessionId;
   }
 
-  /** @return an unmodifiable view of the participants in turn order. */
+  /**
+   * Returns the participants in turn order.
+   *
+   * @return an unmodifiable view of the participants in turn order
+   */
   public List<PlayerSession> getPlayers() {
     return players;
   }
 
-  /** @return {@code true} if the session has not yet ended. */
+  /**
+   * Returns whether the session is still active.
+   *
+   * @return {@code true} if the session has not yet ended
+   */
   public boolean isActive() {
     return active;
   }
 
-  /** @return the player whose turn it currently is. */
+  /**
+   * Returns the player whose turn it currently is.
+   *
+   * @return the player whose turn it currently is
+   */
   public PlayerSession getCurrentPlayer() {
     return players.get(currentTurnIndex);
   }

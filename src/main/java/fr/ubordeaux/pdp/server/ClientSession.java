@@ -80,10 +80,17 @@ public class ClientSession {
     currentServer = null;
     mode = ClientMode.LOCAL;
     try {
-      if (in != null) in.close();
-      if (out != null) out.close();
-      if (socket != null && !socket.isClosed()) socket.close();
-    } catch (IOException ignored) {
+      if (in != null) {
+        in.close();
+      }
+      if (out != null) {
+        out.close();
+      }
+      if (socket != null && !socket.isClosed()) {
+        socket.close();
+      }
+    } catch (IOException e) {
+      System.out.println("Error while closing client connection: " + e.getMessage());
     }
     System.out.println("Disconnected from server.");
   }
@@ -120,27 +127,47 @@ public class ClientSession {
     System.out.println("[mode] Server stopped. Back to LOCAL mode.");
   }
 
-  /** @return the current operating mode. */
+  /**
+   * Returns the current operating mode.
+   *
+   * @return the current operating mode
+   */
   public ClientMode getMode() {
     return mode;
   }
 
-  /** @return {@code true} if the TCP socket is currently open. */
+  /**
+   * Returns whether the TCP socket is currently open.
+   *
+   * @return {@code true} if the TCP socket is currently open
+   */
   public boolean isConnected() {
     return connected;
   }
 
-  /** @return the {@code "host:port"} string of the current server, or {@code null}. */
+  /**
+   * Returns the current server address.
+   *
+   * @return the {@code "host:port"} string of the current server, or {@code null}
+   */
   public String getCurrentServer() {
     return currentServer;
   }
 
-  /** @return the default host used when no address is given to {@code join}. */
+  /**
+   * Returns the default host used by the join command.
+   *
+   * @return the default host used when no address is given to {@code join}
+   */
   public String getDefaultHost() {
     return DEFAULT_HOST;
   }
 
-  /** @return the default port used when no address is given to {@code join}. */
+  /**
+   * Returns the default port used by the join command.
+   *
+   * @return the default port used when no address is given to {@code join}
+   */
   public int getDefaultPort() {
     return DEFAULT_PORT;
   }
@@ -161,7 +188,8 @@ public class ClientSession {
                         System.out.print("[" + currentServer + "] > ");
                       }
                     }
-                  } catch (IOException ignored) {
+                  } catch (IOException e) {
+                    // Ignore read errors; disconnect handling is done in finally.
                   } finally {
                     if (connected) {
                       System.out.println("\n[!] Server stopped unexpectedly.");

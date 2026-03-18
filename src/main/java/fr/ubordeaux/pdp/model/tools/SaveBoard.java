@@ -1,13 +1,12 @@
 package fr.ubordeaux.pdp.model.tools;
 
+import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
-import fr.ubordeaux.pdp.model.core.Board;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
 
 /**
  * Saves the current game state to a structured text file.

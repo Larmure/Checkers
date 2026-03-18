@@ -1,23 +1,24 @@
 package fr.ubordeaux.pdp.controller.commands;
 
+import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.server.GameControllerFactory;
 import fr.ubordeaux.pdp.server.GameServer;
-import fr.ubordeaux.pdp.view.ConsoleView;
+import fr.ubordeaux.pdp.view.HeadlessView;
 
 /**
- * Server management command: {@code server start [PORT]}
+ * Server management command: {@code server start [PORT]}.
  *
  * <p>Starts a game server on the specified TCP port (default: 12345). On success, switches
- * the session to {@link fr.ubordeaux.pdp.serveur.ClientMode#SERVER}, which disables all
+ * the session to {@link fr.ubordeaux.pdp.server.ClientMode#SERVER}, which disables all
  * client commands ({@code join}, {@code ping}) until the server is stopped.
  *
- * <p>The server receives a {@link GameControllerFactory} that creates a fresh {@link
- * GameController} per game session. If a {@code controller} is provided (unified shell
- * mode), that instance is reused for the first session; otherwise a new one is created from
- * a {@link ConsoleView}.
+ * <p>The server always receives a {@link GameControllerFactory} that creates a dedicated
+ * {@link GameController} with a {@link HeadlessView} per game session. The local shell
+ * controller is intentionally never shared with the server to avoid mixing the host
+ * player's local state with server-side session state.
  *
  * <p>Category: [NETWORK — SERVER MANAGEMENT]
  */
@@ -31,17 +32,18 @@ public class ServerStartCommand implements Command, Helpable {
    */
   public static GameServer activeServer = null;
 
-  private final GameController controller;
   private final String[] args;
   private final ClientSession session;
 
   /**
-   * @param controller the game controller to reuse for the first session (may be {@code null}).
+   * Creates a server-start command.
+   *
+   * @param controller unused — kept for API compatibility with {@code Utils.COMMANDS_MAP}.
+   *     The server always creates its own controllers via {@link HeadlessView}.
    * @param args optional first element is the port number as a string.
    * @param session the client session whose mode will be updated on start/stop.
    */
   public ServerStartCommand(GameController controller, String[] args, ClientSession session) {
-    this.controller = controller;
     this.args = args;
     this.session = session;
   }
@@ -62,39 +64,35 @@ public class ServerStartCommand implements Command, Helpable {
       }
     }
 
-    // Build a factory: reuse the provided controller for the first session,
-    // then create fresh controllers (with their own ConsoleView) for subsequent ones.
-    GameController provided = this.controller;
-    GameControllerFactory factory =
-          provided != null
-                ? new SingleThenFreshFactory(provided)
-                : () -> new GameController(new ConsoleView());
+    // Each game session gets its own dedicated controller — no shared state with the shell.
+    GameControllerFactory factory = () -> new GameController(new HeadlessView());
 
     final int finalPort = port;
     activeServer = new GameServer("GameServer", finalPort, factory);
     GameServer ref = activeServer;
 
     Thread serverThread =
-          new Thread(
-                () -> {
-                  try {
-                    ref.start();
-                  } catch (java.io.IOException e) {
-                    System.out.println("Cannot start server: " + e.getMessage());
-                    activeServer = null;
-                    if (session != null) {
-                      session.exitServerMode();
-                    }
-                  }
-                },
-                "game-server-thread");
+        new Thread(
+            () -> {
+              try {
+                ref.start();
+              } catch (java.io.IOException e) {
+                System.out.println("Cannot start server: " + e.getMessage());
+                activeServer = null;
+                if (session != null) {
+                  session.exitServerMode();
+                }
+              }
+            },
+            "game-server-thread");
     serverThread.setDaemon(true);
     serverThread.start();
 
     // Brief wait to let the server socket initialize.
     try {
       Thread.sleep(300);
-    } catch (InterruptedException ignored) {
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
 
     if (activeServer != null && activeServer.isRunning()) {
@@ -108,29 +106,6 @@ public class ServerStartCommand implements Command, Helpable {
   @Override
   public String getHelp() {
     return "server start [PORT] — Starts a game server on PORT (default: 12345).\n"
-          + "                       Client commands (join, ping) are disabled while the server runs.";
-  }
-
-  /**
-   * Factory that returns the provided controller on the first call, then creates a fresh one
-   * (with its own {@link ConsoleView}) for all subsequent calls.
-   */
-  private static final class SingleThenFreshFactory implements GameControllerFactory {
-
-    private GameController first;
-
-    SingleThenFreshFactory(GameController first) {
-      this.first = first;
-    }
-
-    @Override
-    public GameController create() {
-      if (first != null) {
-        GameController c = first;
-        first = null;
-        return c;
-      }
-      return new GameController(new ConsoleView());
-    }
+        + "                       Client commands (join, ping) are disabled while the server runs.";
   }
 }

@@ -14,7 +14,7 @@ package fr.ubordeaux.pdp.controller;
  *                      → act on ClientSession (connection and mode state)
  * </pre>
  *
- * <p>Client commands receive a {@link fr.ubordeaux.pdp.serveur.ClientSession} to
+ * <p>Client commands receive a {@link fr.ubordeaux.pdp.server.ClientSession} to
  * manipulate connection state without coupling directly to the {@code client} shell.
  */
 public interface ClientCommand extends Command {

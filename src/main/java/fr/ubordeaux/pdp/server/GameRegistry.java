@@ -3,17 +3,19 @@ package fr.ubordeaux.pdp.server;
 import fr.ubordeaux.pdp.controller.GameController;
 import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Thread-safe registry of connected players and active game sessions.
  *
  * <p>All structural mutations (register/remove player, create/end session) are
  * {@code synchronized} to prevent race conditions from concurrent client threads.
- * Read-only accessors use the underlying {@link ConcurrentHashMap} directly and
- * do not require additional locking.
+ * Read-only accessors use the underlying {@link ConcurrentHashMap} directly and do not
+ * require additional locking.
  *
  * <p>This class is the single source of truth for:
  *
@@ -53,13 +55,13 @@ public class GameRegistry {
     players.remove(playerId);
 
     sessions.values().removeIf(
-          session -> {
-            if (session.hasPlayer(playerId) && session.isActive()) {
-              session.end(null);
-              return true;
-            }
-            return !session.isActive();
-          });
+        session -> {
+          if (session.hasPlayer(playerId) && session.isActive()) {
+            session.end(null);
+            return true;
+          }
+          return !session.isActive();
+        });
   }
 
   /**
@@ -81,23 +83,58 @@ public class GameRegistry {
     return List.copyOf(players.values());
   }
 
-  /** @return the number of connected players. */
+  /**
+   * Returns the number of connected players.
+   *
+   * @return the number of connected players
+   */
   public int getPlayerCount() {
     return players.size();
   }
 
   /**
+   * Returns a formatted multi-line string listing all connected players.
+   *
+   * <p>Each line follows the format produced by {@link PlayerSession#toString()}.
+   * Returns an empty string if no players are connected.
+   *
+   * @return formatted player list, ready to send to a client.
+   */
+  public String getPlayersFormatted() {
+    return players.values().stream()
+        .map(PlayerSession::toString)
+        .collect(Collectors.joining("\n"));
+  }
+
+  /**
+   * Returns a formatted scoreboard sorted by wins descending.
+   *
+   * <p>Each line follows the format produced by {@link PlayerSession#toString()}.
+   * Returns a placeholder string if no players are connected.
+   *
+   * @return formatted scoreboard, ready to send to a client.
+   */
+  public String getScoreboardFormatted() {
+    if (players.isEmpty()) {
+      return "No players connected.";
+    }
+    return players.values().stream()
+        .sorted(Comparator.comparingInt(PlayerSession::getWins).reversed())
+        .map(PlayerSession::toString)
+        .collect(Collectors.joining("\n"));
+  }
+
+  /**
    * Creates a new game session for the given participants.
    *
-   * <p>Pre-condition: all players must be in {@code IDLE} status. This is enforced by
-   * the caller ({@link GameServer}).
+   * <p>Pre-condition: all players must be in {@code IDLE} status. Enforced by the caller.
    *
    * @param participants ordered list of players; turn order follows list order.
    * @param controller the game controller that will handle move execution.
    * @return the newly created {@link GameSession}.
    */
   public synchronized GameSession createSession(
-        List<PlayerSession> participants, GameController controller) {
+      List<PlayerSession> participants, GameController controller) {
     GameSession session = new GameSession(participants, controller);
     sessions.put(session.getSessionId(), session);
     return session;
@@ -111,9 +148,9 @@ public class GameRegistry {
    */
   public GameSession getSessionForPlayer(String playerId) {
     return sessions.values().stream()
-          .filter(s -> s.isActive() && s.hasPlayer(playerId))
-          .findFirst()
-          .orElse(null);
+        .filter(s -> s.isActive() && s.hasPlayer(playerId))
+        .findFirst()
+        .orElse(null);
   }
 
   /**
@@ -125,7 +162,11 @@ public class GameRegistry {
     return sessions.values().stream().filter(GameSession::isActive).toList();
   }
 
-  /** @return the number of currently active game sessions. */
+  /**
+   * Returns the number of currently active game sessions.
+   *
+   * @return the number of currently active game sessions
+   */
   public int getActiveSessionCount() {
     return (int) sessions.values().stream().filter(GameSession::isActive).count();
   }

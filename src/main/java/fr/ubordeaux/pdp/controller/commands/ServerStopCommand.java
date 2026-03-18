@@ -5,10 +5,10 @@ import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.ClientSession;
 
 /**
- * Server management command: {@code server stop}
+ * Server management command: {@code server stop}.
  *
  * <p>Stops the running game server and notifies all connected clients with {@code BYE}.
- * Restores the session to {@link fr.ubordeaux.pdp.serveur.ClientMode#LOCAL},
+ * Restores the session to {@link fr.ubordeaux.pdp.server.ClientMode#LOCAL},
  * re-enabling all client commands.
  *
  * <p>Category: [NETWORK — SERVER MANAGEMENT]
@@ -18,6 +18,8 @@ public class ServerStopCommand implements Command, Helpable {
   private final ClientSession session;
 
   /**
+   * Creates a server-stop command.
+   *
    * @param session the client session whose mode will be restored to LOCAL on stop.
    */
   public ServerStopCommand(ClientSession session) {
@@ -27,7 +29,7 @@ public class ServerStopCommand implements Command, Helpable {
   @Override
   public void execute() {
     if (ServerStartCommand.activeServer == null
-      || !ServerStartCommand.activeServer.isRunning()) {
+          || !ServerStartCommand.activeServer.isRunning()) {
       System.out.println("No server is currently running.");
       return;
     }

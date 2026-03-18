@@ -3,10 +3,10 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.GameRegistry;
-import fr.ubordeaux.pdp.serveur.PlayerSession;
+import fr.ubordeaux.pdp.server.PlayerSession;
 
 /**
- * Server management command: {@code players}
+ * Server management command: {@code players}.
  *
  * <p>Lists every player currently connected to the server, along with their unique ID,
  * display name, and status ({@code idle} or {@code ingame}).
@@ -18,6 +18,8 @@ public class PlayersCommand implements Command, Helpable {
   private final GameRegistry registry;
 
   /**
+   * Creates a players command.
+   *
    * @param registry the shared player and session registry.
    */
   public PlayersCommand(GameRegistry registry) {
@@ -36,7 +38,9 @@ public class PlayersCommand implements Command, Helpable {
     for (PlayerSession player : registry.getAllPlayers()) {
       System.out.printf(
             "%-10s  %-15s  %s%n",
-            player.getId(), player.getName(), player.getStatus().name().toLowerCase());
+            player.getId(),
+            player.getName(),
+            player.getStatus().name().toLowerCase());
     }
   }
 

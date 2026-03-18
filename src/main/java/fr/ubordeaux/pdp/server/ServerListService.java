@@ -61,6 +61,7 @@ public class ServerListService {
             }
           }
         } catch (SocketTimeoutException ignored) {
+          // Ignore timeout and keep listening for broadcasts.
         }
 
         long now = System.currentTimeMillis();

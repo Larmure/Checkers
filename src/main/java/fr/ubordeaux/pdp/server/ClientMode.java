@@ -3,13 +3,13 @@ package fr.ubordeaux.pdp.server;
 /**
  * Represents the current operating mode of the game client.
  *
- * The mode determines which commands are available at any given time,
+ * <p>The mode determines which commands are available at any given time,
  * preventing logical conflicts (e.g. starting a server while connected
  * as a client, or joining a server while already hosting one).
  *
  * <pre>
- * LOCAL    → all commands available (default state)
- * SERVER   → server is running locally; client commands are blocked
+ * LOCAL     → all commands available (default state)
+ * SERVER    → server is running locally; client commands are blocked
  * CONNECTED → connected to a remote server; server-start is blocked
  * </pre>
  */

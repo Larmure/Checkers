@@ -8,8 +8,7 @@ import java.io.PrintWriter;
  * <p>Holds the player's identity, current status, cumulative score statistics, and the
  * output stream used to push messages back to their client.
  *
- * <p>Thread-safety: status and score fields are updated only through synchronized methods
- * or under synchronization in {@link GameRegistry}.
+ * <p>Thread-safety: score fields are updated only through {@code synchronized} methods.
  */
 public class PlayerSession {
 
@@ -27,9 +26,12 @@ public class PlayerSession {
 
   private int wins = 0;
   private int losses = 0;
+  private int draws = 0;
   private int gamesPlayed = 0;
 
   /**
+   * Creates a new player session.
+   *
    * @param id unique player identifier chosen during registration.
    * @param name display name.
    * @param out output stream bound to the player's TCP socket.
@@ -49,17 +51,29 @@ public class PlayerSession {
     out.println(message);
   }
 
-  /** @return the player's unique identifier. */
+  /**
+   * Returns the player's unique identifier.
+   *
+   * @return the player's unique identifier
+   */
   public String getId() {
     return id;
   }
 
-  /** @return the player's display name. */
+  /**
+   * Returns the player's display name.
+   *
+   * @return the player's display name
+   */
   public String getName() {
     return name;
   }
 
-  /** @return the player's current status. */
+  /**
+   * Returns the player's current status.
+   *
+   * @return the player's current status
+   */
   public Status getStatus() {
     return status;
   }
@@ -73,7 +87,11 @@ public class PlayerSession {
     this.status = status;
   }
 
-  /** @return {@code true} if the player is not currently in a game. */
+  /**
+   * Returns whether the player is currently idle.
+   *
+   * @return {@code true} if the player is not currently in a game
+   */
   public boolean isIdle() {
     return status == Status.IDLE;
   }
@@ -90,24 +108,63 @@ public class PlayerSession {
     gamesPlayed++;
   }
 
-  /** @return total wins. */
+  /**
+   * Records a draw and increments the games-played counter.
+   *
+   * <p>Must be called instead of {@link #recordLoss()} when a game ends with no winner,
+   * so that draws are not incorrectly counted as losses.
+   */
+  public synchronized void recordDraw() {
+    draws++;
+    gamesPlayed++;
+  }
+
+  /**
+   * Returns the total number of wins.
+   *
+   * @return the total number of wins
+   */
   public int getWins() {
     return wins;
   }
 
-  /** @return total losses. */
+  /**
+   * Returns the total number of losses.
+   *
+   * @return the total number of losses
+   */
   public int getLosses() {
     return losses;
   }
 
-  /** @return total games played. */
+  /**
+   * Returns the total number of draws.
+   *
+   * @return the total number of draws
+   */
+  public int getDraws() {
+    return draws;
+  }
+
+  /**
+   * Returns the total number of games played.
+   *
+   * @return the total number of games played
+   */
+
   public int getGamesPlayed() {
     return gamesPlayed;
   }
-
+  
   @Override
   public String toString() {
-    return String.format("%-10s %-15s %-6s W:%d L:%d",
-          id, name, status.name().toLowerCase(), wins, losses);
+    return String.format(
+          "%-10s %-15s %-6s W:%d L:%d D:%d",
+          id,
+          name,
+          status.name().toLowerCase(),
+          wins,
+          losses,
+          draws);
   }
 }

@@ -5,7 +5,7 @@ import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.GameRegistry;
 
 /**
- * Server management command: {@code server status}
+ * Server management command: {@code server status}.
  *
  * <p>Displays the server's TCP port, the number of connected clients, and the number of
  * active game sessions.
@@ -18,6 +18,8 @@ public class ServerStatusCommand implements Command, Helpable {
   private final GameRegistry registry;
 
   /**
+   * Creates a server-status command.
+   *
    * @param port the TCP port the server is listening on.
    * @param registry the shared player and session registry.
    */
@@ -30,7 +32,9 @@ public class ServerStatusCommand implements Command, Helpable {
   public void execute() {
     System.out.printf(
           "Server status: port=%d  clients=%d  games=%d%n",
-          port, registry.getPlayerCount(), registry.getActiveSessionCount());
+          port,
+          registry.getPlayerCount(),
+          registry.getActiveSessionCount());
   }
 
   @Override

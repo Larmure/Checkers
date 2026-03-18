@@ -1,15 +1,14 @@
 package fr.ubordeaux.pdp.model.tools;
 
+import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import fr.ubordeaux.pdp.model.core.Board;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
 
 /**
  * Loads a saved game from a structured text file.
@@ -187,7 +186,7 @@ public class LoadBoard {
     return line.trim();
   }
 
-   /**
+  /**
    * Dispatches a line to the correct section parser.
    *
    * @param section the current section
@@ -375,6 +374,7 @@ public class LoadBoard {
 
     currentBoardRow++;
   }
+
   /**
    * Builds a configuration from loaded values.
    *

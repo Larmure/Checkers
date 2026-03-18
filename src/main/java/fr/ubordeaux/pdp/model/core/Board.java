@@ -1,5 +1,7 @@
 package fr.ubordeaux.pdp.model.core;
 
+import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fr.ubordeaux.pdp.model.player.PlayerColor;
-import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
  * Represents a draughts (checkers) board encoded with bitboards.
@@ -1176,7 +1176,7 @@ public class Board {
     return sb.toString();
   }
 
-    /**
+  /**
    * Helper method to convert a bit index to its corresponding cell string for display.
    *
    * @param bitIndex bit index of the square, or -1 for light squares

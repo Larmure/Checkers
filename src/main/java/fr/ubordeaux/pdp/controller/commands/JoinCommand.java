@@ -5,10 +5,10 @@ import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.ClientSession;
 
 /**
- * Client command: {@code join [IP[:PORT]]}
+ * Client command: {@code join [IP[:PORT]]}.
  *
  * <p>Connects to a game server. On success, the session switches to
- * {@link fr.ubordeaux.pdp.serveur.ClientMode#CONNECTED}, which blocks
+ * {@link fr.ubordeaux.pdp.server.ClientMode#CONNECTED}, which blocks
  * {@code server start} until the client disconnects.
  *
  * <p>Defaults to {@code localhost:12345} if no address is provided.
@@ -22,6 +22,8 @@ public class JoinCommand implements ClientCommand, Helpable {
   private final String address;
 
   /**
+   * Creates a join command for the current client session.
+   *
    * @param session the current client session.
    * @param address target address as {@code "host:port"}, {@code "host"}, or {@code null}
    *                to use the defaults.
@@ -45,7 +47,7 @@ public class JoinCommand implements ClientCommand, Helpable {
           port = Integer.parseInt(parts[1].trim());
         } catch (NumberFormatException e) {
           System.out.println(
-            "Invalid port in '" + address + "'. Using default: " + session.getDefaultPort());
+                "Invalid port in '" + address + "'. Using default: " + session.getDefaultPort());
         }
       }
     }

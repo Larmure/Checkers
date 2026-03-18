@@ -5,12 +5,12 @@ import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.ClientSession;
 
 /**
- * Client command: {@code quit}
+ * Client command: {@code quit}.
  *
  * <p>Context-sensitive behaviour:
  * <ul>
  *   <li>If connected to a server — sends {@code QUIT}, disconnects, and returns the
- *       session to {@link fr.ubordeaux.pdp.serveur.ClientMode#LOCAL}.</li>
+ *       session to {@link fr.ubordeaux.pdp.server.ClientMode#LOCAL}.</li>
  *   <li>If in LOCAL mode — signals the main loop to exit the program via
  *       {@link #shouldExit()}.</li>
  * </ul>
@@ -25,6 +25,8 @@ public class QuitClientCommand implements ClientCommand, Helpable {
   private boolean exit = false;
 
   /**
+   * Creates a quit command for the current client session.
+   *
    * @param session the current client session.
    */
   public QuitClientCommand(ClientSession session) {
@@ -45,8 +47,11 @@ public class QuitClientCommand implements ClientCommand, Helpable {
   }
 
   /**
-   * @return {@code true} if the main loop should terminate the program.
-   *         Must be called after {@link #execute()}.
+   * Returns whether the main loop should terminate the program.
+   *
+   * <p>This method should be called after {@link #execute()}.
+   *
+   * @return {@code true} if the main loop should terminate the program
    */
   public boolean shouldExit() {
     return exit;

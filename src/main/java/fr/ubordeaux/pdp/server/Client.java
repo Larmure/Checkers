@@ -8,7 +8,7 @@ import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
-import fr.ubordeaux.pdp.view.ConsoleView;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -32,14 +32,14 @@ import java.util.Scanner;
  * @see ClientMode
  * @see GameController
  */
-public class client {
+public class Client {
 
   private final ClientSession session = new ClientSession();
   private final GameController controller;
 
   /** Wires the view to the controller without starting an input loop. */
-  public client() {
-    ConsoleView view = new ConsoleView();
+  public Client() {
+    CommandLineInterface view = new CommandLineInterface(false, false);
     this.controller = new GameController(view);
     view.setController(controller);
   }
@@ -84,7 +84,7 @@ public class client {
       switch (word1) {
         case "join" -> {
           if (blockIf(ClientMode.SERVER,
-                "Cannot join a server while hosting one. Use 'server stop' first.")) {
+              "Cannot join a server while hosting one. Use 'server stop' first.")) {
             break;
           }
           if (blockIf(ClientMode.CONNECTED, "Already connected. Use 'quit' to disconnect first.")) {
@@ -126,14 +126,17 @@ public class client {
     switch (session.getMode()) {
       case LOCAL -> {
         String[] args =
-              tokens.length > 1 ? Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
+            tokens.length > 1 ? Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
         controller.executeCommand(commandName, args);
       }
       case CONNECTED -> session.send(String.join(" ", tokens));
       case SERVER ->
-            System.out.println(
-                  "[blocked] Game commands are unavailable in SERVER mode.\n"
-                        + "          Use 'server stop' to return to local mode.");
+          System.out.println(
+              "[blocked] Game commands are unavailable in SERVER mode.\n"
+                  + "          Use 'server stop' to return to local mode.");
+      default -> {
+        break;
+      }
     }
   }
 
@@ -153,25 +156,26 @@ public class client {
       }
       case "start" -> {
         if (blockUnless(
-              ClientMode.LOCAL,
-              "Cannot start a server: use 'server stop' or 'quit' to leave your current mode.")) {
+            ClientMode.LOCAL,
+            "Cannot start a server: use 'server stop' or 'quit' to leave your current mode.")) {
           break;
         }
         String portArg = args.isBlank() ? null : args.trim();
         String[] startArgs = portArg == null ? new String[0] : new String[] {portArg};
-        new ServerStartCommand(controller, startArgs, session).execute();
+        new ServerStartCommand(null, startArgs, session).execute();
       }
       case "stop" -> {
-        if (blockUnless(ClientMode.SERVER, "No server is running. Use 'server start [PORT]' first.")) {
+        if (blockUnless(
+            ClientMode.SERVER, "No server is running. Use 'server start [PORT]' first.")) {
           break;
         }
         new ServerStopCommand(session).execute();
       }
       default ->
-            System.out.println(
-                  "Unknown server command: '"
-                        + sub
-                        + "'.\nAvailable: server list | server start [PORT] | server stop");
+          System.out.println(
+              "Unknown server command: '"
+                  + sub
+                  + "'.\nAvailable: server list | server start [PORT] | server stop");
     }
   }
 
@@ -223,6 +227,6 @@ public class client {
   }
 
   public static void main(String[] args) {
-    new client().run();
+    new Client().run();
   }
 }
