@@ -187,7 +187,7 @@ public class LoadBoard {
     return line.trim();
   }
 
-  /**
+   /**
    * Dispatches a line to the correct section parser.
    *
    * @param section the current section
@@ -195,9 +195,9 @@ public class LoadBoard {
    * @throws Exception if the data is invalid
    */
   private void processSectionData(String section, String data) throws Exception {
-  if (section == null || section.isEmpty()) {
-    throw new Exception("Data found outside any section header.");
-  }
+    if (section == null || section.isEmpty()) {
+      throw new Exception("Data found outside any section header.");
+    }
 
     switch (section) {
       case "[settings]" -> {
@@ -217,14 +217,8 @@ public class LoadBoard {
       default -> {
         // Unknown sections are ignored.
       }
-      parseBoardLine(data);
-    }
-    case "[history]" -> historyBuffer.append(data).append("\n");
-    default -> {
-      // Unknown sections are ignored.
     }
   }
-}
 
   /**
    * Checks that all mandatory sections were found.
@@ -341,23 +335,23 @@ public class LoadBoard {
     }
     if (cells.length() != n) {
       throw new Exception(
-            "Board row must have " + n + " cells, got " + cells.length() + ".");
+          "Board row must have " + n + " cells, got " + cells.length() + ".");
     }
 
     int boardRow = n - 1 - currentBoardRow;
 
     for (int col = 0; col < n; col++) {
       char c = cells.charAt(col);
-      boolean playable = ((currentBoardRow + col) % 2 != 0);
+      boolean playable = ((boardRow + col) % 2 == 0);
 
       if (!playable) {
         if (c != '_') {
           throw new Exception(
-                "Piece '" + c + "' on non-playable square at row "
-                      + currentBoardRow
-                      + ", col "
-                      + col
-                      + ".");
+              "Piece '" + c + "' on non-playable square at row "
+                  + currentBoardRow
+                  + ", col "
+                  + col
+                  + ".");
         }
         continue;
       }

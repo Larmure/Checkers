@@ -1,5 +1,5 @@
-package fr.ubordeaux.pdp.serveur;
- 
+package fr.ubordeaux.pdp.server;
+
 /**
  * Represents the current operating mode of the game client.
  *
@@ -14,10 +14,10 @@ package fr.ubordeaux.pdp.serveur;
  * </pre>
  */
 public enum ClientMode {
- 
+
   /** Default state. No server running, not connected to any server. */
   LOCAL,
- 
+
   /**
    * A game server has been started locally via {@code server start}.
    * Only server management commands are allowed:
@@ -25,7 +25,7 @@ public enum ClientMode {
    * Client commands ({@code join}, {@code ping}) are blocked.
    */
   SERVER,
- 
+
   /**
    * Connected to a remote game server via {@code join}.
    * Game commands and client commands are allowed.

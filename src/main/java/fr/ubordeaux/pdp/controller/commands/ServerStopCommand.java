@@ -2,7 +2,7 @@ package fr.ubordeaux.pdp.controller.commands;
 
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
-import fr.ubordeaux.pdp.serveur.ClientSession;
+import fr.ubordeaux.pdp.server.ClientSession;
 
 /**
  * Server management command: {@code server stop}

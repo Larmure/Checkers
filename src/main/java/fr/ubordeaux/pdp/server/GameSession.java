@@ -1,12 +1,10 @@
-package fr.ubordeaux.pdp.serveur;
+package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.controller.GameController;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.server.PlayerSession;
 
 /**
  * Represents one active game between two or more players on the server.

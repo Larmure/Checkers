@@ -1,13 +1,14 @@
 package fr.ubordeaux.pdp.model.core;
 
-import fr.ubordeaux.pdp.model.player.PlayerColor;
-import fr.ubordeaux.pdp.model.tools.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
  * Represents a draughts (checkers) board encoded with bitboards.
@@ -1175,11 +1176,11 @@ public class Board {
     return sb.toString();
   }
 
-  /**
+    /**
    * Helper method to convert a bit index to its corresponding cell string for display.
    *
    * @param bitIndex bit index of the square, or -1 for light squares
-   * @return string representation of the cell's contents ("o  ", "O  ", "x  ", "X  ", or "_  ")
+   * @return string representation of the cell's contents
    */
   private String cellString(int bitIndex) {
     String res = "";
@@ -1198,8 +1199,6 @@ public class Board {
     }
     return res;
   }
-  return res;
-}
 
   /**
    * Returns a simplified board string without row/column labels, intended for testing
@@ -1212,11 +1211,9 @@ public class Board {
     sb.append("\n");
 
     for (int row = sizeBoard - 1; row >= 0; row--) {
-
       for (int col = 0; col < sizeBoard; col++) {
         int bitIndex = boardToBitIndex(row, col);
         sb.append(cellString(bitIndex));
-
       }
       sb.append("\n");
     }
