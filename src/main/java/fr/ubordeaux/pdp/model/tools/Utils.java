@@ -47,7 +47,26 @@ public class Utils {
   public static final boolean DEFAULT_WHITE_AI = false;
   /** The default setting for whether the black player is controlled by AI. */
   public static final boolean DEFAULT_BLACK_AI = false;
-
+  /** The default keyboard shortcut for starting a new game. */
+  public static final String DEFAULT_SHORTCUT_NEW_GAME = "Ctrl+N";
+  /** The default keyboard shortcut for loading a saved game. */
+  public static final String DEFAULT_SHORTCUT_LOAD_GAME = "Ctrl+L";
+  /** The default keyboard shortcut for saving the current game. */
+  public static final String DEFAULT_SHORTCUT_SAVE_GAME = "Ctrl+S";
+  /** The default keyboard shortcut for opening the configuration dialog. */
+  public static final String DEFAULT_SHORTCUT_CONFIGURATION = "Ctrl+Comma";
+  /** The default keyboard shortcut for displaying game information. */
+  public static final String DEFAULT_SHORTCUT_INFO = "Ctrl+I";
+  /** The default keyboard shortcut for quitting the application. */
+  public static final String DEFAULT_SHORTCUT_QUIT = "Ctrl+Q";
+  /** The default keyboard shortcut for undoing the last move. */
+  public static final String DEFAULT_SHORTCUT_UNDO = "Ctrl+U";
+  /** The default keyboard shortcut for redoing the last undone move. */
+  public static final String DEFAULT_SHORTCUT_REDO = "Ctrl+R";
+  /** The default keyboard shortcut for pausing or resuming the game. */
+  public static final String DEFAULT_SHORTCUT_PAUSE = "Ctrl+P";
+  /** The default keyboard shortcut for requesting a hint for the current move. */
+  public static final String DEFAULT_SHORTCUT_HINT = "Ctrl+H";
   /** Regular expression for validating move syntax. */
   public static final String MOVE_REGEX = "^[a-zA-Z]\\d{1,2}\\s[a-zA-Z]\\d{1,2}$";
 
@@ -100,3 +119,4 @@ public class Utils {
   };
 
 }
+

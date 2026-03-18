@@ -1,7 +1,11 @@
 package fr.ubordeaux.pdp.view.gui;
 
+import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.view.gui.layout.MainView;
+import fr.ubordeaux.pdp.view.gui.layout.MenuView;
+import java.io.ObjectInputFilter.Config;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -63,7 +67,9 @@ public class GraphicalUserInterface extends GameView {
   public void start() {
     Platform.startup(() -> {
       stage = new Stage();
-      mainView = new MainView(controller);
+      ConfigManager configManager = new ConfigManager();
+      configManager.load();
+      mainView = new MainView(controller, configManager);
 
       Rectangle2D screen = Screen.getPrimary().getVisualBounds();
       double initW = screen.getWidth() * 0.90;
@@ -73,9 +79,7 @@ public class GraphicalUserInterface extends GameView {
 
       // Load the CSS stylesheet — src/main/resources/
       scene.getStylesheets().add(
-          getClass().getResource("/style.css").toExternalForm()
-      );
-
+          getClass().getResource("/style.css").toExternalForm());
       stage.setScene(scene);
       stage.setTitle("Checkers — Universite de Bordeaux");
       stage.setMinWidth(720);
@@ -93,7 +97,7 @@ public class GraphicalUserInterface extends GameView {
       // Pass the stage to MenuView *after* show() so dialogs have a visible owner.
       mainView.passStageToMenu(stage);
       mainView.passGuiToMenu(this);
- 
+
       // Intercept the window close button (X) — same logic as the Quit menu item.
       stage.setOnCloseRequest(e -> {
         e.consume(); // prevent immediate close
@@ -154,7 +158,7 @@ public class GraphicalUserInterface extends GameView {
       confirm.setHeaderText("Current game has unsaved changes.");
       confirm.setContentText("Save before quitting?");
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
- 
+
       confirm.showAndWait().ifPresent(response -> {
         if (response == ButtonType.YES) {
           mainView.openSaveDialog(); // delegate to MenuView's save dialog
@@ -168,7 +172,7 @@ public class GraphicalUserInterface extends GameView {
       doQuit();
     }
   }
- 
+
   /**
    * Performs the actual shutdown: closes the JavaFX platform cleanly then
    * exits the JVM.

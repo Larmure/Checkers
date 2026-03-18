@@ -1,8 +1,10 @@
-package fr.ubordeaux.pdp.view.gui;
+package fr.ubordeaux.pdp.view.gui.dialogs;
 
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.view.gui.layout.MenuView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
@@ -68,14 +70,25 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** Enables debug output. */
   private final CheckBox debugCheck = new CheckBox("Debug");
 
+  /** Manages keyboard shortcuts read from and written to {@code .checkersrc}. */
+  private final ShortcutManager shortcutManager;
+
+  /** Called after the user saves changes in {@link ShortcutDialog} so that
+  *  {@link MenuView} can re-apply the updated accelerators. */
+  private final Runnable onShortcutsChanged;
+
   /**
-   * Builds and styles the dialog.
+   * Builds the configuration dialog.
    *
-   * <p>The dialog is pre-populated with default values from
-   * {@link Configuration#getDefaultConfiguration()}.
+   * @param shortcutManager   the shortcut manager; must not be {@code null}
+   * @param onShortcutsChanged callback invoked after shortcuts are saved,
+   *                           used to refresh menu accelerators
    */
-  public ConfigDialog() {
+  public ConfigDialog(ShortcutManager shortcutManager, Runnable onShortcutsChanged) {
     super();
+    this.shortcutManager = shortcutManager;
+    this.onShortcutsChanged = onShortcutsChanged;
+
     setTitle("New Game — Configuration");
     setHeaderText("Configure the game options before starting.");
 
@@ -135,7 +148,12 @@ public class ConfigDialog extends Dialog<Configuration> {
         new Separator(),
         buildSection("Advanced"),
         buildAdvancedGrid());
-
+    Button shortcutsBtn = new Button("Keyboard Shortcuts");
+    shortcutsBtn.setOnAction(e -> {
+      new ShortcutDialog(shortcutManager).showAndWait();
+      onShortcutsChanged.run();
+    });
+    root.getChildren().add(shortcutsBtn);
     return root;
   }
 

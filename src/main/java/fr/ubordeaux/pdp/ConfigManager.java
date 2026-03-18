@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -34,6 +35,17 @@ public class ConfigManager {
   private int size = Utils.DEFAULT_BOARD_SIZE;
   /** The default value for the debug setting. */
   private boolean debug = Utils.DEFAULT_DEBUG;
+  /** The default value for keyboard shortcuts. */
+  private String shortcutNewGame = Utils.DEFAULT_SHORTCUT_NEW_GAME;
+  private String shortcutLoadGame = Utils.DEFAULT_SHORTCUT_LOAD_GAME;
+  private String shortcutSaveGame = Utils.DEFAULT_SHORTCUT_SAVE_GAME;
+  private String shortcutConfig = Utils.DEFAULT_SHORTCUT_CONFIGURATION;
+  private String shortcutInfo = Utils.DEFAULT_SHORTCUT_INFO;
+  private String shortcutQuit = Utils.DEFAULT_SHORTCUT_QUIT;
+  private String shortcutUndo = Utils.DEFAULT_SHORTCUT_UNDO;
+  private String shortcutRedo = Utils.DEFAULT_SHORTCUT_REDO;
+  private String shortcutPause = Utils.DEFAULT_SHORTCUT_PAUSE;
+  private String shortcutHint = Utils.DEFAULT_SHORTCUT_HINT;
 
   /**
    * Loads configuration settings from the {@code .checkersrc} file.
@@ -52,6 +64,7 @@ public class ConfigManager {
     try {
       List<String> lines = Files.readAllLines(configPath);
       boolean inDefaultsSection = false;
+      boolean inShortcutsSection = false;
       boolean foundHeader = false;
       boolean foundVerbose = false;
       boolean foundContest = false;
@@ -72,9 +85,12 @@ public class ConfigManager {
           if (line.equalsIgnoreCase("[defaults]")) {
             inDefaultsSection = true;
             foundHeader = true;
-          } else {
-            // If we encounter a different section header, stop parsing defaults
+          } else if (line.equalsIgnoreCase("[shortcuts]")) {
+            inShortcutsSection = true;
             inDefaultsSection = false;
+          } else {
+            inDefaultsSection = false;
+            inShortcutsSection = false;
           }
           continue;
         }
@@ -160,6 +176,27 @@ public class ConfigManager {
 
           }
         }
+        if (inShortcutsSection) {
+          String[] parts = line.split("=", 2);
+          if (parts.length < 2) {
+            continue;
+          }
+          String key = parts[0].trim();
+          String value = parts[1].trim();
+          switch (key) {
+            case "new-game" -> shortcutNewGame = value;
+            case "load-game" -> shortcutLoadGame = value;
+            case "save-game" -> shortcutSaveGame = value;
+            case "configuration" -> shortcutConfig = value;
+            case "info" -> shortcutInfo = value;
+            case "quit" -> shortcutQuit = value;
+            case "undo" -> shortcutUndo = value;
+            case "redo" -> shortcutRedo = value;
+            case "pause" -> shortcutPause = value;
+            case "hint" -> shortcutHint = value;
+            default -> System.err.println("ShortcutManager: unknown key: " + key);
+          }
+        }
       }
       if (!foundHeader) {
         throw new IOException(Internationalization.get("config.error.missing_header"));
@@ -222,9 +259,79 @@ public class ConfigManager {
       writer.println("contest = " + Utils.DEFAULT_CONTEST);
       writer.println("size = " + Utils.DEFAULT_BOARD_SIZE);
       writer.println("debug = " + Utils.DEFAULT_DEBUG);
+      writer.println("");
+      writer.println("[shortcuts]");
+      writer.println("new-game = " + Utils.DEFAULT_SHORTCUT_NEW_GAME);
+      writer.println("load-game = " + Utils.DEFAULT_SHORTCUT_LOAD_GAME);
+      writer.println("save-game = " + Utils.DEFAULT_SHORTCUT_SAVE_GAME);
+      writer.println("configuration = " + Utils.DEFAULT_SHORTCUT_CONFIGURATION);
+      writer.println("info = " + Utils.DEFAULT_SHORTCUT_INFO);
+      writer.println("quit = " + Utils.DEFAULT_SHORTCUT_QUIT);
+      writer.println("undo = " + Utils.DEFAULT_SHORTCUT_UNDO);
+      writer.println("redo = " + Utils.DEFAULT_SHORTCUT_REDO);
+      writer.println("pause = " + Utils.DEFAULT_SHORTCUT_PAUSE);
+      writer.println("hint = " + Utils.DEFAULT_SHORTCUT_HINT);
       System.err.println(Internationalization.get("config.info.created", path.toString()));
     } catch (IOException e) {
       System.err.println(Internationalization.get("config.info.created"));
+    }
+  }
+
+  /**
+   * Persists the current shortcuts into the {@code [shortcuts]} section of
+   * {@code .checkersrc}, replacing the existing section if present.
+   *
+   * <p>Called by {@link fr.ubordeaux.pdp.view.gui.dialogs.ShortcutDialog} after the
+   * user confirms changes.
+   */
+  public void saveShortcuts() {
+    Path configPath = Paths.get(System.getProperty("user.home"), CONFIG_FILE);
+    try {
+      List<String> lines;
+      if (Files.exists(configPath)) {
+        lines = Files.readAllLines(configPath);
+      } else {
+        lines = new ArrayList<>();
+      }
+
+      // Remove old [shortcuts] section.
+      List<String> kept = new java.util.ArrayList<>();
+      boolean inSection = false;
+      for (String raw : lines) {
+        if (raw.trim().equalsIgnoreCase("[shortcuts]")) {
+          inSection = true;
+          continue;
+        }
+        if (inSection && raw.trim().startsWith("[")) {
+          inSection = false;
+        }
+        if (!inSection) {
+          kept.add(raw);
+        }
+      }
+
+      // Append updated [shortcuts] section.
+      if (!kept.isEmpty() && !kept.get(kept.size() - 1).isBlank()) {
+        kept.add("");
+      }
+      kept.add("[shortcuts]");
+      kept.add("new-game = " + shortcutNewGame);
+      kept.add("load-game = " + shortcutLoadGame);
+      kept.add("save-game = " + shortcutSaveGame);
+      kept.add("configuration = " + shortcutConfig);
+      kept.add("info = " + shortcutInfo);
+      kept.add("quit = " + shortcutQuit);
+      kept.add("undo = " + shortcutUndo);
+      kept.add("redo = " + shortcutRedo);
+      kept.add("pause = " + shortcutPause);
+      kept.add("hint = " + shortcutHint);
+
+      Files.write(configPath, kept,
+          java.nio.file.StandardOpenOption.CREATE,
+          java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+
+    } catch (IOException e) {
+      System.err.println("ConfigManager: could not save shortcuts — " + e.getMessage());
     }
   }
 
@@ -280,5 +387,49 @@ public class ConfigManager {
    */
   public boolean isDebug() {
     return this.debug;
+  }
+
+  /**
+   * Retrieves the keyboard shortcut string for the specified action.
+   *
+   * @param action the action key (e.g., "new-game", "save-game")
+   * @return the shortcut string from {@code .checkersrc}, or {@code null} if not found
+   */
+  public String getShortcut(String action) {
+    return switch (action) {
+      case "new-game" -> shortcutNewGame;
+      case "load-game" -> shortcutLoadGame;
+      case "save-game" -> shortcutSaveGame;
+      case "configuration" -> shortcutConfig;
+      case "info" -> shortcutInfo;
+      case "quit" -> shortcutQuit;
+      case "undo" -> shortcutUndo;
+      case "redo" -> shortcutRedo;
+      case "pause" -> shortcutPause;
+      case "hint" -> shortcutHint;
+      default -> null;
+    };
+  }
+
+  /**
+   * Sets the keyboard shortcut string for the specified action.
+   *
+   * @param action the action key (e.g., "new-game", "save-game")
+   * @param value the new shortcut string from {@code .checkersrc}
+   */
+  public void setShortcut(String action, String value) {
+    switch (action) {
+      case "new-game" -> shortcutNewGame = value;
+      case "load-game" -> shortcutLoadGame = value;
+      case "save-game" -> shortcutSaveGame = value;
+      case "configuration" -> shortcutConfig = value;
+      case "info" -> shortcutInfo = value;
+      case "quit" -> shortcutQuit = value;
+      case "undo" -> shortcutUndo = value;
+      case "redo" -> shortcutRedo = value;
+      case "pause" -> shortcutPause = value;
+      case "hint" -> shortcutHint = value;
+      default -> System.err.println("ConfigManager: unknown shortcut: " + action);
+    }
   }
 }
