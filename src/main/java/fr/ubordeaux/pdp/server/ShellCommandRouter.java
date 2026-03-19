@@ -32,6 +32,8 @@ public class ShellCommandRouter {
   private final ClientSession session;
 
   /**
+   * Creates a router for shell commands.
+   *
    * @param controller the local game controller.
    * @param session the current client session.
    */
@@ -208,6 +210,7 @@ public class ShellCommandRouter {
                 : new String[0];
         controller.executeCommand(commandName, args);
       }
+      default -> throw new IllegalStateException("Unexpected mode: " + session.getMode());
     }
   }
 

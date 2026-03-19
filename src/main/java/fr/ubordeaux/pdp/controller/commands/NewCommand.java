@@ -32,7 +32,7 @@ public class NewCommand implements Command, Helpable {
    * Constructs a NewCommand with the required context and arguments.
    *
    * @param controller The {@link GameController} that will start the game.
-   * @param args       The string arguments to be parsed (e.g., "-b -s 10").
+   * @param args The string arguments to be parsed (e.g., "-b -s 10").
    */
   public NewCommand(GameController controller, String[] args) {
     this.controller = controller;
@@ -53,15 +53,21 @@ public class NewCommand implements Command, Helpable {
 
       boolean hasBlitz = cmd.hasOption("b");
       boolean hasContest = cmd.hasOption("c");
-      int blitzTime = Integer.parseInt(cmd.getOptionValue("t",
-          String.valueOf(Utils.DEFAULT_TIME)));
-      int size = Integer.parseInt(cmd.getOptionValue("s",
-          String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
+      int blitzTime = Integer.parseInt(
+            cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME)));
+      int size = Integer.parseInt(
+            cmd.getOptionValue("s", String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
 
-      controller.startNewGame(new Configuration(
-          hasBlitz, blitzTime, hasContest, size,
-          controller.isVerbose(), controller.isDebug(),
-          controller.iswhiteAi(), controller.isblackAi()));
+      controller.startNewGame(
+            new Configuration(
+                  hasBlitz,
+                  blitzTime,
+                  hasContest,
+                  size,
+                  controller.isVerbose(),
+                  controller.isDebug(),
+                  controller.isWhiteAi(),
+                  controller.isBlackAi()));
 
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());
@@ -70,11 +76,12 @@ public class NewCommand implements Command, Helpable {
 
   /**
    * Defines the available CLI options for the "new" command.
+   *
    * <ul>
-   * <li>-b, --blitz : Enable blitz mode</li>
-   * <li>-c, --contest : Enable contest mode</li>
-   * <li>-t, --time : Set time limit in seconds</li>
-   * <li>-s, --size : Set board size</li>
+   *   <li>-b, --blitz : Enable blitz mode</li>
+   *   <li>-c, --contest : Enable contest mode</li>
+   *   <li>-t, --time : Set time limit in seconds</li>
+   *   <li>-s, --size : Set board size</li>
    * </ul>
    *
    * @return An {@link Options} object containing the CLI schema.
@@ -97,5 +104,4 @@ public class NewCommand implements Command, Helpable {
   public String getHelp() {
     return Internationalization.get("new.help");
   }
-
 }

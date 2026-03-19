@@ -1,21 +1,19 @@
 package fr.ubordeaux.pdp.view;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.server.ShellCommandRouter;
+import java.io.IOException;
+import java.util.Arrays;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.UserInterruptException;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 
 /**
  * Concrete implementation of {@link GameView} providing an interactive text-based shell.
@@ -74,34 +72,38 @@ public class CommandLineInterface extends GameView {
     this.router = router;
   }
 
-
   /**
-   * Renders the current state of the board in the terminal.
+   * Displays the current game state in the terminal.
+   *
+   * <p>Shows the board, the current player's turn, and the remaining time
+   * in blitz mode.
+   *
+   * @param game the current game to display
    */
   @Override
   public void display(GameCheckers game) {
     System.out.println(Internationalization.get("game.board_title"));
-
-    // On utilise le toString() du Board que tu as fourni dans tes fichiers
-    // C'est ici que la Vue "lit" le modèle sans le modifier
     System.out.println(game.getBoard().toString());
 
-    // Affichage des infos de tour
-    String tour = game.getCurrentPlayer().getName();
-    System.out.println(String.format(Internationalization.get("game.turn"), tour));
+    String currentPlayerName = game.getCurrentPlayer().getName();
+    System.out.println(
+          String.format(Internationalization.get("game.turn"), currentPlayerName));
 
     if (controller.isBlitz()) {
       controller.displayTime();
     }
+
     System.out.println("======================\n");
   }
 
   /**
-   * Reacts to notifications from the observed model.
+   * Updates the view when the observed game state changes.
+   *
+   * @param gameCheckers the updated game instance
    */
   @Override
   public void update(GameCheckers gameCheckers) {
-    this.display(gameCheckers);
+    display(gameCheckers);
   }
 
   /**
@@ -112,25 +114,26 @@ public class CommandLineInterface extends GameView {
    * @param input The raw input string entered by the user.
    */
   public void handleInput(String input) {
-  if (input == null || input.trim().isEmpty()) {
-    return;
-  }
+    if (input == null || input.trim().isEmpty()) {
+      return;
+    }
 
-  if (router != null) {
-    router.route(input.trim());
-  } else {
-    String trimmed = input.trim();
-    String[] tokens = trimmed.split("\\s+");
-
-    if (trimmed.matches(Utils.MOVE_REGEX)) {
-      controller.executeMove(tokens[0], tokens[1]);
+    if (router != null) {
+      router.route(input.trim());
     } else {
-      String commandName = tokens[0];
-      String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-      controller.executeCommand(commandName, args);
+      String trimmed = input.trim();
+      String[] tokens = trimmed.split("\\s+");
+
+      if (trimmed.matches(Utils.MOVE_REGEX)) {
+        controller.executeMove(tokens[0], tokens[1]);
+      } else {
+        String commandName = tokens[0];
+        String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
+        controller.executeCommand(commandName, args);
+      }
     }
   }
-}
+
   /**
    * Starts the main input loop into a separated Thread.
    * It captures user strings, splits them into commands and arguments,
@@ -143,12 +146,12 @@ public class CommandLineInterface extends GameView {
         terminal = TerminalBuilder.terminal();
       } catch (IOException ex) {
         System.getLogger(CommandLineInterface.class.getName())
-            .log(System.Logger.Level.ERROR, (String) null, ex);
+              .log(System.Logger.Level.ERROR, (String) null, ex);
       }
       lineReader = LineReaderBuilder.builder()
-          .terminal(terminal)
-          .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
-          .build();
+            .terminal(terminal)
+            .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
+            .build();
 
       lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }
@@ -198,5 +201,4 @@ public class CommandLineInterface extends GameView {
       inputThread.join();
     }
   }
-
 }

@@ -1,10 +1,9 @@
 package fr.ubordeaux.pdp.controller.commands;
 
-import java.util.Scanner;
-
 import fr.ubordeaux.pdp.controller.ClientCommand;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.ClientSession;
+import java.util.Scanner;
 
 /**
  * Client command: {@code join [IP[:PORT]]}.
@@ -31,6 +30,8 @@ public class JoinCommand implements ClientCommand, Helpable {
   private final String address;
 
   /**
+   * Creates a join command for the given client session and target address.
+   *
    * @param session the current client session.
    * @param address target address as {@code "host:port"}, {@code "host"}, or {@code null}
    *     to use the defaults.

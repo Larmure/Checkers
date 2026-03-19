@@ -1,8 +1,5 @@
 package fr.ubordeaux.pdp.server;
 
-import java.util.Arrays;
-import java.util.Scanner;
-
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.commands.HelpClientCommand;
 import fr.ubordeaux.pdp.controller.commands.JoinCommand;
@@ -12,6 +9,8 @@ import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
+import java.util.Arrays;
+import java.util.Scanner;
 
 /**
  * Unified shell — the single entry point and sole command dispatcher.
@@ -136,6 +135,8 @@ public class Client {
           System.out.println(
               "[blocked] Game commands are unavailable in SERVER mode.\n"
                   + "          Use 'server stop' to return to local mode.");
+      default -> throw new IllegalStateException("Unexpected mode: " + session.getMode());
+
     }
   }
 

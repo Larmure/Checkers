@@ -1,5 +1,8 @@
 package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.view.HeadlessView;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -17,14 +20,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.view.HeadlessView;
-
+/**
+ * Multi-client TCP game server.
+ *
+ * <p>Accepts client connections, registers players, creates game sessions,
+ * and routes network commands to the appropriate session.
+ */
 public class GameServer {
 
   private static final int DEFAULT_PORT = 12345;
   private static final int CLIENT_TIMEOUT_MS = 180_000;
+  /** Client inactivity timeout: 3 minutes. */
 
   private final int tcpPort;
   private final String serverName;
@@ -38,20 +44,40 @@ public class GameServer {
   private volatile boolean running = false;
 
   private final Set<PrintWriter> connectedClients =
-      Collections.newSetFromMap(new ConcurrentHashMap<>());
+        Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+  /**
+   * Creates a new game server.
+   *
+   * @param serverName the broadcast server name
+   * @param tcpPort the TCP listening port
+   * @param controllerFactory factory used to create a new controller for each session
+   * @param daemon whether the server runs in daemon mode
+   */
   public GameServer(
-      String serverName, int tcpPort, GameControllerFactory controllerFactory, boolean daemon) {
+        String serverName, int tcpPort, GameControllerFactory controllerFactory, boolean daemon) {
     this.serverName = serverName;
     this.tcpPort = tcpPort;
     this.controllerFactory = controllerFactory;
     this.daemon = daemon;
   }
 
+  /**
+   * Creates a new non-daemon game server.
+   *
+   * @param serverName the broadcast server name
+   * @param tcpPort the TCP listening port
+   * @param controllerFactory factory used to create a new controller for each session
+   */
   public GameServer(String serverName, int tcpPort, GameControllerFactory controllerFactory) {
     this(serverName, tcpPort, controllerFactory, false);
   }
 
+  /**
+   * Starts the server socket and the discovery service.
+   *
+   * @throws IOException if the server cannot bind to the TCP port
+   */
   public void start() throws IOException {
     if (running) {
       System.out.println("Server is already running on port " + tcpPort + ".");
@@ -62,10 +88,10 @@ public class GameServer {
       serverSocket = new ServerSocket(tcpPort);
     } catch (java.net.BindException e) {
       throw new IOException(
-          "Port "
-              + tcpPort
-              + " is already in use. Stop the existing server or choose another port.",
-          e);
+            "Port "
+                  + tcpPort
+                  + " is already in use. Stop the existing server or choose another port.",
+            e);
     }
 
     running = true;
@@ -92,6 +118,9 @@ public class GameServer {
     }
   }
 
+  /**
+   * Stops the server and closes all active resources.
+   */
   public void stop() {
     if (!running) {
       System.out.println("Server is not running.");
@@ -104,6 +133,7 @@ public class GameServer {
       try {
         out.println("BYE");
       } catch (Exception ignored) {
+        // Ignore client notification failures during shutdown.
       }
     }
     connectedClients.clear();
@@ -127,20 +157,35 @@ public class GameServer {
     System.out.println("Server stopped.");
   }
 
+  /**
+   * Returns whether the server is currently running.
+   *
+   * @return {@code true} if the server is running
+   */
   public boolean isRunning() {
     return running;
   }
 
+  /**
+   * Returns the TCP port used by the server.
+   *
+   * @return the listening TCP port
+   */
   public int getPort() {
     return tcpPort;
   }
 
+  /**
+   * Handles a newly connected client socket.
+   *
+   * @param client the client socket
+   */
   private void handleClient(Socket client) {
     try (
-        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        PrintWriter out =
-            new PrintWriter(
-                new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
+          BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+          PrintWriter out =
+                new PrintWriter(
+                      new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
 
       connectedClients.add(out);
 
@@ -173,14 +218,22 @@ public class GameServer {
       processMessages(in, out, player);
 
     } catch (SocketTimeoutException e) {
-      System.out.println("Client timed out after 1 minute of inactivity.");
+      System.out.println("Client timed out after 3 minute of inactivity.");
     } catch (IOException e) {
       System.out.println("Client disconnected: " + e.getMessage());
     }
   }
 
+  /**
+   * Processes all messages received from a connected player.
+   *
+   * @param in the client input stream
+   * @param out the client output stream
+   * @param player the registered player
+   * @throws IOException if reading from the socket fails
+   */
   private void processMessages(BufferedReader in, PrintWriter out, PlayerSession player)
-      throws IOException {
+        throws IOException {
 
     String line;
     while ((line = in.readLine()) != null) {
@@ -206,7 +259,7 @@ public class GameServer {
           int playerCount = registry.getPlayerCount();
           int sessionCount = registry.getActiveSessionCount();
           out.println(
-              "STATUS port=" + tcpPort + " players=" + playerCount + " sessions=" + sessionCount);
+                "STATUS port=" + tcpPort + " players=" + playerCount + " sessions=" + sessionCount);
         }
         case "PLAYERS" -> {
           String list = registry.getPlayersFormatted();
@@ -230,7 +283,6 @@ public class GameServer {
             if (error != null) {
               out.println(error);
             } else {
-              // IMPORTANT: le joueur qui a joué doit aussi mettre à jour son board local
               out.println("MOVE_OK " + rest);
             }
           }
@@ -240,11 +292,14 @@ public class GameServer {
     }
   }
 
+  /**
+   * Automatically starts a game when at least two idle players are available.
+   */
   private synchronized void tryAutoStart() {
     List<PlayerSession> idlePlayers =
-        registry.getAllPlayers().stream()
-            .filter(PlayerSession::isIdle)
-            .collect(Collectors.toList());
+          registry.getAllPlayers().stream()
+                .filter(PlayerSession::isIdle)
+                .collect(Collectors.toList());
 
     if (idlePlayers.size() < 2) {
       if (idlePlayers.size() == 1) {
@@ -256,7 +311,6 @@ public class GameServer {
     List<PlayerSession> pair = idlePlayers.subList(0, 2);
     GameController sessionController = controllerFactory.create();
 
-    // IMPORTANT: vraie partie initialisée côté serveur
     sessionController.startNewGame(Configuration.getDefaultConfiguration());
 
     GameSession session = registry.createSession(pair, sessionController);
@@ -266,18 +320,25 @@ public class GameServer {
 
     for (PlayerSession p : pair) {
       p.send(
-          "GAME_START session="
-              + session.getSessionId()
-              + " players="
-              + playerList
-              + " first="
-              + firstId);
+            "GAME_START session="
+                  + session.getSessionId()
+                  + " players="
+                  + playerList
+                  + " first="
+                  + firstId);
     }
 
     System.out.println(
-        "Auto-started game: " + session.getSessionId() + " between " + playerList);
+          "Auto-started game: " + session.getSessionId() + " between " + playerList);
   }
 
+  /**
+   * Creates a new game session with the given participants.
+   *
+   * @param out the requester output stream
+   * @param requester the player requesting the game
+   * @param participantIds the players to include in the session
+   */
   private void handleNewGame(PrintWriter out, PlayerSession requester, String[] participantIds) {
     java.util.List<PlayerSession> participants = new java.util.ArrayList<>();
 
@@ -295,8 +356,6 @@ public class GameServer {
     }
 
     GameController sessionController = controllerFactory.create();
-
-    // IMPORTANT: vraie partie initialisée aussi ici
     sessionController.startNewGame(Configuration.getDefaultConfiguration());
 
     GameSession session = registry.createSession(participants, sessionController);
@@ -306,17 +365,22 @@ public class GameServer {
 
     for (PlayerSession p : participants) {
       p.send(
-          "GAME_START session="
-              + session.getSessionId()
-              + " players="
-              + playerList
-              + " first="
-              + firstId);
+            "GAME_START session="
+                  + session.getSessionId()
+                  + " players="
+                  + playerList
+                  + " first="
+                  + firstId);
     }
 
     System.out.println("Game session started: " + session.getSessionId());
   }
 
+  /**
+   * Starts the server in standalone mode.
+   *
+   * @param args command-line arguments
+   */
   public static void main(String[] args) {
     int port = DEFAULT_PORT;
     boolean daemonMode = false;
@@ -342,12 +406,12 @@ public class GameServer {
     GameServer server = new GameServer("GameServer", port, factory, daemonMode);
 
     Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  System.out.println("\nShutting down server...");
-                  server.stop();
-                }));
+          .addShutdownHook(
+                new Thread(
+                      () -> {
+                        System.out.println("\nShutting down server...");
+                        server.stop();
+                      }));
 
     try {
       server.start();

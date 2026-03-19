@@ -1,8 +1,5 @@
 package fr.ubordeaux.pdp.model.tools;
 
-import java.util.Map;
-import java.util.Set;
-
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
@@ -21,6 +18,9 @@ import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.controller.commands.SetCommand;
 import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
+import java.util.Map;
+import java.util.Set;
+
 
 /**
  * Global utility class containing game constants and the command registry.

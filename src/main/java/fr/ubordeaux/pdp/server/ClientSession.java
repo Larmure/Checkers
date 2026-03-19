@@ -1,5 +1,6 @@
 package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.controller.GameController;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -8,7 +9,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import fr.ubordeaux.pdp.controller.GameController;
 
 /**
  * Holds the TCP connection state and current operating mode for the game client.
@@ -71,7 +71,7 @@ public class ClientSession {
   public void connect(String host, int port) {
     if (connected) {
       System.out.println(
-          "Already connected to " + currentServer + ". Type 'quit' to disconnect first.");
+            "Already connected to " + currentServer + ". Type 'quit' to disconnect first.");
       return;
     }
 
@@ -81,8 +81,8 @@ public class ClientSession {
       socket = new Socket(host, port);
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       out =
-          new PrintWriter(
-              new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+            new PrintWriter(
+                  new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
       connected = true;
       currentServer = host + ":" + port;
       mode = ClientMode.CONNECTED;
@@ -114,6 +114,7 @@ public class ClientSession {
         socket.close();
       }
     } catch (IOException ignored) {
+      // Ignore socket close failures during disconnect.
     }
     System.out.println("Disconnected from server.");
   }
@@ -136,8 +137,8 @@ public class ClientSession {
   public void enterServerMode() {
     mode = ClientMode.SERVER;
     System.out.println(
-        "[mode] Now in SERVER mode. Client commands are disabled.\n"
-            + "       Use 'server stop' to return to local mode.");
+          "[mode] Now in SERVER mode. Client commands are disabled.\n"
+                + "       Use 'server stop' to return to local mode.");
   }
 
   /**
@@ -149,33 +150,53 @@ public class ClientSession {
     System.out.println("[mode] Server stopped. Back to LOCAL mode.");
   }
 
-  /** @return the current operating mode. */
+  /**
+   * Returns the current operating mode.
+   *
+   * @return the current operating mode.
+   */
   public ClientMode getMode() {
     return mode;
   }
 
-  /** @return {@code true} if the TCP socket is currently open. */
+  /**
+   * Returns whether the TCP socket is currently open.
+   *
+   * @return {@code true} if the TCP socket is currently open.
+   */
   public boolean isConnected() {
     return connected;
   }
 
-  /** @return the {@code "host:port"} string of the current server, or {@code null}. */
+  /**
+   * Returns the current server address.
+   *
+   * @return the {@code "host:port"} string of the current server, or {@code null}.
+   */
   public String getCurrentServer() {
     return currentServer;
   }
 
-  /** @return the default host used when no address is given to {@code join}. */
+  /**
+   * Returns the default host used when no address is given to {@code join}.
+   *
+   * @return the default host used when no address is given to {@code join}.
+   */
   public String getDefaultHost() {
     return DEFAULT_HOST;
   }
 
-  /** @return the default port used when no address is given to {@code join}. */
+  /**
+   * Returns the default port used when no address is given to {@code join}.
+   *
+   * @return the default port used when no address is given to {@code join}.
+   */
   public int getDefaultPort() {
     return DEFAULT_PORT;
   }
 
   /**
-   * Starts a daemon thread that reads server messages and reacts to them:
+   * Starts a daemon thread that reads server messages and reacts to them.
    *
    * <ul>
    *   <li>{@code OPPONENT_MOVE <from>-<to>} — applies the move locally via the controller
@@ -185,26 +206,27 @@ public class ClientSession {
    */
   private void startListenerThread() {
     Thread listener =
-        new Thread(
-            () -> {
-              try {
-                String response;
-                while ((response = in.readLine()) != null) {
-                  handleServerMessage(response);
-                  if (connected) {
-                    System.out.print("[" + currentServer + "] > ");
+          new Thread(
+                () -> {
+                  try {
+                    String response;
+                    while ((response = in.readLine()) != null) {
+                      handleServerMessage(response);
+                      if (connected) {
+                        System.out.print("[" + currentServer + "] > ");
+                      }
+                    }
+                  } catch (IOException ignored) {
+                    // Ignore listener I/O failures; disconnect is handled in finally.
+                  } finally {
+                    if (connected) {
+                      System.out.println("\n[!] Server stopped unexpectedly.");
+                      disconnect();
+                      System.out.print("[local] > ");
+                    }
                   }
-                }
-              } catch (IOException ignored) {
-              } finally {
-                if (connected) {
-                  System.out.println("\n[!] Server stopped unexpectedly.");
-                  disconnect();
-                  System.out.print("[local] > ");
-                }
-              }
-            },
-            "server-listener");
+                },
+                "server-listener");
     listener.setDaemon(true);
     listener.start();
   }
@@ -225,7 +247,7 @@ public class ClientSession {
       if (controller != null) {
         controller.stopBlitzTimer();
         controller.startNewGame(
-            fr.ubordeaux.pdp.model.core.Configuration.getDefaultConfiguration());
+              fr.ubordeaux.pdp.model.core.Configuration.getDefaultConfiguration());
       }
       System.out.println("\nGame started! " + message);
     } else if (message.startsWith("MOVE_OK ")) {

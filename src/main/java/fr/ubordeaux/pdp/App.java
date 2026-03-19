@@ -1,15 +1,5 @@
 package fr.ubordeaux.pdp;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.UnrecognizedOptionException;
-
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
@@ -19,6 +9,15 @@ import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.UnrecognizedOptionException;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
