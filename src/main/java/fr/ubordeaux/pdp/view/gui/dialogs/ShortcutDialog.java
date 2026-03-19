@@ -149,6 +149,12 @@ public class ShortcutDialog extends Dialog<Void> {
       }
       e.consume();
 
+      if (!e.isControlDown() && !e.isShiftDown() && !e.isAltDown()) {
+        showError("Invalid shortcut", 
+            "A shortcut must include at least one modifier (Ctrl, Shift, Alt).");
+        capture.close();
+        return;
+      }
       // Delegate reserved-key check to ShortcutDialogUtils.
       if (ShortcutDialogUtils.isReserved(e.getCode())) {
         showError("Reserved shortcut",
