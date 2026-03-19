@@ -5,7 +5,6 @@ import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
-import java.io.ObjectInputFilter.Config;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
