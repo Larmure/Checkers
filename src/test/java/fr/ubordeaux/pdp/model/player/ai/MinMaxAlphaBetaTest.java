@@ -14,8 +14,6 @@ import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.evaluation.SimpleEvaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
-import fr.ubordeaux.pdp.model.player.ai.MinMax;
-import fr.ubordeaux.pdp.model.player.ai.MinMaxAlphaBeta;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 
 /**
@@ -48,7 +46,7 @@ class MinMaxAlphaBetaTest {
   @DisplayName("Default constructor should use depth 3")
   void testDefaultConstructor() {
     MinMaxAlphaBeta defaultAlphaBeta = new MinMaxAlphaBeta();
-    assertEquals(3, defaultAlphaBeta.getMaxDepth(), "Default depth should be 3");
+    assertEquals(5, defaultAlphaBeta.getMaxDepth(), "Default depth should be 5");
   }
 
   @Test
@@ -338,7 +336,7 @@ class MinMaxAlphaBetaTest {
     assertNotNull(minTimeMove, "Should work with minimum time limit");
 
     // Test maximum allowed time
-    MinMaxAlphaBeta maxTimeAi = new MinMaxAlphaBeta(3, 30000L);
+    MinMaxAlphaBeta maxTimeAi = new MinMaxAlphaBeta(3, 5000L);
     Move maxTimeMove = maxTimeAi.getBestMove(undoManager, board, PlayerColor.WHITE, evaluator);
     assertNotNull(maxTimeMove, "Should work with maximum time limit");
   }
