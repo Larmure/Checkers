@@ -8,12 +8,20 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import fr.ubordeaux.pdp.controller.GameController;
+
 /**
  * Holds the TCP connection state and current operating mode for the game client.
  *
- * <p>All {@link fr.ubordeaux.pdp.controller.commands.JoinCommand} and other client
- * commands receive a reference to this session to read or modify state without
- * depending on the {@code client} runner class directly.
+ * <p>The background listener thread intercepts specific server messages:
+ *
+ * <ul>
+ *   <li>{@code OPPONENT_MOVE <from>-<to>} — applies the move on the local {@link GameController}
+ *       so the board updates visually for both players.
+ *   <li>{@code GAME_START ...} — printed as-is; the game is already initialised locally.
+ *   <li>{@code GAME_OVER ...} — printed as-is.
+ *   <li>All other messages — printed as-is.
+ * </ul>
  *
  * <p>The {@link ClientMode} controls which commands are permitted at any time:
  *
@@ -38,8 +46,24 @@ public class ClientSession {
   private ClientMode mode = ClientMode.LOCAL;
 
   /**
-   * Opens a TCP connection to the given host and port, sets the mode to {@link
-   * ClientMode#CONNECTED}, then starts a background listener thread.
+   * Local game controller — used to apply opponent moves so the board stays in sync.
+   * Set via {@link #setController(GameController)} after construction.
+   */
+  private GameController controller;
+
+  /**
+   * Injects the local game controller so the listener thread can call
+   * {@link GameController#executeMove(String, String)} when an {@code OPPONENT_MOVE} arrives.
+   *
+   * @param controller the local game controller.
+   */
+  public void setController(GameController controller) {
+    this.controller = controller;
+  }
+
+  /**
+   * Opens a TCP connection, sets the mode to {@link ClientMode#CONNECTED}, and starts the
+   * background listener thread.
    *
    * @param host target host.
    * @param port target port.
@@ -47,7 +71,7 @@ public class ClientSession {
   public void connect(String host, int port) {
     if (connected) {
       System.out.println(
-            "Already connected to " + currentServer + ". Type 'quit' to disconnect first.");
+          "Already connected to " + currentServer + ". Type 'quit' to disconnect first.");
       return;
     }
 
@@ -57,8 +81,8 @@ public class ClientSession {
       socket = new Socket(host, port);
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       out =
-            new PrintWriter(
-                  new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+          new PrintWriter(
+              new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
       connected = true;
       currentServer = host + ":" + port;
       mode = ClientMode.CONNECTED;
@@ -72,8 +96,8 @@ public class ClientSession {
   }
 
   /**
-   * Closes the TCP socket, resets connection state, and returns the mode to {@link
-   * ClientMode#LOCAL}.
+   * Closes the TCP socket, resets connection state, and returns the mode to
+   * {@link ClientMode#LOCAL}.
    */
   public void disconnect() {
     connected = false;
@@ -89,8 +113,7 @@ public class ClientSession {
       if (socket != null && !socket.isClosed()) {
         socket.close();
       }
-    } catch (IOException e) {
-      System.out.println("Error while closing client connection: " + e.getMessage());
+    } catch (IOException ignored) {
     }
     System.out.println("Disconnected from server.");
   }
@@ -107,99 +130,132 @@ public class ClientSession {
   }
 
   /**
-   * Switches the mode to {@link ClientMode#SERVER}. Called by {@link
-   * fr.ubordeaux.pdp.controller.commands.ServerStartCommand} once the server is successfully
-   * started.
+   * Switches the mode to {@link ClientMode#SERVER}. Called by
+   * {@link fr.ubordeaux.pdp.controller.commands.ServerStartCommand}.
    */
   public void enterServerMode() {
     mode = ClientMode.SERVER;
     System.out.println(
-          "[mode] Now in SERVER mode. Client commands are disabled.\n"
-                + "       Use 'server stop' to return to local mode.");
+        "[mode] Now in SERVER mode. Client commands are disabled.\n"
+            + "       Use 'server stop' to return to local mode.");
   }
 
   /**
-   * Returns the mode to {@link ClientMode#LOCAL}. Called by {@link
-   * fr.ubordeaux.pdp.controller.commands.ServerStopCommand}.
+   * Returns the mode to {@link ClientMode#LOCAL}. Called by
+   * {@link fr.ubordeaux.pdp.controller.commands.ServerStopCommand}.
    */
   public void exitServerMode() {
     mode = ClientMode.LOCAL;
     System.out.println("[mode] Server stopped. Back to LOCAL mode.");
   }
 
-  /**
-   * Returns the current operating mode.
-   *
-   * @return the current operating mode
-   */
+  /** @return the current operating mode. */
   public ClientMode getMode() {
     return mode;
   }
 
-  /**
-   * Returns whether the TCP socket is currently open.
-   *
-   * @return {@code true} if the TCP socket is currently open
-   */
+  /** @return {@code true} if the TCP socket is currently open. */
   public boolean isConnected() {
     return connected;
   }
 
-  /**
-   * Returns the current server address.
-   *
-   * @return the {@code "host:port"} string of the current server, or {@code null}
-   */
+  /** @return the {@code "host:port"} string of the current server, or {@code null}. */
   public String getCurrentServer() {
     return currentServer;
   }
 
-  /**
-   * Returns the default host used by the join command.
-   *
-   * @return the default host used when no address is given to {@code join}
-   */
+  /** @return the default host used when no address is given to {@code join}. */
   public String getDefaultHost() {
     return DEFAULT_HOST;
   }
 
-  /**
-   * Returns the default port used by the join command.
-   *
-   * @return the default port used when no address is given to {@code join}
-   */
+  /** @return the default port used when no address is given to {@code join}. */
   public int getDefaultPort() {
     return DEFAULT_PORT;
   }
 
   /**
-   * Starts a daemon thread that continuously reads lines from the server and prints them to
-   * stdout. Handles unexpected server shutdown by calling {@link #disconnect()}.
+   * Starts a daemon thread that reads server messages and reacts to them:
+   *
+   * <ul>
+   *   <li>{@code OPPONENT_MOVE <from>-<to>} — applies the move locally via the controller
+   *       so both players see the board update in real time.
+   *   <li>All other messages — printed to stdout as {@code Server: <message>}.
+   * </ul>
    */
   private void startListenerThread() {
     Thread listener =
-          new Thread(
-                () -> {
-                  try {
-                    String response;
-                    while ((response = in.readLine()) != null) {
-                      System.out.println("\nServer: " + response);
-                      if (connected) {
-                        System.out.print("[" + currentServer + "] > ");
-                      }
-                    }
-                  } catch (IOException e) {
-                    // Ignore read errors; disconnect handling is done in finally.
-                  } finally {
-                    if (connected) {
-                      System.out.println("\n[!] Server stopped unexpectedly.");
-                      disconnect();
-                      System.out.print("[local] > ");
-                    }
+        new Thread(
+            () -> {
+              try {
+                String response;
+                while ((response = in.readLine()) != null) {
+                  handleServerMessage(response);
+                  if (connected) {
+                    System.out.print("[" + currentServer + "] > ");
                   }
-                },
-                "server-listener");
+                }
+              } catch (IOException ignored) {
+              } finally {
+                if (connected) {
+                  System.out.println("\n[!] Server stopped unexpectedly.");
+                  disconnect();
+                  System.out.print("[local] > ");
+                }
+              }
+            },
+            "server-listener");
     listener.setDaemon(true);
     listener.start();
+  }
+
+  /**
+   * Processes a single message received from the server.
+   *
+   * <p>If the message is {@code OPPONENT_MOVE <from>-<to>}, the move is applied on the
+   * local controller so the board refreshes for this player. All other messages are
+   * printed to stdout.
+   *
+   * @param message the raw message line from the server.
+   */
+  private void handleServerMessage(String message) {
+    if (message.startsWith("GAME_START")) {
+      // Stop any running local game (e.g. the default game started by App)
+      // before initializing the network game, to avoid timer conflicts.
+      if (controller != null) {
+        controller.stopBlitzTimer();
+        controller.startNewGame(
+            fr.ubordeaux.pdp.model.core.Configuration.getDefaultConfiguration());
+      }
+      System.out.println("\nGame started! " + message);
+    } else if (message.startsWith("MOVE_OK ")) {
+      String moveArg = message.substring("MOVE_OK ".length()).trim();
+      String[] parts = moveArg.split("-");
+      if (parts.length == 2 && controller != null) {
+        System.out.println("\nYou played: " + moveArg);
+        try {
+          controller.executeMove(parts[0].trim(), parts[1].trim());
+        } catch (Exception e) {
+          System.out.println("[warning] Could not apply local move: " + e.getMessage());
+        }
+      } else {
+        System.out.println("\nServer: " + message);
+      }
+    } else if (message.startsWith("OPPONENT_MOVE ")) {
+      String moveArg = message.substring("OPPONENT_MOVE ".length()).trim();
+      String[] parts = moveArg.split("-");
+      if (parts.length == 2 && controller != null) {
+        System.out.println("\nOpponent played: " + moveArg);
+        try {
+          controller.executeMove(parts[0].trim(), parts[1].trim());
+        } catch (Exception e) {
+          System.out.println("[warning] Could not apply opponent move: " + e.getMessage());
+        }
+      } else {
+        System.out.println("\nServer: " + message);
+      }
+    } else {
+      System.out.println("\nServer: " + message);
+    }
   }
 }

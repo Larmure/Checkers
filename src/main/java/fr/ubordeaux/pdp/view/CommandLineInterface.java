@@ -1,12 +1,8 @@
 package fr.ubordeaux.pdp.view;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
-import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
-import fr.ubordeaux.pdp.model.tools.Internationalization;
-import fr.ubordeaux.pdp.model.tools.Utils;
 import java.io.IOException;
 import java.util.Arrays;
+
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -14,14 +10,24 @@ import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ShellCommandRouter;
+
 /**
- * Concrete implementation of {@link GameView} providing an interactive
- * text-based shell.
- * It reads user input from the standard input, parses it, and forwards it to
- * the
- * {@link GameController}.
+ * Concrete implementation of {@link GameView} providing an interactive text-based shell.
  *
- * @version 1.1
+ * <p>This class has a single responsibility: read input lines and forward them to
+ * {@link ShellCommandRouter}. All dispatch logic (move vs. game command vs. network command)
+ * lives in the router, keeping this class focused on I/O only.
+ *
+ * <p>If no {@link ShellCommandRouter} is injected (standalone game mode), input is forwarded
+ * directly to the {@link GameController}.
+ *
+ * @version 2.0
  */
 public class CommandLineInterface extends GameView {
   /** Thread for handling user input. */
@@ -40,6 +46,12 @@ public class CommandLineInterface extends GameView {
   private LineReader lineReader;
 
   /**
+   * Optional router — injected when running with network support.
+   * If {@code null}, input is forwarded directly to the controller.
+   */
+  private ShellCommandRouter router;
+
+  /**
    * Constructs a CommandLineInterface with specific logging levels.
    *
    * @param verbose Enable or disable verbose output.
@@ -49,6 +61,19 @@ public class CommandLineInterface extends GameView {
     this.verbose = verbose;
     this.debug = debug;
   }
+
+  /**
+   * Injects the shell command router.
+   *
+   * <p>Call this before {@link #start()} when running with network support so that
+   * {@code join}, {@code ping}, and {@code server} commands are handled correctly.
+   *
+   * @param router the router that dispatches all input.
+   */
+  public void setRouter(ShellCommandRouter router) {
+    this.router = router;
+  }
+
 
   /**
    * Renders the current state of the board in the terminal.
@@ -87,10 +112,13 @@ public class CommandLineInterface extends GameView {
    * @param input The raw input string entered by the user.
    */
   public void handleInput(String input) {
-    if (input == null || input.trim().isEmpty()) {
-      return;
-    }
+  if (input == null || input.trim().isEmpty()) {
+    return;
+  }
 
+  if (router != null) {
+    router.route(input.trim());
+  } else {
     String trimmed = input.trim();
     String[] tokens = trimmed.split("\\s+");
 
@@ -102,7 +130,7 @@ public class CommandLineInterface extends GameView {
       controller.executeCommand(commandName, args);
     }
   }
-
+}
   /**
    * Starts the main input loop into a separated Thread.
    * It captures user strings, splits them into commands and arguments,

@@ -1,7 +1,5 @@
 package fr.ubordeaux.pdp.server;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.view.HeadlessView;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -12,42 +10,21 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
-/**
- * Multi-client TCP game server.
- *
- * <p>Responsibilities (network layer only):
- *
- * <ul>
- *   <li>Accepts concurrent client connections via a cached thread pool.
- *   <li>Maintains the player registry and active game sessions ({@link GameRegistry}).
- *   <li>Routes {@code MOVE} commands to the correct {@link GameSession}.
- *   <li>Broadcasts {@code OPPONENT_MOVE} to the other players in the session.
- *   <li>Handles management commands: {@code STATUS}, {@code PLAYERS}, {@code SCOREBOARD},
- *       {@code NEW}.
- * </ul>
- *
- * <p>All game logic is delegated to {@link GameController} instances produced by the
- * injected {@link GameControllerFactory}. Each game session gets its own fresh controller
- * so that game state is fully isolated between concurrent sessions.
- *
- * <p>Command-line flags:
- *
- * <pre>
- *   -s [PORT]  /  --server [PORT]   start in server mode on PORT (default 12345)
- *   -d         /  --daemon          headless mode (no interactive console)
- * </pre>
- */
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.view.HeadlessView;
+
 public class GameServer {
 
   private static final int DEFAULT_PORT = 12345;
-
-  /** Inactivity timeout for connected clients: 1 minute. */
-  private static final int CLIENT_TIMEOUT_MS = 60_000;
+  private static final int CLIENT_TIMEOUT_MS = 180_000;
 
   private final int tcpPort;
   private final String serverName;
@@ -60,18 +37,9 @@ public class GameServer {
   private ExecutorService clientPool;
   private volatile boolean running = false;
 
-  /** Output streams of currently connected clients — used by {@link #stop()} to send BYE. */
   private final Set<PrintWriter> connectedClients =
       Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-  /**
-   * Creates a new game server instance.
-   *
-   * @param serverName name broadcast via UDP discovery.
-   * @param tcpPort TCP listening port.
-   * @param controllerFactory factory producing a fresh {@link GameController} per session.
-   * @param daemon if {@code true}, the server runs headless without an interactive console.
-   */
   public GameServer(
       String serverName, int tcpPort, GameControllerFactory controllerFactory, boolean daemon) {
     this.serverName = serverName;
@@ -80,22 +48,10 @@ public class GameServer {
     this.daemon = daemon;
   }
 
-  /**
-   * Convenience constructor for non-daemon mode.
-   *
-   * @param serverName name broadcast via UDP discovery.
-   * @param tcpPort TCP listening port.
-   * @param controllerFactory factory producing a fresh {@link GameController} per session.
-   */
   public GameServer(String serverName, int tcpPort, GameControllerFactory controllerFactory) {
     this(serverName, tcpPort, controllerFactory, false);
   }
 
-  /**
-   * Starts the TCP server and the UDP discovery service.
-   *
-   * @throws IOException with an explicit message if the port is already in use.
-   */
   public void start() throws IOException {
     if (running) {
       System.out.println("Server is already running on port " + tcpPort + ".");
@@ -120,7 +76,6 @@ public class GameServer {
     discoveryThread.setDaemon(true);
     discoveryThread.start();
 
-    System.out.println("Server '" + serverName + "' started on port " + tcpPort + ".");
     System.out.println("Discovery broadcasting on UDP 12346.");
 
     while (running) {
@@ -137,10 +92,6 @@ public class GameServer {
     }
   }
 
-  /**
-   * Stops the server: sends {@code BYE} to all connected players, closes the server socket,
-   * and interrupts the discovery thread.
-   */
   public void stop() {
     if (!running) {
       System.out.println("Server is not running.");
@@ -152,8 +103,7 @@ public class GameServer {
     for (PrintWriter out : connectedClients) {
       try {
         out.println("BYE");
-      } catch (Exception e) {
-        // Ignore client notification failures during shutdown.
+      } catch (Exception ignored) {
       }
     }
     connectedClients.clear();
@@ -177,29 +127,14 @@ public class GameServer {
     System.out.println("Server stopped.");
   }
 
-  /**
-   * Returns whether the server is currently accepting connections.
-   *
-   * @return {@code true} if the server is currently accepting connections
-   */
   public boolean isRunning() {
     return running;
   }
 
-  /**
-   * Returns the TCP port the server is listening on.
-   *
-   * @return the TCP listening port
-   */
   public int getPort() {
     return tcpPort;
   }
 
-  /**
-   * Handles one connected client: reads lines, routes network protocol commands
-   * (PING, QUIT, STATUS, PLAYERS, SCOREBOARD, NEW, MOVE) and forwards game commands
-   * to the appropriate {@link GameSession}.
-   */
   private void handleClient(Socket client) {
     try (
         BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
@@ -209,7 +144,6 @@ public class GameServer {
 
       connectedClients.add(out);
 
-      // Handshake: first message must be REGISTER <id> <name>
       String handshake = in.readLine();
       if (handshake == null || !handshake.startsWith("REGISTER ")) {
         out.println("ERROR: First message must be REGISTER <id> <name>");
@@ -234,6 +168,8 @@ public class GameServer {
       out.println("WELCOME " + playerId);
       System.out.println("Player registered: " + playerId + " (" + playerName + ")");
 
+      tryAutoStart();
+
       processMessages(in, out, player);
 
     } catch (SocketTimeoutException e) {
@@ -243,14 +179,6 @@ public class GameServer {
     }
   }
 
-  /**
-   * Main message loop for a registered player.
-   *
-   * @param in reader from the client socket.
-   * @param out writer to the client socket.
-   * @param player the registered player session.
-   * @throws IOException if the socket is closed unexpectedly.
-   */
   private void processMessages(BufferedReader in, PrintWriter out, PlayerSession player)
       throws IOException {
 
@@ -302,7 +230,8 @@ public class GameServer {
             if (error != null) {
               out.println(error);
             } else {
-              out.println("OK");
+              // IMPORTANT: le joueur qui a joué doit aussi mettre à jour son board local
+              out.println("MOVE_OK " + rest);
             }
           }
         }
@@ -311,15 +240,47 @@ public class GameServer {
     }
   }
 
-  /**
-   * Creates a new game session between the requesting player and the listed participants.
-   *
-   * @param out writer to the requesting client.
-   * @param requester the player who issued the NEW command.
-   * @param participantIds IDs of all players to include (requester + others).
-   */
+  private synchronized void tryAutoStart() {
+    List<PlayerSession> idlePlayers =
+        registry.getAllPlayers().stream()
+            .filter(PlayerSession::isIdle)
+            .collect(Collectors.toList());
+
+    if (idlePlayers.size() < 2) {
+      if (idlePlayers.size() == 1) {
+        idlePlayers.get(0).send("WAITING Waiting for another player to join...");
+      }
+      return;
+    }
+
+    List<PlayerSession> pair = idlePlayers.subList(0, 2);
+    GameController sessionController = controllerFactory.create();
+
+    // IMPORTANT: vraie partie initialisée côté serveur
+    sessionController.startNewGame(Configuration.getDefaultConfiguration());
+
+    GameSession session = registry.createSession(pair, sessionController);
+
+    String playerList = pair.get(0).getId() + " " + pair.get(1).getId();
+    String firstId = pair.get(0).getId();
+
+    for (PlayerSession p : pair) {
+      p.send(
+          "GAME_START session="
+              + session.getSessionId()
+              + " players="
+              + playerList
+              + " first="
+              + firstId);
+    }
+
+    System.out.println(
+        "Auto-started game: " + session.getSessionId() + " between " + playerList);
+  }
+
   private void handleNewGame(PrintWriter out, PlayerSession requester, String[] participantIds) {
     java.util.List<PlayerSession> participants = new java.util.ArrayList<>();
+
     for (String pid : participantIds) {
       PlayerSession p = registry.getPlayer(pid);
       if (p == null) {
@@ -333,25 +294,29 @@ public class GameServer {
       participants.add(p);
     }
 
-    // Each session gets a fresh controller — isolated game state, no shared mutable state.
     GameController sessionController = controllerFactory.create();
+
+    // IMPORTANT: vraie partie initialisée aussi ici
+    sessionController.startNewGame(Configuration.getDefaultConfiguration());
+
     GameSession session = registry.createSession(participants, sessionController);
 
     String playerList = String.join(" ", participantIds);
     String firstId = participants.get(0).getId();
+
     for (PlayerSession p : participants) {
-      p.send("GAME_START session=" + session.getSessionId()
-          + " players=" + playerList + " first=" + firstId);
+      p.send(
+          "GAME_START session="
+              + session.getSessionId()
+              + " players="
+              + playerList
+              + " first="
+              + firstId);
     }
 
     System.out.println("Game session started: " + session.getSessionId());
   }
 
-  /**
-   * Entry point for standalone server mode.
-   *
-   * <p>Flags: {@code -s [PORT]} / {@code --server}, {@code -d} / {@code --daemon}.
-   */
   public static void main(String[] args) {
     int port = DEFAULT_PORT;
     boolean daemonMode = false;
@@ -360,24 +325,19 @@ public class GameServer {
       switch (args[i]) {
         case "-s", "--server" -> {
           if (i + 1 < args.length) {
-            String portArg = args[++i];
             try {
               port = Integer.parseInt(args[++i]);
-            } catch (NumberFormatException e) {
-              System.out.println("Invalid port '" + args[i]
-                    + "'. Using default port: " + DEFAULT_PORT);
+            } catch (NumberFormatException ignored) {
               port = DEFAULT_PORT;
             }
           }
         }
         case "-d", "--daemon" -> daemonMode = true;
         default -> {
-
         }
       }
     }
 
-    // Always use HeadlessView server-side: no terminal output needed.
     GameControllerFactory factory = () -> new GameController(new HeadlessView());
     GameServer server = new GameServer("GameServer", port, factory, daemonMode);
 

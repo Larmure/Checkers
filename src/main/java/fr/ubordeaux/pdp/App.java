@@ -1,12 +1,5 @@
 package fr.ubordeaux.pdp;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.tools.Internationalization;
-import fr.ubordeaux.pdp.model.tools.Utils;
-import fr.ubordeaux.pdp.view.CommandLineInterface;
-import fr.ubordeaux.pdp.view.GameView;
-import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -16,6 +9,16 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
+
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientSession;
+import fr.ubordeaux.pdp.server.ShellCommandRouter;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -70,30 +73,40 @@ public class App {
   public static void main(String[] args) {
     int status = run(args);
 
-    // Status handling
     if (status == EXIT_INFO) {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
     }
 
-    // Status EXIT_SUCCESS means continue execution normally
-
     GameView view;
+
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface();
+      GameController controller = new GameController(view);
+      controller.start();
+      controller.startNewGame(
+          new Configuration(blitz, time, contest, size, verbose, debug, whiteAi, blackAi));
     } else {
-      view = new CommandLineInterface(verbose, debug);
-    }
-    GameController controller = new GameController(view);
-    controller.start();
+      CommandLineInterface cli = new CommandLineInterface(verbose, debug);
+      view = cli;
 
-    controller.startNewGame(new Configuration(blitz, time, contest, size, verbose,
-        debug, whiteAi, blackAi));
+      GameController controller = new GameController(view);
+      ClientSession session = new ClientSession();
 
-    if (status != EXIT_GUI) {
+      session.setController(controller);
+      ShellCommandRouter router = new ShellCommandRouter(controller, session);
+      cli.setRouter(router);
+
+      controller.start();
+
+      // Start local game without blitz to avoid timer conflicts with network games.
+      // If the player joins a server, the network game replaces this one via GAME_START.
+      controller.startNewGame(
+          new Configuration(false, time, contest, size, verbose, debug, whiteAi, blackAi));
+
       try {
-        ((CommandLineInterface) view).join();
+        cli.join();
       } catch (InterruptedException ex) {
         System.exit(0);
       }

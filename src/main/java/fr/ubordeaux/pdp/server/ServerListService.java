@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.server;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,10 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Discovers game servers broadcasting on the local network via UDP.
  *
- * <p>Listens on the well-known discovery port {@value #DISCOVERY_PORT} for 30 seconds.
- * A server is considered alive as long as it sent a broadcast packet within the last
- * {@value #SERVER_EXPIRY_MS} ms. Servers that exceed this threshold are removed from
- * the result set.
+ * <p>Listens on the well-known discovery port {@value #DISCOVERY_PORT} for up to
+ * {@value #LISTEN_DURATION_MS} ms. A server is considered alive as long as it sent a
+ * broadcast packet within the last {@value #SERVER_EXPIRY_MS} ms.
+ *
+ * <p>Also prints the local machine's IP address before scanning so the user knows which
+ * address to share with other players for the {@code join} command.
  */
 public class ServerListService {
 
@@ -26,14 +29,18 @@ public class ServerListService {
   private ServerListService() {}
 
   /**
-   * Listens for UDP broadcasts for {@value #LISTEN_DURATION_MS} ms and returns the
-   * servers that are still considered active.
+   * Listens for UDP broadcasts and returns servers that are still active.
    *
    * <p>Broadcast packet format: {@code name:ip:port}
+   *
+   * <p>Prints the local machine's IP address before scanning so the user can share it
+   * with other players.
    *
    * @return list of server descriptors in {@code "name:ip:port"} format.
    */
   public static List<String> discoverServers() {
+    printLocalAddress();
+
     Map<String, Long> serverTimestamps = new ConcurrentHashMap<>();
 
     try (DatagramSocket socket = new DatagramSocket(DISCOVERY_PORT)) {
@@ -42,7 +49,7 @@ public class ServerListService {
       byte[] buffer = new byte[1024];
       long startTime = System.currentTimeMillis();
 
-      System.out.println("Listening for server broadcasts (30s)...");
+      System.out.println("Scanning for servers (30s)...");
 
       while (System.currentTimeMillis() - startTime < LISTEN_DURATION_MS) {
         try {
@@ -57,11 +64,11 @@ public class ServerListService {
           if (isNew) {
             String[] parts = message.split(":");
             if (parts.length == 3) {
-              System.out.println("Found: " + parts[0] + " at " + parts[1] + ":" + parts[2]);
+              System.out.println("  Found: " + parts[0] + " at " + parts[1] + ":" + parts[2]);
             }
           }
         } catch (SocketTimeoutException ignored) {
-          // Ignore timeout and keep listening for broadcasts.
+          // Keep listening until the scan window expires.
         }
 
         long now = System.currentTimeMillis();
@@ -69,7 +76,7 @@ public class ServerListService {
               entry -> {
                 boolean expired = (now - entry.getValue()) > SERVER_EXPIRY_MS;
                 if (expired) {
-                  System.out.println("Expired: " + entry.getKey());
+                  System.out.println("  Expired: " + entry.getKey());
                 }
                 return expired;
               });
@@ -81,5 +88,19 @@ public class ServerListService {
     }
 
     return new ArrayList<>(serverTimestamps.keySet());
+  }
+
+  /**
+   * Prints the local machine's IP address so the user knows which address to share
+   * with other players for the {@code join} command.
+   */
+  private static void printLocalAddress() {
+    try {
+      String localIp = InetAddress.getLocalHost().getHostAddress();
+      System.out.println("Your IP address : " + localIp);
+      System.out.println("Share with others: join " + localIp + ":<port>");
+    } catch (Exception e) {
+      System.out.println("Your IP address : (could not determine)");
+    }
   }
 }

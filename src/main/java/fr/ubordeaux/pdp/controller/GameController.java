@@ -1,5 +1,8 @@
 package fr.ubordeaux.pdp.controller;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
 import fr.ubordeaux.pdp.controller.commands.HintCommand;
@@ -19,9 +22,9 @@ import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.server.ShellCommandRouter;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Orchestrator of the game logic and user interactions.
@@ -153,6 +156,25 @@ public class GameController {
 
     displayBoard();
     markAsSaved();
+  }
+
+  /**
+   * Wires the view, injects the {@link fr.ubordeaux.pdp.server.ClientSession} into the view
+   * if it is a {@link CommandLineInterface}, and starts the input loop.
+   *
+   * <p>This is the preferred entry point when running with network support so the view can
+   * dispatch client commands ({@code join}, {@code ping}, {@code server}) directly.
+   *
+   * @param session the client session to inject into the view.
+   */
+  public void start(fr.ubordeaux.pdp.server.ClientSession session) {
+    view.setController(this);
+    session.setController(this);
+    if (view instanceof CommandLineInterface cli) {
+      ShellCommandRouter router = new ShellCommandRouter(this, session);
+      cli.setRouter(router);
+    }
+    view.start();
   }
 
   /**
