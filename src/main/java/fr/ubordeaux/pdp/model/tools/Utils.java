@@ -29,6 +29,13 @@ import java.util.Set;
  */
 public class Utils {
 
+  /**
+   * Private constructor to prevent instantiation of this utility class.
+   * This class is not meant to be instantiated, as it only contains static members.
+   */
+  private Utils() {
+  }
+
   /* Default game settings */
 
   /** The default size of the game board. */
@@ -47,6 +54,8 @@ public class Utils {
   public static final boolean DEFAULT_WHITE_AI = false;
   /** The default setting for whether the black player is controlled by AI. */
   public static final boolean DEFAULT_BLACK_AI = false;
+  /** The default time limit for AI moves in seconds. */
+  public static final int DEFAULT_AI_TIME = 5;
 
   /** Regular expression for validating move syntax. */
   public static final String MOVE_REGEX = "^[a-zA-Z]\\d{1,2}\\s[a-zA-Z]\\d{1,2}$";

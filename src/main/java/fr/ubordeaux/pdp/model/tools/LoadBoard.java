@@ -108,6 +108,14 @@ public class LoadBoard {
 
         if (clean.startsWith("[") && clean.endsWith("]")) {
           currentSection = clean.toLowerCase();
+          switch (currentSection) {
+            case "[settings]" -> seenSettings = true;
+            case "[game]" -> seenGame = true;
+            case "[history]" -> seenHistory = true;
+            default -> {
+              // Unknown sections are ignored.
+            }
+          }
           continue;
         }
 
@@ -193,11 +201,9 @@ public class LoadBoard {
 
     switch (section) {
       case "[settings]" -> {
-        seenSettings = true;
         parseSetting(data);
       }
       case "[game]" -> {
-        seenGame = true;
         if (!gameSectionInitialized) {
           board.clearBoard();
           currentBoardRow = 0;
@@ -206,7 +212,6 @@ public class LoadBoard {
         parseBoardLine(data);
       }
       case "[history]" -> {
-        seenHistory = true;
         historyBuffer.append(data).append("\n");
       }
       default -> {
@@ -330,40 +335,39 @@ public class LoadBoard {
     }
     if (cells.length() != n) {
       throw new Exception(
-          "Board row must have " + n + " cells, got " + cells.length() + ".");
+            "Board row must have " + n + " cells, got " + cells.length() + ".");
     }
+
+    int boardRow = n - 1 - currentBoardRow;
 
     for (int col = 0; col < n; col++) {
       char c = cells.charAt(col);
-      boolean playable = ((currentBoardRow + col) % 2 == 0);
+      boolean playable = ((boardRow + col) % 2 == 0);
 
       if (!playable) {
-        if (c != '-') {
+        if (c != '_') {
           throw new Exception(
-              "Piece '"
-                  + c
-                  + "' on non-playable square at row "
-                  + currentBoardRow
-                  + ", col "
-                  + col
-                  + ".");
+                "Piece '" + c + "' on non-playable square at row "
+                      + currentBoardRow
+                      + ", col "
+                      + col
+                      + ".");
         }
         continue;
       }
 
-      if ("xoXO-".indexOf(c) == -1) {
+      if ("xoXO_".indexOf(c) == -1) {
         throw new Exception("Invalid board character: '" + c + "'.");
       }
 
-      if (c != '-') {
-        int index = (currentBoardRow * n + col) / 2;
+      if (c != '_') {
+        int index = (boardRow * n + col) / 2;
         switch (c) {
           case 'x' -> board.restorePiece(index, "BP");
           case 'o' -> board.restorePiece(index, "WP");
           case 'X' -> board.restorePiece(index, "BC");
           case 'O' -> board.restorePiece(index, "WC");
           default -> {
-            // Already validated above.
           }
         }
       }
@@ -371,7 +375,6 @@ public class LoadBoard {
 
     currentBoardRow++;
   }
-
   /**
    * Builds a configuration from loaded values.
    *
@@ -379,6 +382,7 @@ public class LoadBoard {
    *
    * @return the reconstructed configuration
    */
+
   public Configuration buildLoadedConfiguration() {
     Configuration defaults = Configuration.getDefaultConfiguration();
 
@@ -395,6 +399,7 @@ public class LoadBoard {
         verbose,
         debug,
         defaults.iswhiteAi(),
-        defaults.isblackAi());
+        defaults.isblackAi(),
+        defaults.getAiTime());
   }
 }
