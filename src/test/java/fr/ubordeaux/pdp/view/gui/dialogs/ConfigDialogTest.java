@@ -7,7 +7,9 @@ import static org.testfx.matcher.control.LabeledMatchers.hasText;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.util.Optional;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
 import javafx.stage.Stage;
@@ -27,6 +29,8 @@ class ConfigDialogTest {
 
   @Start
   void start(Stage stage) {
+    Locale.setDefault(Locale.ENGLISH);
+    Internationalization.init();
     mockConfig = mock(ConfigManager.class);
 
     // Shortcuts needed by ShortcutManager inside ConfigDialog.
@@ -58,17 +62,17 @@ class ConfigDialogTest {
 
   @Test
   void dialog_showsStartGameButton(FxRobot robot) {
-    verifyThat("Start Game", hasText("Start Game"));
+    verifyThat(Internationalization.get("dialog.start.game"), hasText(Internationalization.get("dialog.start.game")));
   }
 
   @Test
   void dialog_showsCancelButton(FxRobot robot) {
-    verifyThat("Cancel", hasText("Cancel"));
+    verifyThat(Internationalization.get("dialog.cancel"), hasText(Internationalization.get("dialog.cancel")));
   }
 
   @Test
   void dialog_showsKeyboardShortcutsButton(FxRobot robot) {
-    verifyThat("Keyboard Shortcuts", hasText("Keyboard Shortcuts"));
+    verifyThat(Internationalization.get("dialog.keyboard.shortcuts"), hasText(Internationalization.get("dialog.keyboard.shortcuts")));
   }
 
   @Test

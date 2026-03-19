@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.view.gui.dialogs;
 
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -92,7 +93,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     setTitle("New Game — Configuration");
     setHeaderText("Configure the game options before starting.");
 
-    ButtonType startButton = new ButtonType("Start Game", ButtonData.OK_DONE);
+    ButtonType startButton = new ButtonType(Internationalization.get("dialog.start.game"), ButtonData.OK_DONE);
     getDialogPane().getButtonTypes().addAll(startButton, ButtonType.CANCEL);
 
     Configuration defaults = Configuration.getDefaultConfiguration();
@@ -148,7 +149,7 @@ public class ConfigDialog extends Dialog<Configuration> {
         new Separator(),
         buildSection("Advanced"),
         buildAdvancedGrid());
-    Button shortcutsBtn = new Button("Keyboard Shortcuts");
+    Button shortcutsBtn = new Button(Internationalization.get("dialog.keyboard.shortcuts"));
     shortcutsBtn.setOnAction(e -> {
       new ShortcutDialog(shortcutManager).showAndWait();
       onShortcutsChanged.run();
