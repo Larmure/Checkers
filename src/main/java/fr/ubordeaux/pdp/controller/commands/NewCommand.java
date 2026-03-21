@@ -1,16 +1,17 @@
 package fr.ubordeaux.pdp.controller.commands;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 
 /**
  * Concrete implementation of {@link Command} that handles the initialization of
@@ -44,35 +45,38 @@ public class NewCommand implements Command, Helpable {
    * If the arguments are invalid (wrong format or unknown options),
    * an error message is displayed to the user.
    */
-  @Override
-  public void execute() {
-    CommandLineParser parser = new DefaultParser();
+ @Override
+public void execute() {
+  CommandLineParser parser = new DefaultParser();
 
-    try {
-      CommandLine cmd = parser.parse(newOptions(), args);
+  try {
+    CommandLine cmd = parser.parse(newOptions(), args);
 
-      boolean hasBlitz = cmd.hasOption("b");
-      boolean hasContest = cmd.hasOption("c");
-      int blitzTime = Integer.parseInt(
-            cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME)));
-      int size = Integer.parseInt(
-            cmd.getOptionValue("s", String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
+    boolean hasBlitz = cmd.hasOption("b");
+    boolean hasContest = cmd.hasOption("c");
+    int blitzTime = Integer.parseInt(
+        cmd.getOptionValue("t", String.valueOf(Utils.DEFAULT_TIME)));
+    int size = Integer.parseInt(
+        cmd.getOptionValue("s", String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
+    String aiPlayers = cmd.getOptionValue("ai", "none").toLowerCase();
+    int aiTime = Integer.parseInt(
+        cmd.getOptionValue("at", String.valueOf(Utils.DEFAULT_AI_TIME)));
 
-      controller.startNewGame(
-            new Configuration(
-                  hasBlitz,
-                  blitzTime,
-                  hasContest,
-                  size,
-                  controller.isVerbose(),
-                  controller.isDebug(),
-                  controller.isWhiteAi(),
-                  controller.isBlackAi()));
+    controller.startNewGame(new Configuration(
+        hasBlitz,
+        blitzTime,
+        hasContest,
+        size,
+        controller.isVerbose(),
+        controller.isDebug(),
+        "a".equals(aiPlayers) || "w".equals(aiPlayers),
+        "a".equals(aiPlayers) || "b".equals(aiPlayers),
+        aiTime));
 
-    } catch (ParseException | NumberFormatException e) {
-      System.out.println(Internationalization.get("new.invalid") + e.getMessage());
-    }
+  } catch (ParseException | NumberFormatException e) {
+    System.out.println(Internationalization.get("new.invalid") + e.getMessage());
   }
+}
 
   /**
    * Defines the available CLI options for the "new" command.
@@ -92,6 +96,8 @@ public class NewCommand implements Command, Helpable {
     opts.addOption("c", "contest", false, "Contest mode");
     opts.addOption("t", "time", true, "Time limit");
     opts.addOption("s", "size", true, "Board size");
+    opts.addOption("ai", "artificial-intelligence", true, "AI players (a=all, b=black, w=white)");
+    opts.addOption("at", "ai-time", true, "AI time limit in seconds");
     return opts;
   }
 

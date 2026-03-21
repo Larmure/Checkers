@@ -28,9 +28,6 @@ import org.jline.terminal.TerminalBuilder;
  * @version 2.0
  */
 public class CommandLineInterface extends GameView {
-  /** Thread for handling user input. */
-  private Thread inputThread;
-
   /** Flag to enable verbose. */
   private boolean verbose = false;
 
@@ -135,9 +132,7 @@ public class CommandLineInterface extends GameView {
   }
 
   /**
-   * Starts the main input loop into a separated Thread.
-   * It captures user strings, splits them into commands and arguments,
-   * and delegates execution to the controller.
+    * Initializes the terminal and the line reader used by the controller game loop.
    */
   @Override
   public void start() {
@@ -155,18 +150,19 @@ public class CommandLineInterface extends GameView {
 
       lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }
-    inputThread = new Thread(() -> {
-      while (true) {
-        try {
-          String input = lineReader.readLine(">> ");
-          handleInput(input);
-        } catch (UserInterruptException | EndOfFileException e) {
-          break;
-        }
-      }
-    });
-    inputThread.setDaemon(true);
-    inputThread.start();
+  }
+
+  /**
+   * Blocks until the user enters a line, then returns it to the controller loop.
+   *
+   * @return the entered line, or {@code null} if the input stream is closed
+   */
+  public String readInput() {
+    try {
+      return lineReader.readLine(">> "); // This will block until the user enters a line
+    } catch (UserInterruptException | EndOfFileException e) {
+      return null;
+    }
   }
 
   /**

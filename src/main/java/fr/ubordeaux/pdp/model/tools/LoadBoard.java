@@ -65,6 +65,14 @@ public class LoadBoard {
 
   /** The buffer for storing move history. */
   private StringBuilder historyBuffer = new StringBuilder();
+  /** The loaded white AI flag. */
+  private Boolean loadedWhiteAi = null;
+  /** The loaded black AI flag. */
+  private Boolean loadedBlackAi = null;
+  /** The loaded white AI algorithm name. */
+  private String loadedWhiteAiAlgorithm = null;
+  /** The loaded black AI algorithm name. */
+  private String loadedBlackAiAlgorithm = null;
 
   /**
    * Creates a loader for the given game.
@@ -169,6 +177,10 @@ public class LoadBoard {
     loadedBlitz = null;
     loadedDebug = null;
     loadedVerbose = null;
+    loadedWhiteAi = null;
+    loadedBlackAi = null;
+    loadedWhiteAiAlgorithm = null;
+    loadedBlackAiAlgorithm = null;
   }
 
   /**
@@ -313,6 +325,47 @@ public class LoadBoard {
               "Invalid verbose value: '" + value + "' (expected true/false).");
         }
       }
+      case "ai-mode" -> {
+        if (value.equalsIgnoreCase("none")) {
+          loadedWhiteAi = false;
+          loadedBlackAi = false;
+          loadedWhiteAiAlgorithm = null;
+          loadedBlackAiAlgorithm = null;
+
+        } else if (value.startsWith("white-")) {
+          String[] tokens = value.split("-", 2);
+          if (tokens.length != 2 || tokens[1].isBlank()) {
+            throw new Exception("Invalid ai-mode format: '" + value + "'.");
+          }
+          loadedWhiteAi = true;
+          loadedBlackAi = false;
+          loadedWhiteAiAlgorithm = tokens[1];
+          loadedBlackAiAlgorithm = null;
+
+        } else if (value.startsWith("black-")) {
+          String[] tokens = value.split("-", 2);
+          if (tokens.length != 2 || tokens[1].isBlank()) {
+            throw new Exception("Invalid ai-mode format: '" + value + "'.");
+          }
+          loadedWhiteAi = false;
+          loadedBlackAi = true;
+          loadedWhiteAiAlgorithm = null;
+          loadedBlackAiAlgorithm = tokens[1];
+
+        } else if (value.startsWith("both-")) {
+          String[] tokens = value.split("-", 3);
+          if (tokens.length != 3 || tokens[1].isBlank() || tokens[2].isBlank()) {
+            throw new Exception("Invalid ai-mode format: '" + value + "'.");
+          }
+          loadedWhiteAi = true;
+          loadedBlackAi = true;
+          loadedWhiteAiAlgorithm = tokens[1];
+          loadedBlackAiAlgorithm = tokens[2];
+
+        } else {
+          throw new Exception("Invalid ai-mode value: '" + value + "'.");
+        }
+      }
       default -> {
         // Unknown keys are ignored.
       }
@@ -390,6 +443,8 @@ public class LoadBoard {
     boolean verbose = loadedVerbose != null ? loadedVerbose : defaults.isVerbose();
     boolean debug = loadedDebug != null ? loadedDebug : defaults.isDebug();
     int size = loadedBoardSize > 0 ? loadedBoardSize : defaults.getSize();
+    boolean whiteAi = loadedWhiteAi != null ? loadedWhiteAi : defaults.iswhiteAi();
+    boolean blackAi = loadedBlackAi != null ? loadedBlackAi : defaults.isblackAi();
 
     return new Configuration(
         blitz,
@@ -398,7 +453,8 @@ public class LoadBoard {
         size,
         verbose,
         debug,
-        defaults.iswhiteAi(),
-        defaults.isblackAi());
+        whiteAi,
+        blackAi,
+        defaults.getAiTime());
   }
 }

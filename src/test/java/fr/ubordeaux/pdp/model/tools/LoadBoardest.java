@@ -54,7 +54,8 @@ public class LoadBoardest {
         Utils.DEFAULT_VERBOSE,
         Utils.DEFAULT_DEBUG,
         Utils.DEFAULT_WHITE_AI,
-        Utils.DEFAULT_BLACK_AI);
+        Utils.DEFAULT_BLACK_AI,
+        Utils.DEFAULT_AI_TIME);
     return new GameCheckers(cfg);
   }
 

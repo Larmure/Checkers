@@ -1,5 +1,8 @@
 package fr.ubordeaux.pdp.controller;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
 import fr.ubordeaux.pdp.controller.commands.HintCommand;
@@ -14,11 +17,12 @@ import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Orchestrator of the game logic and user interactions.
@@ -46,6 +50,12 @@ public class GameController {
   /** History size at the time of the last save. */
   private int lastSavedMoveCount = 0;
 
+  /** Dedicated thread running the main game loop for the CLI. */
+  private Thread gameLoopThread;
+
+  /** Flag controlling the lifecycle of the main game loop. */
+  private volatile boolean gameLoopRunning;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -61,6 +71,73 @@ public class GameController {
   public void start() {
     view.setController(this);
     view.start();
+    startGameLoop();
+  }
+
+  /**
+   * Starts the controller-driven game loop when the active view is interactive.
+   */
+  private void startGameLoop() {
+    if (!(view instanceof CommandLineInterface) || gameLoopRunning) {
+      return;
+    }
+
+    gameLoopRunning = true;
+    gameLoopThread = new Thread(this::runGameLoop, "checkers-game-loop");
+    gameLoopThread.start();
+  }
+
+  /**
+   * Runs the main game loop.
+   * If the current player is a human, the loop waits for input.
+   * If the current player is an AI, the loop plays the AI move automatically.
+   */
+  private void runGameLoop() {
+    CommandLineInterface cli = (CommandLineInterface) view;
+
+    while (gameLoopRunning) {
+      if (game == null) {
+        sleepBriefly();
+        continue;
+      }
+
+      if (game.getState() != State.IN_GAME || !(game.getCurrentPlayer() instanceof AiPlayer)) {
+        String input = cli.readInput();
+        if (input == null) {
+          gameLoopRunning = false;
+          break;
+        }
+        cli.handleInput(input);
+        continue;
+      }
+
+      playAiTurn((AiPlayer) game.getCurrentPlayer());
+    }
+
+    stopBlitzTimer();
+  }
+
+  /**
+   * Waits for the game loop to finish.
+   *
+   * @throws InterruptedException if the current thread is interrupted while waiting
+   */
+  public void joinGameLoop() throws InterruptedException {
+    if (gameLoopThread != null) {
+      gameLoopThread.join();
+    }
+  }
+
+  /**
+   * Sleeps briefly when the loop has no active game to process.
+   */
+  private void sleepBriefly() {
+    try {
+      Thread.sleep(50);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      gameLoopRunning = false;
+    }
   }
 
   /**
@@ -97,7 +174,7 @@ public class GameController {
       case "redo" -> new RedoCommand(this, args);
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
-      case "continue" -> new ContinueCommand(game);
+      case "continue" -> new ContinueCommand(this);
       default -> {
         System.out.println("Unknown command: " + commandName);
         yield null;
@@ -118,11 +195,12 @@ public class GameController {
 
     System.out.println(Internationalization.get("game.rules"));
 
+    displayBoard();
+
     if (configuration.isBlitz()) {
       startBlitzTimer();
     }
 
-    displayBoard();
     markAsSaved();
   }
 
@@ -155,6 +233,34 @@ public class GameController {
             game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
+    handleGameOver();
+  }
+
+  /**
+   * Plays one move for the current AI player.
+   *
+   * @param aiPlayer the AI player that must play
+   */
+  private void playAiTurn(AiPlayer aiPlayer) {
+    if (configuration.isBlitz()) {
+      startBlitzTimer();
+    }
+
+    Move move = aiPlayer.getBestMove(game.getManagerUndoRedo(),
+        game.getBoard(), game.getCurrentColor());
+
+    if (move == null) {
+      System.err.println("No IA move");
+      game.setState(game.checkGameOver());
+      handleGameOver();
+      return;
+    }
+
+    String from = game.getBoard().indexToSquare(move.getFrom());
+    String to = game.getBoard().indexToSquare(move.getTo());
+    game.applyMove(from, to);
+    game.setState(game.checkGameOver());
+    handleGameOver();
   }
 
   /**
@@ -214,7 +320,7 @@ public class GameController {
   /**
    * Starts the blitz timer for the current game.
    */
-  private void startBlitzTimer() {
+  public void startBlitzTimer() {
     stopBlitzTimer();
 
     blitzTimer = new Timer(true);
@@ -427,6 +533,22 @@ public class GameController {
   public void markAsSaved() {
     if (game != null && game.getHistory() != null) {
       lastSavedMoveCount = game.getHistory().getSize();
+    }
+  }
+
+  /**
+   * Handles the game over state by checking if the game has finished and displaying appropriate
+   * messages to the user. 
+   */
+  public void handleGameOver() {
+    if (game.getState().equals(State.FINISHED)) {
+      if (configuration.isBlitz()) {
+        stopBlitzTimer();
+      }
+      System.out.println(Internationalization.get("game.game_over"));
+      System.out.println(game.getCurrentPlayer().getName() + " "
+          + Internationalization.get("game.loses"));
+      System.out.println(Internationalization.get("game.start_new_game"));
     }
   }
 }

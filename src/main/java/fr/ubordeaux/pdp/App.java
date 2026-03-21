@@ -1,14 +1,5 @@
 package fr.ubordeaux.pdp;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.tools.Internationalization;
-import fr.ubordeaux.pdp.model.tools.Utils;
-import fr.ubordeaux.pdp.server.ClientSession;
-import fr.ubordeaux.pdp.server.ShellCommandRouter;
-import fr.ubordeaux.pdp.view.CommandLineInterface;
-import fr.ubordeaux.pdp.view.GameView;
-import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -18,6 +9,16 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
+
+import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientSession;
+import fr.ubordeaux.pdp.server.ShellCommandRouter;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -63,54 +64,57 @@ public class App {
   /** Flag to enable black AI. */
   private static boolean blackAi = false;
 
+  /** Flag to set the time limit for AI moves. */
+  private static int aiTime = Utils.DEFAULT_AI_TIME;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
    *
    * @param args command line arguments
    */
-  public static void main(String[] args) {
-    int status = run(args);
+public static void main(String[] args) {
+  int status = run(args);
 
-    if (status == EXIT_INFO) {
+  if (status == EXIT_INFO) {
+    System.exit(0);
+  } else if (status == EXIT_ERROR) {
+    System.exit(1);
+  }
+
+  GameView view;
+
+  if (status == EXIT_GUI) {
+    view = new GraphicalUserInterface();
+    GameController controller = new GameController(view);
+    controller.start();
+    controller.startNewGame(
+        new Configuration(blitz, time, contest, size, verbose, debug, whiteAi, blackAi, aiTime));
+  } else {
+    CommandLineInterface cli = new CommandLineInterface(verbose, debug);
+    view = cli;
+
+    GameController controller = new GameController(view);
+    ClientSession session = new ClientSession();
+
+    session.setController(controller);
+    ShellCommandRouter router = new ShellCommandRouter(controller, session);
+    cli.setRouter(router);
+
+    controller.start();
+
+    // Start local game without blitz to avoid timer conflicts with network games.
+    // If the player joins a server, the network game replaces this one via GAME_START.
+    controller.startNewGame(
+        new Configuration(false, time, contest, size, verbose, debug, whiteAi, blackAi, aiTime));
+
+    try {
+      controller.joinGameLoop();
+    } catch (InterruptedException ex) {
       System.exit(0);
-    } else if (status == EXIT_ERROR) {
-      System.exit(1);
-    }
-
-    GameView view;
-
-    if (status == EXIT_GUI) {
-      view = new GraphicalUserInterface();
-      GameController controller = new GameController(view);
-      controller.start();
-      controller.startNewGame(
-          new Configuration(blitz, time, contest, size, verbose, debug, whiteAi, blackAi));
-    } else {
-      CommandLineInterface cli = new CommandLineInterface(verbose, debug);
-      view = cli;
-
-      GameController controller = new GameController(view);
-      ClientSession session = new ClientSession();
-
-      session.setController(controller);
-      ShellCommandRouter router = new ShellCommandRouter(controller, session);
-      cli.setRouter(router);
-
-      controller.start();
-
-      // Start local game without blitz to avoid timer conflicts with network games.
-      // If the player joins a server, the network game replaces this one via GAME_START.
-      controller.startNewGame(
-          new Configuration(false, time, contest, size, verbose, debug, whiteAi, blackAi));
-
-      try {
-        cli.join();
-      } catch (InterruptedException ex) {
-        System.exit(0);
-      }
     }
   }
+}
 
   /**
    * Parses arguments and sets global flags. This method is separated for unit
@@ -127,8 +131,8 @@ public class App {
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
-    blitz = configManager.isBlitz();
-    time = configManager.getTime();
+    blitz = Utils.DEFAULT_BLITZ;
+    time = Utils.DEFAULT_TIME;
     contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();
@@ -151,6 +155,7 @@ public class App {
     options.addOption(aiOption);
     options.addOption("c", "contest", true, "enable contest mode");
     options.addOption("s", "size", true, "set board size (8|10|12)");
+    options.addOption("at", "ai-time", true, "set AI time limit in seconds");
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -213,20 +218,32 @@ public class App {
         }
 
         color = color.toUpperCase();
-        if (color.equals("W")) {
-          whiteAi = true;
-        } else if (color.equals("B")) {
-          blackAi = true;
-        } else if (color.equals("A")) {
-          whiteAi = true;
-          blackAi = true;
-        } else if (color.equals("")) {
-          whiteAi = true;
-        } else {
-          System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
-          whiteAi = true;
+        switch (color) {
+          case "W":
+            whiteAi = true;
+            break;
+          case "B":
+            blackAi = true;
+            break;
+          case "A":
+            whiteAi = true;
+            blackAi = true;
+            break;
+          case "":
+            whiteAi = true;
+            break;
+          default:
+            System.err.println(Internationalization.get("app.warn.invalid_ai_color") + color);
+            whiteAi = true;
+            break;
         }
       }
+
+      if (cmd.hasOption("at")) {
+        aiTime = Integer.parseInt(cmd.getOptionValue("at"));
+        System.out.println(Internationalization.get("opt.ai.time.status", aiTime));
+      }
+
       System.out.println(Internationalization.get("app.welcome"));
       return EXIT_SUCCESS;
 
