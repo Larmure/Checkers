@@ -182,7 +182,8 @@ public class MinMax extends Ai {
    */
   private int minMax(ManagerUndoRedo undo, Board board, Evaluator evaluator, int depth,
       long startTime) {
-    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE) || board.noPiecesLeft(PlayerColor.BLACK)) {
+    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE)
+        || board.noPiecesLeft(PlayerColor.BLACK)) {
       return evaluator.evaluate(board);
     }
 
@@ -225,7 +226,8 @@ public class MinMax extends Ai {
    */
   private int maxMin(ManagerUndoRedo undo, Board board, Evaluator evaluator, int depth,
       long startTime) {
-    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE) || board.noPiecesLeft(PlayerColor.BLACK)) {
+    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE)
+        || board.noPiecesLeft(PlayerColor.BLACK)) {
       return evaluator.evaluate(board);
     }
 
