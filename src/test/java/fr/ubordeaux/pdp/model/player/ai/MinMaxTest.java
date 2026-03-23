@@ -49,8 +49,8 @@ class MinMaxTest {
   @Test
   @DisplayName("Constructor with custom depth should set correct depth")
   void testConstructorWithDepth() {
-    MinMax customMinMax = new MinMax(5);
-    assertEquals(5, customMinMax.getMaxDepth(), "Custom depth should be set correctly");
+    MinMax customMinMax = new MinMax(6);
+    assertEquals(6, customMinMax.getMaxDepth(), "Custom depth should be set correctly");
   }
 
   @Test
@@ -60,6 +60,8 @@ class MinMaxTest {
         "Should throw exception for depth 0");
     assertThrows(IllegalArgumentException.class, () -> new MinMax(-1),
         "Should throw exception for negative depth");
+    assertThrows(IllegalArgumentException.class, () -> new MinMax(16),
+        "Should throw exception for too large depth");
   }
 
   @Test
