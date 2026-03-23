@@ -33,7 +33,7 @@ public abstract class Ai {
   protected static final long DEFAULT_MAX_TIME_MS = 3000L;
 
   /** Maximum search depth allowed to prevent stack overflow. */
-  protected static final int MAX_SAFE_DEPTH = 20;
+  protected static final int MAX_SAFE_DEPTH = 15;
 
   /** Minimum thinking time in milliseconds to allow basic computation. */
   protected static final long MIN_TIME_MS = 100L;
