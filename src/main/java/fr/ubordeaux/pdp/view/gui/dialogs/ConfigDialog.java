@@ -118,10 +118,18 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     aiTimeSpinner.getValueFactory().setValue(defaults.getAiTime());
     aiTimeSpinner.setPrefWidth(80);
+    aiTimeSpinner.setDisable(!defaults.iswhiteAi() && !defaults.isblackAi());
 
     // Enable / disable time spinner based on blitz checkbox.
     blitzCheck.selectedProperty().addListener(
         (obs, oldV, newV) -> timeSpinner.setDisable(!newV));
+
+    // Enable / disable spinner if at least one or the other au moins is checked.
+    whiteAiCheck.selectedProperty().addListener((obs, oldV, newV) ->
+    aiTimeSpinner.setDisable(!newV && !blackAiCheck.isSelected()));
+
+    blackAiCheck.selectedProperty().addListener((obs, oldV, newV) ->
+    aiTimeSpinner.setDisable(!newV && !whiteAiCheck.isSelected()));
 
     getDialogPane().setContent(buildContent());
     getDialogPane().getStyleClass().add("config-dialog");
