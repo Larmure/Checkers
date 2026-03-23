@@ -30,7 +30,7 @@ import java.util.List;
  *
  * <pre>UCB1(child) = w/n + C * sqrt(ln(N) / n)</pre>
  *
- * where {@code w} = child win score, {@code n} = child visit count, {@code N} = parent visit
+ * <p>where {@code w} = child win score, {@code n} = child visit count, {@code N} = parent visit
  * count, and {@code C} is the exploration constant (default {@value #DEFAULT_EXPLORATION}).
  */
 public class Mcts extends Ai {
