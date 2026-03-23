@@ -27,19 +27,19 @@ import java.util.List;
 public abstract class Ai {
 
   /** Default search depth for MinMax-based algorithms. */
-  protected static final int DEFAULT_DEPTH = 3;
+  protected static final int DEFAULT_DEPTH = 5; //Visuellement par defaut 12
 
   /** Default maximum thinking time in milliseconds (5 seconds). */
-  protected static final long DEFAULT_MAX_TIME_MS = 5000L;
+  protected static final long DEFAULT_MAX_TIME_MS = 3000L;
 
   /** Maximum search depth allowed to prevent stack overflow. */
-  protected static final int MAX_SAFE_DEPTH = 10;
+  protected static final int MAX_SAFE_DEPTH = 20;
 
   /** Minimum thinking time in milliseconds to allow basic computation. */
   protected static final long MIN_TIME_MS = 100L;
 
   /** Maximum reasonable thinking time in milliseconds (30 seconds). */
-  protected static final long MAX_TIME_MS = 30000L;
+  protected static final long MAX_TIME_MS = 5000L;
 
   /** Maximum search depth for this specific AI instance. */
   protected int maxDepth;

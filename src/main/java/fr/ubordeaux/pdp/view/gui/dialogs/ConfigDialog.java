@@ -71,6 +71,10 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** Enables debug output. */
   private final CheckBox debugCheck = new CheckBox("Debug");
 
+  /** AI thinking time in seconds. Default: Utils.DEFAULT_AI_TIME, range 1–60. */
+  private final Spinner<Integer> aiTimeSpinner = new Spinner<>(
+      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 60, 5));
+
   /** Manages keyboard shortcuts read from and written to {@code .checkersrc}. */
   private final ShortcutManager shortcutManager;
 
@@ -93,7 +97,8 @@ public class ConfigDialog extends Dialog<Configuration> {
     setTitle("New Game — Configuration");
     setHeaderText("Configure the game options before starting.");
 
-    ButtonType startButton = new ButtonType(Internationalization.get("dialog.start.game"), ButtonData.OK_DONE);
+    ButtonType startButton = new ButtonType(Internationalization.get("dialog.start.game"), 
+        ButtonData.OK_DONE);
     getDialogPane().getButtonTypes().addAll(startButton, ButtonType.CANCEL);
 
     Configuration defaults = Configuration.getDefaultConfiguration();
@@ -110,6 +115,9 @@ public class ConfigDialog extends Dialog<Configuration> {
     contestCheck.setSelected(defaults.isContest());
     verboseCheck.setSelected(defaults.isVerbose());
     debugCheck.setSelected(defaults.isDebug());
+
+    aiTimeSpinner.getValueFactory().setValue(defaults.getAiTime());
+    aiTimeSpinner.setPrefWidth(80);
 
     // Enable / disable time spinner based on blitz checkbox.
     blitzCheck.selectedProperty().addListener(
@@ -210,6 +218,13 @@ public class ConfigDialog extends Dialog<Configuration> {
     GridPane grid = baseGrid();
     grid.add(whiteAiCheck, 0, 0);
     grid.add(blackAiCheck, 0, 1);
+
+    VBox aiTimeBox = new VBox(4,
+        new Label("AI thinking time (sec):"),
+        aiTimeSpinner);
+    aiTimeBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(aiTimeBox, 0, 2);
+    
     return grid;
   }
 
@@ -253,8 +268,9 @@ public class ConfigDialog extends Dialog<Configuration> {
     boolean debug = debugCheck.isSelected();
     boolean whiteAi = whiteAiCheck.isSelected();
     boolean blackAi = blackAiCheck.isSelected();
+    int aiTime = aiTimeSpinner.getValue();
 
     return new Configuration(blitz, timeSec, contest, size,
-        verbose, debug, whiteAi, blackAi);
+        verbose, debug, whiteAi, blackAi, aiTime);
   }
 }

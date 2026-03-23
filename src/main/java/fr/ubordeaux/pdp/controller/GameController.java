@@ -17,8 +17,11 @@ import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -52,6 +55,12 @@ public class GameController {
   /** History size at the time of the last save. */
   private int lastSavedMoveCount = 0;
 
+  /** Dedicated thread running the main game loop for the CLI. */
+  private Thread gameLoopThread;
+
+  /** Flag controlling the lifecycle of the main game loop. */
+  private volatile boolean gameLoopRunning;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -67,6 +76,73 @@ public class GameController {
   public void start() {
     view.setController(this);
     view.start();
+    startGameLoop();
+  }
+
+  /**
+   * Starts the controller-driven game loop when the active view is interactive.
+   */
+  private void startGameLoop() {
+    if (!(view instanceof CommandLineInterface) || gameLoopRunning) {
+      return;
+    }
+
+    gameLoopRunning = true;
+    gameLoopThread = new Thread(this::runGameLoop, "checkers-game-loop");
+    gameLoopThread.start();
+  }
+
+  /**
+   * Runs the main game loop.
+   * If the current player is a human, the loop waits for input.
+   * If the current player is an AI, the loop plays the AI move automatically.
+   */
+  private void runGameLoop() {
+    CommandLineInterface cli = (CommandLineInterface) view;
+
+    while (gameLoopRunning) {
+      if (game == null) {
+        sleepBriefly();
+        continue;
+      }
+
+      if (game.getState() != State.IN_GAME || !(game.getCurrentPlayer() instanceof AiPlayer)) {
+        String input = cli.readInput();
+        if (input == null) {
+          gameLoopRunning = false;
+          break;
+        }
+        cli.handleInput(input);
+        continue;
+      }
+
+      playAiTurn((AiPlayer) game.getCurrentPlayer());
+    }
+
+    stopBlitzTimer();
+  }
+
+  /**
+   * Waits for the game loop to finish.
+   *
+   * @throws InterruptedException if the current thread is interrupted while waiting
+   */
+  public void joinGameLoop() throws InterruptedException {
+    if (gameLoopThread != null) {
+      gameLoopThread.join();
+    }
+  }
+
+  /**
+   * Sleeps briefly when the loop has no active game to process.
+   */
+  private void sleepBriefly() {
+    try {
+      Thread.sleep(50);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      gameLoopRunning = false;
+    }
   }
 
   /**
@@ -90,7 +166,7 @@ public class GameController {
       case "redo" -> new RedoCommand(this, args);
       case "show" -> new ShowCommand(this, args);
       case "set" -> new SetCommand(this, args);
-      case "continue" -> new ContinueCommand(game);
+      case "continue" -> new ContinueCommand(this);
       case "server" -> resolveServerCommand(args);
       default -> {
         System.out.println("Unknown command: "
@@ -147,11 +223,12 @@ public class GameController {
     String rules = Internationalization.get("game.rules");
     System.out.println(rules);
 
+    displayBoard();
+
     if (configuration.isBlitz()) {
       startBlitzTimer();
     }
 
-    displayBoard();
     markAsSaved();
   }
 
@@ -172,16 +249,34 @@ public class GameController {
     game.applyMove(from, to);
 
     game.setState(game.checkGameOver());
-    if (game.getState().equals(State.FINISHED)) {
-      if (configuration.isBlitz()) {
-        stopBlitzTimer();
-      }
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(game.getCurrentPlayer().getName() + " "
-          + Internationalization.get("game.loses"));
-      System.out.println(Internationalization.get("game.start_new_game"));
+    handleGameOver();
+  }
+
+  /**
+   * Plays one move for the current AI player.
+   *
+   * @param aiPlayer the AI player that must play
+   */
+  private void playAiTurn(AiPlayer aiPlayer) {
+    if (configuration.isBlitz()) {
+      startBlitzTimer();
     }
 
+    Move move = aiPlayer.getBestMove(game.getManagerUndoRedo(),
+        game.getBoard(), game.getCurrentColor());
+
+    if (move == null) {
+      System.err.println("No IA move");
+      game.setState(game.checkGameOver());
+      handleGameOver();
+      return;
+    }
+
+    String from = game.getBoard().indexToSquare(move.getFrom());
+    String to = game.getBoard().indexToSquare(move.getTo());
+    game.applyMove(from, to);
+    game.setState(game.checkGameOver());
+    handleGameOver();
   }
 
   /**
@@ -209,19 +304,26 @@ public class GameController {
   }
 
   /**
-   * Displays the remaining time for the current player if the game is in blitz mode. 
+   * Displays the remaining time for both players if the game is in blitz mode.
    */
   public void displayTime() {
     if (isBlitz()) {
-      int totalSeconds = game.getCurrentPlayer().getPlayTime();
-      int minutes = totalSeconds / 60;
-      int seconds = totalSeconds % 60;
-
-      String formattedTime = String.format("%02d:%02d", minutes, seconds);
-
       String template = Internationalization.get("game.time_remaining");
 
-      System.out.println(String.format(template, game.getCurrentPlayer().getName(), formattedTime));
+      int whiteTotalSeconds = game.getWhitePlayer().getPlayTime();
+      int whiteMinutes = whiteTotalSeconds / 60;
+      int whiteSeconds = whiteTotalSeconds % 60;
+      String whiteFormattedTime = String.format("%02d:%02d", whiteMinutes, whiteSeconds);
+
+      int blackTotalSeconds = game.getBlackPlayer().getPlayTime();
+      int blackMinutes = blackTotalSeconds / 60;
+      int blackSeconds = blackTotalSeconds % 60;
+      String blackFormattedTime = String.format("%02d:%02d", blackMinutes, blackSeconds);
+
+      System.out.println(String.format(template, game.getWhitePlayer().getName(),
+          whiteFormattedTime));
+      System.out.println(String.format(template, game.getBlackPlayer().getName(),
+          blackFormattedTime));
     } else {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }
@@ -234,7 +336,7 @@ public class GameController {
    * time has run out. If the time is up, it stops the timer, sets the game state to FINISHED, 
    * and notifies the user that their time has expired.
    */
-  private void startBlitzTimer() {
+  public void startBlitzTimer() {
     stopBlitzTimer();
     blitzTimer = new Timer(true); // daemon = s'arrête avec le programme
     blitzTimer.scheduleAtFixedRate(new TimerTask() {
@@ -350,42 +452,6 @@ public class GameController {
   }
 
   /**
-   * Joue une séquence de coups prédéfinie pour des tests ou une démo.
-   */
-  public void playPredefinedSequence() {
-    String[][] moves = {
-        { "c1", "d2" }, { "f4", "e3" }, { "d2", "f4" }, { "g5", "e3" },
-        { "b2", "c1" }, { "e3", "d2" }, { "c1", "e3" }, { "f2", "b2" },
-        { "a1", "c3" }, { "f6", "e5" }, { "c3", "d4" }, { "e5", "c3" },
-        { "b4", "d2" }, { "g3", "f2" }, { "d2", "e3" }, { "f2", "d4" },
-        { "c5", "e3" }, { "g1", "f2" }, { "e3", "g1" }, { "h2", "g3" },
-        { "g1", "h2" }, { "h4", "g5" }, { "h2", "e5" }, { "g5", "f4" },
-        { "e5", "g3" }, { "f8", "e7" }, { "c7", "d6" }, { "e7", "c5" },
-        { "b6", "d4" }, { "g7", "f8" }, { "d4", "e5" }, { "f8", "e7" },
-        { "e5", "f4" }, { "h6", "g5" }, { "f4", "h6" }, { "h8", "g7" },
-        { "h6", "d6" }
-    };
-
-    System.out.println("Début de la séquence d'automatisation des coups...");
-
-    for (String[] move : moves) {
-      String from = move[0];
-      String to = move[1];
-
-      System.out.println("Coup joué : " + from + "-" + to);
-
-      executeMove(from, to);
-
-      if (game.getState() == State.FINISHED) {
-        System.out.println("La partie s'est terminée avant la fin de la séquence.");
-        break;
-      }
-    }
-
-    System.out.println("Séquence terminée.");
-  }
-
-  /**
    * Undoes the last n moves in the game by invoking the undoManage method on the game 
    * instance n times. 
    *
@@ -439,6 +505,22 @@ public class GameController {
   public void markAsSaved() {
     if (game != null && game.getHistory() != null) {
       this.lastSavedMoveCount = game.getHistory().getSize();
+    }
+  }
+
+  /**
+   * Handles the game over state by checking if the game has finished and displaying appropriate
+   * messages to the user. 
+   */
+  public void handleGameOver() {
+    if (game.getState().equals(State.FINISHED)) {
+      if (configuration.isBlitz()) {
+        stopBlitzTimer();
+      }
+      System.out.println(Internationalization.get("game.game_over"));
+      System.out.println(game.getCurrentPlayer().getName() + " "
+          + Internationalization.get("game.loses"));
+      System.out.println(Internationalization.get("game.start_new_game"));
     }
   }
 }

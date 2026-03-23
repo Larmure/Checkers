@@ -53,21 +53,23 @@ class CommandLineInterfaceTest {
   }
 
   @Test
-  void testInputLoopWithCommands() throws InterruptedException {
+  void testReadInputWithCommands() {
     // Mock LineReader to return inputs then throw EndOfFileException
     LineReader mockReader = mock(LineReader.class);
     when(mockReader.readLine(anyString()))
         .thenReturn("show")
         .thenReturn("B2 C3")
-        .thenReturn("")
         .thenThrow(new EndOfFileException());
 
     cli.setLineReader(mockReader);
     cli.start();
-    cli.join();
+
+    cli.handleInput(cli.readInput());
+    cli.handleInput(cli.readInput());
 
     assertTrue(spyController.executeCommandCalled, "The 'show' command should have been executed.");
     assertTrue(spyController.executeMoveCalled, "The move 'B2 C3' should have been executed.");
+    assertNull(cli.readInput(), "End of input must return null.");
   }
 
   // --- Spy class ---

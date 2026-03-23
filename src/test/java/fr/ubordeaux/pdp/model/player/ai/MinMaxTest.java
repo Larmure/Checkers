@@ -11,7 +11,6 @@ import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.evaluation.SimpleEvaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
-import fr.ubordeaux.pdp.model.player.ai.MinMax;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 
 /**
@@ -41,10 +40,10 @@ class MinMaxTest {
   }
 
   @Test
-  @DisplayName("Default constructor should use depth 3")
+  @DisplayName("Default constructor should use depth 5")
   void testDefaultConstructor() {
     MinMax defaultMinMax = new MinMax();
-    assertEquals(3, defaultMinMax.getMaxDepth(), "Default depth should be 3");
+    assertEquals(5, defaultMinMax.getMaxDepth(), "Default depth should be 5");
   }
 
   @Test

@@ -8,41 +8,46 @@ import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import java.util.List;
 
 /**
- * Implementation of the MinMax algorithm with Alpha-Beta pruning for checkers
- * AI.
+ * MinMax algorithm with alpha-beta pruning for the checkers AI.
  *
- * <p>This algorithm extends the classic MinMax approach with alpha-beta pruning,
- * which significantly reduces the number of nodes evaluated in the game tree.
- * The alpha-beta pruning works by maintaining two values:
+ * <p>Extends the classic MinMax approach by maintaining two bounds during the tree traversal:
+ *
  * <ul>
- * <li>alpha: the best value that the MAX player can guarantee so far
- * <li>beta: the best value that the MIN player can guarantee so far
+ *   <li>{@code alpha}: the best score the maximizing player (white) can already guarantee.
+ *   <li>{@code beta}: the best score the minimizing player (black) can already guarantee.
  * </ul>
  *
- * <p>When beta becomes less than or equal to alpha, the algorithm can prune
- * the remaining branches as they won't affect the final decision.
+ * <p>When {@code beta <= alpha}, the remaining siblings are pruned because they cannot influence
+ * the final decision. This significantly reduces the number of nodes evaluated compared to plain
+ * MinMax.
  *
- * <p>The algorithm supports:
- * <ul>
- * <li>Configurable search depth (default: 3)
- * <li>Separate MaxValue and MinValue functions for clarity
- * <li>Alpha-beta pruning for performance optimization
- * <li>Undo/Redo support for move management
- * <li>Integration with any Evaluator implementation
- * <li>Time-limited search with iterative deepening
- * </ul>
+ * <p>Uses iterative deepening to stay within the time budget: each depth level is explored fully,
+ * and only the result of the last completed depth is kept. If the time limit expires mid-depth, the
+ * partial result is discarded via a {@link TimeExceededException} and the previous best move is
+ * returned.
  */
 public class MinMaxAlphaBeta extends Ai {
 
   /**
-   * Creates a MinMaxAlphaBeta AI with default depth and time settings.
+   * Internal exception used to abort a depth search when the time limit is exceeded.
+   *
+   * <p>Thrown by {@link #checkTime(long)} and propagated up through the recursive calls to
+   * invalidate the current depth's partial result. Stack-trace generation is disabled for
+   * performance.
    */
+  private static class TimeExceededException extends RuntimeException {
+    TimeExceededException() {
+      super(null, null, true, false);
+    }
+  }
+
+  /** Creates a MinMaxAlphaBeta AI with default depth and time settings. */
   public MinMaxAlphaBeta() {
     super();
   }
 
   /**
-   * Creates a MinMaxAlphaBeta AI with specified depth and default time.
+   * Creates a MinMaxAlphaBeta AI with the specified search depth and default time limit.
    *
    * @param depth the maximum search depth
    */
@@ -51,9 +56,9 @@ public class MinMaxAlphaBeta extends Ai {
   }
 
   /**
-   * Creates a MinMaxAlphaBeta AI with specified depth and time.
+   * Creates a MinMaxAlphaBeta AI with the specified search depth and time limit.
    *
-   * @param depth     the maximum search depth
+   * @param depth the maximum search depth
    * @param maxTimeMs the maximum thinking time in milliseconds
    */
   public MinMaxAlphaBeta(int depth, long maxTimeMs) {
@@ -61,53 +66,67 @@ public class MinMaxAlphaBeta extends Ai {
   }
 
   /**
-   * Template method implementation for calculating the best move using Alpha-Beta
-   * pruning.
+   * Calculates the best move using iterative-deepening MinMax with alpha-beta pruning.
    *
-   * <p>This method uses iterative deepening with time constraints to find the best
-   * move within the allotted time. It progressively increases the search depth
-   * until either the maximum depth is reached or the time limit is exceeded.
+   * <p>Explores the game tree depth by depth, from 1 up to {@code maxDepth}. After each fully
+   * completed depth, the best move found is retained. If the time limit expires during a depth
+   * search, a {@link TimeExceededException} is thrown, the partial result is discarded, and the
+   * best move from the previous completed depth is returned.
    *
-   * @param undo       the undo/redo manager for move operations
-   * @param board      the current game board state
-   * @param player     the current player color
-   * @param evaluator  the evaluation function to score board positions
-   * @param validMoves list of valid moves for the current player
-   * @return the best move according to Alpha-Beta MinMax
+   * @param undo the undo manager used to apply and revert moves
+   * @param board the current state of the game board
+   * @param player the color of the current player
+   * @param evaluator the evaluation function used to score board positions
+   * @param validMoves the list of valid moves available to the current player
+   * @return the best move found within the time and depth constraints
    */
   @Override
   protected Move calculateBestMove(ManagerUndoRedo undo, Board board, PlayerColor player,
       Evaluator evaluator, List<Move> validMoves) {
 
     long startTime = System.currentTimeMillis();
+    // Fallback to the first move; updated after each fully completed depth.
     Move bestMove = validMoves.get(0);
-    int currentDepth = 1;
 
-    // Recherche itérative avec limite de temps et alpha-beta pruning
-    while (currentDepth <= maxDepth && !isTimeExceeded(startTime)) {
-      Move tempBestMove = findBestMoveAtDepth(undo, board, player, evaluator, validMoves,
-          currentDepth, startTime);
-
-      if (tempBestMove != null) {
-        bestMove = tempBestMove;
+    for (int currentDepth = 1; currentDepth <= maxDepth; currentDepth++) {
+      if (isTimeExceeded(startTime)) {
+        break;
       }
-      currentDepth++;
+
+      try {
+        Move candidate = findBestMoveAtDepth(undo, board, player, evaluator, validMoves,
+            currentDepth, startTime);
+        // Depth fully explored: accept the result.
+        if (candidate != null) {
+          bestMove = candidate;
+        }
+      } catch (TimeExceededException e) {
+        // Depth incomplete: discard the partial result and keep the previous best move.
+        break;
+      }
     }
 
     return bestMove;
   }
 
   /**
-   * Finds the best move at a specific depth using Alpha-Beta pruning.
+   * Searches for the best move at the given depth using alpha-beta pruning.
    *
-   * @param undo      the undo/redo manager for move operations
-   * @param board     the current game board state
-   * @param player    the current player color
-   * @param evaluator the evaluation function to score board positions
-   * @param moves     list of valid moves to consider
-   * @param depth     the current search depth
-   * @param startTime the start time for time management
-   * @return the best move at this depth
+   * <p>Iterates over all candidate moves, applying and undoing each one while recursively
+   * evaluating the resulting position. The {@code finally} block guarantees that {@code undo} is
+   * always called even if a {@link TimeExceededException} propagates up mid-search, keeping the
+   * board state consistent. Alpha and beta bounds are updated after each move to tighten pruning in
+   * subsequent recursive calls.
+   *
+   * @param undo the undo manager used to apply and revert moves
+   * @param board the current state of the game board
+   * @param player the color of the current player
+   * @param evaluator the evaluation function used to score board positions
+   * @param moves the list of candidate moves for the current player
+   * @param depth the depth at which to search
+   * @param startTime the timestamp marking the start of the overall search
+   * @return the best move found at this depth, or {@code null} if the move list is empty
+   * @throws TimeExceededException if the time limit is exceeded during the search
    */
   private Move findBestMoveAtDepth(ManagerUndoRedo undo, Board board, PlayerColor player,
       Evaluator evaluator, List<Move> moves, int depth, long startTime) {
@@ -119,16 +138,17 @@ public class MinMaxAlphaBeta extends Ai {
     if (player == PlayerColor.WHITE) {
       int bestValue = Integer.MIN_VALUE;
       for (Move move : moves) {
-        if (isTimeExceeded(startTime)) {
-          break;
-        }
+        checkTime(startTime); // throws TimeExceededException if time is up
 
         undo.registerMove(player, move);
         board.applyMove(move);
 
-        int value = minValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
-
-        undo.undo(true);
+        int value;
+        try {
+          value = minValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
+        } finally {
+          undo.undo(true);
+        }
 
         if (value > bestValue) {
           bestValue = value;
@@ -139,16 +159,17 @@ public class MinMaxAlphaBeta extends Ai {
     } else {
       int bestValue = Integer.MAX_VALUE;
       for (Move move : moves) {
-        if (isTimeExceeded(startTime)) {
-          break;
-        }
+        checkTime(startTime);
 
         undo.registerMove(player, move);
         board.applyMove(move);
 
-        int value = maxValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
-
-        undo.undo(false);
+        int value;
+        try {
+          value = maxValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
+        } finally {
+          undo.undo(false);
+        }
 
         if (value < bestValue) {
           bestValue = value;
@@ -162,25 +183,27 @@ public class MinMaxAlphaBeta extends Ai {
   }
 
   /**
-   * MaxValue function of the Alpha-Beta MinMax algorithm with time management.
+   * Evaluates the game tree from the perspective of the maximizing player (white).
    *
-   * <p>This function represents the WHITE player's turn and tries to maximize the
-   * evaluation score. It uses alpha-beta pruning to cut off branches that won't
-   * affect the final result and respects time constraints.
+   * <p>Recursively explores all moves available to white and returns the maximum board score,
+   * assuming black will respond optimally via {@link #minValue}. Branches where {@code beta <=
+   * alpha} are pruned immediately, as they cannot affect the result seen by the caller. Evaluation
+   * is cut off when {@code depth} reaches zero or one side has no pieces remaining.
    *
-   * @param undo      the undo/redo manager for move operations
-   * @param board     the current game board state
-   * @param evaluator the evaluation function to score board positions
-   * @param depth     the remaining search depth
-   * @param alpha     the best value that the MAX player can guarantee so far
-   * @param beta      the best value that the MIN player can guarantee so far
-   * @param startTime the start time for time management
-   * @return the maximum evaluation score achievable from this position
+   * @param undo the undo manager used to apply and revert moves
+   * @param board the current state of the game board
+   * @param evaluator the evaluation function used to score board positions
+   * @param depth the remaining search depth
+   * @param alpha the best score the maximizing player can already guarantee
+   * @param beta the best score the minimizing player can already guarantee
+   * @param startTime the timestamp marking the start of the overall search
+   * @return the maximum board score reachable from the current position
+   * @throws TimeExceededException if the time limit is exceeded during the search
    */
   private int maxValue(ManagerUndoRedo undo, Board board, Evaluator evaluator, int depth,
       int alpha, int beta, long startTime) {
-    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE) || board.noPiecesLeft(PlayerColor.BLACK)
-        || isTimeExceeded(startTime)) {
+    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE)
+        || board.noPiecesLeft(PlayerColor.BLACK)) {
       return evaluator.evaluate(board);
     }
 
@@ -188,23 +211,23 @@ public class MinMaxAlphaBeta extends Ai {
     int maxEval = Integer.MIN_VALUE;
 
     for (Move move : moves) {
-      if (isTimeExceeded(startTime)) {
-        break;
-      }
+      checkTime(startTime);
 
       undo.registerMove(PlayerColor.WHITE, move);
       board.applyMove(move);
 
-      int evalValue = minValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
-
-      undo.undo(true);
+      int evalValue;
+      try {
+        evalValue = minValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
+      } finally {
+        undo.undo(true);
+      }
 
       maxEval = Math.max(maxEval, evalValue);
       alpha = Math.max(alpha, evalValue);
 
-      // Alpha-beta pruning: if alpha >= beta, we can prune remaining branches
       if (beta <= alpha) {
-        break;
+        break; // beta cut-off
       }
     }
 
@@ -212,25 +235,27 @@ public class MinMaxAlphaBeta extends Ai {
   }
 
   /**
-   * MinValue function of the Alpha-Beta MinMax algorithm with time management.
+   * Evaluates the game tree from the perspective of the minimizing player (black).
    *
-   * <p>This function represents the BLACK player's turn and tries to minimize the
-   * evaluation score. It uses alpha-beta pruning to cut off branches that won't
-   * affect the final result and respects time constraints.
+   * <p>Recursively explores all moves available to black and returns the minimum board score,
+   * assuming white will respond optimally via {@link #maxValue}. Branches where {@code beta <=
+   * alpha} are pruned immediately, as they cannot affect the result seen by the caller. Evaluation
+   * is cut off when {@code depth} reaches zero or one side has no pieces remaining.
    *
-   * @param undo      the undo/redo manager for move operations
-   * @param board     the current game board state
-   * @param evaluator the evaluation function to score board positions
-   * @param depth     the remaining search depth
-   * @param alpha     the best value that the MAX player can guarantee so far
-   * @param beta      the best value that the MIN player can guarantee so far
-   * @param startTime the start time for time management
-   * @return the minimum evaluation score achievable from this position
+   * @param undo the undo manager used to apply and revert moves
+   * @param board the current state of the game board
+   * @param evaluator the evaluation function used to score board positions
+   * @param depth the remaining search depth
+   * @param alpha the best score the maximizing player can already guarantee
+   * @param beta the best score the minimizing player can already guarantee
+   * @param startTime the timestamp marking the start of the overall search
+   * @return the minimum board score reachable from the current position
+   * @throws TimeExceededException if the time limit is exceeded during the search
    */
   private int minValue(ManagerUndoRedo undo, Board board, Evaluator evaluator, int depth,
       int alpha, int beta, long startTime) {
-    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE) || board.noPiecesLeft(PlayerColor.BLACK)
-        || isTimeExceeded(startTime)) {
+    if (depth == 0 || board.noPiecesLeft(PlayerColor.WHITE)
+        || board.noPiecesLeft(PlayerColor.BLACK)) {
       return evaluator.evaluate(board);
     }
 
@@ -238,26 +263,42 @@ public class MinMaxAlphaBeta extends Ai {
     int minEval = Integer.MAX_VALUE;
 
     for (Move move : moves) {
-      if (isTimeExceeded(startTime)) {
-        break;
-      }
+      checkTime(startTime);
 
       undo.registerMove(PlayerColor.BLACK, move);
       board.applyMove(move);
 
-      int evalValue = maxValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
-
-      undo.undo(false);
+      int evalValue;
+      try {
+        evalValue = maxValue(undo, board, evaluator, depth - 1, alpha, beta, startTime);
+      } finally {
+        undo.undo(false);
+      }
 
       minEval = Math.min(minEval, evalValue);
       beta = Math.min(beta, evalValue);
 
-      // Alpha-beta pruning: if beta <= alpha, we can prune remaining branches
       if (beta <= alpha) {
-        break;
+        break; // alpha cut-off
       }
     }
 
     return minEval;
+  }
+
+  /**
+   * Throws {@link TimeExceededException} if the allotted thinking time has elapsed.
+   *
+   * <p>Unlike {@link #isTimeExceeded(long)}, which returns a boolean, this method aborts the
+   * current depth search immediately via an unchecked exception, ensuring no partial result is
+   * silently accepted.
+   *
+   * @param startTime the timestamp marking the start of the overall search
+   * @throws TimeExceededException if the time limit has been reached
+   */
+  private void checkTime(long startTime) {
+    if (isTimeExceeded(startTime)) {
+      throw new TimeExceededException();
+    }
   }
 }

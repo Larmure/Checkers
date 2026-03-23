@@ -29,7 +29,8 @@ public class SaveTest {
                 Utils.DEFAULT_VERBOSE,
                 debug,
                 Utils.DEFAULT_WHITE_AI,
-                Utils.DEFAULT_BLACK_AI);
+                Utils.DEFAULT_BLACK_AI,
+                Utils.DEFAULT_AI_TIME);
         return new GameCheckers(cfg);
     }
 
