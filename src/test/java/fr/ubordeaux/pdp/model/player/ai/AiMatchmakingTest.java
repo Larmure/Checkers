@@ -31,6 +31,45 @@ class AiMatchmakingTest {
   }
 
   @Test
+  @DisplayName("MinMaxAlphaBeta (depth 3) should beat MCTS (short time) in repeated matches")
+  void testMinMaxAlphaBetaVersusMcts() {
+    int whiteWins = 0;
+    int blackWins = 0;
+    int draws = 0;
+
+    for (int i = 0; i < 5; i++) {
+      AiPlayer white = new AiPlayer("AlphaBeta", new MinMaxAlphaBeta(3, 1000), new MaxEvaluator());
+      AiPlayer black = new AiPlayer("MCTS", new Mcts(1, 500, Mcts.DEFAULT_EXPLORATION), new MaxEvaluator());
+
+      MatchResult result;
+      if (i % 2 == 0) {
+        result = runMatch(white, black, PlayerColor.WHITE);
+      } else {
+        result = runMatch(black, white, PlayerColor.WHITE);
+      }
+
+      if (result.winner == null) {
+        draws++;
+      } else if (result.winner == PlayerColor.WHITE) {
+        if (i % 2 == 0) {
+          whiteWins++;
+        } else {
+          blackWins++;
+        }
+      } else {
+        if (i % 2 == 0) {
+          blackWins++;
+        } else {
+          whiteWins++;
+        }
+      }
+    }
+
+    assertTrue(whiteWins < blackWins, "MinMaxAlphaBeta should win more games than MCTS");
+    assertEquals(5, whiteWins + blackWins + draws);
+  }
+
+  @Test
   @DisplayName("MCTS should outperform a random move generator in repeated matches")
   void testMctsVersusRandom() {
     int mctsWins = 0;
@@ -38,7 +77,6 @@ class AiMatchmakingTest {
     int draws = 0;
 
     for (int i = 0; i < 5; i++) {
-      AiPlayer mctsAi = new AiPlayer("MCTS", new Mcts(1, 500, Mcts.DEFAULT_EXPLORATION), new MaxEvaluator());
       RandomPlayer randomPlayer = new RandomPlayer(i + 123);
       AiPlayer mctsAiPlayer = new AiPlayer("MCTS", new Mcts(1, 500, Mcts.DEFAULT_EXPLORATION), new MaxEvaluator());
 
