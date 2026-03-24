@@ -319,14 +319,14 @@ public class BoardView extends GridPane {
   private void addCoordinateLabels(double cell, double label) {
     // Column numbers — top and bottom.
     for (int c = 0; c < size; c++) {
-      this.add(coordLabel(String.valueOf(c + 1), label), c + 1, 0);
-      this.add(coordLabel(String.valueOf(c + 1), label), c + 1, size + 1);
+      this.add(coordLabel(String.valueOf(c + 1), cell, label), c + 1, 0);
+      this.add(coordLabel(String.valueOf(c + 1), cell, label), c + 1, size + 1);
     }
     // Row letters — left and right.
     for (int row = 0; row < size; row++) {
       char letter = (char) ('A' + (size - 1 - row));
-      this.add(coordLabel(String.valueOf(letter), label), 0, row + 1);
-      this.add(coordLabel(String.valueOf(letter), label), size + 1, row + 1);
+      this.add(coordLabel(String.valueOf(letter), label, label), 0, row + 1);
+      this.add(coordLabel(String.valueOf(letter), label, label), size + 1, row + 1);
     }
   }
 
@@ -341,9 +341,10 @@ public class BoardView extends GridPane {
    * @param size the width and height of the label cell in pixels
    * @return a configured {@link Label}
    */
-  private Label coordLabel(String text, double size) {
+  private Label coordLabel(String text, double width, double height) {
     Label lbl = new Label(text);
-    lbl.setPrefSize(size, size);
+    lbl.setPrefSize(width, height);
+    lbl.setMinSize(width, height);
     lbl.setAlignment(Pos.CENTER);
     lbl.setPadding(new Insets(1));
     // Dynamic font size — cannot be expressed in static CSS.
