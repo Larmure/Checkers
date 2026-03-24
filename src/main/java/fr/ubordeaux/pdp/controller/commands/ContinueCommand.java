@@ -31,7 +31,9 @@ public class ContinueCommand implements Command {
    */
   @Override
   public void execute() {
-    gc.startBlitzTimer();
+    if (gc.isBlitz()) {
+      gc.startBlitzTimer();
+    }
     gc.getGame().setState(State.IN_GAME);
     gc.getGame().notifyObservers();
   }

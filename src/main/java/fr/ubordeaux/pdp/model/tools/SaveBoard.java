@@ -3,6 +3,8 @@ package fr.ubordeaux.pdp.model.tools;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -53,6 +55,10 @@ public class SaveBoard {
    * @throws IOException if the file cannot be created or written
    */
   public void saveToFile(String fileName) throws IOException {
+    if (game.checkGameOver() == State.FINISHED) {
+      System.out.println("The game is already over");
+      return;
+    }
     createSaveDirectory();
 
     File file = new File(SAVE_DIRECTORY + File.separator + fileName);
@@ -85,8 +91,40 @@ public class SaveBoard {
     String timeMode = config.isBlitz() ? "blitz" : "classic";
     writer.write("time-mode=" + timeMode + "\n");
 
-    writer.write("ai-mode=None\n");
-    writer.write("ai-depth=2\n");
+    boolean whiteIsAi = game.getWhitePlayer() instanceof AiPlayer;
+    boolean blackIsAi = game.getBlackPlayer() instanceof AiPlayer;
+
+    String aiMode = "none";
+    String aiDepth = "0";
+
+    if (whiteIsAi && blackIsAi) {
+      AiPlayer whitePlayer = (AiPlayer) game.getWhitePlayer();
+      AiPlayer blackPlayer = (AiPlayer) game.getBlackPlayer();
+
+      String whiteAlgo = whitePlayer.getAlgorithm().getClass().getSimpleName();
+      String blackAlgo = blackPlayer.getAlgorithm().getClass().getSimpleName();
+
+      aiMode = "both-" + whiteAlgo + "-" + blackAlgo;
+      aiDepth = whitePlayer.getAlgorithm().getMaxDepth()
+          + "-" + blackPlayer.getAlgorithm().getMaxDepth();
+
+    } else if (whiteIsAi) {
+      AiPlayer whitePlayer = (AiPlayer) game.getWhitePlayer();
+
+      String whiteAlgo = whitePlayer.getAlgorithm().getClass().getSimpleName();
+      aiMode = "white-" + whiteAlgo;
+      aiDepth = String.valueOf(whitePlayer.getAlgorithm().getMaxDepth());
+
+    } else if (blackIsAi) {
+      AiPlayer blackPlayer = (AiPlayer) game.getBlackPlayer();
+
+      String blackAlgo = blackPlayer.getAlgorithm().getClass().getSimpleName();
+      aiMode = "black-" + blackAlgo;
+      aiDepth = String.valueOf(blackPlayer.getAlgorithm().getMaxDepth());
+    }
+
+    writer.write("ai-mode=" + aiMode + "\n");
+    writer.write("ai-depth=" + aiDepth + "\n");
     writer.write("verbose=" + config.isVerbose() + "\n");
     writer.write("debug=" + config.isDebug() + "\n");
     writer.write("board-size=" + board.getSizeBoard() + "\n");

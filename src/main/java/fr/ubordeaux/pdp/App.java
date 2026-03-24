@@ -116,8 +116,8 @@ public class App {
     ConfigManager configManager = new ConfigManager();
     configManager.load();
     verbose = configManager.isVerbose();
-    blitz = configManager.isBlitz();
-    time = configManager.getTime();
+    blitz = Utils.DEFAULT_BLITZ;
+    time = Utils.DEFAULT_TIME;
     contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();

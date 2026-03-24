@@ -1,10 +1,14 @@
 package fr.ubordeaux.pdp.model.player.ai;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;
@@ -40,7 +44,7 @@ class MinMaxTest {
   }
 
   @Test
-  @DisplayName("Default constructor should use depth 3")
+  @DisplayName("Default constructor should use depth 5")
   void testDefaultConstructor() {
     MinMax defaultMinMax = new MinMax();
     assertEquals(5, defaultMinMax.getMaxDepth(), "Default depth should be 5");
