@@ -240,7 +240,8 @@ public class GameController {
    *
    * @param from The starting position of the piece to move (e.g., "A3").
    * @param to The target position to move the piece to (e.g., "B4").
-   * @param isManoury A boolean indicating whether the move is a Manoury move (capture) or a regular move.
+   * @param isManoury A boolean indicating whether the move is a Manoury move (capture)
+   *     or a regular move.
    */
   public void executeMove(String from, String to, boolean isManoury) {
     if (configuration.isBlitz()) {
