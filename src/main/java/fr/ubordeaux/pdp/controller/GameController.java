@@ -354,13 +354,32 @@ public class GameController {
         game.timerPlayer();
 
         int totalSeconds = game.getCurrentPlayer().getPlayTime();
-
+        // 2. Si on est sur l'interface graphique (GUI), on la force à se mettre à jour
+        if (!(view instanceof CommandLineInterface)) {
+          javafx.application.Platform.runLater(() -> {
+            // Appelle la méthode update(GameCheckers) des vues pour actualiser les labels
+            game.notifyObservers(); 
+          });
+        }
         // 2. On intervient dans la console UNIQUEMENT si le temps est écoulé
         if (totalSeconds <= 0) {
           stopBlitzTimer();
-          System.out.println("\n" + Internationalization.get("game.time_up")
-              + game.getCurrentPlayer().getName());
-          game.setState(State.FINISHED);
+          if (view instanceof CommandLineInterface) {
+            System.out.println("\n" + Internationalization.get("game.time_up")
+                + game.getCurrentPlayer().getName());
+            game.setState(State.FINISHED);
+            handleGameOver(); 
+            game.notifyObservers();
+          } else {
+            javafx.application.Platform.runLater(() -> {
+              System.out.println("\n" + Internationalization.get("game.time_up") + " "
+                  + game.getCurrentPlayer().getName());
+              
+              game.setState(State.FINISHED);
+              handleGameOver(); 
+              game.notifyObservers();
+            });
+          }
         }
       }
     }, 1000, 1000);
