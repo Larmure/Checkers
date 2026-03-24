@@ -30,7 +30,7 @@ public abstract class Ai {
   protected static final int DEFAULT_DEPTH = 5; //Visuellement par defaut 12
 
   /** Default maximum thinking time in milliseconds (5 seconds). */
-  protected static final long DEFAULT_MAX_TIME_MS = 3000L;
+  protected static final long DEFAULT_MAX_TIME_MS = 5000L;
 
   /** Maximum search depth allowed to prevent stack overflow. */
   protected static final int MAX_SAFE_DEPTH = 20;
@@ -39,7 +39,7 @@ public abstract class Ai {
   protected static final long MIN_TIME_MS = 100L;
 
   /** Maximum reasonable thinking time in milliseconds (30 seconds). */
-  protected static final long MAX_TIME_MS = 5000L;
+  protected static final long MAX_TIME_MS = 30000L;
 
   /** Maximum search depth for this specific AI instance. */
   protected int maxDepth;
