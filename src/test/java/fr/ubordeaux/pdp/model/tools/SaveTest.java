@@ -77,7 +77,8 @@ public class SaveTest {
         Move move = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
         game.applyMove(
                 game.getBoard().indexToSquare(move.getFrom()),
-                game.getBoard().indexToSquare(move.getTo()));
+                game.getBoard().indexToSquare(move.getTo()),
+                false);
 
         new SaveBoard(game.getBoard(), game).saveToFile("test_black_turn.txt");
 
@@ -228,7 +229,8 @@ public class SaveTest {
         Move move = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
         game.applyMove(
                 game.getBoard().indexToSquare(move.getFrom()),
-                game.getBoard().indexToSquare(move.getTo()));
+                game.getBoard().indexToSquare(move.getTo()),
+                false);
 
         new SaveBoard(game.getBoard(), game).saveToFile("test_after_move.txt");
         String contentAfter = Files.readString(getSavePath("test_after_move.txt"));
@@ -244,12 +246,14 @@ public class SaveTest {
         Move move1 = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
         game.applyMove(
                 game.getBoard().indexToSquare(move1.getFrom()),
-                game.getBoard().indexToSquare(move1.getTo()));
+                game.getBoard().indexToSquare(move1.getTo()),
+                false);
 
         Move move2 = game.getPossibleMoves(game.getCurrentPlayer()).get(0);
         game.applyMove(
                 game.getBoard().indexToSquare(move2.getFrom()),
-                game.getBoard().indexToSquare(move2.getTo()));
+                game.getBoard().indexToSquare(move2.getTo()),
+                false);
 
         new SaveBoard(game.getBoard(), game).saveToFile("test_two_moves.txt");
 

@@ -87,7 +87,7 @@ class CommandLineInterfaceTest {
     }
 
     @Override
-    public void executeMove(String from, String to) {
+    public void executeMove(String from, String to, boolean isManoury) {
       this.executeMoveCalled = true;
     }
   }

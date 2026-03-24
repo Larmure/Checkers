@@ -80,6 +80,9 @@ public class Utils {
   /** Regular expression for validating move syntax. */
   public static final String MOVE_REGEX = "^[a-zA-Z]\\d{1,2}\\s[a-zA-Z]\\d{1,2}$";
 
+  /** Regular expression for validating Manoury move syntax. */
+  public static final String MANOURY_REGEX = "^\\d{1,2}-\\d{1,2}$";
+
   /** Set of board sizes accepted by the constructor. */
   public static final Set<Integer> VALID_SIZES = Set.of(8, 10, 12);
 
