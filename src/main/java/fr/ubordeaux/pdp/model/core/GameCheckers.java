@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.HumanPlayer;
 import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.History;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
@@ -52,11 +53,15 @@ public class GameCheckers implements Subject {
     // MODE IA
     if (cfg.iswhiteAi() == true) {
       this.whitePlayer = new AiPlayer(Internationalization.get("game.white_ai_player"));
+      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg.getAiMode(), cfg.getAiDepth(),
+          cfg.getAiTime()));
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
     if (cfg.isblackAi() == true) {
       this.blackPlayer = new AiPlayer(Internationalization.get("game.black_ai_player"));
+      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg.getAiMode(), cfg.getAiDepth(),
+          cfg.getAiTime()));
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }

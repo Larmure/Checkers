@@ -54,8 +54,6 @@ public class Utils {
   public static final boolean DEFAULT_WHITE_AI = false;
   /** The default setting for whether the black player is controlled by AI. */
   public static final boolean DEFAULT_BLACK_AI = false;
-  /** The default time limit for AI moves in seconds. */
-  public static final int DEFAULT_AI_TIME = 5;
   /** The default AI mode. */
   public static final String DEFAULT_AI_MODE = "minimax";
 

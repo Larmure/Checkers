@@ -1,6 +1,7 @@
 
 package fr.ubordeaux.pdp.model.core;
 
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
@@ -33,9 +34,11 @@ public class Configuration {
   /** Indicates whether the black player is controlled by AI. */
   private final boolean blackAi;
   /** The time limit for AI moves in seconds. */
-  private final int aiTime;
+  private final long aiTime;
   /** The mode for the AI. */
   private final String aiMode;
+  /** The search depth for the AI. */
+  private final int aiDepth;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -60,11 +63,13 @@ public class Configuration {
    *                additional logging for troubleshooting purposes.
    * @param whiteAi Indicates whether the white player is controlled by AI.
    * @param blackAi Indicates whether the black player is controlled by AI.
-   * @param aiTime  The time limit for AI moves in seconds.
+   * @param aiTime  The time limit for AI moves in milliseconds.
    * @param aiMode  The mode for the AI.
+   * @param aiDepth The search depth for the AI.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
-      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, int aiTime, String aiMode) {
+      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, long aiTime,
+      String aiMode, int aiDepth) {
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
@@ -91,6 +96,7 @@ public class Configuration {
     this.blackAi = blackAi;
     this.aiTime = aiTime;
     this.aiMode = aiMode;
+    this.aiDepth = aiDepth;
   }
 
   /**
@@ -114,6 +120,7 @@ public class Configuration {
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
+    this.aiDepth = other.aiDepth;
   }
 
   /**
@@ -135,6 +142,7 @@ public class Configuration {
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
+    this.aiDepth = other.aiDepth;
   }
 
   /**
@@ -148,7 +156,8 @@ public class Configuration {
     return new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME,
         Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE,
         Utils.DEFAULT_VERBOSE, Utils.DEFAULT_DEBUG, Utils.DEFAULT_WHITE_AI,
-        Utils.DEFAULT_BLACK_AI, Utils.DEFAULT_AI_TIME, Utils.DEFAULT_AI_MODE);
+        Utils.DEFAULT_BLACK_AI, Ai.DEFAULT_MAX_TIME_MS, Utils.DEFAULT_AI_MODE,
+        Ai.DEFAULT_DEPTH);
   }
 
   /**
@@ -229,11 +238,11 @@ public class Configuration {
   }
 
   /**
-   * Returns the time limit for AI moves in seconds.
+   * Returns the time limit for AI moves in milliseconds.
    *
-   * @return the time limit for AI moves in seconds.
+   * @return the time limit for AI moves in milliseconds.
    */
-  public int getAiTime() {
+  public long getAiTime() {
     return aiTime;
   }
 
@@ -244,6 +253,15 @@ public class Configuration {
   */
   public String getAiMode() {
     return aiMode;
+  }
+
+  /**
+  * Returns the search depth for the AI.
+  *
+  * @return the search depth for the AI.
+  */
+  public int getAiDepth() {
+    return aiDepth;
   }
 
   /**
@@ -259,6 +277,6 @@ public class Configuration {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
         + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi + ", aiTime=" + aiTime + ", aiMode="
-        + aiMode;
+        + aiMode + ", aiDepth=" + aiDepth;
   }
 }
