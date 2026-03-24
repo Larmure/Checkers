@@ -241,12 +241,12 @@ public class GameController {
    * @param from The starting position of the piece to move (e.g., "A3").
    * @param to The target position to move the piece to (e.g., "B4").
    */
-  public void executeMove(String from, String to) {
+  public void executeMove(String from, String to, boolean isManoury) {
     if (configuration.isBlitz()) {
       startBlitzTimer();
     }
 
-    game.applyMove(from, to);
+    game.applyMove(from, to, isManoury);
 
     game.setState(game.checkGameOver());
     handleGameOver();
@@ -274,7 +274,7 @@ public class GameController {
 
     String from = game.getBoard().indexToSquare(move.getFrom());
     String to = game.getBoard().indexToSquare(move.getTo());
-    game.applyMove(from, to);
+    game.applyMove(from, to, false);
     game.setState(game.checkGameOver());
     handleGameOver();
   }

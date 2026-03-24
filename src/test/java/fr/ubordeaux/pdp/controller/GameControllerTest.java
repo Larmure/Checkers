@@ -94,7 +94,7 @@ class GameControllerTest {
 
     // Attempt a move (format expected by GameCheckers via GameController)
     // Note: If the move is invalid, nothing happens, but the call is traced
-    controller.executeMove("B2", "C3");
+    controller.executeMove("B2", "C3", false);
 
     // After a move, the controller generally calls displayBoard via observer
     // or manually depending on implementation.
@@ -131,7 +131,7 @@ class GameControllerTest {
     GameCheckers gameModel = (GameCheckers) gameField.get(controller);
 
     // This call will now enter the 'if' block
-    controller.executeMove("A1", "B2");
+    controller.executeMove("A1", "B2", false);
   }
 
   @Test
@@ -164,7 +164,7 @@ class GameControllerTest {
    */
   @Test
   void testExecuteMove_validMove_gameNotOver() {
-    assertDoesNotThrow(() -> controller.executeMove("B6", "C5"));
+    assertDoesNotThrow(() -> controller.executeMove("B6", "C5", false));
   }
 
   /**
@@ -177,7 +177,7 @@ class GameControllerTest {
     forceGameState(State.FINISHED);
 
     ByteArrayOutputStream out = captureOutput();
-    controller.executeMove("B6", "C5");
+    controller.executeMove("B6", "C5", false);
     restoreOutput();
 
     // The game over block must have been executed (or skipped depending on impl.)
@@ -194,7 +194,7 @@ class GameControllerTest {
     Configuration blitzConfig = buildBlitzConfig(120);
     controller.startNewGame(blitzConfig);
 
-    assertDoesNotThrow(() -> controller.executeMove("B6", "C5"));
+    assertDoesNotThrow(() -> controller.executeMove("B6", "C5", false));
 
     // Mandatory cleanup to avoid an orphaned timer
     controller.stopBlitzTimer();
@@ -211,7 +211,7 @@ class GameControllerTest {
     forceGameState(State.FINISHED);
 
     ByteArrayOutputStream out = captureOutput();
-    assertDoesNotThrow(() -> controller.executeMove("B6", "C5"));
+    assertDoesNotThrow(() -> controller.executeMove("B6", "C5", false));
     restoreOutput();
 
     // The timer must be null after stopBlitzTimer()
@@ -233,7 +233,7 @@ class GameControllerTest {
   @Test
   void testHasUnsavedChanges_trueAfterMove() {
     // Play a valid move to grow the history
-    controller.executeMove("B6", "C5");
+    controller.executeMove("B6", "C5", false);
     // If the move was accepted, the history has changed
     GameCheckers game = controller.getGame();
     int histSize = game.getHistory().getSize();
@@ -245,7 +245,7 @@ class GameControllerTest {
 
   @Test
   void testHasUnsavedChanges_falseAfterMarkAsSaved() {
-    controller.executeMove("B6", "C5");
+    controller.executeMove("B6", "C5", false);
     controller.markAsSaved();
     assertFalse(controller.hasUnsavedChanges(),
         "No unsaved changes expected after markAsSaved().");
@@ -316,7 +316,7 @@ class GameControllerTest {
 
   @Test
   void testUndoGame_onceWithHistory() {
-    controller.executeMove("B6", "C5");
+    controller.executeMove("B6", "C5", false);
     assertDoesNotThrow(() -> controller.undoGame(1));
   }
 
@@ -333,14 +333,14 @@ class GameControllerTest {
 
   @Test
   void testRedoGame_afterUndo_restoresState() {
-    controller.executeMove("B6", "C5");
+    controller.executeMove("B6", "C5", false);
     controller.undoGame(1);
     assertDoesNotThrow(() -> controller.redoGame(1));
   }
 
   @Test
   void testUndoThenRedo_multipleSteps() {
-    controller.executeMove("B6", "C5");
+    controller.executeMove("B6", "C5", false);
     controller.undoGame(1);
     controller.redoGame(1);
     controller.undoGame(1);
@@ -676,7 +676,7 @@ class GameControllerTest {
 
         System.out.println("Coup joué : " + from + "-" + to);
 
-        controller.executeMove(from, to);
+        controller.executeMove(from, to, false);
 
         if (gameModel.getState() == State.FINISHED) {
           System.out.println("La partie s'est terminée avant la fin de la séquence.");

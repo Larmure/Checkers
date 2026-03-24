@@ -1372,4 +1372,60 @@ public class Board {
     return sizeBoard;
   }
 
+  // ---------------------------------------------------------------------------
+  // Manoury Conversion Utilities
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Converts a Manoury notation square number (e.g., 1 to 50 for a 10x10 board) 
+   * to its internal bit index.
+   *
+   * @param manoury the square number in Manoury notation
+   * @return bit index in the range {@code [0, indexMax)}
+   * @throws IllegalArgumentException if the number is outside the valid range
+   */
+  public int manouryToIndex(int manoury) {
+    if (manoury < 1 || manoury > this.indexMax) {
+      throw new IllegalArgumentException("Case Manoury hors limites: " + manoury);
+    }
+
+    int zeroBasedManoury = manoury - 1;
+    int squaresPerRow = sizeBoard / 2;
+
+    // Calculate the row counting from the top (0 = top row, 9 = bottom row for 10x10)
+    int rowFromTop = zeroBasedManoury / squaresPerRow;
+    // Calculate position within that row (0 to 4 for 10x10)
+    int colInRow = zeroBasedManoury % squaresPerRow;
+
+    // Invert the row to match the internal bottom-up representation
+    int internalRow = (sizeBoard - 1) - rowFromTop;
+
+    return (internalRow * squaresPerRow) + colInRow;
+  }
+
+  /**
+   * Converts an internal bit index to its corresponding Manoury notation 
+   * square number (e.g., 1 to 50).
+   *
+   * @param index bit index in the range {@code [0, indexMax)}
+   * @return the square number in Manoury notation
+   * @throws IllegalArgumentException if the index is outside the board limits
+   */
+  public int indexToManoury(int index) {
+    if (index < 0 || index >= this.indexMax) {
+      throw new IllegalArgumentException("Index interne hors limites: " + index);
+    }
+
+    int squaresPerRow = sizeBoard / 2;
+
+    // Calculate internal row and column
+    int internalRow = index / squaresPerRow;
+    int colInRow = index % squaresPerRow;
+
+    // Invert the row to match Manoury's top-down representation
+    int rowFromTop = (sizeBoard - 1) - internalRow;
+
+    return (rowFromTop * squaresPerRow) + colInRow + 1; // +1 because Manoury starts at 1
+  }
+
 }

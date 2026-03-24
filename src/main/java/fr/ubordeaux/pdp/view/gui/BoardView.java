@@ -388,7 +388,7 @@ public class BoardView extends GridPane {
       String to = toSquare(modelRow, modelCol);
       selRow = -1;
       selCol = -1;
-      controller.executeMove(from, to);
+      controller.executeMove(from, to, false);
     }
   }
 

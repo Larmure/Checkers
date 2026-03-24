@@ -51,7 +51,7 @@ class GameCheckersTest {
         // and force it to false, as if White had just played.
         Field turnField = GameCheckers.class.getDeclaredField("isWhiteTurn");
         turnField.setAccessible(true); // Ask Java for permission to access it
-        turnField.set(game, false);    // Force: "it is no longer White's turn"
+        turnField.set(game, false); // Force: "it is no longer White's turn"
 
         // Now, the current player should be Black.
         Player currentPlayer = game.getCurrentPlayer();
@@ -96,7 +96,7 @@ class GameCheckersTest {
         // This should hit the "move == null" branch in applyMove.
         String currentPlayer = game.getCurrentPlayer().toString();
 
-        game.applyMove("H12", "E1"); // Clearly invalid squares
+        game.applyMove("H12", "E1", false); // Clearly invalid squares
 
         // The turn should NOT have switched since the move was rejected.
         assertEquals(currentPlayer, game.getCurrentPlayer().toString(),
@@ -109,15 +109,21 @@ class GameCheckersTest {
     @Test
     void theViewIsNotifiedWhenRequested() {
         // We create a spy view that records whether it was called.
-        boolean[] wasNotified = {false}; // Single-element array so we can modify it inside the anonymous class
+        boolean[] wasNotified = { false }; // Single-element array so we can modify it inside the anonymous class
 
         GameView spyView = new GameView() {
             @Override
             public void update(GameCheckers g) {
                 wasNotified[0] = true; // Mark that the view received the notification
             }
-            @Override public void start() {}
-            @Override public void display(GameCheckers g) {}
+
+            @Override
+            public void start() {
+            }
+
+            @Override
+            public void display(GameCheckers g) {
+            }
         };
 
         // Add our spy view to the game, then notify all observers.
@@ -174,9 +180,9 @@ class GameCheckersTest {
         // Play the first available move.
         Move firstMove = availableMoves.get(0);
         String fromSquare = game.getBoard().indexToSquare(firstMove.getFrom());
-        String toSquare   = game.getBoard().indexToSquare(firstMove.getTo());
+        String toSquare = game.getBoard().indexToSquare(firstMove.getTo());
 
-        game.applyMove(fromSquare, toSquare);
+        game.applyMove(fromSquare, toSquare, false);
 
         // After White plays, it should no longer be White's turn.
         assertNotEquals("White Player", game.getCurrentPlayer().toString(),
@@ -191,9 +197,14 @@ class GameCheckersTest {
         // Create a fake board that always says "no moves available".
         Board fakeBoard = new Board(12) {
             @Override
-            public List<Move> getWhiteValidMoves() { return List.of(); } // Empty list
+            public List<Move> getWhiteValidMoves() {
+                return List.of();
+            } // Empty list
+
             @Override
-            public List<Move> getBlackValidMoves() { return List.of(); } // Empty list
+            public List<Move> getBlackValidMoves() {
+                return List.of();
+            } // Empty list
         };
 
         // Inject this fake board into the game using Java reflection.
@@ -216,9 +227,17 @@ class GameCheckersTest {
     void simulateTwoFullTurns() {
         // Add an empty observer just to avoid errors if the code tries to notify views.
         game.addObserver(new GameView() {
-            @Override public void update(GameCheckers g) {}
-            @Override public void start() {}
-            @Override public void display(GameCheckers g) {}
+            @Override
+            public void update(GameCheckers g) {
+            }
+
+            @Override
+            public void start() {
+            }
+
+            @Override
+            public void display(GameCheckers g) {
+            }
         });
 
         // --- Turn 1: White plays ---
@@ -227,9 +246,9 @@ class GameCheckersTest {
 
         Move whiteMove = whiteMoves.get(0);
         game.applyMove(
-            game.getBoard().indexToSquare(whiteMove.getFrom()),
-            game.getBoard().indexToSquare(whiteMove.getTo())
-        );
+                game.getBoard().indexToSquare(whiteMove.getFrom()),
+                game.getBoard().indexToSquare(whiteMove.getTo()),
+                false);
 
         // After White's move, it should be Black's turn.
         /*assertEquals("Black Player", game.getCurrentPlayer().toString(),
@@ -241,9 +260,9 @@ class GameCheckersTest {
 
         Move blackMove = blackMoves.get(0);
         game.applyMove(
-            game.getBoard().indexToSquare(blackMove.getFrom()),
-            game.getBoard().indexToSquare(blackMove.getTo())
-        );
+                game.getBoard().indexToSquare(blackMove.getFrom()),
+                game.getBoard().indexToSquare(blackMove.getTo()),
+                false);
 
         // After Black's move, it should be White's turn again.
         /*assertEquals("White Player", game.getCurrentPlayer().toString(),
@@ -259,12 +278,12 @@ class GameCheckersTest {
         // This call will enter the 'if (move == null)' block.
         // It will then execute the 'for (Move m : possibleMoves)' loop 
         // to print all valid options to the console.
-        game.applyMove(sameSquare, sameSquare);
+        game.applyMove(sameSquare, sameSquare, false);
 
         // Verification: The turn should NOT have switched to the other player.
         // isWhiteTurn remains true because of the early 'return' in your model.
         assertTrue(game.getIsWhiteTurn(), "The turn should not change after an invalid move.");
-        
+
         // Ensure the game board still exists
         assertNotNull(game.getBoard(), "The board should still be accessible.");
     }
@@ -280,7 +299,7 @@ class GameCheckersTest {
 
         // At start, it is White's turn
         assertTrue(game.getIsWhiteTurn(), "It should be White's turn initially.");
-        
+
         // Call timerPlayer (simulating 1 second passing)
         game.timerPlayer();
 
@@ -301,11 +320,20 @@ class GameCheckersTest {
     @Test
     void testUndoAndRedoManage() {
         // Register a spy observer to verify that notifyObservers() is called
-        boolean[] wasNotified = {false};
+        boolean[] wasNotified = { false };
         game.addObserver(new GameView() {
-            @Override public void update(GameCheckers g) { wasNotified[0] = true; }
-            @Override public void start() {}
-            @Override public void display(GameCheckers g) {}
+            @Override
+            public void update(GameCheckers g) {
+                wasNotified[0] = true;
+            }
+
+            @Override
+            public void start() {
+            }
+
+            @Override
+            public void display(GameCheckers g) {
+            }
         });
 
         // 1. Play a valid move first so we have something in the history
@@ -313,12 +341,12 @@ class GameCheckersTest {
         Move firstMove = whiteMoves.get(0);
         String fromSquare = game.getBoard().indexToSquare(firstMove.getFrom());
         String toSquare = game.getBoard().indexToSquare(firstMove.getTo());
-        
-        game.applyMove(fromSquare, toSquare);
-        
+
+        game.applyMove(fromSquare, toSquare, false);
+
         // After move, turn switches to Black
         assertFalse(game.getIsWhiteTurn(), "Turn should switch to Black after White plays.");
-        
+
         // Reset observer flag before testing undo
         wasNotified[0] = false;
 
@@ -337,16 +365,56 @@ class GameCheckersTest {
         assertFalse(game.getIsWhiteTurn(), "Turn should switch back to Black after redo.");
         assertTrue(wasNotified[0], "Observers should be notified after a successful redo.");
     }
-    
+
     @Test
     void testUndoManageFailsOnEmptyHistory() {
         // At the very beginning of the game, history is empty.
         assertTrue(game.getIsWhiteTurn(), "Game starts with White's turn.");
-        
+
         // Try to undo when there are no moves
-        game.undoManage(); 
-        
+        game.undoManage();
+
         // The undo should fail gracefully, meaning the turn does NOT change
         assertTrue(game.getIsWhiteTurn(), "Turn should not change if undo fails (empty history).");
+    }
+
+    // =========================================================================
+    //  Manoury Notation Tests
+    // =========================================================================
+
+    @Test
+    void applyValidMoveWithManouryNotation() {
+        List<Move> whiteMoves = game.getPossibleMoves(game.getCurrentPlayer());
+        assertFalse(whiteMoves.isEmpty(), "There should be available moves.");
+        Move firstMove = whiteMoves.get(0);
+
+        String fromManoury = String.valueOf(game.getBoard().indexToManoury(firstMove.getFrom()));
+        String toManoury = String.valueOf(game.getBoard().indexToManoury(firstMove.getTo()));
+
+        game.applyMove(fromManoury, toManoury, true);
+
+        assertFalse(game.getIsWhiteTurn(), "It should be black turn after a valid Manoury move.");
+    }
+
+    @Test
+    void applyMoveWithInvalidManouryFormatCatchesException() {
+        String currentPlayer = game.getCurrentPlayer().toString();
+
+        game.applyMove("XYZ", "ABC", true);
+
+        assertEquals(currentPlayer, game.getCurrentPlayer().toString(),
+                "Turn shouldn't change after an invalide Manoury move.");
+        assertTrue(game.getIsWhiteTurn());
+    }
+
+    @Test
+    void applyMoveWithInvalidManouryMovePrintsSuggestions() {
+        String currentPlayer = game.getCurrentPlayer().toString();
+
+        game.applyMove("1", "1", true);
+
+        assertEquals(currentPlayer, game.getCurrentPlayer().toString(),
+                "Turn shouldn't change after an illegal Manoury move.");
+        assertTrue(game.getIsWhiteTurn());
     }
 }

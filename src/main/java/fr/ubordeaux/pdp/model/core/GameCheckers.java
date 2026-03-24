@@ -160,11 +160,12 @@ public class GameCheckers implements Subject {
    *
    * @param fromS position from.
    * @param toS   position to.
+   * @param isManoury boolean of manoury
    */
-  public void applyMove(String fromS, String toS) {
+  public void applyMove(String fromS, String toS, boolean isManoury) {
     Move move = null;
-    int from;
-    int to;
+    int from = -1;
+    int to = 1;
     PlayerColor currentColor;
 
     currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
@@ -179,13 +180,25 @@ public class GameCheckers implements Subject {
       return;
     }
 
-    try {
-      from = this.board.squareToIndex(fromS);
-      to = this.board.squareToIndex(toS);
-    } catch (IllegalArgumentException e) {
-      System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+    if (isManoury) {
+      try {
+        int manouryFrom = Integer.valueOf(fromS);
+        int manouryTo = Integer.valueOf(toS);
+        from = this.board.manouryToIndex(manouryFrom);
+        to = this.board.manouryToIndex(manouryTo);
+      } catch (IllegalArgumentException e) {
+        System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+        return;
+      }
+    } else {
+      try {
+        from = this.board.squareToIndex(fromS);
+        to = this.board.squareToIndex(toS);
+      } catch (IllegalArgumentException e) {
+        System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
 
-      return;
+        return;
+      }
     }
 
     List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
@@ -202,11 +215,18 @@ public class GameCheckers implements Subject {
       System.out
           .println(String.format(Internationalization.get("game.display_valid_moves"),
               getCurrentPlayer().getName()));
-
-      for (Move m : possibleMoves) {
-        String fromSquare = this.board.indexToSquare(m.getFrom());
-        String toSquare = this.board.indexToSquare(m.getTo());
-        System.out.println("  -> " + fromSquare + " " + toSquare);
+      if (isManoury) {
+        for (Move m : possibleMoves) {
+          String fromSquare = String.valueOf(this.board.indexToManoury(m.getFrom()));
+          String toSquare = String.valueOf(this.board.indexToManoury(m.getTo()));
+          System.out.println("  -> " + fromSquare + " " + toSquare);
+        }
+      } else {
+        for (Move m : possibleMoves) {
+          String fromSquare = this.board.indexToSquare(m.getFrom());
+          String toSquare = this.board.indexToSquare(m.getTo());
+          System.out.println("  -> " + fromSquare + " " + toSquare);
+        }
       }
 
       return;
