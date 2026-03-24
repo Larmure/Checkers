@@ -32,7 +32,7 @@ import javafx.scene.shape.Rectangle;
  *
  * <h2>Click handling</h2>
  * Two-click selection: first click selects a piece (highlighted in blue), second
- * click on a destination triggers {@link GameController#executeMove(String, String)}.
+ * click on a destination triggers {@link GameController#executeMove(String, String, boolean)}.
  *
  * <h2>Responsive sizing</h2>
  * Call {@link #bindCellSize(DoubleBinding)} to make cell size track the window
