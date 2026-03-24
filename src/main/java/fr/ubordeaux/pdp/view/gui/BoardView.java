@@ -276,18 +276,16 @@ public class BoardView extends GridPane {
 
           if (nodeToDrag != null) {
             SnapshotParameters params = new SnapshotParameters();
-            params.setFill(Color.TRANSPARENT); // Pour garder les contours ronds
+            params.setFill(Color.TRANSPARENT); // Ensure the snapshot has a transparent background
 
-            // 1. On génère le snapshot (l'image visuelle du pion)
+            // Create a snapshot of the piece node to use as the drag view.
             WritableImage snapshotImg = nodeToDrag.snapshot(params, null);
 
-            // 2. Pour centrer l'image sous le curseur de la souris :
-            // Par défaut, le curseur est en haut à gauche de l'image (0,0).
-            // Il faut définir un décalage (offset) égal à la moitié de la taille de l'image.
+            // Calculate offsets to center the drag view on the cursor.
             double offsetX = snapshotImg.getWidth() / 2.0;
             double offsetY = snapshotImg.getHeight() / 2.0;
 
-            // 3. On applique l'image ET les offsets de centrage
+            // Set the drag view with the calculated offsets.
             db.setDragView(snapshotImg, offsetX, offsetY);
           }
 
