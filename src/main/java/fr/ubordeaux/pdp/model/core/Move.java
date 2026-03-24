@@ -21,7 +21,7 @@ public class Move {
   /** The indices of all pieces captured during this move. */
   private final List<Integer> captured;
   /** The colors of all pieces captured during this move. */
-  private final List<String> capturedColors;
+  private final List<Piece> capturedColors;
   /** Whether this move results in a promotion. */
   private boolean promotion;
 
@@ -164,7 +164,7 @@ public class Move {
    *
    * @return the list of captured piece colors, empty if no captures occurred
    */
-  public List<String> getCapturedColors() {
+  public List<Piece> getCapturedColors() {
     return capturedColors;
   }
 
