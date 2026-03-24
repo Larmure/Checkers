@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.model.tools;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.Piece;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -388,7 +389,7 @@ public class LoadBoard {
     }
     if (cells.length() != n) {
       throw new Exception(
-            "Board row must have " + n + " cells, got " + cells.length() + ".");
+          "Board row must have " + n + " cells, got " + cells.length() + ".");
     }
 
     int boardRow = n - 1 - currentBoardRow;
@@ -400,11 +401,11 @@ public class LoadBoard {
       if (!playable) {
         if (c != '_') {
           throw new Exception(
-                "Piece '" + c + "' on non-playable square at row "
-                      + currentBoardRow
-                      + ", col "
-                      + col
-                      + ".");
+              "Piece '" + c + "' on non-playable square at row "
+                  + currentBoardRow
+                  + ", col "
+                  + col
+                  + ".");
         }
         continue;
       }
@@ -416,10 +417,10 @@ public class LoadBoard {
       if (c != '_') {
         int index = (boardRow * n + col) / 2;
         switch (c) {
-          case 'x' -> board.restorePiece(index, "BP");
-          case 'o' -> board.restorePiece(index, "WP");
-          case 'X' -> board.restorePiece(index, "BC");
-          case 'O' -> board.restorePiece(index, "WC");
+          case 'x' -> board.restorePiece(index, Piece.BLACK_PAWN);
+          case 'o' -> board.restorePiece(index, Piece.WHITE_PAWN);
+          case 'X' -> board.restorePiece(index, Piece.BLACK_CHECKER);
+          case 'O' -> board.restorePiece(index, Piece.WHITE_CHECKER);
           default -> {
           }
         }
@@ -428,6 +429,7 @@ public class LoadBoard {
 
     currentBoardRow++;
   }
+
   /**
    * Builds a configuration from loaded values.
    *

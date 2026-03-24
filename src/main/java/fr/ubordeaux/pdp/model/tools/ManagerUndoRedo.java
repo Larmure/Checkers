@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.model.tools;
 
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.core.Piece;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import java.util.List;
 
@@ -77,7 +78,7 @@ public class ManagerUndoRedo {
 
         // Restore all captured pieces with their exact original types
         List<Integer> captures = lastMove.getCaptured();
-        List<String> types = lastMove.getCapturedColors();
+        List<Piece> types = lastMove.getCapturedColors();
 
         for (int i = 0; i < captures.size(); i++) {
           board.restorePiece(captures.get(i), types.get(i));

@@ -551,19 +551,19 @@ public class Board {
     // Remove all captured pieces.
     for (int captured : move.getCaptured()) {
       if (isBitWhitePawn(captured)) {
-        move.getCapturedColors().add("WP");
+        move.getCapturedColors().add(Piece.WHITE_PAWN);
         removeWhitePawn(captured);
       }
       if (isBitBlackPawn(captured)) {
-        move.getCapturedColors().add("BP");
+        move.getCapturedColors().add(Piece.BLACK_PAWN);
         removeBlackPawn(captured);
       }
       if (isBitWhiteChecker(captured)) {
-        move.getCapturedColors().add("WC");
+        move.getCapturedColors().add(Piece.WHITE_CHECKER);
         removeWhiteChecker(captured);
       }
       if (isBitBlackChecker(captured)) {
-        move.getCapturedColors().add("BC");
+        move.getCapturedColors().add(Piece.BLACK_CHECKER);
         removeBlackChecker(captured);
       }
     }
@@ -1235,21 +1235,21 @@ public class Board {
   *     "WC" for white checker,
   *     "BC" for black checker
   */
-  public void restorePiece(int index, String type) {
+  public void restorePiece(int index, Piece type) {
     if (index < 0 || index >= indexMax) {
       throw new IllegalArgumentException("Index hors limites");
     }
     switch (type) {
-      case "WP":
+      case WHITE_PAWN:
         addWhitePawn(index);
         break;
-      case "BP":
+      case BLACK_PAWN:
         addBlackPawn(index);
         break;
-      case "WC":
+      case WHITE_CHECKER:
         addWhiteChecker(index);
         break;
-      case "BC":
+      case BLACK_CHECKER:
         addBlackChecker(index);
         break;
       default:
