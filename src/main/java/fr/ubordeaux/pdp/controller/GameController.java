@@ -230,6 +230,9 @@ public class GameController {
     }
 
     markAsSaved();
+
+    // Trigger the AI immediately if the White player (starting player) is an AI.
+    triggerAiIfNecessary();
   }
 
   /**
@@ -252,6 +255,9 @@ public class GameController {
 
     game.setState(game.checkGameOver());
     handleGameOver();
+
+    // Trigger the AI turn if the next player is controlled by the computer.
+    triggerAiIfNecessary();
   }
 
   /**
@@ -526,6 +532,62 @@ public class GameController {
       System.out.println(game.getCurrentPlayer().getName() + " "
           + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
+    }
+  }
+
+  /**
+   * Checks if the current player is an AI and triggers their turn asynchronously.
+   *
+   * <p>This prevents blocking the JavaFX application thread during the AI's calculation,
+   * ensuring the GUI remains responsive.
+   */
+  public void triggerAiIfNecessary() {
+    // Safeguard: Only execute this asynchronous behavior if the view is a graphical user interface.
+    if (view instanceof CommandLineInterface) {
+      return;
+    }
+
+    if (game.getState() == State.IN_GAME && game.getCurrentPlayer() instanceof AiPlayer) {
+      AiPlayer aiPlayer = (AiPlayer) game.getCurrentPlayer();
+
+      new Thread(() -> {
+        // A brief pause to improve UX and prevent instant moves.
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+
+        // Calculate the best move within the configured maximum aiTime.
+        Move move = aiPlayer.getBestMove(
+            game.getManagerUndoRedo(), game.getBoard(), game.getCurrentColor());
+
+        // Switch back to the JavaFX Application Thread to safely update the UI components.
+        javafx.application.Platform.runLater(() -> {
+          if (move == null) {
+            System.err.println("No AI move available.");
+            game.setState(game.checkGameOver());
+            handleGameOver();
+            return;
+          }
+
+          if (configuration.isBlitz()) {
+            startBlitzTimer();
+          }
+
+          String fromSquare = game.getBoard().indexToSquare(move.getFrom());
+          String toSquare = game.getBoard().indexToSquare(move.getTo());
+
+          // Apply the calculated move to the game board.
+          game.applyMove(fromSquare, toSquare, false);
+
+          game.setState(game.checkGameOver());
+          handleGameOver();
+
+          // Recursively call to check if the next player is also an AI (AI vs AI match).
+          triggerAiIfNecessary();
+        });
+      }, "AI-Thinking-Thread").start();
     }
   }
 }

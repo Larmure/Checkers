@@ -71,9 +71,9 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** Enables debug output. */
   private final CheckBox debugCheck = new CheckBox("Debug");
 
-  /** AI thinking time in seconds. Default: Utils.DEFAULT_AI_TIME, range 1–60. */
+  /** AI thinking time in seconds. Default: Utils.DEFAULT_AI_TIME, range 1–30. */
   private final Spinner<Integer> aiTimeSpinner = new Spinner<>(
-      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 60, 5));
+      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30, 5));
 
   /** Manages keyboard shortcuts read from and written to {@code .checkersrc}. */
   private final ShortcutManager shortcutManager;
