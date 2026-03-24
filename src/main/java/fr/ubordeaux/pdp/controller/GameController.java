@@ -497,6 +497,9 @@ public class GameController {
     if (game == null || game.getHistory() == null) {
       return false;
     }
+    if (game.getState() == State.FINISHED) {
+      return false;
+    }
     int currentSize = game.getHistory().getSize();
     return currentSize != lastSavedMoveCount;
   }
