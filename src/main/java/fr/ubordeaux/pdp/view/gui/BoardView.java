@@ -8,7 +8,9 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Label;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -17,7 +19,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.SnapshotParameters;
 
 /**
  * JavaFX component that renders an interactive checkers board.
@@ -273,11 +274,21 @@ public class BoardView extends GridPane {
           content.putString(toSquare(mr, mc));
           db.setContent(content);
 
-          // 2. CORRECTION ICI : On prend en photo uniquement le pion
           if (nodeToDrag != null) {
             SnapshotParameters params = new SnapshotParameters();
             params.setFill(Color.TRANSPARENT); // Pour garder les contours ronds
-            db.setDragView(nodeToDrag.snapshot(params, null));
+
+            // 1. On génère le snapshot (l'image visuelle du pion)
+            WritableImage snapshotImg = nodeToDrag.snapshot(params, null);
+
+            // 2. Pour centrer l'image sous le curseur de la souris :
+            // Par défaut, le curseur est en haut à gauche de l'image (0,0).
+            // Il faut définir un décalage (offset) égal à la moitié de la taille de l'image.
+            double offsetX = snapshotImg.getWidth() / 2.0;
+            double offsetY = snapshotImg.getHeight() / 2.0;
+
+            // 3. On applique l'image ET les offsets de centrage
+            db.setDragView(snapshotImg, offsetX, offsetY);
           }
 
           e.consume();
