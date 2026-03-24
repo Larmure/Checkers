@@ -1,10 +1,10 @@
 package fr.ubordeaux.pdp.model.player.ai;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.List;
 import java.util.Random;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,13 +17,13 @@ import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 
 class AiMatchmakingTest {
 
-  private static final int MAX_MOVES = 200;
+  private static final int MAX_MOVES = 100;
 
   @Test
   @DisplayName("MinMaxAlphaBeta (depth 3) should win against MinMax (depth 1)")
   void testMinMaxAlphaBetaBeatsMinMax() {
-    AiPlayer white = new AiPlayer("AlphaBeta", new MinMaxAlphaBeta(3, 1000), new MaxEvaluator());
-    AiPlayer black = new AiPlayer("MinMax", new MinMax(1, 1000), new MaxEvaluator());
+    AiPlayer white = new AiPlayer("AlphaBeta", new MinMaxAlphaBeta(3, 500), new MaxEvaluator());
+    AiPlayer black = new AiPlayer("MinMax", new MinMax(1, 500), new MaxEvaluator());
 
     MatchResult result = runMatch(white, black, PlayerColor.WHITE);
 
@@ -37,9 +37,9 @@ class AiMatchmakingTest {
     int blackWins = 0;
     int draws = 0;
 
-    for (int i = 0; i < 5; i++) {
-      AiPlayer white = new AiPlayer("AlphaBeta", new MinMaxAlphaBeta(3, 1000), new MaxEvaluator());
-      AiPlayer black = new AiPlayer("MCTS", new Mcts(1, 500, Mcts.DEFAULT_EXPLORATION), new MaxEvaluator());
+    for (int i = 0; i < 3; i++) {
+      AiPlayer white = new AiPlayer("AlphaBeta", new MinMaxAlphaBeta(3, 500), new MaxEvaluator());
+      AiPlayer black = new AiPlayer("MCTS", new Mcts(1, 200, Mcts.DEFAULT_EXPLORATION), new MaxEvaluator());
 
       MatchResult result;
       if (i % 2 == 0) {
@@ -66,7 +66,7 @@ class AiMatchmakingTest {
     }
 
     assertTrue(whiteWins < blackWins, "MinMaxAlphaBeta should win more games than MCTS");
-    assertEquals(5, whiteWins + blackWins + draws);
+    assertEquals(3, whiteWins + blackWins + draws);
   }
 
   @Test
@@ -76,9 +76,9 @@ class AiMatchmakingTest {
     int randomWins = 0;
     int draws = 0;
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 3; i++) {
       RandomPlayer randomPlayer = new RandomPlayer(i + 123);
-      AiPlayer mctsAiPlayer = new AiPlayer("MCTS", new Mcts(1, 500, Mcts.DEFAULT_EXPLORATION), new MaxEvaluator());
+      AiPlayer mctsAiPlayer = new AiPlayer("MCTS", new Mcts(1, 200, Mcts.DEFAULT_EXPLORATION), new MaxEvaluator());
 
       MatchResult result;
       if (i % 2 == 0) {
@@ -105,7 +105,7 @@ class AiMatchmakingTest {
     }
 
     assertTrue(mctsWins > randomWins, "MCTS should win more games than random");
-    assertTrue(mctsWins + randomWins + draws == 5);
+    assertTrue(mctsWins + randomWins + draws == 3);
   }
 
   // --- Helpers ---

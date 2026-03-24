@@ -1,9 +1,12 @@
 package fr.ubordeaux.pdp.model.player.ai;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.lang.reflect.Field;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +24,7 @@ class MctsTest {
     Mcts mcts = new Mcts();
 
     assertEquals(Mcts.DEFAULT_EXPLORATION, mcts.explorationConstant, 1e-9);
-    assertEquals(3000L, mcts.getMaxTimeMs());
+    assertEquals(Ai.DEFAULT_MAX_TIME_MS, mcts.getMaxTimeMs());
   }
 
   @Test

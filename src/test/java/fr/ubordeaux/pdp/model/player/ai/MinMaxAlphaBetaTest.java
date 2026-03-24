@@ -50,7 +50,7 @@ class MinMaxAlphaBetaTest {
   @DisplayName("Default constructor should use depth 5")
   void testDefaultConstructor() {
     MinMaxAlphaBeta defaultAlphaBeta = new MinMaxAlphaBeta();
-    assertEquals(5, defaultAlphaBeta.getMaxDepth(), "Default depth should be 5");
+    assertEquals(Ai.DEFAULT_DEPTH, defaultAlphaBeta.getMaxDepth(), "Default depth should be 5");
   }
 
   @Test
