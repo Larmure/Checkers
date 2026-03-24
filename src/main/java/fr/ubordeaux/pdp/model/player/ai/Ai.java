@@ -1,12 +1,11 @@
 package fr.ubordeaux.pdp.model.player.ai;
 
-import java.util.List;
-
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
+import java.util.List;
 
 /**
  * Abstract base class for AI algorithms that can determine the best move in a
