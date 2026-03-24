@@ -76,6 +76,11 @@ public class CommandLineInterface extends GameView {
     this.display(gameCheckers);
   }
 
+  @Override
+  public void showHint(String from, String to) {
+    System.out.println(Internationalization.get("hint.execute") + " " + from + " " + to + "\n");
+  }
+
   /**
    * Handles user input from the terminal.
    * It distinguishes between move commands (e.g., "B2 C3") and other commands

@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.view.gui;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
@@ -123,6 +124,11 @@ public class GraphicalUserInterface extends GameView {
         mainView.update(game);
       }
     });
+  }
+
+  @Override
+  public void showHint(String from, String to) {
+    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> " + to + "\n");
   }
 
   /**
