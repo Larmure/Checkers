@@ -388,7 +388,7 @@ public class LoadBoard {
     }
     if (cells.length() != n) {
       throw new Exception(
-            "Board row must have " + n + " cells, got " + cells.length() + ".");
+          "Board row must have " + n + " cells, got " + cells.length() + ".");
     }
 
     int boardRow = n - 1 - currentBoardRow;
@@ -400,11 +400,11 @@ public class LoadBoard {
       if (!playable) {
         if (c != '_') {
           throw new Exception(
-                "Piece '" + c + "' on non-playable square at row "
-                      + currentBoardRow
-                      + ", col "
-                      + col
-                      + ".");
+              "Piece '" + c + "' on non-playable square at row "
+                  + currentBoardRow
+                  + ", col "
+                  + col
+                  + ".");
         }
         continue;
       }
@@ -428,6 +428,7 @@ public class LoadBoard {
 
     currentBoardRow++;
   }
+
   /**
    * Builds a configuration from loaded values.
    *
@@ -455,6 +456,7 @@ public class LoadBoard {
         debug,
         whiteAi,
         blackAi,
-        defaults.getAiTime());
+        defaults.getAiTime(),
+        defaults.getAiMode());
   }
 }

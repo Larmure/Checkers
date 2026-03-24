@@ -60,13 +60,14 @@ public class NewCommand implements Command, Helpable {
       String aiPlayers = cmd.getOptionValue("ai", "none");
       int aiTime = Integer.parseInt(cmd.getOptionValue("at",
           String.valueOf(Utils.DEFAULT_AI_TIME)));
+      String aiMode = cmd.getOptionValue("aimode", Utils.DEFAULT_AI_MODE);
 
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
           "a".equals(aiPlayers) || "w".equals(aiPlayers), "a".equals(aiPlayers)
               || "b".equals(aiPlayers),
-          aiTime));
+          aiTime, aiMode));
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());
     }
@@ -79,6 +80,7 @@ public class NewCommand implements Command, Helpable {
    * <li>-c, --contest : Enable contest mode</li>
    * <li>-t, --time : Set time limit in seconds</li>
    * <li>-s, --size : Set board size</li>
+   * <li>-aimode, --ai-mode : Set AI mode</li>
    * </ul>
    *
    * @return An {@link Options} object containing the CLI schema.
@@ -89,8 +91,9 @@ public class NewCommand implements Command, Helpable {
     opts.addOption("c", "contest", false, "Contest mode");
     opts.addOption("t", "time", true, "Time limit");
     opts.addOption("s", "size", true, "Board size");
-    opts.addOption("ai", "artificial-intelligence", true, "AI players (a=all, b=black, w=white)");
+    opts.addOption("a", "artificial-intelligence", true, "AI players (a=all, b=black, w=white)");
     opts.addOption("at", "ai-time", true, "AI time limit in seconds");
+    opts.addOption("am", "ai-mode", true, "AI mode");
     return opts;
   }
 

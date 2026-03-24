@@ -64,6 +64,9 @@ public class App {
   /** Flag to set the time limit for AI moves. */
   private static int aiTime = Utils.DEFAULT_AI_TIME;
 
+  /** Flag to set the AI mode. */
+  public static String aiMode = Utils.DEFAULT_AI_MODE;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -91,7 +94,7 @@ public class App {
     GameController controller = new GameController(view);
     controller.start();
     controller.startNewGame(new Configuration(blitz, time, contest,
-        size, verbose, debug, whiteAi, blackAi, aiTime));
+        size, verbose, debug, whiteAi, blackAi, aiTime, aiMode));
     if (status != EXIT_GUI) {
       try {
         controller.joinGameLoop();
@@ -141,6 +144,7 @@ public class App {
     options.addOption("c", "contest", true, "enable contest mode");
     options.addOption("s", "size", true, "set board size (8|10|12)");
     options.addOption("at", "ai-time", true, "set AI time limit in seconds");
+    options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -227,6 +231,11 @@ public class App {
       if (cmd.hasOption("at")) {
         aiTime = Integer.parseInt(cmd.getOptionValue("at"));
         System.out.println(Internationalization.get("opt.ai.time.status", aiTime));
+      }
+
+      if (cmd.hasOption("am")) {
+        aiMode = cmd.getOptionValue("am");
+        System.out.println(Internationalization.get("opt.ai.mode.status", aiMode));
       }
 
       System.out.println(Internationalization.get("app.welcome"));

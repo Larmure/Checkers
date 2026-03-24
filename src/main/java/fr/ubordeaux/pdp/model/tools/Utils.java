@@ -56,6 +56,8 @@ public class Utils {
   public static final boolean DEFAULT_BLACK_AI = false;
   /** The default time limit for AI moves in seconds. */
   public static final int DEFAULT_AI_TIME = 5;
+  /** The default AI mode. */
+  public static final String DEFAULT_AI_MODE = "minimax";
 
   /** Regular expression for validating move syntax. */
   public static final String MOVE_REGEX = "^[a-zA-Z]\\d{1,2}\\s[a-zA-Z]\\d{1,2}$";
@@ -108,4 +110,7 @@ public class Utils {
       "server stop"
   };
 
+  /** Set of valid AI modes for the game. */
+  public static final Set<String> VALID_AI_MODES = Set.of(
+      "minimax", "alphabeta", "mcts", "iterative");
 }

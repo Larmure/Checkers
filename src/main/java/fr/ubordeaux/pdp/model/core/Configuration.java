@@ -34,6 +34,8 @@ public class Configuration {
   private final boolean blackAi;
   /** The time limit for AI moves in seconds. */
   private final int aiTime;
+  /** The mode for the AI. */
+  private final String aiMode;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -59,9 +61,10 @@ public class Configuration {
    * @param whiteAi Indicates whether the white player is controlled by AI.
    * @param blackAi Indicates whether the black player is controlled by AI.
    * @param aiTime  The time limit for AI moves in seconds.
+   * @param aiMode  The mode for the AI.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
-      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, int aiTime) {
+      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, int aiTime, String aiMode) {
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
@@ -71,6 +74,11 @@ public class Configuration {
       System.out.println("Warning: Invalid board size, changed to "
           + Utils.DEFAULT_BOARD_SIZE + ".");
       size = Utils.DEFAULT_BOARD_SIZE;
+    }
+    if (!Utils.VALID_AI_MODES.contains(aiMode)) {
+      System.out.println("Warning: Invalid AI mode, changed to "
+          + Utils.DEFAULT_AI_MODE + ".");
+      aiMode = Utils.DEFAULT_AI_MODE;
     }
 
     this.blitz = blitz;
@@ -82,6 +90,7 @@ public class Configuration {
     this.whiteAi = whiteAi;
     this.blackAi = blackAi;
     this.aiTime = aiTime;
+    this.aiMode = aiMode;
   }
 
   /**
@@ -104,6 +113,7 @@ public class Configuration {
     this.whiteAi = other.whiteAi;
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
+    this.aiMode = other.aiMode;
   }
 
   /**
@@ -124,6 +134,7 @@ public class Configuration {
     this.whiteAi = other.whiteAi;
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
+    this.aiMode = other.aiMode;
   }
 
   /**
@@ -137,7 +148,7 @@ public class Configuration {
     return new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME,
         Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE,
         Utils.DEFAULT_VERBOSE, Utils.DEFAULT_DEBUG, Utils.DEFAULT_WHITE_AI,
-        Utils.DEFAULT_BLACK_AI, Utils.DEFAULT_AI_TIME);
+        Utils.DEFAULT_BLACK_AI, Utils.DEFAULT_AI_TIME, Utils.DEFAULT_AI_MODE);
   }
 
   /**
@@ -227,6 +238,15 @@ public class Configuration {
   }
 
   /**
+  * Returns the mode for the AI.
+  *
+  * @return the mode for the AI.
+  */
+  public String getAiMode() {
+    return aiMode;
+  }
+
+  /**
    * Returns a string representation of the Configuration object, including all
    * the settings and their current values. This method is useful for debugging
    * and logging purposes, allowing developers to easily see the configuration
@@ -238,6 +258,7 @@ public class Configuration {
   public String toString() {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
-        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi + ", aiTime=" + aiTime;
+        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi + ", aiTime=" + aiTime + ", aiMode="
+        + aiMode;
   }
 }

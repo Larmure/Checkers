@@ -20,7 +20,8 @@ class ConfigurationTest {
     @Test
     void testFullConstructorAndGetters() {
         // Tests the main constructor with valid values
-        Configuration config = new Configuration(true, 60, true, 10, true, false, true, true, 10);
+        Configuration config = new Configuration(true, 60, true, 10, true, false, true, true, 10,
+                Utils.DEFAULT_AI_MODE);
 
         assertTrue(config.isBlitz());
         assertEquals(60, config.getTime());
@@ -31,13 +32,15 @@ class ConfigurationTest {
         assertTrue(config.iswhiteAi());
         assertTrue(config.isblackAi());
         assertEquals(10, config.getAiTime());
+        assertEquals(Utils.DEFAULT_AI_MODE, config.getAiMode());
     }
 
     @Test
     void testConstructorValidationBlitzAndTime() {
         // If blitz is false but time is not the default value,
         // the class must enforce default values.
-        Configuration config = new Configuration(false, 999, false, 8, false, false, true, true, 10);
+        Configuration config = new Configuration(false, 999, false, 8, false, false, true, true, 10,
+                Utils.DEFAULT_AI_MODE);
 
         assertEquals(Utils.DEFAULT_BLITZ, config.isBlitz());
         assertEquals(Utils.DEFAULT_TIME, config.getTime());
@@ -47,14 +50,16 @@ class ConfigurationTest {
     void testConstructorValidationInvalidSize() {
         // Tests an invalid board size (e.g., 7)
         // It must be replaced by DEFAULT_BOARD_SIZE.
-        Configuration config = new Configuration(false, 0, false, 7, false, false, true, false, 10);
+        Configuration config = new Configuration(false, 0, false, 7, false, false, true, false, 10,
+                Utils.DEFAULT_AI_MODE);
 
         assertEquals(Utils.DEFAULT_BOARD_SIZE, config.getSize());
     }
 
     @Test
     void testCopyConstructor() {
-        Configuration original = new Configuration(true, 30, true, 8, true, true, false, false, 10);
+        Configuration original = new Configuration(true, 30, true, 8, true, true, false, false, 10,
+                Utils.DEFAULT_AI_MODE);
         Configuration copy = new Configuration(original);
 
         assertEquals(original.isBlitz(), copy.isBlitz());
@@ -66,7 +71,8 @@ class ConfigurationTest {
     void testModifiedCopyConstructor() {
         // Tests the constructor that allows changing verbose and debug while copying
         // the rest
-        Configuration original = new Configuration(true, 30, true, 8, false, false, false, false, 10);
+        Configuration original = new Configuration(true, 30, true, 8, false, false, false, false, 10,
+                Utils.DEFAULT_AI_MODE);
         Configuration modified = new Configuration(original, true, true);
 
         assertEquals(original.isBlitz(), modified.isBlitz());
@@ -87,14 +93,16 @@ class ConfigurationTest {
                 false,
                 Utils.DEFAULT_WHITE_AI,
                 Utils.DEFAULT_BLACK_AI,
-                Utils.DEFAULT_AI_TIME);
+                Utils.DEFAULT_AI_TIME,
+                Utils.DEFAULT_AI_MODE);
 
         // Build the expected string dynamically or with constants
         String expected = "blitz=" + Utils.DEFAULT_BLITZ +
                 ", time=" + Utils.DEFAULT_TIME +
                 ", contest=" + Utils.DEFAULT_CONTEST +
                 ", size=" + Utils.DEFAULT_BOARD_SIZE +
-                ", verbose=false, debug=false, whiteAi=false, blackAi=false, aiTime=" + Utils.DEFAULT_AI_TIME;
+                ", verbose=false, debug=false, whiteAi=false, blackAi=false, aiTime=" + Utils.DEFAULT_AI_TIME
+                + ", aiMode=" + Utils.DEFAULT_AI_MODE;
 
         assertEquals(expected, config.toString(), "The toString method must reflect the object's actual state.");
     }
