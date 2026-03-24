@@ -9,11 +9,15 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.SnapshotParameters;
 
 /**
  * JavaFX component that renders an interactive checkers board.
@@ -237,8 +241,11 @@ public class BoardView extends GridPane {
     if (isDark) {
       // Add a piece if one is present on this square.
       char piece = getPieceChar(modelRow, modelCol);
+
+      StackPane visualPiece = null;
       if (piece != '_') {
-        pane.getChildren().add(buildPiece(piece, cell));
+        visualPiece = buildPiece(piece, cell);
+        pane.getChildren().add(visualPiece);
       }
 
       // Hover overlay — visible only while the mouse is over this cell.
@@ -252,9 +259,71 @@ public class BoardView extends GridPane {
       final int mr = modelRow;
       final int mc = modelCol;
 
+      final StackPane nodeToDrag = visualPiece;
+
       pane.setOnMouseEntered(e -> hover.setVisible(true));
       pane.setOnMouseExited(e -> hover.setVisible(false));
       pane.setOnMouseClicked(e -> handleClick(fr, fc, mr, mc));
+
+      // Drag-and-drop handlers for moving pieces with the mouse
+      pane.setOnDragDetected(e -> {
+        if (getPieceChar(mr, mc) != '_') {
+          Dragboard db = pane.startDragAndDrop(TransferMode.MOVE);
+          ClipboardContent content = new ClipboardContent();
+          content.putString(toSquare(mr, mc));
+          db.setContent(content);
+
+          // 2. CORRECTION ICI : On prend en photo uniquement le pion
+          if (nodeToDrag != null) {
+            SnapshotParameters params = new SnapshotParameters();
+            params.setFill(Color.TRANSPARENT); // Pour garder les contours ronds
+            db.setDragView(nodeToDrag.snapshot(params, null));
+          }
+
+          e.consume();
+        }
+      });
+
+      // Accept the drag if it comes from another cell and has a string (the source square).
+      pane.setOnDragOver(e -> {
+        if (e.getGestureSource() != pane && e.getDragboard().hasString()) {
+          e.acceptTransferModes(TransferMode.MOVE);
+        }
+        e.consume();
+      });
+
+      // Show the hover overlay when a valid drag enters this cell.
+      pane.setOnDragEntered(e -> {
+        if (e.getGestureSource() != pane && e.getDragboard().hasString()) {
+          hover.setVisible(true);
+        }
+        e.consume();
+      });
+
+      pane.setOnDragExited(e -> {
+        hover.setVisible(false);
+        e.consume();
+      });
+
+      // Handle the drop: extract the source square from the dragboard, 
+      // compute the target square, and execute the move.
+      pane.setOnDragDropped(e -> {
+        Dragboard db = e.getDragboard();
+        boolean success = false;
+        if (db.hasString()) {
+          String from = db.getString();
+          String to = toSquare(mr, mc);
+
+          // Clear selection state after the move.
+          selRow = -1;
+          selCol = -1;
+
+          controller.executeMove(from, to, false);
+          success = true;
+        }
+        e.setDropCompleted(success);
+        e.consume();
+      });
     }
 
     return pane;
