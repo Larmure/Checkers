@@ -201,7 +201,8 @@ public class GameCheckers implements Subject {
         from = this.board.manouryToIndex(manouryFrom);
         to = this.board.manouryToIndex(manouryTo);
       } catch (IllegalArgumentException e) {
-        System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+        System.err.println(Internationalization.get("game.invalid_square") + " "
+            + e.getMessage());
         return;
       }
     } else {
@@ -209,7 +210,8 @@ public class GameCheckers implements Subject {
         from = this.board.squareToIndex(fromS);
         to = this.board.squareToIndex(toS);
       } catch (IllegalArgumentException e) {
-        System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+        System.err.println(Internationalization.get("game.invalid_square") + " "
+            + e.getMessage());
 
         return;
       }
@@ -294,15 +296,16 @@ public class GameCheckers implements Subject {
       return this.state;
     }
 
-    // 25 turn *2 = 50 half-turns without progress (no captures or pawn moves) is a common rule for declaring a draw.
-    if(noProgressCount >= 50) {
+    // 25 turn *2 = 50 half-turns without progress (no captures or pawn moves) is a common rule 
+    // for declaring a draw.
+    if (noProgressCount >= 50) {
       setState(State.FINISHED);
       return this.state;
     }
 
     // 16 turns *2 = 32 half-turns in an endgame scenario (one player has only one piece left) 
     // is often considered a draw due to insufficient material.
-    if(endGameCount >= 32) {
+    if (endGameCount >= 32) {
       setState(State.FINISHED);
       return this.state;
     }
@@ -311,8 +314,8 @@ public class GameCheckers implements Subject {
     if (!positionHistory.isEmpty()) {
       String currentSignature = board.boardString();
       long occurrences = positionHistory.stream()
-                                        .filter(sig -> sig.equals(currentSignature))
-                                        .count();
+          .filter(sig -> sig.equals(currentSignature))
+          .count();
       if (occurrences >= 3) {
         System.out.println(Internationalization.get("game.game_over_repetition"));
         setState(State.FINISHED);
@@ -477,24 +480,34 @@ public class GameCheckers implements Subject {
    * Determines if the game has reached an endgame scenario based on the current board state.
    * This method checks for specific configurations of pieces that indicate a likely endgame, 
    * such as one player having only a single checker while the other has multiple pieces.
-   * 
-   * @return
+   *
+   * @return {@code true} if the game is in an endgame scenario, {@code false} otherwise.
    */
   private boolean isEndgameScenario() {
-    int whitePawns = 0, blackPawns = 0, whiteKings = 0, blackKings = 0;
-    
+    int whitePawns = 0;
+    int blackPawns = 0;
+    int whiteKings = 0;
+    int blackKings = 0;
+
     for (int i = 0; i < board.getIndexMax(); i++) {
-      if (board.isBitWhitePawn(i)) whitePawns++;
-      else if (board.isBitBlackPawn(i)) blackPawns++;
-      else if (board.isBitWhiteChecker(i)) whiteKings++;
-      else if (board.isBitBlackChecker(i)) blackKings++; 
+      if (board.isBitWhitePawn(i)) {
+        whitePawns++;
+      } else if (board.isBitBlackPawn(i)) {
+        blackPawns++;
+      } else if (board.isBitWhiteChecker(i)) {
+        whiteKings++;
+      } else if (board.isBitBlackChecker(i)) {
+        blackKings++;
+      }
     }
 
     int whiteTotal = whitePawns + whiteKings;
     int blackTotal = blackPawns + blackKings;
 
-    boolean whiteAdvantage = (whiteTotal == 3 && blackTotal == 1 && blackKings == 1 && blackPawns == 0);
-    boolean blackAdvantage = (blackTotal == 3 && whiteTotal == 1 && whiteKings == 1 && whitePawns == 0);
+    boolean whiteAdvantage = (whiteTotal == 3 && blackTotal == 1 && blackKings == 1
+        && blackPawns == 0);
+    boolean blackAdvantage = (blackTotal == 3 && whiteTotal == 1 && whiteKings == 1
+        && whitePawns == 0);
 
     return whiteAdvantage || blackAdvantage;
   }

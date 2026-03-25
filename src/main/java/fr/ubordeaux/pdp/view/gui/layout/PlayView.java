@@ -125,7 +125,7 @@ public class PlayView extends HBox {
     logView.update(game);
 
     if (this.getScene() != null) {
-        bindToScene(this.getScene());
+      bindToScene(this.getScene());
     }
   }
 
