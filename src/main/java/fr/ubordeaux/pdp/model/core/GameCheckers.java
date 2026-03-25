@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.HumanPlayer;
 import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.History;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
@@ -50,7 +51,7 @@ public class GameCheckers implements Subject {
     managerUndoRedo = new ManagerUndoRedo(this.board);
 
     // AI MODE INITIALIZATION
-    long aiTimeInMs = cfg.getAiTime() * 1000L; // Convert seconds to milliseconds
+    long aiTimeInMs = cfg.getAiTime();
 
     if (cfg.iswhiteAi()) {
       AiPlayer whiteAi = new AiPlayer(Internationalization.get("game.white_ai_player"));

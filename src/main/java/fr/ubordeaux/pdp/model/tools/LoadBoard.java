@@ -457,6 +457,8 @@ public class LoadBoard {
         debug,
         whiteAi,
         blackAi,
-        defaults.getAiTime());
+        defaults.getAiTime(),
+        defaults.getAiMode(),
+        defaults.getAiDepth());
   }
 }

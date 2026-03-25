@@ -50,7 +50,7 @@ class MinMaxAlphaBetaTest {
   @DisplayName("Default constructor should use depth 5")
   void testDefaultConstructor() {
     MinMaxAlphaBeta defaultAlphaBeta = new MinMaxAlphaBeta();
-    assertEquals(5, defaultAlphaBeta.getMaxDepth(), "Default depth should be 5");
+    assertEquals(Ai.DEFAULT_DEPTH, defaultAlphaBeta.getMaxDepth(), "Default depth should be 5");
   }
 
   @Test
@@ -340,7 +340,7 @@ class MinMaxAlphaBetaTest {
     assertNotNull(minTimeMove, "Should work with minimum time limit");
 
     // Test maximum allowed time
-    MinMaxAlphaBeta maxTimeAi = new MinMaxAlphaBeta(3, 30000L);
+    MinMaxAlphaBeta maxTimeAi = new MinMaxAlphaBeta(3, 5000L);
     Move maxTimeMove = maxTimeAi.getBestMove(undoManager, board, PlayerColor.WHITE, evaluator);
     assertNotNull(maxTimeMove, "Should work with maximum time limit");
   }

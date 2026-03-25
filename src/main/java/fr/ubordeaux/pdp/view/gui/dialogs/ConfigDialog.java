@@ -1,7 +1,9 @@
 package fr.ubordeaux.pdp.view.gui.dialogs;
 
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -116,7 +118,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     verboseCheck.setSelected(defaults.isVerbose());
     debugCheck.setSelected(defaults.isDebug());
 
-    aiTimeSpinner.getValueFactory().setValue(defaults.getAiTime());
+    aiTimeSpinner.getValueFactory().setValue((int) defaults.getAiTime());
     aiTimeSpinner.setPrefWidth(80);
     aiTimeSpinner.setDisable(!defaults.iswhiteAi() && !defaults.isblackAi());
 
@@ -279,6 +281,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     int aiTime = aiTimeSpinner.getValue();
 
     return new Configuration(blitz, timeSec, contest, size,
-        verbose, debug, whiteAi, blackAi, aiTime);
+        verbose, debug, whiteAi, blackAi, aiTime, 
+        Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH);
   }
 }

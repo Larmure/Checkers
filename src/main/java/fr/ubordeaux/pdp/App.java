@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
@@ -62,7 +63,13 @@ public class App {
   private static boolean blackAi = false;
 
   /** Flag to set the time limit for AI moves. */
-  private static int aiTime = Utils.DEFAULT_AI_TIME;
+  private static long aiTime = Ai.DEFAULT_MAX_TIME_MS;
+
+  /** Flag to set the AI mode. */
+  public static String aiMode = Utils.DEFAULT_AI_MODE;
+
+  /** Flag to set the AI search depth. */
+  public static int aiDepth = Ai.DEFAULT_DEPTH;
 
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
@@ -91,7 +98,7 @@ public class App {
     GameController controller = new GameController(view);
     controller.start();
     controller.startNewGame(new Configuration(blitz, time, contest,
-        size, verbose, debug, whiteAi, blackAi, aiTime));
+        size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth));
     if (status != EXIT_GUI) {
       try {
         controller.joinGameLoop();
@@ -141,6 +148,8 @@ public class App {
     options.addOption("c", "contest", true, "enable contest mode");
     options.addOption("s", "size", true, "set board size (8|10|12)");
     options.addOption("at", "ai-time", true, "set AI time limit in seconds");
+    options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
+    options.addOption("ad", "ai-depth", true, "set AI search depth");
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -226,7 +235,18 @@ public class App {
 
       if (cmd.hasOption("at")) {
         aiTime = Integer.parseInt(cmd.getOptionValue("at"));
+        aiTime *= 1000; // Convert seconds to milliseconds
         System.out.println(Internationalization.get("opt.ai.time.status", aiTime));
+      }
+
+      if (cmd.hasOption("am")) {
+        aiMode = cmd.getOptionValue("am");
+        System.out.println(Internationalization.get("opt.ai.mode.status", aiMode));
+      }
+
+      if (cmd.hasOption("ad")) {
+        aiDepth = Integer.parseInt(cmd.getOptionValue("ad"));
+        System.out.println(Internationalization.get("opt.ai.depth.status", aiDepth));
       }
 
       System.out.println(Internationalization.get("app.welcome"));
@@ -312,5 +332,14 @@ public class App {
   public static void reset() {
     verbose = false;
     debug = false;
+    blitz = false;
+    time = Utils.DEFAULT_TIME;
+    contest = false;
+    size = Utils.DEFAULT_BOARD_SIZE;
+    whiteAi = false;
+    blackAi = false;
+    aiTime = Ai.DEFAULT_MAX_TIME_MS;
+    aiMode = Utils.DEFAULT_AI_MODE;
+    aiDepth = Ai.DEFAULT_DEPTH;
   }
 }

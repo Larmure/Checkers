@@ -54,8 +54,8 @@ public class Utils {
   public static final boolean DEFAULT_WHITE_AI = false;
   /** The default setting for whether the black player is controlled by AI. */
   public static final boolean DEFAULT_BLACK_AI = false;
-  /** The default time limit for AI moves in seconds. */
-  public static final int DEFAULT_AI_TIME = 5;
+  /** The default AI mode. */
+  public static final String DEFAULT_AI_MODE = "minimax";
 
   /** The default keyboard shortcut for starting a new game. */
   public static final String DEFAULT_SHORTCUT_NEW_GAME = "Ctrl+N";
@@ -131,5 +131,8 @@ public class Utils {
       "server stop"
   };
 
+  /** Set of valid AI modes for the game. */
+  public static final Set<String> VALID_AI_MODES = Set.of(
+      "minimax", "alphabeta", "mcts", "iterative");
 }
 
