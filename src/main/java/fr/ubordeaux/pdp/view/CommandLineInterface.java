@@ -24,9 +24,6 @@ import org.jline.terminal.TerminalBuilder;
  * @version 1.1
  */
 public class CommandLineInterface extends GameView {
-  /** Thread for handling user input. */
-  private Thread inputThread;
-
   /** Flag to enable verbose. */
   private boolean verbose = false;
 
@@ -92,11 +89,19 @@ public class CommandLineInterface extends GameView {
     }
 
     String trimmed = input.trim();
-    String[] tokens = trimmed.split("\\s+");
+    String[] tokens;
 
     if (trimmed.matches(Utils.MOVE_REGEX)) {
-      controller.executeMove(tokens[0], tokens[1]);
+      tokens = trimmed.split("\\s+");
+      controller.executeMove(tokens[0], tokens[1], false);
+
+    } else if (trimmed.matches(Utils.MANOURY_REGEX)) {
+      tokens = trimmed.split("-");
+      controller.executeMove(tokens[0], tokens[1], true);
+
     } else {
+      tokens = trimmed.split("\\s+");
+
       String commandName = tokens[0];
       String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
       controller.executeCommand(commandName, args);
@@ -104,9 +109,7 @@ public class CommandLineInterface extends GameView {
   }
 
   /**
-   * Starts the main input loop into a separated Thread.
-   * It captures user strings, splits them into commands and arguments,
-   * and delegates execution to the controller.
+    * Initializes the terminal and the line reader used by the controller game loop.
    */
   @Override
   public void start() {
@@ -124,18 +127,19 @@ public class CommandLineInterface extends GameView {
 
       lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }
-    inputThread = new Thread(() -> {
-      while (true) {
-        try {
-          String input = lineReader.readLine(">> ");
-          handleInput(input);
-        } catch (UserInterruptException | EndOfFileException e) {
-          break;
-        }
-      }
-    });
-    inputThread.setDaemon(true);
-    inputThread.start();
+  }
+
+  /**
+   * Blocks until the user enters a line, then returns it to the controller loop.
+   *
+   * @return the entered line, or {@code null} if the input stream is closed
+   */
+  public String readInput() {
+    try {
+      return lineReader.readLine(">> "); // This will block until the user enters a line
+    } catch (UserInterruptException | EndOfFileException e) {
+      return null;
+    }
   }
 
   /**
@@ -156,19 +160,4 @@ public class CommandLineInterface extends GameView {
   public void setLineReader(LineReader lineReader) {
     this.lineReader = lineReader;
   }
-
-  /**
-   * Waits for the input thread to finish. This is useful for testing purposes to
-   * ensure that all input processing
-   * is completed before assertions are made.
-   *
-   * @throws InterruptedException if the current thread is interrupted while
-   *                              waiting.
-   */
-  public void join() throws InterruptedException {
-    if (inputThread != null) {
-      inputThread.join();
-    }
-  }
-
 }

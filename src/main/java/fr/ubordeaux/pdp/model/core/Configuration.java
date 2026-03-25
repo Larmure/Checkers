@@ -1,6 +1,7 @@
 
 package fr.ubordeaux.pdp.model.core;
 
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
@@ -32,6 +33,12 @@ public class Configuration {
   private final boolean whiteAi;
   /** Indicates whether the black player is controlled by AI. */
   private final boolean blackAi;
+  /** The time limit for AI moves in seconds. */
+  private final long aiTime;
+  /** The mode for the AI. */
+  private final String aiMode;
+  /** The search depth for the AI. */
+  private final int aiDepth;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -56,9 +63,13 @@ public class Configuration {
    *                additional logging for troubleshooting purposes.
    * @param whiteAi Indicates whether the white player is controlled by AI.
    * @param blackAi Indicates whether the black player is controlled by AI.
+   * @param aiTime  The time limit for AI moves in milliseconds.
+   * @param aiMode  The mode for the AI.
+   * @param aiDepth The search depth for the AI.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
-      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi) {
+      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, long aiTime,
+      String aiMode, int aiDepth) {
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
@@ -69,6 +80,16 @@ public class Configuration {
           + Utils.DEFAULT_BOARD_SIZE + ".");
       size = Utils.DEFAULT_BOARD_SIZE;
     }
+    if (!Utils.VALID_AI_MODES.contains(aiMode)) {
+      System.out.println("Warning: Invalid AI mode, changed to "
+          + Utils.DEFAULT_AI_MODE + ".");
+      aiMode = Utils.DEFAULT_AI_MODE;
+    }
+    if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
+      System.out.println("Warning: Invalid AI time, changed to "
+          + Ai.DEFAULT_MAX_TIME_MS + " ms.");
+      aiTime = Ai.DEFAULT_MAX_TIME_MS;
+    }
 
     this.blitz = blitz;
     this.time = time;
@@ -78,6 +99,9 @@ public class Configuration {
     this.debug = debug;
     this.whiteAi = whiteAi;
     this.blackAi = blackAi;
+    this.aiTime = aiTime;
+    this.aiMode = aiMode;
+    this.aiDepth = aiDepth;
   }
 
   /**
@@ -99,6 +123,9 @@ public class Configuration {
     this.debug = other.debug;
     this.whiteAi = other.whiteAi;
     this.blackAi = other.blackAi;
+    this.aiTime = other.aiTime;
+    this.aiMode = other.aiMode;
+    this.aiDepth = other.aiDepth;
   }
 
   /**
@@ -118,6 +145,9 @@ public class Configuration {
     this.debug = debug;
     this.whiteAi = other.whiteAi;
     this.blackAi = other.blackAi;
+    this.aiTime = other.aiTime;
+    this.aiMode = other.aiMode;
+    this.aiDepth = other.aiDepth;
   }
 
   /**
@@ -131,7 +161,8 @@ public class Configuration {
     return new Configuration(Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME,
         Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE,
         Utils.DEFAULT_VERBOSE, Utils.DEFAULT_DEBUG, Utils.DEFAULT_WHITE_AI,
-        Utils.DEFAULT_BLACK_AI);
+        Utils.DEFAULT_BLACK_AI, Ai.DEFAULT_MAX_TIME_MS, Utils.DEFAULT_AI_MODE,
+        Ai.DEFAULT_DEPTH);
   }
 
   /**
@@ -212,6 +243,33 @@ public class Configuration {
   }
 
   /**
+   * Returns the time limit for AI moves in milliseconds.
+   *
+   * @return the time limit for AI moves in milliseconds.
+   */
+  public long getAiTime() {
+    return aiTime;
+  }
+
+  /**
+  * Returns the mode for the AI.
+  *
+  * @return the mode for the AI.
+  */
+  public String getAiMode() {
+    return aiMode;
+  }
+
+  /**
+  * Returns the search depth for the AI.
+  *
+  * @return the search depth for the AI.
+  */
+  public int getAiDepth() {
+    return aiDepth;
+  }
+
+  /**
    * Returns a string representation of the Configuration object, including all
    * the settings and their current values. This method is useful for debugging
    * and logging purposes, allowing developers to easily see the configuration
@@ -223,6 +281,7 @@ public class Configuration {
   public String toString() {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
-        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi;
+        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi + ", aiTime=" + aiTime + ", aiMode="
+        + aiMode + ", aiDepth=" + aiDepth;
   }
 }

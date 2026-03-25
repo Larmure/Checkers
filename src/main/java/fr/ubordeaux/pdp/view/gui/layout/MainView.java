@@ -1,7 +1,10 @@
-package fr.ubordeaux.pdp.view.gui;
+package fr.ubordeaux.pdp.view.gui.layout;
 
+import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -38,6 +41,9 @@ public class MainView extends BorderPane {
   /** Controller forwarded to child components that need to send commands. */
   private final GameController controller;
 
+  /** Configuration manager used to initialise the {@link ShortcutManager}. */
+  private final ConfigManager configManager;
+
   /** Top menu bar (File / Game menus + keyboard shortcuts). */
   private MenuView menuView;
 
@@ -53,10 +59,13 @@ public class MainView extends BorderPane {
   /**
    * Creates the root layout and assembles all child components.
    *
-   * @param controller the game controller; must not be {@code null}
+   * @param controller    the game controller; must not be {@code null}
+   * @param configManager the configuration manager used to load and persist
+   *                      keyboard shortcuts; must not be {@code null}
    */
-  public MainView(GameController controller) {
+  public MainView(GameController controller, ConfigManager configManager) {
     this.controller = controller;
+    this.configManager = configManager;
     buildLayout();
     // style.css : .root-pane
     this.getStyleClass().add("root-pane");
@@ -67,7 +76,8 @@ public class MainView extends BorderPane {
    * play area (centre), and action toolbar (bottom).
    */
   private void buildLayout() {
-    menuView = new MenuView(controller);
+    ShortcutManager shortcutManager = new ShortcutManager(configManager);
+    menuView = new MenuView(controller, shortcutManager);
     this.setTop(menuView);
 
     playView = new PlayView(controller);

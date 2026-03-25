@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.HumanPlayer;
 import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.History;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
@@ -49,14 +50,21 @@ public class GameCheckers implements Subject {
     this.state = State.IN_GAME;
     managerUndoRedo = new ManagerUndoRedo(this.board);
 
-    // MODE IA
-    if (cfg.iswhiteAi() == true) {
-      this.whitePlayer = new AiPlayer("White Ai");
+    // AI MODE INITIALIZATION
+    long aiTimeInMs = cfg.getAiTime();
+
+    if (cfg.iswhiteAi()) {
+      AiPlayer whiteAi = new AiPlayer(Internationalization.get("game.white_ai_player"));
+      whiteAi.getAlgorithm().setMaxTimeMs(aiTimeInMs); // Apply the maximum thinking time
+      this.whitePlayer = whiteAi;
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
-    if (cfg.isblackAi() == true) {
-      this.blackPlayer = new AiPlayer("Black Ai");
+
+    if (cfg.isblackAi()) {
+      AiPlayer blackAi = new AiPlayer(Internationalization.get("game.black_ai_player"));
+      blackAi.getAlgorithm().setMaxTimeMs(aiTimeInMs); // Apply the maximum thinking time
+      this.blackPlayer = blackAi;
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }
@@ -160,12 +168,14 @@ public class GameCheckers implements Subject {
    *
    * @param fromS position from.
    * @param toS   position to.
+   * @param isManoury boolean of manoury
    */
-  public void applyMove(String fromS, String toS) {
+  public void applyMove(String fromS, String toS, boolean isManoury) {
     Move move = null;
-    int from;
-    int to;
+    int from = -1;
+    int to = 1;
     PlayerColor currentColor;
+
     currentColor = isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
 
     if (state == State.PAUSE) {
@@ -178,13 +188,25 @@ public class GameCheckers implements Subject {
       return;
     }
 
-    try {
-      from = this.board.squareToIndex(fromS);
-      to = this.board.squareToIndex(toS);
-    } catch (IllegalArgumentException e) {
-      System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+    if (isManoury) {
+      try {
+        int manouryFrom = Integer.valueOf(fromS);
+        int manouryTo = Integer.valueOf(toS);
+        from = this.board.manouryToIndex(manouryFrom);
+        to = this.board.manouryToIndex(manouryTo);
+      } catch (IllegalArgumentException e) {
+        System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
+        return;
+      }
+    } else {
+      try {
+        from = this.board.squareToIndex(fromS);
+        to = this.board.squareToIndex(toS);
+      } catch (IllegalArgumentException e) {
+        System.err.println(Internationalization.get("game.invalid_square") + " " + e.getMessage());
 
-      return;
+        return;
+      }
     }
 
     List<Move> possibleMoves = this.getPossibleMoves(this.getCurrentPlayer());
@@ -201,11 +223,18 @@ public class GameCheckers implements Subject {
       System.out
           .println(String.format(Internationalization.get("game.display_valid_moves"),
               getCurrentPlayer().getName()));
-
-      for (Move m : possibleMoves) {
-        String fromSquare = this.board.indexToSquare(m.getFrom());
-        String toSquare = this.board.indexToSquare(m.getTo());
-        System.out.println("  -> " + fromSquare + " " + toSquare);
+      if (isManoury) {
+        for (Move m : possibleMoves) {
+          String fromSquare = String.valueOf(this.board.indexToManoury(m.getFrom()));
+          String toSquare = String.valueOf(this.board.indexToManoury(m.getTo()));
+          System.out.println("  -> " + fromSquare + " " + toSquare);
+        }
+      } else {
+        for (Move m : possibleMoves) {
+          String fromSquare = this.board.indexToSquare(m.getFrom());
+          String toSquare = this.board.indexToSquare(m.getTo());
+          System.out.println("  -> " + fromSquare + " " + toSquare);
+        }
       }
 
       return;
@@ -231,6 +260,12 @@ public class GameCheckers implements Subject {
 
     // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
+      setState(State.FINISHED);
+      return this.state;
+    }
+
+    // If both players have no moves, the game is also finished (draw).
+    if (getPossibleMoves(whitePlayer).isEmpty() && getPossibleMoves(blackPlayer).isEmpty()) {
       setState(State.FINISHED);
       return this.state;
     }
@@ -367,4 +402,25 @@ public class GameCheckers implements Subject {
   public void setHistory(History h) {
     managerUndoRedo.setHistory(h);
   }
+
+  /**
+   * Returns the manager responsible for handling undo and redo operations, 
+   * which maintains the move history and allows for reverting or reapplying moves as needed.
+   *
+   * @return The active {@link ManagerUndoRedo} instance managing the undo/redo functionality for 
+   *     the game.
+   */
+  public ManagerUndoRedo getManagerUndoRedo() {
+    return managerUndoRedo;
+  }
+
+  /**
+   * Returns the color of the current player based on whose turn it is.
+   *
+   * @return  The {@link PlayerColor} corresponding to the current player's turn (WHITE or BLACK).
+   */
+  public PlayerColor getCurrentColor() {
+    return isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
+  }
+
 }

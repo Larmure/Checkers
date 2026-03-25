@@ -1,6 +1,9 @@
-package fr.ubordeaux.pdp.view.gui;
+package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import fr.ubordeaux.pdp.view.gui.dialogs.ConfigDialog;
+import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
 import java.io.File;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -9,9 +12,6 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextInputDialog;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
 
 /**
@@ -57,6 +57,7 @@ public class MenuView extends MenuBar {
   /** GUI entry point — used to delegate the quit flow. */
   private GraphicalUserInterface gui;
 
+  private ShortcutManager shortcutManager;
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
    * {@code stage.show()} so that modal dialogs have a proper owner window.
@@ -69,11 +70,12 @@ public class MenuView extends MenuBar {
    * Creates the menu bar and populates it with the File and Game menus.
    *
    * @param controller the game controller; must not be {@code null}
+   * @param shortcutManager the shortcut manager for keyboard bindings
    */
-  public MenuView(GameController controller) {
+  public MenuView(GameController controller, ShortcutManager shortcutManager) {
     this.controller = controller;
+    this.shortcutManager = shortcutManager;
     initMenus();
-    // Delegate to the OS native menu bar on macOS for a native look.
     this.setUseSystemMenuBar(true);
   }
 
@@ -122,28 +124,27 @@ public class MenuView extends MenuBar {
    */
   private Menu buildFileMenu() {
     MenuItem newItem = new MenuItem("New Game");
-    newItem.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
+    newItem.setAccelerator(shortcutManager.get("new-game"));
     newItem.setOnAction(e -> controller.executeCommand("new", new String[0]));
 
     MenuItem loadItem = new MenuItem("Load Game");
-    loadItem.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
+    loadItem.setAccelerator(shortcutManager.get("load-game"));
     loadItem.setOnAction(e -> handleLoad());
 
     MenuItem saveItem = new MenuItem("Save Game");
-    saveItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
+    saveItem.setAccelerator(shortcutManager.get("save-game"));
     saveItem.setOnAction(e -> openSaveDialog());
 
     MenuItem configItem = new MenuItem("Configuration");
-    configItem.setAccelerator(
-        new KeyCodeCombination(KeyCode.COMMA, KeyCombination.CONTROL_DOWN));
+    configItem.setAccelerator(shortcutManager.get("configuration"));
     configItem.setOnAction(e -> showConfigDialog());
 
     MenuItem infoItem = new MenuItem("Info");
-    infoItem.setAccelerator(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN));
+    infoItem.setAccelerator(shortcutManager.get("info"));
     infoItem.setOnAction(e -> showInfoDialog());
 
     MenuItem quitItem = new MenuItem("Quit");
-    quitItem.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.CONTROL_DOWN));
+    quitItem.setAccelerator(shortcutManager.get("quit"));
     // Delegate to the GUI so the JavaFX confirmation dialog is shown.
     // Falls back to controller.executeCommand if gui is not yet set.
     quitItem.setOnAction(e -> {
@@ -179,19 +180,19 @@ public class MenuView extends MenuBar {
    */
   private Menu buildGameMenu() {
     MenuItem undoItem = new MenuItem("Undo");
-    undoItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.CONTROL_DOWN));
+    undoItem.setAccelerator(shortcutManager.get("undo"));
     undoItem.setOnAction(e -> controller.executeCommand("undo", new String[] { "1" }));
 
     MenuItem redoItem = new MenuItem("Redo");
-    redoItem.setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN));
+    redoItem.setAccelerator(shortcutManager.get("redo"));
     redoItem.setOnAction(e -> controller.executeCommand("redo", new String[] { "1" }));
 
     MenuItem pauseItem = new MenuItem("Pause");
-    pauseItem.setAccelerator(new KeyCodeCombination(KeyCode.P, KeyCombination.CONTROL_DOWN));
+    pauseItem.setAccelerator(shortcutManager.get("pause"));
     pauseItem.setOnAction(e -> controller.executeCommand("pause", new String[0]));
 
     MenuItem hintItem = new MenuItem("Hint");
-    hintItem.setAccelerator(new KeyCodeCombination(KeyCode.H, KeyCombination.CONTROL_DOWN));
+    hintItem.setAccelerator(shortcutManager.get("hint"));
     hintItem.setOnAction(e -> controller.executeCommand("hint", new String[0]));
 
     Menu gameMenu = new Menu("_Game");
@@ -223,7 +224,6 @@ public class MenuView extends MenuBar {
         } else if (response == ButtonType.NO) {
           openLoadDialog();
         }
-        // ButtonType.CANCEL — do nothing.
       });
     } else {
       openLoadDialog();
@@ -307,18 +307,27 @@ public class MenuView extends MenuBar {
   }
 
   /**
-   * Shows the Configuration dialog.
+   * Opens the game configuration dialog and starts a new game if the user
+   * confirms. Called by both the "New Game" menu item and the Configuration
+   * menu item.
    *
-   * <p>This is a placeholder. The full configuration UI (board size, blitz
-   * mode, AI settings, custom shortcuts) will be implemented in a later
-   * iteration.
+   * <p>Blocks until the user closes the dialog. If the user clicks
+   * "Start Game", the resulting {@link Configuration} is forwarded to
+   * {@link fr.ubordeaux.pdp.controller.GameController#startNewGame}.
    */
+  private void openConfigDialog() {
+    ConfigDialog dialog = new ConfigDialog(shortcutManager, () -> {
+      this.getMenus().clear();
+      initMenus();
+    });
+    dialog.showAndWait().ifPresent(cfg -> controller.startNewGame(cfg));
+  }
+
+  /**
+  * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
+  */
   private void showConfigDialog() {
-    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-    alert.setTitle("Configuration");
-    alert.setHeaderText("Game Configuration");
-    alert.setContentText("Configuration dialog — to be implemented.");
-    alert.showAndWait();
+    openConfigDialog();
   }
 
   /**
@@ -332,7 +341,8 @@ public class MenuView extends MenuBar {
         "Universite de Bordeaux\n"
             + "Master Informatique — Projet de Programmation 2025-2026\n\n"
             + "A checkers game with CLI and GUI interfaces.\n"
-            + "Built with Java 17 + JavaFX.");
+            + "Built with Java 17 + JavaFX.\n\n"
+            + "By Tommy R., Faniry H., Sarah R., Daniel A. and Lalatiana R.");
     alert.showAndWait();
   }
 

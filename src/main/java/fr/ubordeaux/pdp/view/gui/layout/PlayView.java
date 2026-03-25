@@ -1,7 +1,9 @@
-package fr.ubordeaux.pdp.view.gui;
+package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import fr.ubordeaux.pdp.view.gui.board.BoardView;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.geometry.Insets;

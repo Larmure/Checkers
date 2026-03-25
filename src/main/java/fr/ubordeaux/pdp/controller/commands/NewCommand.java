@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import org.apache.commons.cli.CommandLine;
@@ -57,12 +58,22 @@ public class NewCommand implements Command, Helpable {
           String.valueOf(Utils.DEFAULT_TIME)));
       int size = Integer.parseInt(cmd.getOptionValue("s",
           String.valueOf(Utils.DEFAULT_BOARD_SIZE)));
-
+      String aiPlayers = cmd.getOptionValue("ai", "none");
+      long aiTime = Long.parseLong(cmd.getOptionValue("at",
+          String.valueOf(Ai.DEFAULT_MAX_TIME_MS)));
+      aiTime *= 1000; // Convert seconds to milliseconds
+      if (aiTime < Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
+        aiTime = Ai.DEFAULT_MAX_TIME_MS;
+      }
+      String aiMode = cmd.getOptionValue("am", Utils.DEFAULT_AI_MODE);
+      int aiDepth = Integer.parseInt(cmd.getOptionValue("ad",
+          String.valueOf(Ai.DEFAULT_DEPTH)));
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
-          controller.iswhiteAi(), controller.isblackAi()));
-
+          "a".equals(aiPlayers) || "w".equals(aiPlayers), "a".equals(aiPlayers)
+              || "b".equals(aiPlayers),
+          aiTime, aiMode, aiDepth));
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());
     }
@@ -75,6 +86,10 @@ public class NewCommand implements Command, Helpable {
    * <li>-c, --contest : Enable contest mode</li>
    * <li>-t, --time : Set time limit in seconds</li>
    * <li>-s, --size : Set board size</li>
+   * <li>-a, --ai : Set AI players (a=all, b=black, w=white)</li>
+   * <li>-at, --ai-time : Set AI time limit in seconds</li>
+   * <li>-am, --ai-mode : Set AI mode</li>
+   * <li>-ad, --ai-depth : Set AI search depth</li>
    * </ul>
    *
    * @return An {@link Options} object containing the CLI schema.
@@ -85,6 +100,10 @@ public class NewCommand implements Command, Helpable {
     opts.addOption("c", "contest", false, "Contest mode");
     opts.addOption("t", "time", true, "Time limit");
     opts.addOption("s", "size", true, "Board size");
+    opts.addOption("a", "ai", true, "AI players (a=all, b=black, w=white)");
+    opts.addOption("at", "ai-time", true, "AI time limit in seconds");
+    opts.addOption("am", "ai-mode", true, "AI mode");
+    opts.addOption("ad", "ai-depth", true, "AI search depth");
     return opts;
   }
 
