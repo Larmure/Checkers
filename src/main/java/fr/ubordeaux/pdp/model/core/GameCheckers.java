@@ -60,17 +60,14 @@ public class GameCheckers implements Subject {
 
     if (cfg.iswhiteAi()) {
       this.whitePlayer = new AiPlayer(Internationalization.get("game.white_ai_player"));
-      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg.getAiMode(), cfg.getAiDepth(),
-          cfg.getAiTime()));
-
+      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg));
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
 
     if (cfg.isblackAi()) {
       this.blackPlayer = new AiPlayer(Internationalization.get("game.black_ai_player"));
-      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg.getAiMode(), cfg.getAiDepth(),
-          cfg.getAiTime()));
+      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg));
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }
