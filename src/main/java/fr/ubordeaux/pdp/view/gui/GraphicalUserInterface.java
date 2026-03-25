@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.view.gui;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
@@ -150,6 +151,10 @@ public class GraphicalUserInterface extends GameView {
    * <p>Must be called on the JavaFX Application Thread.
    */
   public void requestQuit() {
+    if (controller.getGame().getState() == State.IN_GAME) {
+      // If the game is currently in progress, pause it before showing the quit confirmation dialog.
+      controller.executeCommand("pause", new String[0]);
+    }
     if (controller.getGame() != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
       confirm.initOwner(stage);
@@ -164,8 +169,9 @@ public class GraphicalUserInterface extends GameView {
           doQuit();
         } else if (response == ButtonType.NO) {
           doQuit();
+        } else {
+          controller.executeCommand("continue", new String[0]);
         }
-        // CANCEL — do nothing, user stays in the game.
       });
     } else {
       doQuit();

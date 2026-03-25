@@ -350,6 +350,9 @@ public class GameController {
     blitzTimer.scheduleAtFixedRate(new TimerTask() {
       @Override
       public void run() {
+        if (game.getState() == State.PAUSE) {
+            return; 
+        }
         // 1. Mise à jour de la logique uniquement (pas d'affichage constant)
         game.timerPlayer();
 
@@ -392,6 +395,7 @@ public class GameController {
   public void stopBlitzTimer() {
     if (blitzTimer != null) {
       blitzTimer.cancel();
+      this.blitzTimer.purge();
       blitzTimer = null;
     }
   }
