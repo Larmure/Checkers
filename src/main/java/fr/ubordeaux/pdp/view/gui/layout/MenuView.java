@@ -132,19 +132,19 @@ public class MenuView extends MenuBar {
 
     MenuItem loadItem = new MenuItem("Load Game");
     loadItem.setAccelerator(shortcutManager.get("load-game"));
-    loadItem.setOnAction(e -> handleLoad());
+    loadItem.setOnAction(e -> executeWithPause(() -> handleLoad()));
 
     MenuItem saveItem = new MenuItem("Save Game");
     saveItem.setAccelerator(shortcutManager.get("save-game"));
-    saveItem.setOnAction(e -> openSaveDialog());
+    saveItem.setOnAction(e -> executeWithPause(() -> openSaveDialog()));
 
     MenuItem configItem = new MenuItem("Configuration");
     configItem.setAccelerator(shortcutManager.get("configuration"));
-    configItem.setOnAction(e -> showConfigDialog());
+    configItem.setOnAction(e -> executeWithPause(() -> showConfigDialog()));
 
     MenuItem infoItem = new MenuItem("Info");
     infoItem.setAccelerator(shortcutManager.get("info"));
-    infoItem.setOnAction(e -> showInfoDialog());
+    infoItem.setOnAction(e -> executeWithPause(() -> showInfoDialog()));
 
     MenuItem quitItem = new MenuItem("Quit");
     quitItem.setAccelerator(shortcutManager.get("quit"));
@@ -390,5 +390,27 @@ public class MenuView extends MenuBar {
     a.setHeaderText(header);
     a.setContentText(content);
     a.showAndWait();
+  }
+
+  /**
+   * Helper method to automatically pause the game before opening a dialog,
+   * and resume it after the dialog is closed.
+   *
+   * @param action The method to execute (opening the Load, Save, or Info dialog)
+   */
+  private void executeWithPause(Runnable action) {
+    boolean wasInGame = controller.getGame() != null 
+        && controller.getGame().getState() == State.IN_GAME;
+
+    if (wasInGame) {
+      controller.executeCommand("pause", new String[0]);
+    }
+
+    action.run();
+
+    if (wasInGame && controller.getGame() != null 
+        && controller.getGame().getState() == State.PAUSE) {
+      controller.executeCommand("continue", new String[0]);
+    }
   }
 }
