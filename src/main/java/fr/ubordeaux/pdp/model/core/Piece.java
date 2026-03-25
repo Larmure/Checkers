@@ -1,29 +1,29 @@
 package fr.ubordeaux.pdp.model.core;
 
 /**
- * Représente les différents types de pièces dans une partie de dames.
+ * Represents the different types of pieces in a game of checkers.
  *
- * <p>Une pièce peut appartenir à l'un des deux joueurs (blanc ou noir) et
- * être soit un pion, soit une dame (checker).</p>
+ * <p>A piece belongs to one of the two players (white or black) and
+ * can be either a pawn or a checker (king).</p>
  *
  * <ul>
- *   <li>{@link #WHITE_PAWN} : pion blanc</li>
- *   <li>{@link #BLACK_PAWN} : pion noir</li>
- *   <li>{@link #WHITE_CHECKER} : dame blanche</li>
- *   <li>{@link #BLACK_CHECKER} : dame noire</li>
+ *   <li>{@link #WHITE_PAWN} : white pawn</li>
+ *   <li>{@link #BLACK_PAWN} : black pawn</li>
+ *   <li>{@link #WHITE_CHECKER} : white checker (king)</li>
+ *   <li>{@link #BLACK_CHECKER} : black checker (king)</li>
  * </ul>
  */
 public enum Piece {
 
-  /** Pion appartenant au joueur blanc. */
+  /** Pawn belonging to the white player. */
   WHITE_PAWN,
 
-  /** Pion appartenant au joueur noir. */
+  /** Pawn belonging to the black player. */
   BLACK_PAWN,
 
-  /** Dame appartenant au joueur blanc. */
+  /** Checker (king) belonging to the white player. */
   WHITE_CHECKER,
 
-  /** Dame appartenant au joueur noir. */
+  /** Checker (king) belonging to the black player. */
   BLACK_CHECKER
 }
