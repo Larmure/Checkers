@@ -429,4 +429,56 @@ class GameCheckersTest {
                 "Turn shouldn't change after an illegal Manoury move.");
         assertTrue(game.getIsWhiteTurn());
     }
+
+    // =========================================================================
+    //  Draw Rules (GameOver conditions)
+    // =========================================================================
+
+    @Test
+    void checkGameOver_DrawBy50HalfTurnsWithoutProgress() throws Exception {
+        // Force the noProgressCount to 50 (25 full turns rule)
+        Field field = GameCheckers.class.getDeclaredField("noProgressCount");
+        field.setAccessible(true);
+        field.set(game, 50);
+
+        State finalState = game.checkGameOver();
+
+        assertEquals(State.FINISHED, finalState,
+                "Game should transition to FINISHED after 50 half-turns without progress.");
+    }
+
+    @Test
+    void checkGameOver_DrawBy32HalfTurnsInEndgame() throws Exception {
+        // Force the endGameCount to 32 (16 full turns rule)
+        Field field = GameCheckers.class.getDeclaredField("endGameCount");
+        field.setAccessible(true);
+        field.set(game, 32);
+
+        State finalState = game.checkGameOver();
+
+        assertEquals(State.FINISHED, finalState,
+                "Game should transition to FINISHED after 32 half-turns in an endgame scenario.");
+    }
+
+    @Test
+    void checkGameOver_DrawByThreeFoldRepetition() throws Exception {
+        // Get the current board's unique string signature
+        String currentSignature = game.getBoard().boardString();
+
+        // Create a fake history where this exact position appears 3 times
+        List<String> fakeHistory = new java.util.ArrayList<>();
+        fakeHistory.add(currentSignature);
+        fakeHistory.add(currentSignature);
+        fakeHistory.add(currentSignature);
+
+        // Inject the fake history into the game via Reflection
+        Field field = GameCheckers.class.getDeclaredField("positionHistory");
+        field.setAccessible(true);
+        field.set(game, fakeHistory);
+
+        State finalState = game.checkGameOver();
+
+        assertEquals(State.FINISHED, finalState,
+                "Game should transition to FINISHED when the same position occurs 3 times.");
+    }
 }
