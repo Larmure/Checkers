@@ -85,6 +85,11 @@ public class Configuration {
           + Utils.DEFAULT_AI_MODE + ".");
       aiMode = Utils.DEFAULT_AI_MODE;
     }
+    if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
+      System.out.println("Warning: Invalid AI time, changed to "
+          + Ai.DEFAULT_MAX_TIME_MS + " ms.");
+      aiTime = Ai.DEFAULT_MAX_TIME_MS;
+    }
 
     this.blitz = blitz;
     this.time = time;

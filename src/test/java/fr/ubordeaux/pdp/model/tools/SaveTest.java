@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 
 public class SaveTest {
 
@@ -30,8 +31,9 @@ public class SaveTest {
                 debug,
                 Utils.DEFAULT_WHITE_AI,
                 Utils.DEFAULT_BLACK_AI,
-                Utils.DEFAULT_AI_TIME,
-                Utils.DEFAULT_AI_MODE);
+                Ai.DEFAULT_MAX_TIME_MS,
+                Utils.DEFAULT_AI_MODE,
+                Ai.DEFAULT_DEPTH);
         return new GameCheckers(cfg);
     }
 
