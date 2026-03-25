@@ -72,8 +72,8 @@ public class GraphicalUserInterface extends GameView {
       mainView = new MainView(controller, configManager);
 
       Rectangle2D screen = Screen.getPrimary().getVisualBounds();
-      double initW = screen.getWidth() * 0.90;
-      double initH = screen.getHeight() * 0.90;
+      double initW = 1200;
+      double initH = 800;
 
       Scene scene = new Scene(mainView, initW, initH);
 
@@ -89,8 +89,7 @@ public class GraphicalUserInterface extends GameView {
       stage.setX(screen.getMinX() + (screen.getWidth() - initW) / 2.0);
       stage.setY(screen.getMinY() + (screen.getHeight() - initH) / 2.0);
 
-      // Wire responsive board sizing before showing the window.
-      mainView.bindToScene(scene);
+      stage.setResizable(false);
 
       stage.show();
 
