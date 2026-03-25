@@ -358,7 +358,7 @@ public class GameController {
         if (!(view instanceof CommandLineInterface)) {
           javafx.application.Platform.runLater(() -> {
             // Appelle la méthode update(GameCheckers) des vues pour actualiser les labels
-            game.notifyObservers(); 
+            game.notifyObservers();
           });
         }
         // 2. On intervient dans la console UNIQUEMENT si le temps est écoulé
@@ -368,15 +368,15 @@ public class GameController {
             System.out.println("\n" + Internationalization.get("game.time_up")
                 + game.getCurrentPlayer().getName());
             game.setState(State.FINISHED);
-            handleGameOver(); 
+            handleGameOver();
             game.notifyObservers();
           } else {
             javafx.application.Platform.runLater(() -> {
               System.out.println("\n" + Internationalization.get("game.time_up") + " "
                   + game.getCurrentPlayer().getName());
-              
+
               game.setState(State.FINISHED);
-              handleGameOver(); 
+              handleGameOver();
               game.notifyObservers();
             });
           }
@@ -609,6 +609,7 @@ public class GameController {
       }, "AI-Thinking-Thread").start();
     }
   }
+
   /** 
    * Forwards a hint to the active view.
    *

@@ -2,6 +2,8 @@
 package fr.ubordeaux.pdp.model.core;
 
 import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.Mcts;
+import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
@@ -39,6 +41,8 @@ public class Configuration {
   private final String aiMode;
   /** The search depth for the AI. */
   private final int aiDepth;
+  /** The selection function used in MCTS. */
+  private final SelectionMode selectionMode;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -66,10 +70,11 @@ public class Configuration {
    * @param aiTime  The time limit for AI moves in milliseconds.
    * @param aiMode  The mode for the AI.
    * @param aiDepth The search depth for the AI.
+   * @param selectionMode The selection function used in MCTS.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
       boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, long aiTime,
-      String aiMode, int aiDepth) {
+      String aiMode, int aiDepth, SelectionMode selectionMode) {
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
@@ -102,6 +107,7 @@ public class Configuration {
     this.aiTime = aiTime;
     this.aiMode = aiMode;
     this.aiDepth = aiDepth;
+    this.selectionMode = selectionMode;
   }
 
   /**
@@ -126,6 +132,7 @@ public class Configuration {
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
     this.aiDepth = other.aiDepth;
+    this.selectionMode = other.selectionMode;
   }
 
   /**
@@ -148,6 +155,7 @@ public class Configuration {
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
     this.aiDepth = other.aiDepth;
+    this.selectionMode = other.selectionMode;
   }
 
   /**
@@ -162,7 +170,7 @@ public class Configuration {
         Utils.DEFAULT_CONTEST, Utils.DEFAULT_BOARD_SIZE,
         Utils.DEFAULT_VERBOSE, Utils.DEFAULT_DEBUG, Utils.DEFAULT_WHITE_AI,
         Utils.DEFAULT_BLACK_AI, Ai.DEFAULT_MAX_TIME_MS, Utils.DEFAULT_AI_MODE,
-        Ai.DEFAULT_DEPTH);
+        Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
   }
 
   /**
@@ -270,6 +278,15 @@ public class Configuration {
   }
 
   /**
+   * Returns the selection function used in MCTS.
+   *
+   * @return the selection function used in MCTS.
+   */
+  public SelectionMode getSelectionMode() {
+    return selectionMode;
+  }
+
+  /**
    * Returns a string representation of the Configuration object, including all
    * the settings and their current values. This method is useful for debugging
    * and logging purposes, allowing developers to easily see the configuration
@@ -282,6 +299,6 @@ public class Configuration {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
         + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi + ", aiTime=" + aiTime + ", aiMode="
-        + aiMode + ", aiDepth=" + aiDepth;
+        + aiMode + ", aiDepth=" + aiDepth + ", selectionMode=" + selectionMode;
   }
 }
