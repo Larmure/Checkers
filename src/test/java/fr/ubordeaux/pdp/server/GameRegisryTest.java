@@ -1,0 +1,267 @@
+package fr.ubordeaux.pdp.server;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import fr.ubordeaux.pdp.controller.GameController;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Collection;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+/**
+ * Tests for {@link GameRegistry}.
+ */
+class GameRegistryTest {
+
+  @Test
+  void registerPlayer_addsPlayerWhenIdIsFree() {
+    GameRegistry registry = new GameRegistry();
+    PrintWriter out = new PrintWriter(new StringWriter(), true);
+
+    PlayerSession player = registry.registerPlayer("p1", "Daniel", out);
+
+    assertNotNull(player);
+    assertEquals("p1", player.getId());
+    assertEquals("Daniel", player.getName());
+    assertEquals(1, registry.getPlayerCount());
+    assertEquals(player, registry.getPlayer("p1"));
+  }
+
+  @Test
+  void registerPlayer_returnsNullWhenIdAlreadyExists() {
+    GameRegistry registry = new GameRegistry();
+    PrintWriter out1 = new PrintWriter(new StringWriter(), true);
+    PrintWriter out2 = new PrintWriter(new StringWriter(), true);
+
+    PlayerSession first = registry.registerPlayer("p1", "Daniel", out1);
+    PlayerSession second = registry.registerPlayer("p1", "Other", out2);
+
+    assertNotNull(first);
+    assertNull(second);
+    assertEquals(1, registry.getPlayerCount());
+    assertEquals("Daniel", registry.getPlayer("p1").getName());
+  }
+
+  @Test
+  void getPlayer_returnsNullWhenUnknown() {
+    GameRegistry registry = new GameRegistry();
+
+    assertNull(registry.getPlayer("unknown"));
+  }
+
+  @Test
+  void getAllPlayers_returnsSnapshotOfRegisteredPlayers() {
+    GameRegistry registry = new GameRegistry();
+    registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+
+    Collection<PlayerSession> players = registry.getAllPlayers();
+
+    assertEquals(2, players.size());
+    assertTrue(players.stream().anyMatch(p -> p.getId().equals("p1")));
+    assertTrue(players.stream().anyMatch(p -> p.getId().equals("p2")));
+  }
+
+  @Test
+  void getPlayersFormatted_returnsEmptyStringWhenNoPlayers() {
+    GameRegistry registry = new GameRegistry();
+
+    assertEquals("", registry.getPlayersFormatted());
+  }
+
+  @Test
+  void getPlayersFormatted_containsRegisteredPlayers() {
+    GameRegistry registry = new GameRegistry();
+    registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+
+    String formatted = registry.getPlayersFormatted();
+
+    assertTrue(formatted.contains("p1"));
+    assertTrue(formatted.contains("Daniel"));
+    assertTrue(formatted.contains("p2"));
+    assertTrue(formatted.contains("Alice"));
+  }
+
+  @Test
+  void getScoreboardFormatted_returnsPlaceholderWhenNoPlayers() {
+    GameRegistry registry = new GameRegistry();
+
+    assertEquals("No players connected.", registry.getScoreboardFormatted());
+  }
+
+  @Test
+  void getScoreboardFormatted_sortsByWinsDescending() {
+    GameRegistry registry = new GameRegistry();
+
+    PlayerSession p1 =
+        registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    PlayerSession p2 =
+        registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+    PlayerSession p3 =
+        registry.registerPlayer("p3", "Bob", new PrintWriter(new StringWriter(), true));
+
+    p1.recordWin();
+    p1.recordWin();
+    p2.recordWin();
+
+    String scoreboard = registry.getScoreboardFormatted();
+    String[] lines = scoreboard.split("\n");
+
+    assertEquals(3, lines.length);
+    assertTrue(lines[0].contains("p1"), "Le joueur avec le plus de victoires doit être premier.");
+    assertTrue(lines[1].contains("p2"), "Le joueur avec moins de victoires doit venir après.");
+    assertTrue(lines[2].contains("p3"), "Le joueur sans victoire doit être en dernier.");
+  }
+
+  @Test
+  void removePlayer_removesOnlyPlayerWhenNoSessionExists() {
+    GameRegistry registry = new GameRegistry();
+    registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+
+    registry.removePlayer("p1");
+
+    assertEquals(0, registry.getPlayerCount());
+    assertNull(registry.getPlayer("p1"));
+  }
+
+  @Test
+  void createSession_createsActiveSession() {
+    GameRegistry registry = new GameRegistry();
+    PlayerSession p1 =
+        registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    PlayerSession p2 =
+        registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+    GameController controller = Mockito.mock(GameController.class);
+
+    GameSession session = registry.createSession(List.of(p1, p2), controller);
+
+    assertNotNull(session);
+    assertTrue(session.isActive());
+    assertEquals(1, registry.getActiveSessionCount());
+    assertTrue(registry.getActiveSessions().contains(session));
+  }
+
+  @Test
+  void getSessionForPlayer_returnsSessionForParticipant() {
+    GameRegistry registry = new GameRegistry();
+    PlayerSession p1 =
+        registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    PlayerSession p2 =
+        registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+    GameController controller = Mockito.mock(GameController.class);
+
+    GameSession session = registry.createSession(List.of(p1, p2), controller);
+
+    assertEquals(session, registry.getSessionForPlayer("p1"));
+    assertEquals(session, registry.getSessionForPlayer("p2"));
+  }
+
+  @Test
+  void getSessionForPlayer_returnsNullWhenPlayerIsNotInSession() {
+    GameRegistry registry = new GameRegistry();
+    registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+
+    assertNull(registry.getSessionForPlayer("p1"));
+    assertNull(registry.getSessionForPlayer("unknown"));
+  }
+
+  @Test
+  void getActiveSessions_returnsOnlyActiveSessions() {
+    GameRegistry registry = new GameRegistry();
+    PlayerSession p1 =
+        registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    PlayerSession p2 =
+        registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+    PlayerSession p3 =
+        registry.registerPlayer("p3", "Bob", new PrintWriter(new StringWriter(), true));
+    PlayerSession p4 =
+        registry.registerPlayer("p4", "Eve", new PrintWriter(new StringWriter(), true));
+
+    GameController controller = Mockito.mock(GameController.class);
+
+    GameSession active = registry.createSession(List.of(p1, p2), controller);
+    GameSession ended = registry.createSession(List.of(p3, p4), controller);
+    ended.end(null);
+
+    Collection<GameSession> activeSessions = registry.getActiveSessions();
+
+    assertEquals(1, activeSessions.size());
+    assertTrue(activeSessions.contains(active));
+    assertFalse(activeSessions.contains(ended));
+  }
+
+  @Test
+  void getActiveSessionCount_countsOnlyActiveSessions() {
+    GameRegistry registry = new GameRegistry();
+    PlayerSession p1 =
+        registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    PlayerSession p2 =
+        registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+    PlayerSession p3 =
+        registry.registerPlayer("p3", "Bob", new PrintWriter(new StringWriter(), true));
+    PlayerSession p4 =
+        registry.registerPlayer("p4", "Eve", new PrintWriter(new StringWriter(), true));
+
+    GameController controller = Mockito.mock(GameController.class);
+
+    registry.createSession(List.of(p1, p2), controller);
+    GameSession ended = registry.createSession(List.of(p3, p4), controller);
+    ended.end(null);
+
+    assertEquals(1, registry.getActiveSessionCount());
+  }
+
+  @Test
+  void cleanupEndedSessions_removesInactiveSessions() {
+    GameRegistry registry = new GameRegistry();
+    PlayerSession p1 =
+        registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    PlayerSession p2 =
+        registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+    PlayerSession p3 =
+        registry.registerPlayer("p3", "Bob", new PrintWriter(new StringWriter(), true));
+    PlayerSession p4 =
+        registry.registerPlayer("p4", "Eve", new PrintWriter(new StringWriter(), true));
+
+    GameController controller = Mockito.mock(GameController.class);
+
+    GameSession active = registry.createSession(List.of(p1, p2), controller);
+    GameSession ended = registry.createSession(List.of(p3, p4), controller);
+    ended.end(null);
+
+    registry.cleanupEndedSessions();
+
+    assertEquals(1, registry.getActiveSessionCount());
+    assertTrue(registry.getActiveSessions().contains(active));
+    assertFalse(registry.getActiveSessions().contains(ended));
+  }
+
+  @Test
+  void removePlayer_endsAndRemovesActiveSessionContainingThatPlayer() {
+    GameRegistry registry = new GameRegistry();
+    PlayerSession p1 =
+        registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
+    PlayerSession p2 =
+        registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
+    GameController controller = Mockito.mock(GameController.class);
+
+    GameSession session = registry.createSession(List.of(p1, p2), controller);
+
+    assertTrue(session.isActive());
+    assertEquals(1, registry.getActiveSessionCount());
+
+    registry.removePlayer("p1");
+
+    assertNull(registry.getPlayer("p1"));
+    assertEquals(1, registry.getPlayerCount());
+    assertEquals(0, registry.getActiveSessionCount());
+    assertNull(registry.getSessionForPlayer("p2"));
+  }
+}

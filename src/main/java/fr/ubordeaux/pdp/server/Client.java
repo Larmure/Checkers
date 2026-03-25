@@ -34,14 +34,20 @@ import java.util.Scanner;
  */
 public class Client {
 
-  private final ClientSession session = new ClientSession();
+  private final ClientSession session;
   private final GameController controller;
 
   /** Wires the view to the controller without starting an input loop. */
   public Client() {
+    this.session = new ClientSession();
     CommandLineInterface view = new CommandLineInterface(false, false);
     this.controller = new GameController(view);
     view.setController(controller);
+    session.setController(controller);
+  }
+  Client(ClientSession session, GameController controller) {
+    this.session = session;
+    this.controller = controller;
     session.setController(controller);
   }
 
@@ -123,7 +129,7 @@ public class Client {
    * @param commandName the first token (command keyword).
    * @param tokens all tokens from the original input line.
    */
-  private void dispatchDefault(String commandName, String[] tokens) {
+    public void dispatchDefault(String commandName, String[] tokens) {
     switch (session.getMode()) {
       case LOCAL -> {
         String[] args =
@@ -146,7 +152,7 @@ public class Client {
    * @param sub sub-command word.
    * @param args remaining arguments (e.g. port number).
    */
-  private void dispatchServerCommand(String sub, String args) {
+  public  void dispatchServerCommand(String sub, String args) {
     switch (sub) {
       case "list" -> {
         if (blockUnless(ClientMode.LOCAL, "server list is only available in LOCAL mode.")) {
@@ -186,7 +192,7 @@ public class Client {
    * @param errorMessage message displayed when blocked.
    * @return {@code true} if execution should be skipped.
    */
-  private boolean blockIf(ClientMode blocked, String errorMessage) {
+  public boolean blockIf(ClientMode blocked, String errorMessage) {
     if (session.getMode() == blocked) {
       System.out.println("[blocked] " + errorMessage);
       return true;
@@ -201,7 +207,7 @@ public class Client {
    * @param errorMessage message displayed when blocked.
    * @return {@code true} if execution should be skipped.
    */
-  private boolean blockUnless(ClientMode required, String errorMessage) {
+  public boolean blockUnless(ClientMode required, String errorMessage) {
     if (session.getMode() != required) {
       System.out.println("[blocked] " + errorMessage);
       return true;
@@ -218,7 +224,7 @@ public class Client {
    * CONNECTED →  [192.168.1.1:12345] >
    * </pre>
    */
-  private String prompt() {
+  public  String prompt() {
     return switch (session.getMode()) {
       case SERVER -> "[server:" + ServerStartCommand.activeServer.getPort() + "] > ";
       case CONNECTED -> "[" + session.getCurrentServer() + "] > ";

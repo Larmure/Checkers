@@ -39,6 +39,7 @@ public class CommandLineInterface extends GameView {
 
   /** The line reader for handling user input. */
   private LineReader lineReader;
+  private Thread inputThread;
 
   /**
    * Optional router — injected when running with network support.
