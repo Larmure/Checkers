@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.view.gui.layout;
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
 import javafx.geometry.Insets;
@@ -19,20 +20,22 @@ import javafx.stage.Stage;
 /**
  * Root layout of the graphical user interface.
  *
- * <p>{@code MainView} owns only the toolbar. All game-state rendering is
+ * <p>
+ * {@code MainView} owns only the toolbar. All game-state rendering is
  * delegated to {@link PlayView}, keeping this class lightweight.
  *
  * <h2>Initialisation sequence</h2>
  * <ol>
- *   <li>Instantiate {@code MainView}.</li>
- *   <li>Create the {@link Scene} and call {@link #bindToScene(Scene)} so the
- *       board scales with the window.</li>
- *   <li>Call {@code stage.show()}.</li>
- *   <li>Call {@link #passStageToMenu(Stage)} so {@link MenuView} can open
- *       modal dialogs.</li>
+ * <li>Instantiate {@code MainView}.</li>
+ * <li>Create the {@link Scene} and call {@link #bindToScene(Scene)} so the
+ * board scales with the window.</li>
+ * <li>Call {@code stage.show()}.</li>
+ * <li>Call {@link #passStageToMenu(Stage)} so {@link MenuView} can open
+ * modal dialogs.</li>
  * </ol>
  *
- * <p>Visual styles are defined in {@code style.css} (classes:
+ * <p>
+ * Visual styles are defined in {@code style.css} (classes:
  * {@code root-pane}, {@code toolbar}, {@code toolbar-button},
  * {@code toolbar-button:hover}, {@code turn-label}).
  */
@@ -49,6 +52,9 @@ public class MainView extends BorderPane {
 
   /** Central play area containing the board and the log panel. */
   private PlayView playView;
+
+  /** Pause/Resume button in the toolbar. */
+  private Button pauseBtn;
 
   /**
    * Toolbar label indicating whose turn it is.
@@ -89,7 +95,8 @@ public class MainView extends BorderPane {
   /**
    * Builds the bottom action toolbar.
    *
-   * <p>The toolbar contains four action buttons (Undo, Redo, Pause, Hint) on
+   * <p>
+   * The toolbar contains four action buttons (Undo, Redo, Pause, Hint) on
    * the left, and a turn indicator label on the right. A growing spacer
    * separates the two groups.
    *
@@ -114,8 +121,15 @@ public class MainView extends BorderPane {
         new String[] { "1" }));
     Button redoBtn = toolbarButton("Redo", () -> controller.executeCommand("redo",
         new String[] { "1" }));
-    Button pauseBtn = toolbarButton("Pause", () -> controller.executeCommand("pause",
-        new String[0]));
+    pauseBtn = toolbarButton("Pause", () -> {
+      if (controller.getGame() != null) {
+        if (controller.getGame().getState() == State.IN_GAME) {
+          controller.executeCommand("pause", new String[0]);
+        } else if (controller.getGame().getState() == State.PAUSE) {
+          controller.executeCommand("continue", new String[0]);
+        }
+      }
+    });
     Button hintBtn = toolbarButton("Hint", () -> controller.executeCommand("hint",
         new String[0]));
 
@@ -126,7 +140,8 @@ public class MainView extends BorderPane {
   /**
    * Creates a styled toolbar button.
    *
-   * <p>Hover effect is handled by the {@code .toolbar-button:hover} rule in
+   * <p>
+   * Hover effect is handled by the {@code .toolbar-button:hover} rule in
    * {@code style.css}, so no {@code setOnMouseEntered}/{@code setOnMouseExited}
    * handlers are needed here.
    *
@@ -137,7 +152,7 @@ public class MainView extends BorderPane {
   private Button toolbarButton(String text, Runnable action) {
     Button btn = new Button(text);
     btn.setOnAction(e -> action.run());
-    // style.css : .toolbar-button  /  .toolbar-button:hover
+    // style.css : .toolbar-button / .toolbar-button:hover
     btn.getStyleClass().add("toolbar-button");
     return btn;
   }
@@ -147,7 +162,8 @@ public class MainView extends BorderPane {
    * its {@code TextInputDialog} and {@code Alert} instances are owned by the
    * main window (making them modal).
    *
-   * <p>Must be called after {@code stage.show()}.
+   * <p>
+   * Must be called after {@code stage.show()}.
    *
    * @param stage the application's primary stage; must not be {@code null}
    */
@@ -178,7 +194,8 @@ public class MainView extends BorderPane {
   /**
    * Delegates responsive cell-size binding to {@link PlayView}.
    *
-   * <p>Must be called after the {@link Scene} is created so that the board's
+   * <p>
+   * Must be called after the {@link Scene} is created so that the board's
    * cell size tracks window resizing.
    *
    * @param scene the application's primary scene; must not be {@code null}
@@ -190,18 +207,31 @@ public class MainView extends BorderPane {
   /**
    * Refreshes the entire view from the current game state.
    *
-   * <p>Delegates board and log updates to {@link PlayView}, then refreshes the
+   * <p>
+   * Delegates board and log 0tes to {@link PlayView}, then refreshes the
    * toolbar turn indicator.
    *
-   * <p>Must be called on the JavaFX Application Thread (e.g. inside
+   * <p>
+   * Must be called on the JavaFX Application Thread (e.g. inside
    * {@code Platform.runLater}).
    *
    * @param game the current game state; must not be {@code null}
    */
   public void update(GameCheckers game) {
-    playView.update(game);
+    if (game != null) {
+      playView.update(game);
 
-    String name = game.getCurrentPlayer().getName();
-    turnLabel.setText("Turn: " + name.toUpperCase());
+      String name = game.getCurrentPlayer().getName();
+      turnLabel.setText("Turn: " + name.toUpperCase());
+
+      // Synchronisation Pause/Resume
+      boolean isPaused = (game.getState() == State.PAUSE);
+      if (this.pauseBtn != null) {
+        this.pauseBtn.setText(isPaused ? "Resume" : "Pause");
+      }
+      if (this.menuView != null) {
+        this.menuView.setPauseText(isPaused);
+      }
+    }
   }
 }

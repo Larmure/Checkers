@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ConfigDialog;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
@@ -17,9 +18,9 @@ import javafx.stage.Stage;
 /**
  * <h2>Menus</h2>
  * <ul>
- *   <li><b>File</b>: New Game, Load Game, Save Game, Configuration, Info,
- *       Quit.</li>
- *   <li><b>Game</b>: Undo, Redo, Pause, Hint.</li>
+ * <li><b>File</b>: New Game, Load Game, Save Game, Configuration, Info,
+ * Quit.</li>
+ * <li><b>Game</b>: Undo, Redo, Pause, Hint.</li>
  * </ul>
  *
  * <h2>Load / Save dialogs</h2>
@@ -29,12 +30,12 @@ import javafx.stage.Stage;
  * {@code /mnt/c/…} WSL path.
  *
  * <ul>
- *   <li>The <em>Save</em> dialog prompts the user for a file name and
- *       forwards it to {@code controller.executeCommand("save", …)}. The
- *       directory is managed by {@code SaveBoard}.</li>
- *   <li>The <em>Load</em> dialog lists existing saves in {@code Sauvegarde/}
- *       and prompts the user for a file name, then forwards it to
- *       {@code controller.executeCommand("load", …)}.</li>
+ * <li>The <em>Save</em> dialog prompts the user for a file name and
+ * forwards it to {@code controller.executeCommand("save", …)}. The
+ * directory is managed by {@code SaveBoard}.</li>
+ * <li>The <em>Load</em> dialog lists existing saves in {@code Sauvegarde/}
+ * and prompts the user for a file name, then forwards it to
+ * {@code controller.executeCommand("load", …)}.</li>
  * </ul>
  *
  * <h2>Stage reference</h2>
@@ -57,7 +58,11 @@ public class MenuView extends MenuBar {
   /** GUI entry point — used to delegate the quit flow. */
   private GraphicalUserInterface gui;
 
+  /* Shorcut keyboard manager */
   private ShortcutManager shortcutManager;
+
+  /** Menu item for pausing and resuming the game. */
+  private MenuItem pauseItem;
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
    * {@code stage.show()} so that modal dialogs have a proper owner window.
@@ -69,7 +74,7 @@ public class MenuView extends MenuBar {
   /**
    * Creates the menu bar and populates it with the File and Game menus.
    *
-   * @param controller the game controller; must not be {@code null}
+   * @param controller      the game controller; must not be {@code null}
    * @param shortcutManager the shortcut manager for keyboard bindings
    */
   public MenuView(GameController controller, ShortcutManager shortcutManager) {
@@ -83,7 +88,8 @@ public class MenuView extends MenuBar {
    * Sets the primary {@link Stage} so that dialogs opened by this menu bar are
    * modal with respect to the main window.
    *
-   * <p>Must be called after {@code stage.show()} (from
+   * <p>
+   * Must be called after {@code stage.show()} (from
    * {@link MainView#passStageToMenu(Stage)}).
    *
    * @param stage the application's primary stage; must not be {@code null}
@@ -110,14 +116,15 @@ public class MenuView extends MenuBar {
   /**
    * Builds the <em>File</em> menu.
    *
-   * <p>Items and their default shortcuts:
+   * <p>
+   * Items and their default shortcuts:
    * <ul>
-   *   <li>New Game — {@code Ctrl+N}</li>
-   *   <li>Load Game — {@code Ctrl+L}</li>
-   *   <li>Save Game — {@code Ctrl+S}</li>
-   *   <li>Configuration — {@code Ctrl+,}</li>
-   *   <li>Info — {@code Ctrl+I}</li>
-   *   <li>Quit — {@code Ctrl+Q}</li>
+   * <li>New Game — {@code Ctrl+N}</li>
+   * <li>Load Game — {@code Ctrl+L}</li>
+   * <li>Save Game — {@code Ctrl+S}</li>
+   * <li>Configuration — {@code Ctrl+,}</li>
+   * <li>Info — {@code Ctrl+I}</li>
+   * <li>Quit — {@code Ctrl+Q}</li>
    * </ul>
    *
    * @return the configured {@link Menu}
@@ -168,12 +175,13 @@ public class MenuView extends MenuBar {
   /**
    * Builds the <em>Game</em> menu.
    *
-   * <p>Items and their default shortcuts:
+   * <p>
+   * Items and their default shortcuts:
    * <ul>
-   *   <li>Undo — {@code Ctrl+U}</li>
-   *   <li>Redo — {@code Ctrl+R}</li>
-   *   <li>Pause — {@code Ctrl+P}</li>
-   *   <li>Hint — {@code Ctrl+H}</li>
+   * <li>Undo — {@code Ctrl+U}</li>
+   * <li>Redo — {@code Ctrl+R}</li>
+   * <li>Pause — {@code Ctrl+P}</li>
+   * <li>Hint — {@code Ctrl+H}</li>
    * </ul>
    *
    * @return the configured {@link Menu}
@@ -187,9 +195,18 @@ public class MenuView extends MenuBar {
     redoItem.setAccelerator(shortcutManager.get("redo"));
     redoItem.setOnAction(e -> controller.executeCommand("redo", new String[] { "1" }));
 
-    MenuItem pauseItem = new MenuItem("Pause");
+    pauseItem = new MenuItem("Pause");
     pauseItem.setAccelerator(shortcutManager.get("pause"));
-    pauseItem.setOnAction(e -> controller.executeCommand("pause", new String[0]));
+    pauseItem.setOnAction(e -> {
+      if (controller.getGame() != null) {
+
+        if (controller.getGame().getState() == State.IN_GAME) {
+          controller.executeCommand("pause", new String[0]);
+        } else if (controller.getGame().getState() == State.PAUSE) {
+          controller.executeCommand("continue", new String[0]);
+        }
+      }
+    });
 
     MenuItem hintItem = new MenuItem("Hint");
     hintItem.setAccelerator(shortcutManager.get("hint"));
@@ -204,7 +221,8 @@ public class MenuView extends MenuBar {
   /**
    * Entry point for the Load action.
    *
-   * <p>If a game is in progress with unsaved changes, the user is asked
+   * <p>
+   * If a game is in progress with unsaved changes, the user is asked
    * whether to save first (Yes / No / Cancel). Only "Cancel" aborts the load.
    * In all other cases {@link #openLoadDialog()} is called.
    */
@@ -235,7 +253,8 @@ public class MenuView extends MenuBar {
    * {@link #SAVE_DIR} and forwards the chosen file name to
    * {@code controller.executeCommand("load", …)}.
    *
-   * <p>Using a text dialog.
+   * <p>
+   * Using a text dialog.
    */
   private void openLoadDialog() {
     // Build the header text: list available save files if any exist.
@@ -273,7 +292,8 @@ public class MenuView extends MenuBar {
    * Shows a {@link TextInputDialog} prompting the user for a file name, then
    * forwards it to {@code controller.executeCommand("save", …)}.
    *
-   * <p>A success or failure alert is displayed after the command completes,
+   * <p>
+   * A success or failure alert is displayed after the command completes,
    * based on whether the expected file was actually created on disk.
    */
   public void openSaveDialog() {
@@ -311,7 +331,8 @@ public class MenuView extends MenuBar {
    * confirms. Called by both the "New Game" menu item and the Configuration
    * menu item.
    *
-   * <p>Blocks until the user closes the dialog. If the user clicks
+   * <p>
+   * Blocks until the user closes the dialog. If the user clicks
    * "Start Game", the resulting {@link Configuration} is forwarded to
    * {@link fr.ubordeaux.pdp.controller.GameController#startNewGame}.
    */
@@ -324,8 +345,8 @@ public class MenuView extends MenuBar {
   }
 
   /**
-  * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
-  */
+   * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
+   */
   private void showConfigDialog() {
     openConfigDialog();
   }
@@ -372,5 +393,11 @@ public class MenuView extends MenuBar {
     a.setHeaderText(header);
     a.setContentText(content);
     a.showAndWait();
+  }
+
+  public void setPauseText(boolean isPaused) {
+    if (pauseItem != null) {
+      pauseItem.setText(isPaused ? "Resume" : "Pause");
+    }
   }
 }
