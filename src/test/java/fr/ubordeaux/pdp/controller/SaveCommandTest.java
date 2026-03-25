@@ -167,5 +167,9 @@ class SaveCommandTest {
     @Override
     public void update(GameCheckers g) {
     }
+
+    @Override
+    public void showHint(String from, String to) { 
+    }
   }
 }

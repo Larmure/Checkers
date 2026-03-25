@@ -124,6 +124,10 @@ class GameCheckersTest {
             @Override
             public void display(GameCheckers g) {
             }
+
+            @Override
+            public void showHint(String from, String to) {
+            }
         };
 
         // Add our spy view to the game, then notify all observers.
@@ -238,6 +242,10 @@ class GameCheckersTest {
             @Override
             public void display(GameCheckers g) {
             }
+
+            @Override
+            public void showHint(String from, String to) {
+            }
         });
 
         // --- Turn 1: White plays ---
@@ -333,6 +341,10 @@ class GameCheckersTest {
 
             @Override
             public void display(GameCheckers g) {
+            }
+
+            @Override
+            public void showHint(String from, String to) {
             }
         });
 
