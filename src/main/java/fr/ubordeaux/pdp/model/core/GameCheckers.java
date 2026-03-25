@@ -37,6 +37,12 @@ public class GameCheckers implements Subject {
   private Configuration configuration;
   /** The manager for handling undo and redo operations. */
   private ManagerUndoRedo managerUndoRedo;
+  /** Counts consecutive turns without progress. */
+  private int noProgressCount = 0;
+  /** Counts turns since the last capture. */
+  private int endGameCount = 0;
+  /** Stores the history of board positions. */
+  private List<String> positionHistory = new ArrayList<>();
 
   /**
    * Initializes a new game instance with the specified configuration.
@@ -240,8 +246,26 @@ public class GameCheckers implements Subject {
       return;
     }
 
+    boolean isPawnMove = board.isBitWhitePawn(from) || board.isBitBlackPawn(from);
+    boolean isCapture = move.isCapture();
+
     board.applyMove(move);
     managerUndoRedo.registerMove(currentColor, move);
+
+    if (isCapture || isPawnMove) {
+      noProgressCount = 0;
+    } else {
+      noProgressCount++;
+    }
+
+    if (isEndgameScenario()) {
+      endGameCount++;
+    } else {
+      endGameCount = 0;
+    }
+
+    positionHistory.add(board.boardString());
+
     this.isWhiteTurn = !this.isWhiteTurn;
     notifyObservers();
   }
@@ -268,6 +292,32 @@ public class GameCheckers implements Subject {
     if (getPossibleMoves(whitePlayer).isEmpty() && getPossibleMoves(blackPlayer).isEmpty()) {
       setState(State.FINISHED);
       return this.state;
+    }
+
+    // 25 turn *2 = 50 half-turns without progress (no captures or pawn moves) is a common rule for declaring a draw.
+    if(noProgressCount >= 50) {
+      setState(State.FINISHED);
+      return this.state;
+    }
+
+    // 16 turns *2 = 32 half-turns in an endgame scenario (one player has only one piece left) 
+    // is often considered a draw due to insufficient material.
+    if(endGameCount >= 32) {
+      setState(State.FINISHED);
+      return this.state;
+    }
+
+    // 3-fold repetition rule: if the same board position occurs 3 times, the game is a draw.
+    if (!positionHistory.isEmpty()) {
+      String currentSignature = board.boardString();
+      long occurrences = positionHistory.stream()
+                                        .filter(sig -> sig.equals(currentSignature))
+                                        .count();
+      if (occurrences >= 3) {
+        System.out.println(Internationalization.get("game.game_over_repetition"));
+        setState(State.FINISHED);
+        return this.state;
+      }
     }
 
     return this.state;
@@ -421,6 +471,32 @@ public class GameCheckers implements Subject {
    */
   public PlayerColor getCurrentColor() {
     return isWhiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
+  }
+
+  /**
+   * Determines if the game has reached an endgame scenario based on the current board state.
+   * This method checks for specific configurations of pieces that indicate a likely endgame, 
+   * such as one player having only a single checker while the other has multiple pieces.
+   * 
+   * @return
+   */
+  private boolean isEndgameScenario() {
+    int whitePawns = 0, blackPawns = 0, whiteKings = 0, blackKings = 0;
+    
+    for (int i = 0; i < board.getIndexMax(); i++) {
+      if (board.isBitWhitePawn(i)) whitePawns++;
+      else if (board.isBitBlackPawn(i)) blackPawns++;
+      else if (board.isBitWhiteChecker(i)) whiteKings++;
+      else if (board.isBitBlackChecker(i)) blackKings++; 
+    }
+
+    int whiteTotal = whitePawns + whiteKings;
+    int blackTotal = blackPawns + blackKings;
+
+    boolean whiteAdvantage = (whiteTotal == 3 && blackTotal == 1 && blackKings == 1 && blackPawns == 0);
+    boolean blackAdvantage = (blackTotal == 3 && whiteTotal == 1 && whiteKings == 1 && whitePawns == 0);
+
+    return whiteAdvantage || blackAdvantage;
   }
 
 }
