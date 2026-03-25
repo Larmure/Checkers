@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.view.gui;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
@@ -71,8 +72,8 @@ public class GraphicalUserInterface extends GameView {
       mainView = new MainView(controller, configManager);
 
       Rectangle2D screen = Screen.getPrimary().getVisualBounds();
-      double initW = screen.getWidth() * 0.90;
-      double initH = screen.getHeight() * 0.90;
+      double initW = 1200;
+      double initH = 800;
 
       Scene scene = new Scene(mainView, initW, initH);
 
@@ -88,8 +89,7 @@ public class GraphicalUserInterface extends GameView {
       stage.setX(screen.getMinX() + (screen.getWidth() - initW) / 2.0);
       stage.setY(screen.getMinY() + (screen.getHeight() - initH) / 2.0);
 
-      // Wire responsive board sizing before showing the window.
-      mainView.bindToScene(scene);
+      stage.setResizable(false);
 
       stage.show();
 
@@ -123,6 +123,11 @@ public class GraphicalUserInterface extends GameView {
         mainView.update(game);
       }
     });
+  }
+
+  @Override
+  public void showHint(String from, String to) {
+    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> " + to + "\n");
   }
 
   /**

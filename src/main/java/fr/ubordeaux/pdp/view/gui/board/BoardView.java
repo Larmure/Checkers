@@ -193,8 +193,8 @@ public class BoardView extends GridPane {
     this.getColumnConstraints().clear();
     this.getRowConstraints().clear();
 
-    // Clamp to a minimum of 30 px so labels remain readable at small sizes.
-    double cell = Math.max(30, cellSize.get());
+    double maxAvailableHeight = 640.0;
+    double cell = maxAvailableHeight / (size + (LABEL_RATIO * 2));
     double label = cell * LABEL_RATIO;
 
     addCoordinateLabels(cell, label);

@@ -650,6 +650,11 @@ class GameControllerTest {
       this.lastGameReceived = game;
     }
 
+    @Override
+    public void showHint(String from, String to) {
+      // For testing displayHint calls
+    }
+
     @Test
     void testPlayPredefinedSequence() throws Exception {
       Configuration config = Configuration.getDefaultConfiguration();

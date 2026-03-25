@@ -107,8 +107,7 @@ public class PlayView extends HBox {
 
     // Take the smaller dimension so the board always fits both axes.
     DoubleBinding cellSize = (DoubleBinding) Bindings.min(availW, availH)
-        .divide(boardSize)
-        .subtract(2); // 2 px inter-cell gap
+        .divide(boardSize);
 
     boardView.bindCellSize(cellSize);
   }
@@ -124,6 +123,10 @@ public class PlayView extends HBox {
   public void update(GameCheckers game) {
     boardView.refresh(game);
     logView.update(game);
+
+    if (this.getScene() != null) {
+        bindToScene(this.getScene());
+    }
   }
 
   /**
