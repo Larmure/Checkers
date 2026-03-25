@@ -65,6 +65,7 @@ public class Mcts extends Ai {
    */
   private static final double DRAW_SCORE = 0.5;
 
+  /** The default selection mode for this instance. */
   public static final SelectionMode DEFAULT_SELECTION_MODE = SelectionMode.UCT;
 
   /** UCB1 exploration constant for this instance. */

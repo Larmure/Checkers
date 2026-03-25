@@ -23,6 +23,7 @@ import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 class GameControllerTest {
@@ -591,25 +592,27 @@ class GameControllerTest {
     // blitz=false, time=0, contest=false, size=8,
     // verbose=false, debug=false, whiteAi=true, blackAi=false, aiTime=10
     return new Configuration(false, 0, false, 8, false, false, true, false, 1, Utils.DEFAULT_AI_MODE,
-        Ai.DEFAULT_DEPTH);
+        Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
   }
 
   private Configuration buildBlackAiConfig() {
     return new Configuration(false, 0, false, 8, false, false, false, true, 1, Utils.DEFAULT_AI_MODE,
-        Ai.DEFAULT_DEPTH);
+        Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
   }
 
   private Configuration buildBothAiConfig() {
-    return new Configuration(false, 0, false, 8, false, false, true, true, 1, Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH);
+    return new Configuration(false, 0, false, 8, false, false, true, true, 1, Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH,
+        Mcts.DEFAULT_SELECTION_MODE);
   }
 
   private Configuration buildBlitzWhiteAiConfig() {
-    return new Configuration(true, 2, false, 8, false, false, true, false, 1, Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH);
+    return new Configuration(true, 2, false, 8, false, false, true, false, 1, Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH,
+        Mcts.DEFAULT_SELECTION_MODE);
   }
 
   private Configuration buildBlitzConfig(int minutes) {
     return new Configuration(true, minutes, false, 8, false, false, false, false, 1, Utils.DEFAULT_AI_MODE,
-        Ai.DEFAULT_DEPTH);
+        Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
   }
 
   private void invokePlayAiTurn(AiPlayer aiPlayer) throws Exception {
