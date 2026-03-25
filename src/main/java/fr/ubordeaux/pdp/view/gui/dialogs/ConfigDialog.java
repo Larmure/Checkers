@@ -129,10 +129,12 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     // Enable / disable spinner if at least one or the other au moins is checked.
     whiteAiCheck.selectedProperty()
-        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV && !blackAiCheck.isSelected()));
+        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
+            && !blackAiCheck.isSelected()));
 
     blackAiCheck.selectedProperty()
-        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV && !whiteAiCheck.isSelected()));
+        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
+            && !whiteAiCheck.isSelected()));
 
     getDialogPane().setContent(buildContent());
     getDialogPane().getStyleClass().add("config-dialog");
