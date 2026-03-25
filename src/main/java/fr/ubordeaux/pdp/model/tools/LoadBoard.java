@@ -459,6 +459,7 @@ public class LoadBoard {
         blackAi,
         defaults.getAiTime(),
         defaults.getAiMode(),
-        defaults.getAiDepth());
+        defaults.getAiDepth(),
+        defaults.getSelectionMode());
   }
 }

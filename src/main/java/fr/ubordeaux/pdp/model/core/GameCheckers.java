@@ -57,20 +57,20 @@ public class GameCheckers implements Subject {
     managerUndoRedo = new ManagerUndoRedo(this.board);
 
     // AI MODE INITIALIZATION
-    long aiTimeInMs = cfg.getAiTime();
 
     if (cfg.iswhiteAi()) {
-      AiPlayer whiteAi = new AiPlayer(Internationalization.get("game.white_ai_player"));
-      whiteAi.getAlgorithm().setMaxTimeMs(aiTimeInMs); // Apply the maximum thinking time
-      this.whitePlayer = whiteAi;
+      this.whitePlayer = new AiPlayer(Internationalization.get("game.white_ai_player"));
+      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg.getAiMode(), cfg.getAiDepth(),
+          cfg.getAiTime()));
+
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
 
     if (cfg.isblackAi()) {
-      AiPlayer blackAi = new AiPlayer(Internationalization.get("game.black_ai_player"));
-      blackAi.getAlgorithm().setMaxTimeMs(aiTimeInMs); // Apply the maximum thinking time
-      this.blackPlayer = blackAi;
+      this.blackPlayer = new AiPlayer(Internationalization.get("game.black_ai_player"));
+      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg.getAiMode(), cfg.getAiDepth(),
+          cfg.getAiTime()));
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }

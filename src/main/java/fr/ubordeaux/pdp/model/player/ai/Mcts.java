@@ -65,6 +65,8 @@ public class Mcts extends Ai {
    */
   private static final double DRAW_SCORE = 0.5;
 
+  public static final SelectionMode DEFAULT_SELECTION_MODE = SelectionMode.UCT;
+
   /** UCB1 exploration constant for this instance. */
   final double explorationConstant;
 
@@ -82,7 +84,7 @@ public class Mcts extends Ai {
   public Mcts() {
     super();
     this.explorationConstant = DEFAULT_EXPLORATION;
-    this.selectionMode = SelectionMode.UCT;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   /**
@@ -96,7 +98,7 @@ public class Mcts extends Ai {
   public Mcts(int depth) {
     super(depth);
     this.explorationConstant = DEFAULT_EXPLORATION;
-    this.selectionMode = SelectionMode.UCT;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   /**
@@ -108,7 +110,7 @@ public class Mcts extends Ai {
   public Mcts(int depth, long maxTimeMs) {
     super(depth, maxTimeMs);
     this.explorationConstant = DEFAULT_EXPLORATION;
-    this.selectionMode = SelectionMode.UCT;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   /**
@@ -126,7 +128,7 @@ public class Mcts extends Ai {
           "Exploration constant must be positive, got: " + explorationConstant);
     }
     this.explorationConstant = explorationConstant;
-    this.selectionMode = SelectionMode.UCT;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   // -------------------------------------------------------------------------
