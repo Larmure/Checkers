@@ -61,8 +61,6 @@ public class MenuView extends MenuBar {
   /* Shorcut keyboard manager */
   private ShortcutManager shortcutManager;
 
-  /** Menu item for pausing and resuming the game. */
-  private MenuItem pauseItem;
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
    * {@code stage.show()} so that modal dialogs have a proper owner window.
@@ -88,8 +86,7 @@ public class MenuView extends MenuBar {
    * Sets the primary {@link Stage} so that dialogs opened by this menu bar are
    * modal with respect to the main window.
    *
-   * <p>
-   * Must be called after {@code stage.show()} (from
+   * <p>Must be called after {@code stage.show()} (from
    * {@link MainView#passStageToMenu(Stage)}).
    *
    * @param stage the application's primary stage; must not be {@code null}
@@ -116,8 +113,7 @@ public class MenuView extends MenuBar {
   /**
    * Builds the <em>File</em> menu.
    *
-   * <p>
-   * Items and their default shortcuts:
+   * <p>Items and their default shortcuts:
    * <ul>
    * <li>New Game — {@code Ctrl+N}</li>
    * <li>Load Game — {@code Ctrl+L}</li>
@@ -175,8 +171,7 @@ public class MenuView extends MenuBar {
   /**
    * Builds the <em>Game</em> menu.
    *
-   * <p>
-   * Items and their default shortcuts:
+   * <p>Items and their default shortcuts:
    * <ul>
    * <li>Undo — {@code Ctrl+U}</li>
    * <li>Redo — {@code Ctrl+R}</li>
@@ -195,16 +190,22 @@ public class MenuView extends MenuBar {
     redoItem.setAccelerator(shortcutManager.get("redo"));
     redoItem.setOnAction(e -> controller.executeCommand("redo", new String[] { "1" }));
 
-    pauseItem = new MenuItem("Pause");
+    MenuItem pauseItem = new MenuItem("Pause");
     pauseItem.setAccelerator(shortcutManager.get("pause"));
     pauseItem.setOnAction(e -> {
-      if (controller.getGame() != null) {
+      if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+        controller.executeCommand("pause", new String[0]);
 
-        if (controller.getGame().getState() == State.IN_GAME) {
-          controller.executeCommand("pause", new String[0]);
-        } else if (controller.getGame().getState() == State.PAUSE) {
-          controller.executeCommand("continue", new String[0]);
-        }
+        Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
+        pauseAlert.setTitle("Pause");
+        pauseAlert.setHeaderText("Le jeu est en pause");
+        
+        ButtonType btnResume = new ButtonType("Reprendre", 
+            javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        pauseAlert.getButtonTypes().setAll(btnResume);
+        pauseAlert.showAndWait();
+
+        controller.executeCommand("continue", new String[0]);
       }
     });
 
@@ -221,8 +222,7 @@ public class MenuView extends MenuBar {
   /**
    * Entry point for the Load action.
    *
-   * <p>
-   * If a game is in progress with unsaved changes, the user is asked
+   * <p>If a game is in progress with unsaved changes, the user is asked
    * whether to save first (Yes / No / Cancel). Only "Cancel" aborts the load.
    * In all other cases {@link #openLoadDialog()} is called.
    */
@@ -253,8 +253,7 @@ public class MenuView extends MenuBar {
    * {@link #SAVE_DIR} and forwards the chosen file name to
    * {@code controller.executeCommand("load", …)}.
    *
-   * <p>
-   * Using a text dialog.
+   * <p>Using a text dialog.
    */
   private void openLoadDialog() {
     // Build the header text: list available save files if any exist.
@@ -292,8 +291,7 @@ public class MenuView extends MenuBar {
    * Shows a {@link TextInputDialog} prompting the user for a file name, then
    * forwards it to {@code controller.executeCommand("save", …)}.
    *
-   * <p>
-   * A success or failure alert is displayed after the command completes,
+   * <p>A success or failure alert is displayed after the command completes,
    * based on whether the expected file was actually created on disk.
    */
   public void openSaveDialog() {
@@ -331,8 +329,7 @@ public class MenuView extends MenuBar {
    * confirms. Called by both the "New Game" menu item and the Configuration
    * menu item.
    *
-   * <p>
-   * Blocks until the user closes the dialog. If the user clicks
+   * <p>Blocks until the user closes the dialog. If the user clicks
    * "Start Game", the resulting {@link Configuration} is forwarded to
    * {@link fr.ubordeaux.pdp.controller.GameController#startNewGame}.
    */
@@ -393,11 +390,5 @@ public class MenuView extends MenuBar {
     a.setHeaderText(header);
     a.setContentText(content);
     a.showAndWait();
-  }
-
-  public void setPauseText(boolean isPaused) {
-    if (pauseItem != null) {
-      pauseItem.setText(isPaused ? "Resume" : "Pause");
-    }
   }
 }
