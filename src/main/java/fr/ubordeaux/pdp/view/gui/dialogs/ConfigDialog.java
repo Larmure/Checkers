@@ -1,7 +1,10 @@
 package fr.ubordeaux.pdp.view.gui.dialogs;
 
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -97,7 +100,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     setTitle("New Game — Configuration");
     setHeaderText("Configure the game options before starting.");
 
-    ButtonType startButton = new ButtonType(Internationalization.get("dialog.start.game"), 
+    ButtonType startButton = new ButtonType(Internationalization.get("dialog.start.game"),
         ButtonData.OK_DONE);
     getDialogPane().getButtonTypes().addAll(startButton, ButtonType.CANCEL);
 
@@ -116,7 +119,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     verboseCheck.setSelected(defaults.isVerbose());
     debugCheck.setSelected(defaults.isDebug());
 
-    aiTimeSpinner.getValueFactory().setValue(defaults.getAiTime());
+    aiTimeSpinner.getValueFactory().setValue((int) defaults.getAiTime());
     aiTimeSpinner.setPrefWidth(80);
     aiTimeSpinner.setDisable(!defaults.iswhiteAi() && !defaults.isblackAi());
 
@@ -125,11 +128,13 @@ public class ConfigDialog extends Dialog<Configuration> {
         (obs, oldV, newV) -> timeSpinner.setDisable(!newV));
 
     // Enable / disable spinner if at least one or the other au moins is checked.
-    whiteAiCheck.selectedProperty().addListener((obs, oldV, newV) ->
-        aiTimeSpinner.setDisable(!newV && !blackAiCheck.isSelected()));
+    whiteAiCheck.selectedProperty()
+        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
+            && !blackAiCheck.isSelected()));
 
-    blackAiCheck.selectedProperty().addListener((obs, oldV, newV) ->
-        aiTimeSpinner.setDisable(!newV && !whiteAiCheck.isSelected()));
+    blackAiCheck.selectedProperty()
+        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
+            && !whiteAiCheck.isSelected()));
 
     getDialogPane().setContent(buildContent());
     getDialogPane().getStyleClass().add("config-dialog");
@@ -232,7 +237,7 @@ public class ConfigDialog extends Dialog<Configuration> {
         aiTimeSpinner);
     aiTimeBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(aiTimeBox, 0, 2);
-    
+
     return grid;
   }
 
@@ -279,6 +284,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     int aiTime = aiTimeSpinner.getValue();
 
     return new Configuration(blitz, timeSec, contest, size,
-        verbose, debug, whiteAi, blackAi, aiTime);
+        verbose, debug, whiteAi, blackAi, aiTime,
+        Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
   }
 }

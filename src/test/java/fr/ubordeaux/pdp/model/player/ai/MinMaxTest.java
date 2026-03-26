@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.model.player.ai;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,8 +54,8 @@ class MinMaxTest {
   @Test
   @DisplayName("Constructor with custom depth should set correct depth")
   void testConstructorWithDepth() {
-    MinMax customMinMax = new MinMax(5);
-    assertEquals(5, customMinMax.getMaxDepth(), "Custom depth should be set correctly");
+    MinMax customMinMax = new MinMax(6);
+    assertEquals(6, customMinMax.getMaxDepth(), "Custom depth should be set correctly");
   }
 
   @Test
@@ -64,6 +65,8 @@ class MinMaxTest {
         "Should throw exception for depth 0");
     assertThrows(IllegalArgumentException.class, () -> new MinMax(-1),
         "Should throw exception for negative depth");
+    assertThrows(IllegalArgumentException.class, () -> new MinMax(16),
+        "Should throw exception for too large depth");
   }
 
   @Test
@@ -190,6 +193,60 @@ class MinMaxTest {
 
     assertNotNull(move10, "Should work with 10x10 board");
     assertNotNull(move12, "Should work with 12x12 board");
+  }
+
+  @Test
+  @DisplayName("Should stop computation when time is exceeded immediately")
+  void testImmediateTimeout() {
+    MinMax fastTimeoutAi = new MinMax(15, 100); // min autorisé
+
+    Move move = fastTimeoutAi.getBestMove(undoManager, board, PlayerColor.WHITE, evaluator);
+
+    assertNotNull(move, "Should return a fallback move even if time exceeded");
+  }
+
+  @Test
+  @DisplayName("Should handle timeout during deep search gracefully")
+  void testTimeoutDuringSearch() {
+    MinMax slowAi = new MinMax(15, 100); // profondeur élevée
+
+    Move move = slowAi.getBestMove(undoManager, board, PlayerColor.WHITE, evaluator);
+
+    assertNotNull(move, "Should return best move from last completed depth");
+  }
+
+  @Test
+  @DisplayName("Should not propagate TimeExceededException")
+  void testNoExceptionPropagation() {
+    MinMax fastTimeoutAi = new MinMax(15, 100);
+
+    assertDoesNotThrow(() -> {
+      fastTimeoutAi.getBestMove(undoManager, board, PlayerColor.WHITE, evaluator);
+    });
+  }
+
+  @Test
+  @DisplayName("Board state should remain consistent after timeout")
+  void testBoardStateAfterTimeout() {
+    MinMax fastTimeoutAi = new MinMax(15, 100);
+
+    int whiteBefore = countWhitePawns(board);
+    int blackBefore = countBlackPawns(board);
+
+    fastTimeoutAi.getBestMove(undoManager, board, PlayerColor.WHITE, evaluator);
+
+    assertEquals(whiteBefore, countWhitePawns(board));
+    assertEquals(blackBefore, countBlackPawns(board));
+  }
+
+  @Test
+  @DisplayName("Timeout should interrupt deep recursion")
+  void testDeepRecursionInterrupted() {
+    MinMax deepAi = new MinMax(15, 100);
+
+    Move move = deepAi.getBestMove(undoManager, board, PlayerColor.WHITE, evaluator);
+
+    assertNotNull(move);
   }
 
   /**

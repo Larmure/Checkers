@@ -165,7 +165,7 @@ public class GameController {
       case "pause" -> new PauseCommand(blitzTimer, game);
       case "load" -> new LoadCommand(this, args);
       case "save" -> new SaveCommand(this, args);
-      case "hint" -> new HintCommand();
+      case "hint" -> new HintCommand(this);
       case "undo" -> new UndoCommand(this, args);
       case "redo" -> new RedoCommand(this, args);
       case "show" -> new ShowCommand(this, args);
@@ -247,7 +247,7 @@ public class GameController {
    *
    * @param from The starting position of the piece to move (e.g., "A3").
    * @param to The target position to move the piece to (e.g., "B4").
-   * @param isManoury A boolean indicating whether the move is a Manoury move (capture)
+   * @param isManoury A boolean indicating whether the move is a Manoury move (capture) 
    *     or a regular move.
    */
   public void executeMove(String from, String to, boolean isManoury) {
@@ -355,14 +355,14 @@ public class GameController {
       @Override
       public void run() {
         if (game.getState() == State.PAUSE) {
-            return; 
+          return;
         }
         // Update game timing logic
         game.timerPlayer();
-        
+
         // Notify observers to update UI (both CLI and GUI)
         game.notifyObservers();
-        
+
         int totalSeconds = game.getCurrentPlayer().getPlayTime();
         // Check if time has run out
         if (totalSeconds <= 0) {
@@ -544,7 +544,7 @@ public class GameController {
       System.out.println(game.getCurrentPlayer().getName() + " "
           + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
-    
+
       if (view instanceof GraphicalUserInterface gui) {
         gui.showGameOverAlert(game, timeExpired);
       }
@@ -605,5 +605,15 @@ public class GameController {
         });
       }, "AI-Thinking-Thread").start();
     }
+  }
+
+  /** 
+   * Forwards a hint to the active view.
+   *
+   * @param from The starting position of the suggested move (e.g., "A3").
+   * @param to The target position of the suggested move (e.g., "B4").
+   */
+  public void displayHint(String from, String to) {
+    view.showHint(from, to);
   }
 }

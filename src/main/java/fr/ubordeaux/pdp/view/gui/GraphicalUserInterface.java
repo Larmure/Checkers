@@ -74,9 +74,9 @@ public class GraphicalUserInterface extends GameView {
       configManager.load();
       mainView = new MainView(controller, configManager);
 
-      Rectangle2D screen = Screen.getPrimary().getVisualBounds();
-      double initW = screen.getWidth() * 0.90;
-      double initH = screen.getHeight() * 0.90;
+      final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+      double initW = 1200;
+      double initH = 800;
 
       Scene scene = new Scene(mainView, initW, initH);
 
@@ -92,8 +92,7 @@ public class GraphicalUserInterface extends GameView {
       stage.setX(screen.getMinX() + (screen.getWidth() - initW) / 2.0);
       stage.setY(screen.getMinY() + (screen.getHeight() - initH) / 2.0);
 
-      // Wire responsive board sizing before showing the window.
-      mainView.bindToScene(scene);
+      stage.setResizable(false);
 
       stage.show();
 
@@ -130,14 +129,14 @@ public class GraphicalUserInterface extends GameView {
       Alert alert = new Alert(Alert.AlertType.INFORMATION);
       alert.initOwner(stage);
       alert.setTitle(Internationalization.get("gui.gameover.title"));
-      
+
       String headerText;
       if (timeExpired) {
         headerText = Internationalization.get("gui.gameover.time_expired");
       } else {
         headerText = Internationalization.get("gui.gameover.winner");
       }
-      
+
       alert.setHeaderText(String.format(headerText, winnerName));
       alert.showAndWait();
     });
@@ -164,6 +163,12 @@ public class GraphicalUserInterface extends GameView {
     if (game.getState() == State.IN_GAME) {
       gameOverAlert = false;
     }
+  }
+
+  @Override
+  public void showHint(String from, String to) {
+    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> "
+        + to + "\n");
   }
 
   /**
