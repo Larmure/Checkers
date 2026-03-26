@@ -323,49 +323,49 @@ public class GameController {
   /**
    * Starts the blitz timer for the current game.
    */
- public void startBlitzTimer() {
-  stopBlitzTimer();
+  public void startBlitzTimer() {
+    stopBlitzTimer();
 
-  if (game == null) {
-    return;
-  }
+    if (game == null) {
+      return;
+    }
 
-  blitzTimer = new Timer(true);
-  blitzTimer.scheduleAtFixedRate(new TimerTask() {
-    @Override
-    public void run() {
-      game.timerPlayer();
+    blitzTimer = new Timer(true);
+    blitzTimer.scheduleAtFixedRate(new TimerTask() {
+      @Override
+      public void run() {
+        game.timerPlayer();
 
-      int totalSeconds = game.getCurrentPlayer().getPlayTime();
+        int totalSeconds = game.getCurrentPlayer().getPlayTime();
 
-      if (!(view instanceof CommandLineInterface)) {
-        javafx.application.Platform.runLater(() -> {
-          game.notifyObservers();
-        });
-      }
-
-      if (totalSeconds <= 0) {
-        stopBlitzTimer();
-
-        if (view instanceof CommandLineInterface) {
-          System.out.println("\n" + Internationalization.get("game.time_up")
-              + game.getCurrentPlayer().getName());
-          game.setState(State.FINISHED);
-          handleGameOver();
-          game.notifyObservers();
-        } else {
+        if (!(view instanceof CommandLineInterface)) {
           javafx.application.Platform.runLater(() -> {
+            game.notifyObservers();
+          });
+        }
+
+        if (totalSeconds <= 0) {
+          stopBlitzTimer();
+
+          if (view instanceof CommandLineInterface) {
             System.out.println("\n" + Internationalization.get("game.time_up")
                 + game.getCurrentPlayer().getName());
             game.setState(State.FINISHED);
             handleGameOver();
             game.notifyObservers();
-          });
+          } else {
+            javafx.application.Platform.runLater(() -> {
+              System.out.println("\n" + Internationalization.get("game.time_up")
+                  + game.getCurrentPlayer().getName());
+              game.setState(State.FINISHED);
+              handleGameOver();
+              game.notifyObservers();
+            });
+          }
         }
       }
-    }
-  }, 1000, 1000);
-}
+    }, 1000, 1000);
+  }
 
   /**
    * Stops the blitz timer if it is currently running.

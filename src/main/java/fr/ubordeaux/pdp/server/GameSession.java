@@ -84,7 +84,7 @@ public class GameSession {
     }
 
     try {
-      controller.executeMove(parts[0].trim(), parts[1].trim(),false);
+      controller.executeMove(parts[0].trim(), parts[1].trim(), false);
     } catch (Exception e) {
       return "ERROR: Illegal move — " + e.getMessage();
     }

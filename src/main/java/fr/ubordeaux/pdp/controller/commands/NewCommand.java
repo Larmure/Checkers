@@ -1,10 +1,5 @@
 package fr.ubordeaux.pdp.controller.commands;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.Helpable;
@@ -14,6 +9,11 @@ import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  * Concrete implementation of {@link Command} that handles the initialization of
@@ -87,9 +87,9 @@ public class NewCommand implements Command, Helpable {
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
-          "a".equals(aiPlayers) || "w".equals(aiPlayers), "a".equals(aiPlayers)
-              || "b".equals(aiPlayers),
-          aiTime,aiMode,aiDepth,selectionMode));
+          "a".equals(aiPlayers) || "w".equals(aiPlayers),
+          "a".equals(aiPlayers) || "b".equals(aiPlayers),
+          aiTime, aiMode, aiDepth, selectionMode));
 
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());

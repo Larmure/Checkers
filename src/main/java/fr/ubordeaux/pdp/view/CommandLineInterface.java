@@ -124,25 +124,25 @@ public class CommandLineInterface extends GameView {
     if (router != null) {
       router.route(input.trim());
     } else {
-     String trimmed = input.trim();
-    String[] tokens;
+      String trimmed = input.trim();
+      String[] tokens;
 
-    if (trimmed.matches(Utils.MOVE_REGEX)) {
-      tokens = trimmed.split("\\s+");
-      controller.executeMove(tokens[0], tokens[1], false);
+      if (trimmed.matches(Utils.MOVE_REGEX)) {
+        tokens = trimmed.split("\\s+");
+        controller.executeMove(tokens[0], tokens[1], false);
 
-    } else if (trimmed.matches(Utils.MANOURY_REGEX)) {
-      tokens = trimmed.split("-");
-      controller.executeMove(tokens[0], tokens[1], true);
+      } else if (trimmed.matches(Utils.MANOURY_REGEX)) {
+        tokens = trimmed.split("-");
+        controller.executeMove(tokens[0], tokens[1], true);
 
-    } else {
-      tokens = trimmed.split("\\s+");
+      } else {
+        tokens = trimmed.split("\\s+");
 
-      String commandName = tokens[0];
-      String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-      controller.executeCommand(commandName, args);
+        String commandName = tokens[0];
+        String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
+        controller.executeCommand(commandName, args);
+      }
     }
-  }
   }
 
   /**

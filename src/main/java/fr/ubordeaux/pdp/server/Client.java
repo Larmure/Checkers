@@ -45,6 +45,13 @@ public class Client {
     view.setController(controller);
     session.setController(controller);
   }
+
+  /**
+   * Constructs a client with an existing session and controller.
+   *
+   * @param session the client session to use
+   * @param controller the game controller to use
+   */
   Client(ClientSession session, GameController controller) {
     this.session = session;
     this.controller = controller;
@@ -129,7 +136,7 @@ public class Client {
    * @param commandName the first token (command keyword).
    * @param tokens all tokens from the original input line.
    */
-    public void dispatchDefault(String commandName, String[] tokens) {
+  public void dispatchDefault(String commandName, String[] tokens) {
     switch (session.getMode()) {
       case LOCAL -> {
         String[] args =
@@ -142,7 +149,6 @@ public class Client {
               "[blocked] Game commands are unavailable in SERVER mode.\n"
                   + "          Use 'server stop' to return to local mode.");
       default -> throw new IllegalStateException("Unexpected mode: " + session.getMode());
-
     }
   }
 

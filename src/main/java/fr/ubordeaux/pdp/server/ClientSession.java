@@ -53,7 +53,8 @@ public class ClientSession {
 
   /**
    * Injects the local game controller so the listener thread can call
-   * {@link GameController#executeMove(String, String, boolean)} when an {@code OPPONENT_MOVE} arrives.
+   * {@link GameController#executeMove(String, String, boolean)}
+   * when an{@code OPPONENT_MOVE} arrives.
    *
    * @param controller the local game controller.
    */
@@ -256,7 +257,7 @@ public class ClientSession {
       if (parts.length == 2 && controller != null) {
         System.out.println("\nYou played: " + moveArg);
         try {
-          controller.executeMove(parts[0].trim(), parts[1].trim(),false);
+          controller.executeMove(parts[0].trim(), parts[1].trim(), false);
         } catch (Exception e) {
           System.out.println("[warning] Could not apply local move: " + e.getMessage());
         }
@@ -269,7 +270,7 @@ public class ClientSession {
       if (parts.length == 2 && controller != null) {
         System.out.println("\nOpponent played: " + moveArg);
         try {
-          controller.executeMove(parts[0].trim(), parts[1].trim(),false);
+          controller.executeMove(parts[0].trim(), parts[1].trim(), false);
         } catch (Exception e) {
           System.out.println("[warning] Could not apply opponent move: " + e.getMessage());
         }
