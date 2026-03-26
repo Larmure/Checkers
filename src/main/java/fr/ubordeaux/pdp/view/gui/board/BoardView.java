@@ -1,14 +1,20 @@
-package fr.ubordeaux.pdp.view.gui;
+package fr.ubordeaux.pdp.view.gui.board;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.view.gui.layout.PlayView;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Label;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
@@ -32,7 +38,7 @@ import javafx.scene.shape.Rectangle;
  *
  * <h2>Click handling</h2>
  * Two-click selection: first click selects a piece (highlighted in blue), second
- * click on a destination triggers {@link GameController#executeMove(String, String)}.
+ * click on a destination triggers {@link GameController#executeMove(String, String, boolean)}.
  *
  * <h2>Responsive sizing</h2>
  * Call {@link #bindCellSize(DoubleBinding)} to make cell size track the window
@@ -187,8 +193,8 @@ public class BoardView extends GridPane {
     this.getColumnConstraints().clear();
     this.getRowConstraints().clear();
 
-    // Clamp to a minimum of 30 px so labels remain readable at small sizes.
-    double cell = Math.max(30, cellSize.get());
+    double maxAvailableHeight = 640.0;
+    double cell = maxAvailableHeight / (size + (LABEL_RATIO * 2));
     double label = cell * LABEL_RATIO;
 
     addCoordinateLabels(cell, label);
@@ -237,8 +243,11 @@ public class BoardView extends GridPane {
     if (isDark) {
       // Add a piece if one is present on this square.
       char piece = getPieceChar(modelRow, modelCol);
+
+      StackPane visualPiece = null;
       if (piece != '_') {
-        pane.getChildren().add(buildPiece(piece, cell));
+        visualPiece = buildPiece(piece, cell);
+        pane.getChildren().add(visualPiece);
       }
 
       // Hover overlay — visible only while the mouse is over this cell.
@@ -252,9 +261,79 @@ public class BoardView extends GridPane {
       final int mr = modelRow;
       final int mc = modelCol;
 
+      final StackPane nodeToDrag = visualPiece;
+
       pane.setOnMouseEntered(e -> hover.setVisible(true));
       pane.setOnMouseExited(e -> hover.setVisible(false));
       pane.setOnMouseClicked(e -> handleClick(fr, fc, mr, mc));
+
+      // Drag-and-drop handlers for moving pieces with the mouse
+      pane.setOnDragDetected(e -> {
+        if (getPieceChar(mr, mc) != '_') {
+          Dragboard db = pane.startDragAndDrop(TransferMode.MOVE);
+          ClipboardContent content = new ClipboardContent();
+          content.putString(toSquare(mr, mc));
+          db.setContent(content);
+
+          if (nodeToDrag != null) {
+            SnapshotParameters params = new SnapshotParameters();
+            params.setFill(Color.TRANSPARENT); // Ensure the snapshot has a transparent background
+
+            // Create a snapshot of the piece node to use as the drag view.
+            WritableImage snapshotImg = nodeToDrag.snapshot(params, null);
+
+            // Calculate offsets to center the drag view on the cursor.
+            double offsetX = snapshotImg.getWidth() / 2.0;
+            double offsetY = snapshotImg.getHeight() / 2.0;
+
+            // Set the drag view with the calculated offsets.
+            db.setDragView(snapshotImg, offsetX, offsetY);
+          }
+
+          e.consume();
+        }
+      });
+
+      // Accept the drag if it comes from another cell and has a string (the source square).
+      pane.setOnDragOver(e -> {
+        if (e.getGestureSource() != pane && e.getDragboard().hasString()) {
+          e.acceptTransferModes(TransferMode.MOVE);
+        }
+        e.consume();
+      });
+
+      // Show the hover overlay when a valid drag enters this cell.
+      pane.setOnDragEntered(e -> {
+        if (e.getGestureSource() != pane && e.getDragboard().hasString()) {
+          hover.setVisible(true);
+        }
+        e.consume();
+      });
+
+      pane.setOnDragExited(e -> {
+        hover.setVisible(false);
+        e.consume();
+      });
+
+      // Handle the drop: extract the source square from the dragboard, 
+      // compute the target square, and execute the move.
+      pane.setOnDragDropped(e -> {
+        Dragboard db = e.getDragboard();
+        boolean success = false;
+        if (db.hasString()) {
+          String from = db.getString();
+          String to = toSquare(mr, mc);
+
+          // Clear selection state after the move.
+          selRow = -1;
+          selCol = -1;
+
+          controller.executeMove(from, to, false);
+          success = true;
+        }
+        e.setDropCompleted(success);
+        e.consume();
+      });
     }
 
     return pane;
@@ -318,14 +397,14 @@ public class BoardView extends GridPane {
   private void addCoordinateLabels(double cell, double label) {
     // Column numbers — top and bottom.
     for (int c = 0; c < size; c++) {
-      this.add(coordLabel(String.valueOf(c + 1), label), c + 1, 0);
-      this.add(coordLabel(String.valueOf(c + 1), label), c + 1, size + 1);
+      this.add(coordLabel(String.valueOf(c + 1), cell, label), c + 1, 0);
+      this.add(coordLabel(String.valueOf(c + 1), cell, label), c + 1, size + 1);
     }
     // Row letters — left and right.
     for (int row = 0; row < size; row++) {
       char letter = (char) ('A' + (size - 1 - row));
-      this.add(coordLabel(String.valueOf(letter), label), 0, row + 1);
-      this.add(coordLabel(String.valueOf(letter), label), size + 1, row + 1);
+      this.add(coordLabel(String.valueOf(letter), label, label), 0, row + 1);
+      this.add(coordLabel(String.valueOf(letter), label, label), size + 1, row + 1);
     }
   }
 
@@ -340,9 +419,10 @@ public class BoardView extends GridPane {
    * @param size the width and height of the label cell in pixels
    * @return a configured {@link Label}
    */
-  private Label coordLabel(String text, double size) {
+  private Label coordLabel(String text, double width, double height) {
     Label lbl = new Label(text);
-    lbl.setPrefSize(size, size);
+    lbl.setPrefSize(width, height);
+    lbl.setMinSize(width, height);
     lbl.setAlignment(Pos.CENTER);
     lbl.setPadding(new Insets(1));
     // Dynamic font size — cannot be expressed in static CSS.
@@ -388,7 +468,7 @@ public class BoardView extends GridPane {
       String to = toSquare(modelRow, modelCol);
       selRow = -1;
       selCol = -1;
-      controller.executeMove(from, to);
+      controller.executeMove(from, to, false);
     }
   }
 

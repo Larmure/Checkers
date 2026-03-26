@@ -39,4 +39,12 @@ public abstract class GameView implements Observer {
    * @param game the current game state to be displayed, provided by the model update
    */
   public abstract void display(GameCheckers game);
+
+  /**
+   * Displays a hint to the user.
+   *
+   * @param from The starting position of the suggested move (e.g., "A3").
+   * @param to   The target position of the suggested move (e.g., "B4").
+   */
+  public abstract void showHint(String from, String to);
 }

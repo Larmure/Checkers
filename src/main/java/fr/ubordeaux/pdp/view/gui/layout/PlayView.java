@@ -1,7 +1,9 @@
-package fr.ubordeaux.pdp.view.gui;
+package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import fr.ubordeaux.pdp.view.gui.board.BoardView;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.geometry.Insets;
@@ -105,8 +107,7 @@ public class PlayView extends HBox {
 
     // Take the smaller dimension so the board always fits both axes.
     DoubleBinding cellSize = (DoubleBinding) Bindings.min(availW, availH)
-        .divide(boardSize)
-        .subtract(2); // 2 px inter-cell gap
+        .divide(boardSize);
 
     boardView.bindCellSize(cellSize);
   }
@@ -122,6 +123,10 @@ public class PlayView extends HBox {
   public void update(GameCheckers game) {
     boardView.refresh(game);
     logView.update(game);
+
+    if (this.getScene() != null) {
+      bindToScene(this.getScene());
+    }
   }
 
   /**

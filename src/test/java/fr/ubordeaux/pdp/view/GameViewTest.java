@@ -13,6 +13,7 @@ class GameViewTest {
         @Override public void start() {}
         @Override public void display(GameCheckers game) {}
         @Override public void update(GameCheckers game) {}
+        @Override public void showHint(String from, String to) {}
         
         // Getter to verify the protected field
         public GameController getController() {

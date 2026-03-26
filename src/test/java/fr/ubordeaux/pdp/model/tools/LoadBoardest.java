@@ -12,7 +12,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.Mcts;
 
 public class LoadBoardest {
 
@@ -54,7 +55,10 @@ public class LoadBoardest {
         Utils.DEFAULT_DEBUG,
         Utils.DEFAULT_WHITE_AI,
         Utils.DEFAULT_BLACK_AI,
-        Utils.DEFAULT_AI_TIME);
+        Ai.DEFAULT_MAX_TIME_MS,
+        Utils.DEFAULT_AI_MODE,
+        Ai.DEFAULT_DEPTH,
+        Mcts.DEFAULT_SELECTION_MODE);
     return new GameCheckers(cfg);
   }
 

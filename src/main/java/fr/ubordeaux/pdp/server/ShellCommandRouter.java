@@ -84,7 +84,7 @@ public class ShellCommandRouter {
     if (session.getMode() == ClientMode.CONNECTED) {
       session.send("MOVE " + tokens[0] + "-" + tokens[1]);
     } else {
-      controller.executeMove(tokens[0], tokens[1]);
+      controller.executeMove(tokens[0], tokens[1],false);
     }
   }
 

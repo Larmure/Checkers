@@ -1,8 +1,5 @@
 package fr.ubordeaux.pdp.controller;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
 import fr.ubordeaux.pdp.controller.commands.HintCommand;
@@ -23,6 +20,8 @@ import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Orchestrator of the game logic and user interactions.
@@ -169,7 +168,7 @@ public class GameController {
       case "pause" -> new PauseCommand(blitzTimer, game);
       case "load" -> new LoadCommand(this, args);
       case "save" -> new SaveCommand(this, args);
-      case "hint" -> new HintCommand();
+      case "hint" -> new HintCommand(this);
       case "undo" -> new UndoCommand(this, args);
       case "redo" -> new RedoCommand(this, args);
       case "show" -> new ShowCommand(this, args);
@@ -202,26 +201,27 @@ public class GameController {
     }
 
     markAsSaved();
+
+    // Trigger the AI immediately if the White player (starting player) is an AI.
+    triggerAiIfNecessary();
   }
 
   /**
    * Executes a move in the game by applying the move to the model and checking
    * for game over conditions.
    *
-   * @param from the starting position of the piece to move
-   * @param to the target position to move the piece to
+   * @param from The starting position of the piece to move (e.g., "A3").
+   * @param to The target position to move the piece to (e.g., "B4").
+   * @param isManoury A boolean indicating whether the move is a Manoury move (capture)
+   *     or a regular move.
    */
-  public void executeMove(String from, String to) {
-    if (game == null || configuration == null) {
-      System.out.println("No game is currently running.");
-      return;
-    }
-
+  public void executeMove(String from, String to, boolean isManoury) {
     if (configuration.isBlitz()) {
       startBlitzTimer();
     }
 
-    game.applyMove(from, to);
+    game.applyMove(from, to, isManoury);
+
     game.setState(game.checkGameOver());
 
     if (game.getState().equals(State.FINISHED)) {
@@ -234,6 +234,9 @@ public class GameController {
       System.out.println(Internationalization.get("game.start_new_game"));
     }
     handleGameOver();
+
+    // Trigger the AI turn if the next player is controlled by the computer.
+    triggerAiIfNecessary();
   }
 
   /**
@@ -258,7 +261,7 @@ public class GameController {
 
     String from = game.getBoard().indexToSquare(move.getFrom());
     String to = game.getBoard().indexToSquare(move.getTo());
-    game.applyMove(from, to);
+    game.applyMove(from, to, false);
     game.setState(game.checkGameOver());
     handleGameOver();
   }
@@ -320,29 +323,49 @@ public class GameController {
   /**
    * Starts the blitz timer for the current game.
    */
-  public void startBlitzTimer() {
-    stopBlitzTimer();
+ public void startBlitzTimer() {
+  stopBlitzTimer();
 
-    blitzTimer = new Timer(true);
-    blitzTimer.scheduleAtFixedRate(
-          new TimerTask() {
-            @Override
-            public void run() {
-              game.timerPlayer();
-
-              if (game.getCurrentPlayer().getPlayTime() <= 0) {
-                stopBlitzTimer();
-                System.out.println(
-                      "\n"
-                            + Internationalization.get("game.time_up")
-                            + game.getCurrentPlayer().getName());
-                game.setState(State.FINISHED);
-              }
-            }
-          },
-          1000,
-          1000);
+  if (game == null) {
+    return;
   }
+
+  blitzTimer = new Timer(true);
+  blitzTimer.scheduleAtFixedRate(new TimerTask() {
+    @Override
+    public void run() {
+      game.timerPlayer();
+
+      int totalSeconds = game.getCurrentPlayer().getPlayTime();
+
+      if (!(view instanceof CommandLineInterface)) {
+        javafx.application.Platform.runLater(() -> {
+          game.notifyObservers();
+        });
+      }
+
+      if (totalSeconds <= 0) {
+        stopBlitzTimer();
+
+        if (view instanceof CommandLineInterface) {
+          System.out.println("\n" + Internationalization.get("game.time_up")
+              + game.getCurrentPlayer().getName());
+          game.setState(State.FINISHED);
+          handleGameOver();
+          game.notifyObservers();
+        } else {
+          javafx.application.Platform.runLater(() -> {
+            System.out.println("\n" + Internationalization.get("game.time_up")
+                + game.getCurrentPlayer().getName());
+            game.setState(State.FINISHED);
+            handleGameOver();
+            game.notifyObservers();
+          });
+        }
+      }
+    }
+  }, 1000, 1000);
+}
 
   /**
    * Stops the blitz timer if it is currently running.
@@ -444,45 +467,6 @@ public class GameController {
     markAsSaved();
   }
 
-  /**
-   * Plays a predefined move sequence for tests or demonstrations.
-   */
-  /**
-   * Joue une séquence de coups prédéfinie pour des tests ou une démo.
-   */
-  public void playPredefinedSequence() {
-    String[][] moves = {
-        { "c1", "d2" }, { "f4", "e3" }, { "d2", "f4" }, { "g5", "e3" },
-        { "b2", "c1" }, { "e3", "d2" }, { "c1", "e3" }, { "f2", "b2" },
-        { "a1", "c3" }, { "f6", "e5" }, { "c3", "d4" }, { "e5", "c3" },
-        { "b4", "d2" }, { "g3", "f2" }, { "d2", "e3" }, { "f2", "d4" },
-        { "c5", "e3" }, { "g1", "f2" }, { "e3", "g1" }, { "h2", "g3" },
-        { "g1", "h2" }, { "h4", "g5" }, { "h2", "e5" }, { "g5", "f4" },
-        { "e5", "g3" }, { "f8", "e7" }, { "c7", "d6" }, { "e7", "c5" },
-        { "b6", "d4" }, { "g7", "f8" }, { "d4", "e5" }, { "f8", "e7" },
-        { "e5", "f4" }, { "h6", "g5" }, { "f4", "h6" }, { "h8", "g7" },
-        { "h6", "d6" }
-    };
-
-    System.out.println("Début de la séquence d'automatisation des coups...");
-
-    for (String[] move : moves) {
-      String from = move[0];
-      String to = move[1];
-
-      System.out.println("Coup joué : " + from + "-" + to);
-
-      executeMove(from, to);
-
-      if (game.getState() == State.FINISHED) {
-        System.out.println("La partie s'est terminée avant la fin de la séquence.");
-        break;
-      }
-    }
-
-    System.out.println("Séquence terminée.");
-  }
-
 
   /**
    * Undoes the last n moves in the game.
@@ -523,8 +507,11 @@ public class GameController {
     if (game == null || game.getHistory() == null) {
       return false;
     }
-
-    return game.getHistory().getSize() != lastSavedMoveCount;
+    if (game.getState() == State.FINISHED) {
+      return false;
+    }
+    int currentSize = game.getHistory().getSize();
+    return currentSize != lastSavedMoveCount;
   }
 
   /**
@@ -538,7 +525,7 @@ public class GameController {
 
   /**
    * Handles the game over state by checking if the game has finished and displaying appropriate
-   * messages to the user. 
+   * messages to the user.
    */
   public void handleGameOver() {
     if (game.getState().equals(State.FINISHED)) {
@@ -550,5 +537,71 @@ public class GameController {
           + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
+  }
+
+  /**
+   * Checks if the current player is an AI and triggers their turn asynchronously.
+   *
+   * <p>This prevents blocking the JavaFX application thread during the AI's calculation,
+   * ensuring the GUI remains responsive.
+   */
+  public void triggerAiIfNecessary() {
+    // Safeguard: Only execute this asynchronous behavior if the view is a graphical user interface.
+    if (view instanceof CommandLineInterface) {
+      return;
+    }
+
+    if (game.getState() == State.IN_GAME && game.getCurrentPlayer() instanceof AiPlayer) {
+      AiPlayer aiPlayer = (AiPlayer) game.getCurrentPlayer();
+
+      new Thread(() -> {
+        // A brief pause to improve UX and prevent instant moves.
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+
+        // Calculate the best move within the configured maximum aiTime.
+        Move move = aiPlayer.getBestMove(
+            game.getManagerUndoRedo(), game.getBoard(), game.getCurrentColor());
+
+        // Switch back to the JavaFX Application Thread to safely update the UI components.
+        javafx.application.Platform.runLater(() -> {
+          if (move == null) {
+            System.err.println("No AI move available.");
+            game.setState(game.checkGameOver());
+            handleGameOver();
+            return;
+          }
+
+          if (configuration.isBlitz()) {
+            startBlitzTimer();
+          }
+
+          String fromSquare = game.getBoard().indexToSquare(move.getFrom());
+          String toSquare = game.getBoard().indexToSquare(move.getTo());
+
+          // Apply the calculated move to the game board.
+          game.applyMove(fromSquare, toSquare, false);
+
+          game.setState(game.checkGameOver());
+          handleGameOver();
+
+          // Recursively call to check if the next player is also an AI (AI vs AI match).
+          triggerAiIfNecessary();
+        });
+      }, "AI-Thinking-Thread").start();
+    }
+  }
+
+  /**
+   * Forwards a hint to the active view.
+   *
+   * @param from The starting position of the suggested move (e.g., "A3").
+   * @param to The target position of the suggested move (e.g., "B4").
+   */
+  public void displayHint(String from, String to) {
+    view.showHint(from, to);
   }
 }

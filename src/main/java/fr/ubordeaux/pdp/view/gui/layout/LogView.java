@@ -1,4 +1,4 @@
-package fr.ubordeaux.pdp.view.gui;
+package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import javafx.geometry.Insets;

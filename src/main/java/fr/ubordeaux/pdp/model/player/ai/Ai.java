@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.model.player.ai;
 
 import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
@@ -27,19 +28,19 @@ import java.util.List;
 public abstract class Ai {
 
   /** Default search depth for MinMax-based algorithms. */
-  protected static final int DEFAULT_DEPTH = 5; //Visuellement par defaut 12
+  public static final int DEFAULT_DEPTH = 5; //Visuellement par defaut 12
 
   /** Default maximum thinking time in milliseconds (5 seconds). */
-  protected static final long DEFAULT_MAX_TIME_MS = 3000L;
+  public static final long DEFAULT_MAX_TIME_MS = 5000L;
 
   /** Maximum search depth allowed to prevent stack overflow. */
-  protected static final int MAX_SAFE_DEPTH = 20;
+  public static final int MAX_SAFE_DEPTH = 15;
 
   /** Minimum thinking time in milliseconds to allow basic computation. */
-  protected static final long MIN_TIME_MS = 100L;
+  public static final long MIN_TIME_MS = 100L;
 
   /** Maximum reasonable thinking time in milliseconds (30 seconds). */
-  protected static final long MAX_TIME_MS = 5000L;
+  public static final long MAX_TIME_MS = 30000L;
 
   /** Maximum search depth for this specific AI instance. */
   protected int maxDepth;
@@ -246,4 +247,34 @@ public abstract class Ai {
     validateTime(maxTimeMs);
     this.maxTimeMs = maxTimeMs;
   }
+
+  /**
+   * Factory method to create an AI instance based on the specified mode, depth, and time.
+   *
+   * @param cfg the configuration containing AI settings
+   * @return an instance of Ai corresponding to the specified mode
+   */
+  public static Ai buildAi(Configuration cfg) {
+    String aiMode = cfg.getAiMode();
+    int depth = cfg.getAiDepth();
+    long timeMs = cfg.getAiTime();
+
+    switch (aiMode.toLowerCase()) {
+      case "minimax":
+        return new MinMax(depth, timeMs);
+      case "alphabeta":
+        return new MinMaxAlphaBeta(depth, timeMs);
+      case "mcts":
+        Mcts mcts = new Mcts(depth, timeMs);
+        mcts.setSelectionMode(cfg.getSelectionMode());
+        return mcts;
+      case "iterative":
+        // return new IterativeDeepening(depth, timeMs);
+        break; // Placeholder until IterativeDeepening is implemented
+      default:
+        throw new IllegalArgumentException("Invalid AI mode: " + aiMode);
+    }
+    return null; // Should never reach here due to exception on invalid mode
+  }
+
 }

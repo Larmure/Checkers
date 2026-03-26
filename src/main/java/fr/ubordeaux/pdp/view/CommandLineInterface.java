@@ -104,6 +104,11 @@ public class CommandLineInterface extends GameView {
     display(gameCheckers);
   }
 
+  @Override
+  public void showHint(String from, String to) {
+    System.out.println(Internationalization.get("hint.execute") + " " + from + " " + to + "\n");
+  }
+
   /**
    * Handles user input from the terminal.
    * It distinguishes between move commands (e.g., "B2 C3") and other commands
@@ -119,17 +124,25 @@ public class CommandLineInterface extends GameView {
     if (router != null) {
       router.route(input.trim());
     } else {
-      String trimmed = input.trim();
-      String[] tokens = trimmed.split("\\s+");
+     String trimmed = input.trim();
+    String[] tokens;
 
-      if (trimmed.matches(Utils.MOVE_REGEX)) {
-        controller.executeMove(tokens[0], tokens[1]);
-      } else {
-        String commandName = tokens[0];
-        String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-        controller.executeCommand(commandName, args);
-      }
+    if (trimmed.matches(Utils.MOVE_REGEX)) {
+      tokens = trimmed.split("\\s+");
+      controller.executeMove(tokens[0], tokens[1], false);
+
+    } else if (trimmed.matches(Utils.MANOURY_REGEX)) {
+      tokens = trimmed.split("-");
+      controller.executeMove(tokens[0], tokens[1], true);
+
+    } else {
+      tokens = trimmed.split("\\s+");
+
+      String commandName = tokens[0];
+      String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
+      controller.executeCommand(commandName, args);
     }
+  }
   }
 
   /**

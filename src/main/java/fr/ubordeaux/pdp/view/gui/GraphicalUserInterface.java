@@ -1,7 +1,11 @@
 package fr.ubordeaux.pdp.view.gui;
 
+import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.view.gui.layout.MainView;
+import fr.ubordeaux.pdp.view.gui.layout.MenuView;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -63,19 +67,19 @@ public class GraphicalUserInterface extends GameView {
   public void start() {
     Platform.startup(() -> {
       stage = new Stage();
-      mainView = new MainView(controller);
+      ConfigManager configManager = new ConfigManager();
+      configManager.load();
+      mainView = new MainView(controller, configManager);
 
-      Rectangle2D screen = Screen.getPrimary().getVisualBounds();
-      double initW = screen.getWidth() * 0.90;
-      double initH = screen.getHeight() * 0.90;
+      final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+      double initW = 1200;
+      double initH = 800;
 
       Scene scene = new Scene(mainView, initW, initH);
 
       // Load the CSS stylesheet — src/main/resources/
       scene.getStylesheets().add(
-          getClass().getResource("/style.css").toExternalForm()
-      );
-
+          getClass().getResource("/style.css").toExternalForm());
       stage.setScene(scene);
       stage.setTitle("Checkers — Universite de Bordeaux");
       stage.setMinWidth(720);
@@ -85,15 +89,14 @@ public class GraphicalUserInterface extends GameView {
       stage.setX(screen.getMinX() + (screen.getWidth() - initW) / 2.0);
       stage.setY(screen.getMinY() + (screen.getHeight() - initH) / 2.0);
 
-      // Wire responsive board sizing before showing the window.
-      mainView.bindToScene(scene);
+      stage.setResizable(false);
 
       stage.show();
 
       // Pass the stage to MenuView *after* show() so dialogs have a visible owner.
       mainView.passStageToMenu(stage);
       mainView.passGuiToMenu(this);
- 
+
       // Intercept the window close button (X) — same logic as the Quit menu item.
       stage.setOnCloseRequest(e -> {
         e.consume(); // prevent immediate close
@@ -120,6 +123,12 @@ public class GraphicalUserInterface extends GameView {
         mainView.update(game);
       }
     });
+  }
+
+  @Override
+  public void showHint(String from, String to) {
+    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> "
+        + to + "\n");
   }
 
   /**
@@ -154,7 +163,7 @@ public class GraphicalUserInterface extends GameView {
       confirm.setHeaderText("Current game has unsaved changes.");
       confirm.setContentText("Save before quitting?");
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
- 
+
       confirm.showAndWait().ifPresent(response -> {
         if (response == ButtonType.YES) {
           mainView.openSaveDialog(); // delegate to MenuView's save dialog
@@ -168,7 +177,7 @@ public class GraphicalUserInterface extends GameView {
       doQuit();
     }
   }
- 
+
   /**
    * Performs the actual shutdown: closes the JavaFX platform cleanly then
    * exits the JVM.

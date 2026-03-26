@@ -552,19 +552,19 @@ public class Board {
     // Remove all captured pieces.
     for (int captured : move.getCaptured()) {
       if (isBitWhitePawn(captured)) {
-        move.getCapturedColors().add("WP");
+        move.getCapturedColors().add(Piece.WHITE_PAWN);
         removeWhitePawn(captured);
       }
       if (isBitBlackPawn(captured)) {
-        move.getCapturedColors().add("BP");
+        move.getCapturedColors().add(Piece.BLACK_PAWN);
         removeBlackPawn(captured);
       }
       if (isBitWhiteChecker(captured)) {
-        move.getCapturedColors().add("WC");
+        move.getCapturedColors().add(Piece.WHITE_CHECKER);
         removeWhiteChecker(captured);
       }
       if (isBitBlackChecker(captured)) {
-        move.getCapturedColors().add("BC");
+        move.getCapturedColors().add(Piece.BLACK_CHECKER);
         removeBlackChecker(captured);
       }
     }
@@ -1234,21 +1234,21 @@ public class Board {
   *     "WC" for white checker,
   *     "BC" for black checker
   */
-  public void restorePiece(int index, String type) {
+  public void restorePiece(int index, Piece type) {
     if (index < 0 || index >= indexMax) {
       throw new IllegalArgumentException("Index hors limites");
     }
     switch (type) {
-      case "WP":
+      case WHITE_PAWN:
         addWhitePawn(index);
         break;
-      case "BP":
+      case BLACK_PAWN:
         addBlackPawn(index);
         break;
-      case "WC":
+      case WHITE_CHECKER:
         addWhiteChecker(index);
         break;
-      case "BC":
+      case BLACK_CHECKER:
         addBlackChecker(index);
         break;
       default:
@@ -1369,6 +1369,102 @@ public class Board {
    */
   public int getSizeBoard() {
     return sizeBoard;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Manoury Conversion Utilities
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Converts a Manoury notation square number (e.g., 1 to 50 for a 10x10 board) 
+   * to its internal bit index.
+   *
+   * @param manoury the square number in Manoury notation
+   * @return bit index in the range {@code [0, indexMax)}
+   * @throws IllegalArgumentException if the number is outside the valid range
+   */
+  public int manouryToIndex(int manoury) {
+    if (manoury < 1 || manoury > this.indexMax) {
+      throw new IllegalArgumentException("Case Manoury hors limites: " + manoury);
+    }
+
+    int zeroBasedManoury = manoury - 1;
+    int squaresPerRow = sizeBoard / 2;
+
+    // Calculate the row counting from the top (0 = top row, 9 = bottom row for 10x10)
+    int rowFromTop = zeroBasedManoury / squaresPerRow;
+    // Calculate position within that row (0 to 4 for 10x10)
+    int colInRow = zeroBasedManoury % squaresPerRow;
+
+    // Invert the row to match the internal bottom-up representation
+    int internalRow = (sizeBoard - 1) - rowFromTop;
+
+    return (internalRow * squaresPerRow) + colInRow;
+  }
+
+  /**
+   * Converts an internal bit index to its corresponding Manoury notation 
+   * square number (e.g., 1 to 50).
+   *
+   * @param index bit index in the range {@code [0, indexMax)}
+   * @return the square number in Manoury notation
+   * @throws IllegalArgumentException if the index is outside the board limits
+   */
+  public int indexToManoury(int index) {
+    if (index < 0 || index >= this.indexMax) {
+      throw new IllegalArgumentException("Index interne hors limites: " + index);
+    }
+
+    int squaresPerRow = sizeBoard / 2;
+
+    // Calculate internal row and column
+    int internalRow = index / squaresPerRow;
+    int colInRow = index % squaresPerRow;
+
+    // Invert the row to match Manoury's top-down representation
+    int rowFromTop = (sizeBoard - 1) - internalRow;
+
+    return (rowFromTop * squaresPerRow) + colInRow + 1; // +1 because Manoury starts at 1
+  }
+  
+  /**
+   * Returns the total count of white pawns currently on the board by summing the
+   * bit counts of both white pawn bitboards.
+   *
+   * @return the number of white pawns on the board
+   */
+  public int whitePawnsCount() {
+    return Long.bitCount(whitePawns1) + Long.bitCount(whitePawns2);
+  }
+
+  /**
+   * Returns the total count of black pawns currently on the board by summing the
+   * bit counts of both black pawn bitboards.
+   *
+   * @return the number of black pawns on the board
+   */
+  public int blackPawnsCount() {
+    return Long.bitCount(blackPawns1) + Long.bitCount(blackPawns2);
+  }
+
+  /**
+   * Returns the total count of white checkers currently on the board by summing the
+   * bit counts of both white checker bitboards.
+   *
+   * @return the number of white checkers on the board
+   */
+  public int whiteCheckersCount() {
+    return Long.bitCount(whiteCheckers1) + Long.bitCount(whiteCheckers2);
+  }
+
+  /**
+   * Returns the total count of black checkers currently on the board by summing the
+   * bit counts of both black checker bitboards.
+   *
+   * @return the number of black checkers on the board
+   */
+  public int blackCheckersCount() {
+    return Long.bitCount(blackCheckers1) + Long.bitCount(blackCheckers2);
   }
 
 }
