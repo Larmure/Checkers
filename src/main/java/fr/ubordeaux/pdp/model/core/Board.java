@@ -1427,5 +1427,45 @@ public class Board {
 
     return (rowFromTop * squaresPerRow) + colInRow + 1; // +1 because Manoury starts at 1
   }
+  
+  /**
+   * Returns the total count of white pawns currently on the board by summing the
+   * bit counts of both white pawn bitboards.
+   *
+   * @return the number of white pawns on the board
+   */
+  public int whitePawnsCount() {
+    return Long.bitCount(whitePawns1) + Long.bitCount(whitePawns2);
+  }
+
+  /**
+   * Returns the total count of black pawns currently on the board by summing the
+   * bit counts of both black pawn bitboards.
+   *
+   * @return the number of black pawns on the board
+   */
+  public int blackPawnsCount() {
+    return Long.bitCount(blackPawns1) + Long.bitCount(blackPawns2);
+  }
+
+  /**
+   * Returns the total count of white checkers currently on the board by summing the
+   * bit counts of both white checker bitboards.
+   *
+   * @return the number of white checkers on the board
+   */
+  public int whiteCheckersCount() {
+    return Long.bitCount(whiteCheckers1) + Long.bitCount(whiteCheckers2);
+  }
+
+  /**
+   * Returns the total count of black checkers currently on the board by summing the
+   * bit counts of both black checker bitboards.
+   *
+   * @return the number of black checkers on the board
+   */
+  public int blackCheckersCount() {
+    return Long.bitCount(blackCheckers1) + Long.bitCount(blackCheckers2);
+  }
 
 }

@@ -71,7 +71,7 @@ public class GraphicalUserInterface extends GameView {
       configManager.load();
       mainView = new MainView(controller, configManager);
 
-      Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+      final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
       double initW = 1200;
       double initH = 800;
 
@@ -127,7 +127,8 @@ public class GraphicalUserInterface extends GameView {
 
   @Override
   public void showHint(String from, String to) {
-    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> " + to + "\n");
+    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> "
+        + to + "\n");
   }
 
   /**

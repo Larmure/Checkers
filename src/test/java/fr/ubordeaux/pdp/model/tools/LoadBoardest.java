@@ -15,6 +15,7 @@ import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.Mcts;
 
 public class LoadBoardest {
 
@@ -58,7 +59,8 @@ public class LoadBoardest {
         Utils.DEFAULT_BLACK_AI,
         Ai.DEFAULT_MAX_TIME_MS,
         Utils.DEFAULT_AI_MODE,
-        Ai.DEFAULT_DEPTH);
+        Ai.DEFAULT_DEPTH,
+        Mcts.DEFAULT_SELECTION_MODE);
     return new GameCheckers(cfg);
   }
 

@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.model.player.ai;
 
 import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
@@ -250,26 +251,28 @@ public abstract class Ai {
   /**
    * Factory method to create an AI instance based on the specified mode, depth, and time.
    *
-   * @param aiMode the AI mode to use (e.g., "minimax", "alphabeta", "mcts")
-   * @param depth the maximum search depth for the AI
-   * @param timeMs the maximum thinking time in milliseconds for the AI
+   * @param cfg the configuration containing AI settings
    * @return an instance of Ai corresponding to the specified mode
    */
-  public static Ai buildAi(String aiMode, int depth, long timeMs) {
+  public static Ai buildAi(Configuration cfg) {
+    String aiMode = cfg.getAiMode();
+    int depth = cfg.getAiDepth();
+    long timeMs = cfg.getAiTime();
+
     switch (aiMode.toLowerCase()) {
       case "minimax":
         return new MinMax(depth, timeMs);
       case "alphabeta":
         return new MinMaxAlphaBeta(depth, timeMs);
       case "mcts":
-        return new Mcts(depth, timeMs);
+        Mcts mcts = new Mcts(depth, timeMs);
+        mcts.setSelectionMode(cfg.getSelectionMode());
+        return mcts;
       case "iterative":
         // return new IterativeDeepening(depth, timeMs);
-        break; // Placeholder until IterativeDeepening is implemented
       default:
         throw new IllegalArgumentException("Invalid AI mode: " + aiMode);
     }
-    return null; // Should never reach here due to exception on invalid mode
   }
 
 }

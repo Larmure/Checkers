@@ -4,9 +4,15 @@ import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import java.util.ArrayList;
 import java.util.List;
+import org.tensorflow.SavedModelBundle;
+import org.tensorflow.Tensor;
+import org.tensorflow.ndarray.FloatNdArray;
+import org.tensorflow.ndarray.StdArrays;
+import org.tensorflow.types.TFloat32;
 
 /**
  * Monte Carlo Tree Search (MCTS) implementation for the checkers AI.
@@ -59,8 +65,17 @@ public class Mcts extends Ai {
    */
   private static final double DRAW_SCORE = 0.5;
 
+  /** The default selection mode for this instance. */
+  public static final SelectionMode DEFAULT_SELECTION_MODE = SelectionMode.UCT;
+
   /** UCB1 exploration constant for this instance. */
   final double explorationConstant;
+
+  /** The selection mode for this instance. */
+  private SelectionMode selectionMode;
+
+  /** The TensorFlow model for evaluating board states. */
+  private SavedModelBundle tfModel;
 
   // -------------------------------------------------------------------------
   // Constructors
@@ -70,6 +85,7 @@ public class Mcts extends Ai {
   public Mcts() {
     super();
     this.explorationConstant = DEFAULT_EXPLORATION;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   /**
@@ -83,6 +99,7 @@ public class Mcts extends Ai {
   public Mcts(int depth) {
     super(depth);
     this.explorationConstant = DEFAULT_EXPLORATION;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   /**
@@ -94,6 +111,7 @@ public class Mcts extends Ai {
   public Mcts(int depth, long maxTimeMs) {
     super(depth, maxTimeMs);
     this.explorationConstant = DEFAULT_EXPLORATION;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   /**
@@ -111,6 +129,7 @@ public class Mcts extends Ai {
           "Exploration constant must be positive, got: " + explorationConstant);
     }
     this.explorationConstant = explorationConstant;
+    this.selectionMode = DEFAULT_SELECTION_MODE;
   }
 
   // -------------------------------------------------------------------------
@@ -260,6 +279,28 @@ public class Mcts extends Ai {
       }
       return best;
     }
+
+    /**
+     * Selects the child with the highest predicted score from the TensorFlow model.
+     *
+     * @param currentBoard the current board state at this node 
+     *     (used to extract features for the model)
+     * @return the child with the highest predicted score, or {@code null} if there are no children
+     */
+    Node bestChildByMl(Board currentBoard) {
+      Node best = null;
+      double bestScore = Double.NEGATIVE_INFINITY;
+
+      for (Node child : children) {
+        double score = evaluateWithTf(child, currentBoard);
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = child;
+        }
+      }
+      return best;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -329,9 +370,14 @@ public class Mcts extends Ai {
   private Node select(Node root, Board board, ManagerUndoRedo undo) {
     Node node = root;
     while (node.isFullyExpanded(board) && !node.children.isEmpty()) {
-      node = node.bestChildByUcb1();
+      switch (selectionMode) {
+        case UCT -> node = node.bestChildByUcb1();
+        case ML -> node = node.bestChildByMl(board);
+        default -> throw new IllegalStateException("Unknown selection mode: " + selectionMode);
+      }
       undo.registerMove(node.player, node.move);
       board.applyMove(node.move);
+      System.out.println(selectionMode);
     }
     return node;
   }
@@ -433,6 +479,82 @@ public class Mcts extends Ai {
   }
 
   // -------------------------------------------------------------------------
+  // Machine Learning
+  // -------------------------------------------------------------------------
+
+  /**
+   * Loads a TensorFlow model from the specified path for evaluating board states during simulation.
+   *
+   * @param modelPath the file path to the TensorFlow SavedModel directory
+   */
+  public void loadModel(String modelPath) {
+    try {
+      this.tfModel = SavedModelBundle.load(modelPath, "serve");
+    } catch (Exception e) {
+      System.err.println(Internationalization.get("mcts.model.load_failed", modelPath,
+          e.getMessage()));
+      this.tfModel = null;
+    }
+  }
+
+  /**
+   * Evaluates the given board state using the loaded TensorFlow model, returning a score from the
+   * perspective of the root player.
+   *
+   * @param child the node whose board state is to be evaluated
+   * @param currentBoard the current board state at the node (
+   *     used to extract features for the model)
+   * @return the predicted probability of victory for the root player, or 0 if the model 
+   *     is not loaded
+   */
+  private double evaluateWithTf(Node child, Board board) {
+    if (this.tfModel == null) {
+      throw new IllegalStateException("Le modèle TF n'est pas chargé !");
+    }
+
+    board.applyMove(child.move);
+
+    float[] features = extractFeatures(board);
+    float[][] batch = new float[][] { features };
+
+    double score;
+
+    try (TFloat32 inputTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(batch))) {
+
+      try (Tensor resultTensor = this.tfModel.session().runner()
+          .feed("serving_default_input_1", inputTensor)
+          .fetch("StatefulPartitionedCall")
+          .run()
+          .get(0)) {
+
+        FloatNdArray result = (FloatNdArray) resultTensor;
+        score = result.getFloat(0, 0);
+      }
+    }
+
+    return score;
+  }
+
+  /**
+  * Extracts a feature vector from the given board state for input into the TensorFlow model.
+  */
+  private float[] extractFeatures(Board board) {
+    int whitePawns = board.whitePawnsCount();
+    int blackPawns = board.blackPawnsCount();
+    int whiteKings = board.whiteCheckersCount();
+    int blackKings = board.blackCheckersCount();
+
+    return new float[] {
+        whitePawns,
+        blackPawns,
+        whiteKings,
+        blackKings,
+        whitePawns - blackPawns,
+        whiteKings - blackKings
+    };
+  }
+
+  // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 
@@ -466,5 +588,15 @@ public class Mcts extends Ai {
       return 0.0;
     }
     return DRAW_SCORE;
+  }
+
+  /**
+   * Sets the selection mode for this MCTS instance, determining how child nodes are selected during
+   * the selection phase.
+   *
+   * @param selectionMode the selection mode to use
+   */
+  public void setSelectionMode(SelectionMode selectionMode) {
+    this.selectionMode = selectionMode;
   }
 }

@@ -1,0 +1,49 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "fr.ubordeaux.pdp.App",
+            "projectName": ""
+        },
+        {
+            "type": "java",
+            "name": "client",
+            "request": "launch",
+            "mainClass": "fr.ubordeaux.pdp.serveur.client",
+            "projectName": "checkers"
+        },
+        {
+            "type": "java",
+            "name": "GameServer",
+            "request": "launch",
+            "mainClass": "fr.ubordeaux.pdp.serveur.GameServer",
+            "projectName": "checkers"
+        },
+        {
+            "type": "java",
+            "name": "BoardSauvegarde",
+            "request": "launch",
+            "mainClass": "fr.u_bordeaux.pdp.model.BoardSauvegarde",
+            "projectName": "checkers"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "fr.u_bordeaux.pdp.App",
+            "projectName": "checkers"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch",
+            "program": "$${command:cmake.launchTargetPath}/build/game_solve",
+            "args": [
+                "5"
+            ],
+            "cwd": "${Desktop}"
+        }
+    ]
+}

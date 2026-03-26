@@ -17,9 +17,17 @@ import fr.ubordeaux.pdp.model.tools.Internationalization;
  * @version 1.0
  */
 public class HintCommand implements Command, Helpable {
+  /** The GameController instance associated with this command. */
   private final GameController controller;
+  /** The AI instance used for hint generation. */
   private final MinMaxAlphaBeta ai = new MinMaxAlphaBeta();
 
+  /**
+   * Constructs a new HintCommand with the specified GameController.
+   *
+   * @param controller the GameController instance to which this command will be associated; 
+   *     must not be {@code null}
+   */
   public HintCommand(GameController controller) {
     this.controller = controller;
   }
@@ -32,7 +40,7 @@ public class HintCommand implements Command, Helpable {
   @Override
   public void execute() {
     MaxEvaluator evaluator = new MaxEvaluator();
-    Move hintMove = ai.getBestMove(controller.getGame().getManagerUndoRedo(), 
+    Move hintMove = ai.getBestMove(controller.getGame().getManagerUndoRedo(),
         controller.getGame().getBoard(), controller.getGame().getCurrentColor(), evaluator);
 
     if (hintMove != null) {
