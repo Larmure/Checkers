@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.view.gui;
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
@@ -83,7 +84,7 @@ public class GraphicalUserInterface extends GameView {
       scene.getStylesheets().add(
           getClass().getResource("/style.css").toExternalForm());
       stage.setScene(scene);
-      stage.setTitle("Checkers — Universite de Bordeaux");
+      stage.setTitle(Internationalization.get("app.title"));
       stage.setMinWidth(720);
       stage.setMinHeight(540);
 
@@ -128,16 +129,16 @@ public class GraphicalUserInterface extends GameView {
     Platform.runLater(() -> {
       Alert alert = new Alert(Alert.AlertType.INFORMATION);
       alert.initOwner(stage);
-      alert.setTitle("Game Over");
+      alert.setTitle(Internationalization.get("gui.gameover.title"));
       
       String headerText;
       if (timeExpired) {
-        headerText = "Time's up ! " + winnerName + " has won !";
+        headerText = Internationalization.get("gui.gameover.time_expired");
       } else {
-        headerText = winnerName + " has won !";
+        headerText = Internationalization.get("gui.gameover.winner");
       }
       
-      alert.setHeaderText(headerText);
+      alert.setHeaderText(String.format(headerText, winnerName));
       alert.showAndWait();
     });
   }
@@ -196,9 +197,9 @@ public class GraphicalUserInterface extends GameView {
     }
     if (controller.getGame() != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-      confirm.setTitle("Quit");
-      confirm.setHeaderText("Current game has unsaved changes.");
-      confirm.setContentText("Save before quitting?");
+      confirm.setTitle(Internationalization.get("gui.quit.title"));
+      confirm.setHeaderText(Internationalization.get("gui.quit.unsaved_changes"));
+      confirm.setContentText(Internationalization.get("gui.quit.save_prompt"));
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
 
       confirm.showAndWait().ifPresent(response -> {
