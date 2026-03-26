@@ -63,7 +63,7 @@ class MctsTest {
   @DisplayName("getBestMove returns null when no legal moves")
   void testGetBestMoveWhenNoMovesReturnsNull() throws Exception {
     Board board = new Board(8);
-    clearAllPieces(board);
+    board.clearBoard();
     assertTrue(board.noPiecesLeft(PlayerColor.WHITE));
     assertTrue(board.noPiecesLeft(PlayerColor.BLACK));
 
@@ -72,15 +72,5 @@ class MctsTest {
 
     Move move = mcts.getBestMove(undo, board, PlayerColor.WHITE, new SimpleEvaluator());
     assertNull(move);
-  }
-
-  private void clearAllPieces(Board board) throws Exception {
-    for (String fieldName : new String[] {
-        "whitePawns1", "whitePawns2", "whiteCheckers1", "whiteCheckers2",
-        "blackPawns1", "blackPawns2", "blackCheckers1", "blackCheckers2" }) {
-      Field field = Board.class.getDeclaredField(fieldName);
-      field.setAccessible(true);
-      field.setLong(board, 0L);
-    }
   }
 }
