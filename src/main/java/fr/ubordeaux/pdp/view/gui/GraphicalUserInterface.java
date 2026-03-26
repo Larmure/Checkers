@@ -53,6 +53,8 @@ public class GraphicalUserInterface extends GameView {
    */
   private MainView mainView;
 
+  private boolean gameOverAlert = false;
+
   /**
    * Bootstraps the JavaFX runtime, creates the primary window, and shows it.
    *
@@ -107,6 +109,31 @@ public class GraphicalUserInterface extends GameView {
   }
 
   /**
+   * Displays a game over alert with the winner.
+   * Should be called after the FINISHED state is set in the model.
+   *
+   * @param game the current game state; must not be {@code null}
+   */
+  public void showGameOverAlert(GameCheckers game) {
+    if (gameOverAlert) {
+      return;
+    }
+    gameOverAlert = true;
+
+    String winnerName = game.isWhiteTurn()
+        ? game.getBlackPlayer().getName()
+        : game.getWhitePlayer().getName();
+
+    Platform.runLater(() -> {
+      Alert alert = new Alert(Alert.AlertType.INFORMATION);
+      alert.initOwner(stage);
+      alert.setTitle("Fin de la partie");
+      alert.setHeaderText(winnerName + " a gagné !");
+      alert.showAndWait();
+    });
+  }
+
+  /**
    * Schedules a view refresh on the JavaFX Application Thread.
    *
    * <p>This method is called by
@@ -124,6 +151,9 @@ public class GraphicalUserInterface extends GameView {
         mainView.update(game);
       }
     });
+    if (game.getState() == State.IN_GAME) {
+      gameOverAlert = false;
+    }
   }
 
   /**
@@ -157,7 +187,6 @@ public class GraphicalUserInterface extends GameView {
     }
     if (controller.getGame() != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-      confirm.initOwner(stage);
       confirm.setTitle("Quit");
       confirm.setHeaderText("Current game has unsaved changes.");
       confirm.setContentText("Save before quitting?");
