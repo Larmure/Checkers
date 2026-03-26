@@ -62,6 +62,9 @@ public class GameController {
   /** Flag controlling the lifecycle of the main game loop. */
   private volatile boolean gameLoopRunning;
 
+  /** Flag indicating if the game ended due to time expiration in blitz mode. */
+  private boolean timeExpired = false;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -360,11 +363,14 @@ public class GameController {
         // Notify observers to update UI (both CLI and GUI)
         game.notifyObservers();
         
+        int totalSeconds = game.getCurrentPlayer().getPlayTime();
         // Check if time has run out
-        if (game.getCurrentPlayer().getPlayTime() <= 0) {
+        if (totalSeconds <= 0) {
           stopBlitzTimer();
           game.setState(State.FINISHED);
+          timeExpired = true;
           handleGameOver();
+          timeExpired = false;
           game.notifyObservers();
         }
       }
@@ -540,7 +546,7 @@ public class GameController {
       System.out.println(Internationalization.get("game.start_new_game"));
     
       if (view instanceof GraphicalUserInterface gui) {
-        gui.showGameOverAlert(game);
+        gui.showGameOverAlert(game, timeExpired);
       }
     }
   }

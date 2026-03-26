@@ -113,8 +113,9 @@ public class GraphicalUserInterface extends GameView {
    * Should be called after the FINISHED state is set in the model.
    *
    * @param game the current game state; must not be {@code null}
+   * @param timeExpired true if the game ended due to time expiration, false otherwise
    */
-  public void showGameOverAlert(GameCheckers game) {
+  public void showGameOverAlert(GameCheckers game, boolean timeExpired) {
     if (gameOverAlert) {
       return;
     }
@@ -127,8 +128,16 @@ public class GraphicalUserInterface extends GameView {
     Platform.runLater(() -> {
       Alert alert = new Alert(Alert.AlertType.INFORMATION);
       alert.initOwner(stage);
-      alert.setTitle("Fin de la partie");
-      alert.setHeaderText(winnerName + " a gagné !");
+      alert.setTitle("Game Over");
+      
+      String headerText;
+      if (timeExpired) {
+        headerText = "Time's up ! " + winnerName + " has won !";
+      } else {
+        headerText = winnerName + " has won !";
+      }
+      
+      alert.setHeaderText(headerText);
       alert.showAndWait();
     });
   }
