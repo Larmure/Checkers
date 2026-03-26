@@ -1,14 +1,6 @@
 package fr.ubordeaux.pdp.model.player.ai;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
+import static org.junit.jupiter.api.Assertions.*;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.Move;
@@ -16,6 +8,9 @@ import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class AiTest {
 

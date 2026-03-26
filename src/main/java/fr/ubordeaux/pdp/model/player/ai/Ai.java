@@ -270,11 +270,9 @@ public abstract class Ai {
         return mcts;
       case "iterative":
         // return new IterativeDeepening(depth, timeMs);
-        break; // Placeholder until IterativeDeepening is implemented
       default:
         throw new IllegalArgumentException("Invalid AI mode: " + aiMode);
     }
-    return null; // Should never reach here due to exception on invalid mode
   }
 
 }

@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.view.gui;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
@@ -53,6 +54,8 @@ public class GraphicalUserInterface extends GameView {
    */
   private MainView mainView;
 
+  private boolean gameOverAlert = false;
+
   /**
    * Bootstraps the JavaFX runtime, creates the primary window, and shows it.
    *
@@ -81,7 +84,7 @@ public class GraphicalUserInterface extends GameView {
       scene.getStylesheets().add(
           getClass().getResource("/style.css").toExternalForm());
       stage.setScene(scene);
-      stage.setTitle("Checkers — Universite de Bordeaux");
+      stage.setTitle(Internationalization.get("app.title"));
       stage.setMinWidth(720);
       stage.setMinHeight(540);
 
@@ -106,6 +109,40 @@ public class GraphicalUserInterface extends GameView {
   }
 
   /**
+   * Displays a game over alert with the winner.
+   * Should be called after the FINISHED state is set in the model.
+   *
+   * @param game the current game state; must not be {@code null}
+   * @param timeExpired true if the game ended due to time expiration, false otherwise
+   */
+  public void showGameOverAlert(GameCheckers game, boolean timeExpired) {
+    if (gameOverAlert) {
+      return;
+    }
+    gameOverAlert = true;
+
+    String winnerName = game.isWhiteTurn()
+        ? game.getBlackPlayer().getName()
+        : game.getWhitePlayer().getName();
+
+    Platform.runLater(() -> {
+      Alert alert = new Alert(Alert.AlertType.INFORMATION);
+      alert.initOwner(stage);
+      alert.setTitle(Internationalization.get("gui.gameover.title"));
+
+      String headerText;
+      if (timeExpired) {
+        headerText = Internationalization.get("gui.gameover.time_expired");
+      } else {
+        headerText = Internationalization.get("gui.gameover.winner");
+      }
+
+      alert.setHeaderText(String.format(headerText, winnerName));
+      alert.showAndWait();
+    });
+  }
+
+  /**
    * Schedules a view refresh on the JavaFX Application Thread.
    *
    * <p>This method is called by
@@ -123,6 +160,9 @@ public class GraphicalUserInterface extends GameView {
         mainView.update(game);
       }
     });
+    if (game.getState() == State.IN_GAME) {
+      gameOverAlert = false;
+    }
   }
 
   @Override
@@ -156,12 +196,15 @@ public class GraphicalUserInterface extends GameView {
    * <p>Must be called on the JavaFX Application Thread.
    */
   public void requestQuit() {
+    if (controller.getGame().getState() == State.IN_GAME) {
+      // If the game is currently in progress, pause it before showing the quit confirmation dialog.
+      controller.executeCommand("pause", new String[0]);
+    }
     if (controller.getGame() != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-      confirm.initOwner(stage);
-      confirm.setTitle("Quit");
-      confirm.setHeaderText("Current game has unsaved changes.");
-      confirm.setContentText("Save before quitting?");
+      confirm.setTitle(Internationalization.get("gui.quit.title"));
+      confirm.setHeaderText(Internationalization.get("gui.quit.unsaved_changes"));
+      confirm.setContentText(Internationalization.get("gui.quit.save_prompt"));
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
 
       confirm.showAndWait().ifPresent(response -> {
@@ -170,8 +213,9 @@ public class GraphicalUserInterface extends GameView {
           doQuit();
         } else if (response == ButtonType.NO) {
           doQuit();
+        } else {
+          controller.executeCommand("continue", new String[0]);
         }
-        // CANCEL — do nothing, user stays in the game.
       });
     } else {
       doQuit();

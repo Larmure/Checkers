@@ -20,6 +20,7 @@ import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -54,6 +55,9 @@ public class GameController {
 
   /** Flag controlling the lifecycle of the main game loop. */
   private volatile boolean gameLoopRunning;
+
+  /** Flag indicating if the game ended due to time expiration in blitz mode. */
+  private boolean timeExpired = false;
 
   /**
    * Initializes the controller with the required model and view components.
@@ -230,7 +234,7 @@ public class GameController {
       }
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(
-            game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
+          game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
     handleGameOver();
@@ -314,14 +318,18 @@ public class GameController {
       String template = Internationalization.get("game.time_remaining");
 
       System.out.println(
-            String.format(template, game.getCurrentPlayer().getName(), formattedTime));
+          String.format(template, game.getCurrentPlayer().getName(), formattedTime));
     } else {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }
   }
 
   /**
-   * Starts the blitz timer for the current game.
+   * Starts the blitz timer for the current game. 
+   * This method initializes a new Timer that schedules a task to run every second. 
+   * The task updates the game logic related to player timing and checks if the current player's 
+   * time has run out. If the time is up, it stops the timer, sets the game state to FINISHED, 
+   * and notifies observers of the state change.
    */
   public void startBlitzTimer() {
     stopBlitzTimer();
@@ -334,34 +342,24 @@ public class GameController {
     blitzTimer.scheduleAtFixedRate(new TimerTask() {
       @Override
       public void run() {
+        if (game.getState() == State.PAUSE) {
+          return;
+        }
+        // Update game timing logic
         game.timerPlayer();
 
+        // Notify observers to update UI (both CLI and GUI)
+        game.notifyObservers();
+
         int totalSeconds = game.getCurrentPlayer().getPlayTime();
-
-        if (!(view instanceof CommandLineInterface)) {
-          javafx.application.Platform.runLater(() -> {
-            game.notifyObservers();
-          });
-        }
-
+        // Check if time has run out
         if (totalSeconds <= 0) {
           stopBlitzTimer();
-
-          if (view instanceof CommandLineInterface) {
-            System.out.println("\n" + Internationalization.get("game.time_up")
-                + game.getCurrentPlayer().getName());
-            game.setState(State.FINISHED);
-            handleGameOver();
-            game.notifyObservers();
-          } else {
-            javafx.application.Platform.runLater(() -> {
-              System.out.println("\n" + Internationalization.get("game.time_up")
-                  + game.getCurrentPlayer().getName());
-              game.setState(State.FINISHED);
-              handleGameOver();
-              game.notifyObservers();
-            });
-          }
+          game.setState(State.FINISHED);
+          timeExpired = true;
+          handleGameOver();
+          timeExpired = false;
+          game.notifyObservers();
         }
       }
     }, 1000, 1000);
@@ -373,6 +371,7 @@ public class GameController {
   public void stopBlitzTimer() {
     if (blitzTimer != null) {
       blitzTimer.cancel();
+      this.blitzTimer.purge();
       blitzTimer = null;
     }
   }
@@ -467,7 +466,6 @@ public class GameController {
     markAsSaved();
   }
 
-
   /**
    * Undoes the last n moves in the game.
    *
@@ -536,6 +534,10 @@ public class GameController {
       System.out.println(game.getCurrentPlayer().getName() + " "
           + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
+
+      if (view instanceof GraphicalUserInterface gui) {
+        gui.showGameOverAlert(game, timeExpired);
+      }
     }
   }
 

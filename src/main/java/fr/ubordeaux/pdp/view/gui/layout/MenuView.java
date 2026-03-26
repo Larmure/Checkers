@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ConfigDialog;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
@@ -17,9 +18,9 @@ import javafx.stage.Stage;
 /**
  * <h2>Menus</h2>
  * <ul>
- *   <li><b>File</b>: New Game, Load Game, Save Game, Configuration, Info,
- *       Quit.</li>
- *   <li><b>Game</b>: Undo, Redo, Pause, Hint.</li>
+ * <li><b>File</b>: New Game, Load Game, Save Game, Configuration, Info,
+ * Quit.</li>
+ * <li><b>Game</b>: Undo, Redo, Pause, Hint.</li>
  * </ul>
  *
  * <h2>Load / Save dialogs</h2>
@@ -29,12 +30,12 @@ import javafx.stage.Stage;
  * {@code /mnt/c/…} WSL path.
  *
  * <ul>
- *   <li>The <em>Save</em> dialog prompts the user for a file name and
- *       forwards it to {@code controller.executeCommand("save", …)}. The
- *       directory is managed by {@code SaveBoard}.</li>
- *   <li>The <em>Load</em> dialog lists existing saves in {@code Sauvegarde/}
- *       and prompts the user for a file name, then forwards it to
- *       {@code controller.executeCommand("load", …)}.</li>
+ * <li>The <em>Save</em> dialog prompts the user for a file name and
+ * forwards it to {@code controller.executeCommand("save", …)}. The
+ * directory is managed by {@code SaveBoard}.</li>
+ * <li>The <em>Load</em> dialog lists existing saves in {@code Sauvegarde/}
+ * and prompts the user for a file name, then forwards it to
+ * {@code controller.executeCommand("load", …)}.</li>
  * </ul>
  *
  * <h2>Stage reference</h2>
@@ -57,7 +58,9 @@ public class MenuView extends MenuBar {
   /** GUI entry point — used to delegate the quit flow. */
   private GraphicalUserInterface gui;
 
+  /* Shorcut keyboard manager */
   private ShortcutManager shortcutManager;
+
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
    * {@code stage.show()} so that modal dialogs have a proper owner window.
@@ -69,7 +72,7 @@ public class MenuView extends MenuBar {
   /**
    * Creates the menu bar and populates it with the File and Game menus.
    *
-   * @param controller the game controller; must not be {@code null}
+   * @param controller      the game controller; must not be {@code null}
    * @param shortcutManager the shortcut manager for keyboard bindings
    */
   public MenuView(GameController controller, ShortcutManager shortcutManager) {
@@ -112,12 +115,12 @@ public class MenuView extends MenuBar {
    *
    * <p>Items and their default shortcuts:
    * <ul>
-   *   <li>New Game — {@code Ctrl+N}</li>
-   *   <li>Load Game — {@code Ctrl+L}</li>
-   *   <li>Save Game — {@code Ctrl+S}</li>
-   *   <li>Configuration — {@code Ctrl+,}</li>
-   *   <li>Info — {@code Ctrl+I}</li>
-   *   <li>Quit — {@code Ctrl+Q}</li>
+   * <li>New Game — {@code Ctrl+N}</li>
+   * <li>Load Game — {@code Ctrl+L}</li>
+   * <li>Save Game — {@code Ctrl+S}</li>
+   * <li>Configuration — {@code Ctrl+,}</li>
+   * <li>Info — {@code Ctrl+I}</li>
+   * <li>Quit — {@code Ctrl+Q}</li>
    * </ul>
    *
    * @return the configured {@link Menu}
@@ -129,19 +132,19 @@ public class MenuView extends MenuBar {
 
     MenuItem loadItem = new MenuItem("Load Game");
     loadItem.setAccelerator(shortcutManager.get("load-game"));
-    loadItem.setOnAction(e -> handleLoad());
+    loadItem.setOnAction(e -> executeWithPause(() -> handleLoad()));
 
     MenuItem saveItem = new MenuItem("Save Game");
     saveItem.setAccelerator(shortcutManager.get("save-game"));
-    saveItem.setOnAction(e -> openSaveDialog());
+    saveItem.setOnAction(e -> executeWithPause(() -> openSaveDialog()));
 
     MenuItem configItem = new MenuItem("Configuration");
     configItem.setAccelerator(shortcutManager.get("configuration"));
-    configItem.setOnAction(e -> showConfigDialog());
+    configItem.setOnAction(e -> executeWithPause(() -> showConfigDialog()));
 
     MenuItem infoItem = new MenuItem("Info");
     infoItem.setAccelerator(shortcutManager.get("info"));
-    infoItem.setOnAction(e -> showInfoDialog());
+    infoItem.setOnAction(e -> executeWithPause(() -> showInfoDialog()));
 
     MenuItem quitItem = new MenuItem("Quit");
     quitItem.setAccelerator(shortcutManager.get("quit"));
@@ -170,10 +173,10 @@ public class MenuView extends MenuBar {
    *
    * <p>Items and their default shortcuts:
    * <ul>
-   *   <li>Undo — {@code Ctrl+U}</li>
-   *   <li>Redo — {@code Ctrl+R}</li>
-   *   <li>Pause — {@code Ctrl+P}</li>
-   *   <li>Hint — {@code Ctrl+H}</li>
+   * <li>Undo — {@code Ctrl+U}</li>
+   * <li>Redo — {@code Ctrl+R}</li>
+   * <li>Pause — {@code Ctrl+P}</li>
+   * <li>Hint — {@code Ctrl+H}</li>
    * </ul>
    *
    * @return the configured {@link Menu}
@@ -189,7 +192,22 @@ public class MenuView extends MenuBar {
 
     MenuItem pauseItem = new MenuItem("Pause");
     pauseItem.setAccelerator(shortcutManager.get("pause"));
-    pauseItem.setOnAction(e -> controller.executeCommand("pause", new String[0]));
+    pauseItem.setOnAction(e -> {
+      if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+        controller.executeCommand("pause", new String[0]);
+
+        Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
+        pauseAlert.setTitle("Pause");
+        pauseAlert.setHeaderText("Le jeu est en pause");
+        
+        ButtonType btnResume = new ButtonType("Reprendre", 
+            javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        pauseAlert.getButtonTypes().setAll(btnResume);
+        pauseAlert.showAndWait();
+
+        controller.executeCommand("continue", new String[0]);
+      }
+    });
 
     MenuItem hintItem = new MenuItem("Hint");
     hintItem.setAccelerator(shortcutManager.get("hint"));
@@ -324,8 +342,8 @@ public class MenuView extends MenuBar {
   }
 
   /**
-  * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
-  */
+   * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
+   */
   private void showConfigDialog() {
     openConfigDialog();
   }
@@ -372,5 +390,27 @@ public class MenuView extends MenuBar {
     a.setHeaderText(header);
     a.setContentText(content);
     a.showAndWait();
+  }
+
+  /**
+   * Helper method to automatically pause the game before opening a dialog,
+   * and resume it after the dialog is closed.
+   *
+   * @param action The method to execute (opening the Load, Save, or Info dialog)
+   */
+  private void executeWithPause(Runnable action) {
+    boolean wasInGame = controller.getGame() != null 
+        && controller.getGame().getState() == State.IN_GAME;
+
+    if (wasInGame) {
+      controller.executeCommand("pause", new String[0]);
+    }
+
+    action.run();
+
+    if (wasInGame && controller.getGame() != null 
+        && controller.getGame().getState() == State.PAUSE) {
+      controller.executeCommand("continue", new String[0]);
+    }
   }
 }
