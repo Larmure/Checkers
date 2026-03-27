@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
 import javafx.geometry.Insets;
@@ -109,23 +110,23 @@ public class MainView extends BorderPane {
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
 
-    turnLabel = new Label("Turn: BLACK");
+    turnLabel = new Label(Internationalization.get("toolbar.turn") + "BLACK");
     // style.css : .turn-label
     turnLabel.getStyleClass().add("turn-label");
 
-    Button undoBtn = toolbarButton("Undo", () -> controller.executeCommand("undo",
-        new String[] { "1" }));
-    Button redoBtn = toolbarButton("Redo", () -> controller.executeCommand("redo",
-        new String[] { "1" }));
-    Button pauseBtn = toolbarButton("Pause", () -> {
+    Button undoBtn = toolbarButton(Internationalization.get("toolbar.undo"),
+        () -> controller.executeCommand("undo", new String[] { "1" }));
+    Button redoBtn = toolbarButton(Internationalization.get("toolbar.redo"),
+        () -> controller.executeCommand("redo", new String[] { "1" }));
+    Button pauseBtn = toolbarButton(Internationalization.get("toolbar.pause"), () -> {
       if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
         controller.executeCommand("pause", new String[0]);
 
         Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
-        pauseAlert.setTitle("Pause");
-        pauseAlert.setHeaderText("Le jeu est en pause");
-        
-        ButtonType btnResume = new ButtonType("Reprendre",
+        pauseAlert.setTitle(Internationalization.get("dialog.pause_title"));
+        pauseAlert.setHeaderText(Internationalization.get("dialog.pause_header"));
+
+        ButtonType btnResume = new ButtonType(Internationalization.get("dialog.pause_resume"),
             javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
         pauseAlert.getButtonTypes().setAll(btnResume);
         pauseAlert.showAndWait();
@@ -133,8 +134,8 @@ public class MainView extends BorderPane {
         controller.executeCommand("continue", new String[0]);
       }
     });
-    Button hintBtn = toolbarButton("Hint", () -> controller.executeCommand("hint",
-        new String[0]));
+    Button hintBtn = toolbarButton(Internationalization.get("toolbar.hint"),
+        () -> controller.executeCommand("hint", new String[0]));
 
     toolbar.getChildren().addAll(undoBtn, redoBtn, pauseBtn, hintBtn, spacer, turnLabel);
     return toolbar;
@@ -220,7 +221,7 @@ public class MainView extends BorderPane {
       playView.update(game);
 
       String name = game.getCurrentPlayer().getName();
-      turnLabel.setText("Turn: " + name.toUpperCase());
+      turnLabel.setText(Internationalization.get("toolbar.turn") + name.toUpperCase());
     }
   }
 }
