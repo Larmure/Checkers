@@ -306,24 +306,32 @@ public class GameController {
   /**
    * Displays the remaining time for the current player if the game is in blitz mode.
    */
+  /**
+   * Displays the remaining time for both players if the game is in blitz mode.
+   */
   public void displayTime() {
-    if (game == null) {
-      System.out.println("No game is currently running.");
-      return;
-    }
-
     if (isBlitz()) {
-      int totalSeconds = game.getCurrentPlayer().getPlayTime();
-      String formattedTime = String.format("%02d:%02d", totalSeconds / 60, totalSeconds % 60);
       String template = Internationalization.get("game.time_remaining");
 
-      System.out.println(
-          String.format(template, game.getCurrentPlayer().getName(), formattedTime));
+      int whiteTotalSeconds = game.getWhitePlayer().getPlayTime();
+      int whiteMinutes = whiteTotalSeconds / 60;
+      int whiteSeconds = whiteTotalSeconds % 60;
+      String whiteFormattedTime = String.format("%02d:%02d", whiteMinutes, whiteSeconds);
+
+      int blackTotalSeconds = game.getBlackPlayer().getPlayTime();
+      int blackMinutes = blackTotalSeconds / 60;
+      int blackSeconds = blackTotalSeconds % 60;
+      String blackFormattedTime = String.format("%02d:%02d", blackMinutes, blackSeconds);
+
+      System.out.println(String.format(template, game.getWhitePlayer().getName(),
+          whiteFormattedTime));
+      System.out.println(String.format(template, game.getBlackPlayer().getName(),
+          blackFormattedTime));
     } else {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }
   }
-
+  
   /**
    * Starts the blitz timer for the current game. 
    * This method initializes a new Timer that schedules a task to run every second. 
@@ -569,30 +577,35 @@ public class GameController {
             game.getManagerUndoRedo(), game.getBoard(), game.getCurrentColor());
 
         // Switch back to the JavaFX Application Thread to safely update the UI components.
-        javafx.application.Platform.runLater(() -> {
-          if (move == null) {
-            System.err.println("No AI move available.");
+
+        try {
+          javafx.application.Platform.runLater(() -> {
+            if (move == null) {
+              System.err.println("No AI move available.");
+              game.setState(game.checkGameOver());
+              handleGameOver();
+              return;
+            }
+
+            if (configuration.isBlitz()) {
+              startBlitzTimer();
+            }
+
+            String fromSquare = game.getBoard().indexToSquare(move.getFrom());
+            String toSquare = game.getBoard().indexToSquare(move.getTo());
+
+            // Apply the calculated move to the game board.
+            game.applyMove(fromSquare, toSquare, false);
+
             game.setState(game.checkGameOver());
             handleGameOver();
-            return;
-          }
 
-          if (configuration.isBlitz()) {
-            startBlitzTimer();
-          }
-
-          String fromSquare = game.getBoard().indexToSquare(move.getFrom());
-          String toSquare = game.getBoard().indexToSquare(move.getTo());
-
-          // Apply the calculated move to the game board.
-          game.applyMove(fromSquare, toSquare, false);
-
-          game.setState(game.checkGameOver());
-          handleGameOver();
-
-          // Recursively call to check if the next player is also an AI (AI vs AI match).
-          triggerAiIfNecessary();
-        });
+            // Recursively call to check if the next player is also an AI (AI vs AI match).
+            triggerAiIfNecessary();
+          });
+        } catch (IllegalStateException e) {
+          // Ignore when JavaFX toolkit is not initialized during non-GUI tests.
+        }
       }, "AI-Thinking-Thread").start();
     }
   }

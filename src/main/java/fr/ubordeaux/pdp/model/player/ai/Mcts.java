@@ -377,7 +377,6 @@ public class Mcts extends Ai {
       }
       undo.registerMove(node.player, node.move);
       board.applyMove(node.move);
-      System.out.println(selectionMode);
     }
     return node;
   }

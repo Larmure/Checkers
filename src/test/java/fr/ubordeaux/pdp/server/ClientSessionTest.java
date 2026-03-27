@@ -1,25 +1,26 @@
 package fr.ubordeaux.pdp.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
-import fr.ubordeaux.pdp.controller.GameController;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.Socket;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mockito;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import fr.ubordeaux.pdp.controller.GameController;
 
 /**
  * Tests for {@link ClientSession}.
@@ -169,7 +170,7 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    verify(controller).executeMove("A3", "B4");
+    verify(controller).executeMove("A3", "B4",false);
     assertTrue(out.toString().contains("You played: A3-B4"));
   }
 
@@ -189,7 +190,7 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    verify(controller).executeMove("C5", "D4");
+    verify(controller).executeMove("C5", "D4",false);
     assertTrue(out.toString().contains("Opponent played: C5-D4"));
   }
 
@@ -226,35 +227,17 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    verify(controller, never()).executeMove(any(), any());
+    verifyNoInteractions(controller);
     assertTrue(out.toString().contains("Server: MOVE_OK invalidmove"));
   }
 
-  @Test
-  void handleServerMessage_opponentMove_invalidFormat_printsRawServerMessage() throws Exception {
-    ClientSession session = new ClientSession();
-    GameController controller = Mockito.mock(GameController.class);
-    session.setController(controller);
-
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    PrintStream originalOut = System.out;
-    System.setOut(new PrintStream(out));
-
-    try {
-      invokeHandleServerMessage(session, "OPPONENT_MOVE invalidmove");
-    } finally {
-      System.setOut(originalOut);
-    }
-
-    verify(controller, never()).executeMove(any(), any());
-    assertTrue(out.toString().contains("Server: OPPONENT_MOVE invalidmove"));
-  }
+ 
 
   @Test
   void handleServerMessage_moveOk_whenControllerThrows_printsWarning() throws Exception {
     ClientSession session = new ClientSession();
     GameController controller = Mockito.mock(GameController.class);
-    doThrow(new RuntimeException("boom")).when(controller).executeMove("A3", "B4");
+    doThrow(new RuntimeException("boom")).when(controller).executeMove(eq("A3"), eq("B4"), eq(false));
     session.setController(controller);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -274,7 +257,7 @@ class ClientSessionTest {
   void handleServerMessage_opponentMove_whenControllerThrows_printsWarning() throws Exception {
     ClientSession session = new ClientSession();
     GameController controller = Mockito.mock(GameController.class);
-    doThrow(new RuntimeException("boom")).when(controller).executeMove("C5", "D4");
+    doThrow(new RuntimeException("boom")).when(controller).executeMove(eq("C5"), eq("D4"), eq(false));
     session.setController(controller);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();

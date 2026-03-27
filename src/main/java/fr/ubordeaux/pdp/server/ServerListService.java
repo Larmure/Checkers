@@ -24,7 +24,7 @@ public class ServerListService {
   private static final int DISCOVERY_PORT = 12346;
   private static final int LISTEN_DURATION_MS = 30_000;
   private static final int SOCKET_TIMEOUT_MS = 1_000;
-  private static final int SERVER_EXPIRY_MS = 30_000;
+  private static final int SERVER_EXPIRY_MS = 10_000;
 
   private ServerListService() {}
 
