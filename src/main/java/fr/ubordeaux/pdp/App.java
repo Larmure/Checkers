@@ -8,10 +8,14 @@ import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.server.ClientSession;
+import fr.ubordeaux.pdp.server.GameControllerFactory;
+import fr.ubordeaux.pdp.server.GameServer;
 import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
+import fr.ubordeaux.pdp.view.HeadlessView;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import java.io.IOException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -78,6 +82,15 @@ public class App {
   /** Flag to set the selection mode for MCTS. */
   private static SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
 
+  /** Flag to start in server mode. */
+  private static boolean serverMode = false;
+
+  /** TCP port for server mode. */
+  private static int serverPort = 12345;
+
+  /** Flag to start server in daemon mode. */
+  private static boolean daemonMode = false;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -92,6 +105,32 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
+    }
+
+    if (serverMode) {
+      GameControllerFactory factory = () -> new GameController(new HeadlessView());
+      GameServer server = new GameServer("GameServer", serverPort, factory, daemonMode);
+
+      Runtime.getRuntime().addShutdownHook(
+          new Thread(
+              () -> {
+                System.out.println("\nShutting down server...");
+                server.stop();
+              }));
+
+      try {
+        if (daemonMode) {
+          System.out.println("Server running in daemon mode.");
+        } else {
+          System.out.println("Server running in server mode.");
+        }
+
+        server.start();
+        return;
+      } catch (IOException e) {
+        System.err.println("Failed to start server: " + e.getMessage());
+        System.exit(1);
+      }
     }
 
     GameView view;
@@ -159,6 +198,20 @@ public class App {
     options.addOption("t", "time", true, Internationalization.get("opt.time"));
     options.addOption("g", "gui", false, Internationalization.get("opt.gui"));
     // options.addOption("a", "ai", true, Internationalization.get("opt.ai"));
+    Option serverOption = Option.builder()
+        .longOpt("server")
+        .hasArg()
+        .optionalArg(true)
+        .desc("start server on optional port")
+        .build();
+
+    Option daemonOption = Option.builder()
+        .longOpt("daemon")
+        .desc("start server in headless mode")
+        .build();
+
+    options.addOption(serverOption);
+    options.addOption(daemonOption);
     Option aiOption = Option.builder("a")
         .longOpt("ai")
         .desc(Internationalization.get("opt.ai"))
@@ -173,6 +226,7 @@ public class App {
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
 
+
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -182,6 +236,23 @@ public class App {
             + cmd.getArgList());
       }
 
+      if (cmd.hasOption("server")) {
+        serverMode = true;
+        String portValue = cmd.getOptionValue("server");
+        if (portValue != null) {
+          try {
+            serverPort = Integer.parseInt(portValue);
+          } catch (NumberFormatException e) {
+            System.err.println("Invalid server port: " + portValue);
+            return EXIT_ERROR;
+          }
+        }
+      }
+
+      if (cmd.hasOption("daemon")) {
+        daemonMode = true;
+        serverMode = true;
+      }
       if (cmd.hasOption("h")) {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("checkers", options);
@@ -377,5 +448,8 @@ public class App {
     aiMode = Utils.DEFAULT_AI_MODE;
     aiDepth = Ai.DEFAULT_DEPTH;
     selectionMode = Mcts.DEFAULT_SELECTION_MODE;
+    serverMode = false;
+    serverPort = 12345;
+    daemonMode = false;
   }
 }

@@ -37,6 +37,7 @@ public class GameServer {
   private final boolean daemon;
   private final GameControllerFactory controllerFactory;
   private final GameRegistry registry = new GameRegistry();
+  private final Invitationmanager invitationManager = new Invitationmanager();
 
   private Thread discoveryThread;
   private ServerSocket serverSocket;
@@ -44,7 +45,7 @@ public class GameServer {
   private volatile boolean running = false;
 
   private final Set<PrintWriter> connectedClients =
-        Collections.newSetFromMap(new ConcurrentHashMap<>());
+      Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   /**
    * Creates a new game server.
@@ -55,7 +56,7 @@ public class GameServer {
    * @param daemon whether the server runs in daemon mode
    */
   public GameServer(
-        String serverName, int tcpPort, GameControllerFactory controllerFactory, boolean daemon) {
+      String serverName, int tcpPort, GameControllerFactory controllerFactory, boolean daemon) {
     this.serverName = serverName;
     this.tcpPort = tcpPort;
     this.controllerFactory = controllerFactory;
@@ -88,14 +89,17 @@ public class GameServer {
       serverSocket = new ServerSocket(tcpPort);
     } catch (java.net.BindException e) {
       throw new IOException(
-            "Port "
-                  + tcpPort
-                  + " is already in use. Stop the existing server or choose another port.",
-            e);
+          "Port "
+              + tcpPort
+              + " is already in use. Stop the existing server or choose another port.",
+          e);
     }
 
     running = true;
     clientPool = Executors.newCachedThreadPool();
+
+    // Start the invitation expiry sweeper
+    invitationManager.startSweeper(registry, this::handleInvitationExpiry);
 
     DiscoveryService discovery = new DiscoveryService(serverName, tcpPort);
     discoveryThread = new Thread(discovery, "discovery-thread");
@@ -128,6 +132,8 @@ public class GameServer {
     }
 
     running = false;
+
+    invitationManager.stopSweeper();
 
     for (PrintWriter out : connectedClients) {
       try {
@@ -182,10 +188,10 @@ public class GameServer {
    */
   private void handleClient(Socket client) {
     try (
-          BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-          PrintWriter out =
-                new PrintWriter(
-                      new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
+        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+        PrintWriter out =
+            new PrintWriter(
+                new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
 
       connectedClients.add(out);
 
@@ -227,13 +233,29 @@ public class GameServer {
   /**
    * Processes all messages received from a connected player.
    *
-   * @param in the client input stream
-   * @param out the client output stream
+   * <p>Supported commands:
+   * <ul>
+   *   <li>{@code PING} — latency check.
+   *   <li>{@code QUIT} — graceful disconnect.
+   *   <li>{@code STATUS} — server statistics.
+   *   <li>{@code PLAYERS [id]} — list players or show details for a specific player.
+   *   <li>{@code SCOREBOARD} — wins/losses/draws leaderboard.
+   *   <li>{@code NEW <target_id>} — send a game invitation.
+   *   <li>{@code ACCEPT} — accept a pending invitation.
+   *   <li>{@code DECLINE} — decline a pending invitation.
+   *   <li>{@code CANCEL} — cancel an outgoing invitation.
+   *   <li>{@code AWAY} — mark yourself as away (no invitations accepted).
+   *   <li>{@code BACK} — return to idle status.
+   *   <li>{@code MOVE <from-to>} — make a move in an active game.
+   * </ul>
+   *
+   * @param in     the client input stream
+   * @param out    the client output stream
    * @param player the registered player
    * @throws IOException if reading from the socket fails
    */
   private void processMessages(BufferedReader in, PrintWriter out, PlayerSession player)
-        throws IOException {
+      throws IOException {
 
     String line;
     while ((line = in.readLine()) != null) {
@@ -250,6 +272,7 @@ public class GameServer {
         }
         case "QUIT" -> {
           out.println("BYE");
+          cleanupPlayerInvitations(player);
           registry.removePlayer(player.getId());
           connectedClients.remove(out);
           System.out.println("Player " + player.getId() + " disconnected.");
@@ -259,25 +282,73 @@ public class GameServer {
           int playerCount = registry.getPlayerCount();
           int sessionCount = registry.getActiveSessionCount();
           out.println(
-                "STATUS port=" + tcpPort + " players=" + playerCount + " sessions=" + sessionCount);
+              "STATUS port=" + tcpPort + " players=" + playerCount
+                  + " sessions=" + sessionCount);
         }
         case "PLAYERS" -> {
-          String list = registry.getPlayersFormatted();
-          out.println(list.isEmpty() ? "PLAYERS none" : "PLAYERS\n" + list);
+          if (rest.isBlank()) {
+            // List all players
+            String list = registry.getPlayersFormatted();
+            out.println(list.isEmpty() ? "PLAYERS none" : "PLAYERS\n" + list);
+          } else {
+            // Detail for one player
+            String targetId = rest.trim();
+            PlayerSession target = registry.getPlayer(targetId);
+            if (target == null) {
+              out.println("ERROR: Player '" + targetId + "' not found.");
+            } else {
+              out.println("PLAYER_INFO\n" + target.toDetailedString());
+            }
+          }
         }
         case "SCOREBOARD" -> out.println("SCOREBOARD\n" + registry.getScoreboardFormatted());
+
+        // ----------------------------------------------------------------
+        // Invitation commands
+        // ----------------------------------------------------------------
         case "NEW" -> {
           if (rest.isBlank()) {
-            out.println("ERROR: Usage: NEW <player_id> [player_id2 ...]");
+            out.println("ERROR: Usage: NEW <player_id>");
             break;
           }
-          String[] participants = rest.split("\\s+");
-          handleNewGame(out, player, participants);
+          handleNewInvitation(out, player, rest.trim());
         }
+        case "ACCEPT" -> handleAccept(out, player);
+        case "DECLINE" -> handleDecline(out, player);
+        case "CANCEL" -> handleCancel(out, player);
+
+        // ----------------------------------------------------------------
+        // Presence commands
+        // ----------------------------------------------------------------
+        case "AWAY" -> {
+          if (player.getStatus() == PlayerSession.Status.INGAME) {
+            out.println("ERROR: Cannot go away while in a game.");
+          } else if (player.getStatus() == PlayerSession.Status.WAITGAME) {
+            out.println("ERROR: You have a pending invitation. "
+                + "Use DECLINE first, then AWAY.");
+          } else {
+            player.setStatus(PlayerSession.Status.AWAY);
+            out.println("STATUS_CHANGED away");
+            System.out.println("Player " + player.getId() + " is now away.");
+          }
+        }
+        case "BACK" -> {
+          if (player.getStatus() == PlayerSession.Status.INGAME) {
+            out.println("ERROR: Cannot use BACK while in a game.");
+          } else {
+            player.setStatus(PlayerSession.Status.IDLE);
+            out.println("STATUS_CHANGED idle");
+            System.out.println("Player " + player.getId() + " is back (idle).");
+          }
+        }
+
+        // ----------------------------------------------------------------
+        // In-game move
+        // ----------------------------------------------------------------
         case "MOVE" -> {
           GameSession session = registry.getSessionForPlayer(player.getId());
           if (session == null) {
-            out.println("ERROR: Not in a game. Use NEW to start one.");
+            out.println("ERROR: Not in a game. Use NEW to invite a player.");
           } else {
             String error = session.handleMove(player, rest);
             if (error != null) {
@@ -292,88 +363,239 @@ public class GameServer {
     }
   }
 
-  /**
-   * Automatically starts a game when at least two idle players are available.
-   */
-  private synchronized void tryAutoStart() {
-    List<PlayerSession> idlePlayers =
-          registry.getAllPlayers().stream()
-                .filter(PlayerSession::isIdle)
-                .collect(Collectors.toList());
+  // -------------------------------------------------------------------------
+  // Invitation handlers
+  // -------------------------------------------------------------------------
 
-    if (idlePlayers.size() < 2) {
-      if (idlePlayers.size() == 1) {
-        idlePlayers.get(0).send("WAITING Waiting for another player to join...");
-      }
+  /**
+   * Handles a {@code NEW <target_id>} command: sends a game invitation.
+   *
+   * @param out    requester's output stream.
+   * @param sender the player sending the invitation.
+   * @param toId   the target player's ID.
+   */
+  private void handleNewInvitation(PrintWriter out, PlayerSession sender, String toId) {
+    if (!sender.isIdle()) {
+      out.println("ERROR: You must be idle to send an invitation "
+          + "(current status: " + sender.getStatus().name().toLowerCase() + ").");
       return;
     }
 
-    List<PlayerSession> pair = idlePlayers.subList(0, 2);
-    GameController sessionController = controllerFactory.create();
+    Invitationmanager.CreateResult result =
+        invitationManager.createInvitation(sender, toId, registry);
 
-    sessionController.startNewGame(Configuration.getDefaultConfiguration());
-
-    GameSession session = registry.createSession(pair, sessionController);
-
-    String playerList = pair.get(0).getId() + " " + pair.get(1).getId();
-    String firstId = pair.get(0).getId();
-
-    for (PlayerSession p : pair) {
-      p.send(
-            "GAME_START session="
-                  + session.getSessionId()
-                  + " players="
-                  + playerList
-                  + " first="
-                  + firstId);
+    if (!result.isSuccess()) {
+      out.println("ERROR: " + result.error);
+      return;
     }
 
-    System.out.println(
-          "Auto-started game: " + session.getSessionId() + " between " + playerList);
+    Invitation inv = result.invitation;
+    PlayerSession invitee = registry.getPlayer(toId);
+
+    // Notify inviter
+    out.println("INVITATION_SENT PLAYER=" + invitee.getName()
+        + " TIMEOUT=" + Invitation.TIMEOUT_SECONDS + "s");
+
+    // Notify invitee
+    invitee.send("INVITATION_RECEIVED FROM=" + sender.getId()
+        + " EXPIRES=" + Invitation.TIMEOUT_SECONDS + "s");
+
+    System.out.println("Invitation " + inv.getInvitationId()
+        + ": " + sender.getId() + " → " + toId);
   }
 
   /**
-   * Creates a new game session with the given participants.
+   * Handles an {@code ACCEPT} command: starts the game if pre-conditions hold.
    *
-   * @param out the requester output stream
-   * @param requester the player requesting the game
-   * @param participantIds the players to include in the session
+   * @param out      acceptor's output stream.
+   * @param acceptor the player accepting the invitation.
    */
-  private void handleNewGame(PrintWriter out, PlayerSession requester, String[] participantIds) {
-    java.util.List<PlayerSession> participants = new java.util.ArrayList<>();
+  private void handleAccept(PrintWriter out, PlayerSession acceptor) {
+    Invitationmanager.AcceptResult result = invitationManager.accept(acceptor.getId());
 
-    for (String pid : participantIds) {
-      PlayerSession p = registry.getPlayer(pid);
-      if (p == null) {
-        out.println("ERROR: Player '" + pid + "' not found.");
-        return;
-      }
-      if (!p.isIdle()) {
-        out.println("ERROR: Player '" + pid + "' is already in a game.");
-        return;
-      }
-      participants.add(p);
+    if (!result.isSuccess()) {
+      out.println("ERROR: " + result.error);
+      return;
     }
 
+    Invitation inv = result.invitation;
+    PlayerSession inviter = registry.getPlayer(inv.getFromPlayerId());
+
+    if (inviter == null) {
+      out.println("ERROR: The player who invited you has disconnected.");
+      acceptor.setStatus(PlayerSession.Status.IDLE);
+      return;
+    }
+
+    // Restore both players to IDLE before starting the session
+    acceptor.setStatus(PlayerSession.Status.IDLE);
+    inviter.setStatus(PlayerSession.Status.IDLE);
+
+    // Notify inviter that the invitation was accepted and the game is starting
+    inviter.send("INVITATION_ACCEPTED STARTING_GAME");
+
+    // Start the game session
+    startInvitedGame(inviter, acceptor);
+  }
+
+  /**
+   * Handles a {@code DECLINE} command.
+   *
+   * @param out      decliner's output stream.
+   * @param decliner the player declining.
+   */
+  private void handleDecline(PrintWriter out, PlayerSession decliner) {
+    Invitationmanager.DeclineResult result = invitationManager.decline(decliner.getId());
+
+    if (!result.isSuccess()) {
+      out.println("ERROR: " + result.error);
+      return;
+    }
+
+    Invitation inv = result.invitation;
+    PlayerSession inviter = registry.getPlayer(inv.getFromPlayerId());
+
+    // Restore invitee status
+    decliner.setStatus(PlayerSession.Status.IDLE);
+    out.println("INVITATION_DECLINED");
+
+    // Notify inviter
+    if (inviter != null) {
+      inviter.send("INVITATION_DECLINED BY=" + decliner.getId());
+    }
+
+    System.out.println("Invitation " + inv.getInvitationId() + " declined by " + decliner.getId());
+  }
+
+  /**
+   * Handles a {@code CANCEL} command.
+   *
+   * @param out       canceller's output stream.
+   * @param canceller the player cancelling their outgoing invitation.
+   */
+  private void handleCancel(PrintWriter out, PlayerSession canceller) {
+    Invitationmanager.CancelResult result = invitationManager.cancel(canceller.getId());
+
+    if (!result.isSuccess()) {
+      out.println("ERROR: " + result.error);
+      return;
+    }
+
+    Invitation inv = result.invitation;
+    PlayerSession invitee = registry.getPlayer(inv.getToPlayerId());
+
+    out.println("INVITATION_CANCELLED");
+
+    // Restore invitee to IDLE and notify them
+    if (invitee != null) {
+      invitee.setStatus(PlayerSession.Status.IDLE);
+      invitee.send("INVITATION_CANCELLED BY=" + canceller.getId());
+    }
+
+    System.out.println("Invitation " + inv.getInvitationId()
+        + " cancelled by " + canceller.getId());
+  }
+
+  /**
+   * Cleans up any pending invitations (sent or received) when a player disconnects.
+   *
+   * @param player the disconnecting player.
+   */
+  private void cleanupPlayerInvitations(PlayerSession player) {
+    // Cancel outgoing invitation
+    Invitationmanager.CancelResult cancel = invitationManager.cancel(player.getId());
+    if (cancel.isSuccess()) {
+      PlayerSession invitee = registry.getPlayer(cancel.invitation.getToPlayerId());
+      if (invitee != null) {
+        invitee.setStatus(PlayerSession.Status.IDLE);
+        invitee.send("INVITATION_CANCELLED BY=" + player.getId() + " (player disconnected)");
+      }
+    }
+
+    // Decline any incoming invitation (so the inviter is unblocked)
+    Invitationmanager.DeclineResult decline = invitationManager.decline(player.getId());
+    if (decline.isSuccess()) {
+      PlayerSession inviter = registry.getPlayer(decline.invitation.getFromPlayerId());
+      if (inviter != null) {
+        inviter.send("INVITATION_DECLINED BY=" + player.getId() + " (player disconnected)");
+      }
+    }
+  }
+
+  /**
+   * Called by the {@link Invitationmanager} sweeper when an invitation expires.
+   *
+   * @param inv      the expired invitation.
+   * @param registry the player registry.
+   */
+  private void handleInvitationExpiry(Invitation inv, GameRegistry registry) {
+    PlayerSession inviter = registry.getPlayer(inv.getFromPlayerId());
+    PlayerSession invitee = registry.getPlayer(inv.getToPlayerId());
+
+    if (invitee != null && invitee.getStatus() == PlayerSession.Status.WAITGAME) {
+      invitee.setStatus(PlayerSession.Status.IDLE);
+      invitee.send("INVITATION_EXPIRED FROM=" + inv.getFromPlayerId());
+    }
+    if (inviter != null) {
+      inviter.send("INVITATION_EXPIRED TO=" + inv.getToPlayerId() + " (no response)");
+    }
+
+    System.out.println("Invitation " + inv.getInvitationId() + " expired.");
+  }
+
+  /**
+   * Creates a game session for two players who agreed via an invitation.
+   *
+   * @param inviter  player who sent the invitation (plays first).
+   * @param invitee  player who accepted the invitation.
+   */
+  private synchronized void startInvitedGame(PlayerSession inviter, PlayerSession invitee) {
+    List<PlayerSession> pair = List.of(inviter, invitee);
     GameController sessionController = controllerFactory.create();
-    sessionController.startNewGame(Configuration.getDefaultConfiguration());
+    sessionController.startNewGame(
+        fr.ubordeaux.pdp.model.core.Configuration.getDefaultConfiguration());
 
-    GameSession session = registry.createSession(participants, sessionController);
+    GameSession session = registry.createSession(pair, sessionController);
 
-    String playerList = String.join(" ", participantIds);
-    String firstId = participants.get(0).getId();
+    String playerList = inviter.getId() + " " + invitee.getId();
 
-    for (PlayerSession p : participants) {
-      p.send(
-            "GAME_START session="
-                  + session.getSessionId()
-                  + " players="
-                  + playerList
-                  + " first="
-                  + firstId);
+    for (PlayerSession p : pair) {
+      p.send("GAME_START session=" + session.getSessionId()
+          + " players=" + playerList
+          + " first=" + inviter.getId());
     }
 
-    System.out.println("Game session started: " + session.getSessionId());
+    System.out.println("Invited game started: " + session.getSessionId()
+        + " between " + playerList);
+  }
+
+  /**
+   * Notifies a newly connected player to wait for an invitation if they are alone.
+   *
+   * <p>Auto-matching is disabled in invitation mode. Players must use {@code NEW <id>}
+   * to invite specific opponents.
+   */
+  private synchronized void tryAutoStart() {
+    List<PlayerSession> idlePlayers =
+        registry.getAllPlayers().stream()
+            .filter(PlayerSession::isIdle)
+            .collect(Collectors.toList());
+
+    if (idlePlayers.size() == 1) {
+      idlePlayers.get(0).send(
+          "WAITING You are the only player connected. "
+              + "Use 'players' to list others, then 'new <id>' to invite someone.");
+    }
+  }
+
+  /**
+   * @deprecated Replaced by the invitation flow ({@link #handleNewInvitation}).
+   *             Kept for reference only and no longer called.
+   */
+  @Deprecated
+  private void handleNewGame(PrintWriter out, PlayerSession requester, String[] participantIds) {
+    out.println("ERROR: Direct game creation is replaced by the invitation system. "
+        + "Use 'new <player_id>' to invite a player.");
   }
 
   /**
@@ -406,12 +628,12 @@ public class GameServer {
     GameServer server = new GameServer("GameServer", port, factory, daemonMode);
 
     Runtime.getRuntime()
-          .addShutdownHook(
-                new Thread(
-                      () -> {
-                        System.out.println("\nShutting down server...");
-                        server.stop();
-                      }));
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  System.out.println("\nShutting down server...");
+                  server.stop();
+                }));
 
     try {
       server.start();

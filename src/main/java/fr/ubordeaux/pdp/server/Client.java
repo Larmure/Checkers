@@ -125,6 +125,33 @@ public class Client {
             return;
           }
         }
+
+        // ---- Invitation commands ----------------------------------------
+        case "accept", "decline", "cancel" -> {
+          if (blockIf(ClientMode.LOCAL,
+              "Not connected to a server. Use 'join' first.")) {
+            break;
+          }
+          if (blockIf(ClientMode.SERVER,
+              "Cannot use invitation commands in SERVER mode.")) {
+            break;
+          }
+          session.send(word1.toUpperCase());
+        }
+
+        // ---- Presence commands ------------------------------------------
+        case "away", "back" -> {
+          if (blockIf(ClientMode.LOCAL,
+              "Not connected to a server. Use 'join' first.")) {
+            break;
+          }
+          if (blockIf(ClientMode.SERVER,
+              "Cannot use presence commands in SERVER mode.")) {
+            break;
+          }
+          session.send(word1.toUpperCase());
+        }
+
         default -> dispatchDefault(word1, tokens);
       }
     }

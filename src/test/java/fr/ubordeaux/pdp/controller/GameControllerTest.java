@@ -306,7 +306,6 @@ class GameControllerTest {
     assertFalse(controller.isWhiteAi());
     assertFalse(controller.isBlackAi());
   }
-
   // =========================================================
   // undo / redo
   // =========================================================

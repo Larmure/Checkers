@@ -72,7 +72,7 @@ public class ClientSession {
   public void connect(String host, int port) {
     if (connected) {
       System.out.println(
-            "Already connected to " + currentServer + ". Type 'quit' to disconnect first.");
+          "Already connected to " + currentServer + ". Type 'quit' to disconnect first.");
       return;
     }
 
@@ -82,8 +82,8 @@ public class ClientSession {
       socket = new Socket(host, port);
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       out =
-            new PrintWriter(
-                  new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+          new PrintWriter(
+              new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
       connected = true;
       currentServer = host + ":" + port;
       mode = ClientMode.CONNECTED;
@@ -138,8 +138,8 @@ public class ClientSession {
   public void enterServerMode() {
     mode = ClientMode.SERVER;
     System.out.println(
-          "[mode] Now in SERVER mode. Client commands are disabled.\n"
-                + "       Use 'server stop' to return to local mode.");
+        "[mode] Now in SERVER mode. Client commands are disabled.\n"
+            + "       Use 'server stop' to return to local mode.");
   }
 
   /**
@@ -207,27 +207,27 @@ public class ClientSession {
    */
   private void startListenerThread() {
     Thread listener =
-          new Thread(
-                () -> {
-                  try {
-                    String response;
-                    while ((response = in.readLine()) != null) {
-                      handleServerMessage(response);
-                      if (connected) {
-                        System.out.print("[" + currentServer + "] > ");
-                      }
-                    }
-                  } catch (IOException ignored) {
-                    // Ignore listener I/O failures; disconnect is handled in finally.
-                  } finally {
-                    if (connected) {
-                      System.out.println("\n[!] Server stopped unexpectedly.");
-                      disconnect();
-                      System.out.print("[local] > ");
-                    }
+        new Thread(
+            () -> {
+              try {
+                String response;
+                while ((response = in.readLine()) != null) {
+                  handleServerMessage(response);
+                  if (connected) {
+                    System.out.print("[" + currentServer + "] > ");
                   }
-                },
-                "server-listener");
+                }
+              } catch (IOException ignored) {
+                // Ignore listener I/O failures; disconnect is handled in finally.
+              } finally {
+                if (connected) {
+                  System.out.println("\n[!] Server stopped unexpectedly.");
+                  disconnect();
+                  System.out.print("[local] > ");
+                }
+              }
+            },
+            "server-listener");
     listener.setDaemon(true);
     listener.start();
   }
@@ -235,22 +235,32 @@ public class ClientSession {
   /**
    * Processes a single message received from the server.
    *
-   * <p>If the message is {@code OPPONENT_MOVE <from>-<to>}, the move is applied on the
-   * local controller so the board refreshes for this player. All other messages are
-   * printed to stdout.
+   * <p>Handled message types:
+   * <ul>
+   *   <li>{@code GAME_START …} — stops any local game and starts a network game.
+   *   <li>{@code MOVE_OK …} — applies your move on the local board.
+   *   <li>{@code OPPONENT_MOVE …} — applies the opponent's move on the local board.
+   *   <li>{@code INVITATION_RECEIVED …} — prints an invitation prompt.
+   *   <li>{@code INVITATION_SENT …} — confirms your invitation was sent.
+   *   <li>{@code INVITATION_ACCEPTED …} — your invitation was accepted; game will start.
+   *   <li>{@code INVITATION_DECLINED …} — your invitation was declined.
+   *   <li>{@code INVITATION_CANCELLED …} — the invitation you received was cancelled.
+   *   <li>{@code INVITATION_EXPIRED …} — an invitation timed out.
+   *   <li>{@code STATUS_CHANGED …} — your status changed on the server.
+   *   <li>All other messages — printed to stdout.
+   * </ul>
    *
    * @param message the raw message line from the server.
    */
   private void handleServerMessage(String message) {
     if (message.startsWith("GAME_START")) {
-      // Stop any running local game (e.g. the default game started by App)
-      // before initializing the network game, to avoid timer conflicts.
       if (controller != null) {
         controller.stopBlitzTimer();
         controller.startNewGame(
-              fr.ubordeaux.pdp.model.core.Configuration.getDefaultConfiguration());
+            fr.ubordeaux.pdp.model.core.Configuration.getDefaultConfiguration());
       }
       System.out.println("\nGame started! " + message);
+
     } else if (message.startsWith("MOVE_OK ")) {
       String moveArg = message.substring("MOVE_OK ".length()).trim();
       String[] parts = moveArg.split("-");
@@ -264,6 +274,7 @@ public class ClientSession {
       } else {
         System.out.println("\nServer: " + message);
       }
+
     } else if (message.startsWith("OPPONENT_MOVE ")) {
       String moveArg = message.substring("OPPONENT_MOVE ".length()).trim();
       String[] parts = moveArg.split("-");
@@ -277,6 +288,40 @@ public class ClientSession {
       } else {
         System.out.println("\nServer: " + message);
       }
+
+    } else if (message.startsWith("INVITATION_RECEIVED")) {
+      // e.g.  INVITATION_RECEIVED FROM=alice EXPIRES=300s
+      System.out.println("\n╔══ INVITATION ══════════════════════════════════╗");
+      System.out.println("║  " + message);
+      System.out.println("║  Type 'accept' to accept or 'decline' to refuse.");
+      System.out.println("╚════════════════════════════════════════════════╝");
+
+    } else if (message.startsWith("INVITATION_SENT")) {
+      // e.g.  INVITATION_SENT PLAYER=Bob TIMEOUT=300s
+      System.out.println("\n[invitation] Invitation sent. " + message.substring("INVITATION_SENT".length()).trim());
+      System.out.println("[invitation] Waiting for a response... (type 'cancel' to withdraw)");
+
+    } else if (message.startsWith("INVITATION_ACCEPTED")) {
+      System.out.println("\n[invitation] Your invitation was accepted! " + message.substring("INVITATION_ACCEPTED".length()).trim());
+
+    } else if (message.startsWith("INVITATION_DECLINED")) {
+      // e.g.  INVITATION_DECLINED BY=bob
+      System.out.println("\n[invitation] " + message.substring("INVITATION_DECLINED".length()).trim()
+          + " declined your invitation.");
+
+    } else if (message.startsWith("INVITATION_CANCELLED")) {
+      // e.g.  INVITATION_CANCELLED BY=alice
+      System.out.println("\n[invitation] The invitation was cancelled. "
+          + message.substring("INVITATION_CANCELLED".length()).trim());
+
+    } else if (message.startsWith("INVITATION_EXPIRED")) {
+      System.out.println("\n[invitation] An invitation expired: "
+          + message.substring("INVITATION_EXPIRED".length()).trim());
+
+    } else if (message.startsWith("STATUS_CHANGED")) {
+      String newStatus = message.substring("STATUS_CHANGED".length()).trim();
+      System.out.println("\n[status] Your status is now: " + newStatus);
+
     } else {
       System.out.println("\nServer: " + message);
     }
