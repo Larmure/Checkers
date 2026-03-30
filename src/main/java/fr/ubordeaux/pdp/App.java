@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.LogisticRegressionTrainer;
 import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
@@ -41,6 +42,9 @@ public class App {
 
   /** Exit code for GUI. */
   public static final int EXIT_GUI = 3;
+
+  /** Exit code for training. */
+  public static final int EXIT_TRAINING = 4;
 
   /** Flag to enable verbose. */
   private static boolean verbose = Utils.DEFAULT_VERBOSE;
@@ -92,6 +96,9 @@ public class App {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
+    } else if (status == EXIT_TRAINING) {
+      LogisticRegressionTrainer.lauchTraining();
+      System.exit(0);
     }
 
     GameView view;
@@ -171,6 +178,7 @@ public class App {
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
+    options.addOption("tr", "train", false, "train a ML selection function");
 
     CommandLineParser parser = new DefaultParser();
     try {
@@ -281,6 +289,10 @@ public class App {
               + selection);
           selectionMode = Mcts.DEFAULT_SELECTION_MODE;
         }
+      }
+
+      if (cmd.hasOption("tr")) {
+        return EXIT_TRAINING;
       }
 
       System.out.println(Internationalization.get("app.welcome"));

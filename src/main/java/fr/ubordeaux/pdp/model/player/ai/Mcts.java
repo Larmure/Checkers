@@ -46,7 +46,7 @@ public class Mcts extends Ai {
    *
    * <p>Increase this to explore more broadly; decrease it to focus on already-promising moves.
    */
-  static final double DEFAULT_EXPLORATION = Math.sqrt(2);
+  public static final double DEFAULT_EXPLORATION = Math.sqrt(2);
 
   /**
    * Maximum number of moves per random simulation.
@@ -507,50 +507,31 @@ public class Mcts extends Ai {
    *     is not loaded
    */
   private double evaluateWithTf(Node child, Board board) {
-    if (this.tfModel == null) {
-      throw new IllegalStateException("Le modèle TF n'est pas chargé !");
-    }
+    // if (this.tfModel == null) {
+    //   throw new IllegalStateException("Le modèle TF n'est pas chargé !");
+    // }
 
-    board.applyMove(child.move);
+    // board.applyMove(child.move);
 
-    float[] features = extractFeatures(board);
-    float[][] batch = new float[][] { features };
+    // float[] features = extractFeatures(board);
+    // float[][] batch = new float[][] { features };
 
-    double score;
+    // double score;
 
-    try (TFloat32 inputTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(batch))) {
+    // try (TFloat32 inputTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(batch))) {
 
-      try (Tensor resultTensor = this.tfModel.session().runner()
-          .feed("serving_default_input_1", inputTensor)
-          .fetch("StatefulPartitionedCall")
-          .run()
-          .get(0)) {
+    //   try (Tensor resultTensor = this.tfModel.session().runner()
+    //       .feed("serving_default_input_1", inputTensor)
+    //       .fetch("StatefulPartitionedCall")
+    //       .run()
+    //       .get(0)) {
 
-        FloatNdArray result = (FloatNdArray) resultTensor;
-        score = result.getFloat(0, 0);
-      }
-    }
+    //     FloatNdArray result = (FloatNdArray) resultTensor;
+    //     score = result.getFloat(0, 0);
+    //   }
+    // }
 
-    return score;
-  }
-
-  /**
-  * Extracts a feature vector from the given board state for input into the TensorFlow model.
-  */
-  private float[] extractFeatures(Board board) {
-    int whitePawns = board.whitePawnsCount();
-    int blackPawns = board.blackPawnsCount();
-    int whiteKings = board.whiteCheckersCount();
-    int blackKings = board.blackCheckersCount();
-
-    return new float[] {
-        whitePawns,
-        blackPawns,
-        whiteKings,
-        blackKings,
-        whitePawns - blackPawns,
-        whiteKings - blackKings
-    };
+    return 0;
   }
 
   // -------------------------------------------------------------------------

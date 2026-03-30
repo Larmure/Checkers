@@ -304,9 +304,6 @@ public class GameController {
   }
 
   /**
-   * Displays the remaining time for the current player if the game is in blitz mode.
-   */
-  /**
    * Displays the remaining time for both players if the game is in blitz mode.
    */
   public void displayTime() {
@@ -331,7 +328,7 @@ public class GameController {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }
   }
-  
+
   /**
    * Starts the blitz timer for the current game. 
    * This method initializes a new Timer that schedules a task to run every second. 
