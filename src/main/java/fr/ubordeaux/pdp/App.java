@@ -117,8 +117,7 @@ public class App {
       controller.start();
       controller.startNewGame(new Configuration(
           blitz, time, contest, size, verbose, debug,
-          false, false, aiTime, aiMode, aiDepth, selectionMode));
-
+          whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
