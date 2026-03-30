@@ -92,7 +92,8 @@ public class ConfigDialog extends Dialog<Configuration> {
    * @param onShortcutsChanged callback invoked after shortcuts are saved,
    *                           used to refresh menu accelerators
    */
-  public ConfigDialog(ShortcutManager shortcutManager, Runnable onShortcutsChanged) {
+  public ConfigDialog(ShortcutManager shortcutManager, Runnable onShortcutsChanged,
+        Configuration initialConfig) {
     super();
     this.shortcutManager = shortcutManager;
     this.onShortcutsChanged = onShortcutsChanged;
@@ -104,7 +105,9 @@ public class ConfigDialog extends Dialog<Configuration> {
         ButtonData.OK_DONE);
     getDialogPane().getButtonTypes().addAll(startButton, ButtonType.CANCEL);
 
-    Configuration defaults = Configuration.getDefaultConfiguration();
+    Configuration defaults = initialConfig != null
+        ? initialConfig
+        : Configuration.getDefaultConfiguration();
     sizeCombo.getItems().addAll(8, 10, 12);
     sizeCombo.setValue(defaults.getSize());
 

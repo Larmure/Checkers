@@ -40,7 +40,7 @@ class ConfigDialogTest {
 
     // onShortcutsChanged callback — just a no-op for tests.
     dialog = new ConfigDialog(shortcutManager, () -> {
-    });
+    }, null);
     dialog.show();
   }
 

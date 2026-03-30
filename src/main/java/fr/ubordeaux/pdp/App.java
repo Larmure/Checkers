@@ -20,7 +20,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
 
-
 /**
  * Main class for the Checkers game. Handles command line arguments and
  * initializes the game modes.
@@ -77,6 +76,9 @@ public class App {
   /** Flag to set the selection mode for MCTS. */
   private static SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
 
+  /** Flag indicating whether GUI mode was requested on the CLI. */
+  private static boolean guiMode = false;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -97,15 +99,17 @@ public class App {
 
     GameView view;
     if (status == EXIT_GUI) {
-      view = new GraphicalUserInterface();
+      view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
+          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
     } else {
       view = new CommandLineInterface(verbose, debug);
     }
     GameController controller = new GameController(view);
     controller.start();
-    controller.startNewGame(new Configuration(blitz, time, contest,
-        size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+    
     if (status != EXIT_GUI) {
+      controller.startNewGame(new Configuration(blitz, time, contest,
+          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
@@ -189,7 +193,7 @@ public class App {
 
       if (cmd.hasOption("g")) {
         System.out.println(Internationalization.get("app.gui.launch"));
-        return EXIT_GUI;
+        guiMode = true;
       }
 
       if (cmd.hasOption("b")) {
@@ -268,7 +272,7 @@ public class App {
       }
 
       System.out.println(Internationalization.get("app.welcome"));
-      return EXIT_SUCCESS;
+      return guiMode ? EXIT_GUI : EXIT_SUCCESS;
 
     } catch (ParseException e) {
       String message;
@@ -351,6 +355,7 @@ public class App {
     verbose = false;
     debug = false;
     blitz = false;
+    guiMode = false;
     time = Utils.DEFAULT_TIME;
     contest = false;
     size = Utils.DEFAULT_BOARD_SIZE;

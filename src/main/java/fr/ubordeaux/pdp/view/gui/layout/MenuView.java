@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
@@ -59,8 +60,11 @@ public class MenuView extends MenuBar {
   /** GUI entry point — used to delegate the quit flow. */
   private GraphicalUserInterface gui;
 
-  /* Shorcut keyboard manager */
+  /** Keyboard shortcut manager used to bind menu accelerators. */
   private ShortcutManager shortcutManager;
+
+  /** Optional configuration provided from CLI startup flags. */
+  private final Configuration cliConfig;
 
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
@@ -76,10 +80,14 @@ public class MenuView extends MenuBar {
    *
    * @param controller      the game controller; must not be {@code null}
    * @param shortcutManager the shortcut manager for keyboard bindings
+   * @param cliConfig       optional CLI configuration used to prefill
+   *                        configuration dialogs; may be {@code null}
    */
-  public MenuView(GameController controller, ShortcutManager shortcutManager) {
+  public MenuView(GameController controller, ShortcutManager shortcutManager,
+       Configuration cliConfig) {
     this.controller = controller;
     this.shortcutManager = shortcutManager;
+    this.cliConfig = cliConfig;
     initMenus();
     this.setUseSystemMenuBar(true);
   }
@@ -339,11 +347,11 @@ public class MenuView extends MenuBar {
    * "Start Game", the resulting {@link Configuration} is forwarded to
    * {@link fr.ubordeaux.pdp.controller.GameController#startNewGame}.
    */
-  private void openConfigDialog() {
+  public void openConfigDialog() {
     ConfigDialog dialog = new ConfigDialog(shortcutManager, () -> {
       this.getMenus().clear();
       initMenus();
-    });
+    }, cliConfig);
     dialog.showAndWait().ifPresent(cfg -> controller.startNewGame(cfg));
   }
 
