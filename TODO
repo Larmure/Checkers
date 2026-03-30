@@ -1,12 +1,15 @@
 @Daniel
 Lors du chargement, il faut pouvoir load des plateau de taille 10 et 12 aussi
-load de l'historique des coup ne marche pas, surtout au niveau des captures, multiple ou pas
+Load de l'historique des coup ne marche pas, surtout au niveau des captures, multiple ou pas
+
 
 @Linda
 Fenêtre de reprise après pause
 
+
 @Tommy
 -ad n'est plus fonctionnel(proffondeur des ia)
+
 
 Question pour les profs:
 Différence entre iteratifdepening et -ai Time?
