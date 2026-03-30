@@ -1,19 +1,17 @@
 package fr.ubordeaux.pdp.model.tools;
 
+import fr.ubordeaux.pdp.model.core.Board;
+import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.player.PlayerColor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
-
-import fr.ubordeaux.pdp.model.core.Board;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.core.GameCheckers;
-import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.Mcts;
 
@@ -273,4 +271,82 @@ public class LoadBoardest {
 
     assertTrue(board.isWhitePawn("A1"));
   }
+  @Test
+  void testLoadRestoresWhiteTurn() throws IOException {
+    int n = 10;
+
+    Map<String, Character> pieces = new HashMap<>();
+    pieces.put("A1", 'o');
+
+    String content = "[settings]\n"
+        + "starting-player=white\n"
+        + "board-size=" + n + "\n"
+        + "\n"
+        + "[game]\n"
+        + buildBoardAscii(n, pieces)
+        + "\n"
+        + "[history]\n";
+
+    writeSaveFile("load_white_turn.txt", content);
+
+    GameCheckers game = newGame(n);
+
+    new LoadBoard(game).loadGameData("load_white_turn.txt");
+
+    assertTrue(game.isWhiteTurn());
+  }
+
+  @Test
+  void testLoadMissingHistorySectionWithSeveralPiecesStillLoadsBoard() throws IOException {
+    int n = 10;
+
+    Map<String, Character> pieces = new HashMap<>();
+    pieces.put("A1", 'o');
+    pieces.put("B2", 'x');
+    pieces.put("C3", 'O');
+    pieces.put("D4", 'X');
+
+    String content = "[settings]\n"
+        + "starting-player=white\n"
+        + "board-size=" + n + "\n"
+        + "\n"
+        + "[game]\n"
+        + buildBoardAscii(n, pieces);
+
+    writeSaveFile("load_missing_history_many_pieces.txt", content);
+
+    GameCheckers game = newGame(n);
+    Board board = game.getBoard();
+
+    new LoadBoard(game).loadGameData("load_missing_history_many_pieces.txt");
+
+    assertTrue(board.isWhitePawn("A1"));
+    assertTrue(board.isBlackPawn("B2"));
+    assertTrue(board.isWhiteChecker("C3"));
+    assertTrue(board.isBlackChecker("D4"));
+  }
+  @Test
+  void testLoadEmptyBoardFileKeepsBoardEmpty() throws IOException {
+    int n = 10;
+
+    String content = "[settings]\n"
+        + "starting-player=white\n"
+        + "board-size=" + n + "\n"
+        + "\n"
+        + "[game]\n"
+        + "- - - - - - - - - -\n".repeat(n)
+        + "\n"
+        + "[history]\n";
+
+    writeSaveFile("load_empty_board.txt", content);
+
+    GameCheckers game = newGame(n);
+    Board board = game.getBoard();
+
+    new LoadBoard(game).loadGameData("load_empty_board.txt");
+
+    assertBoardEmpty(board);
+  }
+
+
 }

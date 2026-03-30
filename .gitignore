@@ -3,8 +3,9 @@
 *.prefs
 .classpath
 .project
+checkers/Sauvegarde/*
+.vscode/
 Sauvegarde/*
-
 target/
 *.class
 .project

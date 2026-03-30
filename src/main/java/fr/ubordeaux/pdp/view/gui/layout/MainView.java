@@ -3,12 +3,16 @@ package fr.ubordeaux.pdp.view.gui.layout;
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -24,12 +28,12 @@ import javafx.stage.Stage;
  *
  * <h2>Initialisation sequence</h2>
  * <ol>
- *   <li>Instantiate {@code MainView}.</li>
- *   <li>Create the {@link Scene} and call {@link #bindToScene(Scene)} so the
- *       board scales with the window.</li>
- *   <li>Call {@code stage.show()}.</li>
- *   <li>Call {@link #passStageToMenu(Stage)} so {@link MenuView} can open
- *       modal dialogs.</li>
+ * <li>Instantiate {@code MainView}.</li>
+ * <li>Create the {@link Scene} and call {@link #bindToScene(Scene)} so the
+ * board scales with the window.</li>
+ * <li>Call {@code stage.show()}.</li>
+ * <li>Call {@link #passStageToMenu(Stage)} so {@link MenuView} can open
+ * modal dialogs.</li>
  * </ol>
  *
  * <p>Visual styles are defined in {@code style.css} (classes:
@@ -106,18 +110,32 @@ public class MainView extends BorderPane {
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
 
-    turnLabel = new Label("Turn: BLACK");
+    turnLabel = new Label(Internationalization.get("toolbar.turn") + "BLACK");
     // style.css : .turn-label
     turnLabel.getStyleClass().add("turn-label");
 
-    Button undoBtn = toolbarButton("Undo", () -> controller.executeCommand("undo",
-        new String[] { "1" }));
-    Button redoBtn = toolbarButton("Redo", () -> controller.executeCommand("redo",
-        new String[] { "1" }));
-    Button pauseBtn = toolbarButton("Pause", () -> controller.executeCommand("pause",
-        new String[0]));
-    Button hintBtn = toolbarButton("Hint", () -> controller.executeCommand("hint",
-        new String[0]));
+    Button undoBtn = toolbarButton(Internationalization.get("toolbar.undo"),
+        () -> controller.executeCommand("undo", new String[] { "1" }));
+    Button redoBtn = toolbarButton(Internationalization.get("toolbar.redo"),
+        () -> controller.executeCommand("redo", new String[] { "1" }));
+    Button pauseBtn = toolbarButton(Internationalization.get("toolbar.pause"), () -> {
+      if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+        controller.executeCommand("pause", new String[0]);
+
+        Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
+        pauseAlert.setTitle(Internationalization.get("dialog.pause_title"));
+        pauseAlert.setHeaderText(Internationalization.get("dialog.pause_header"));
+
+        ButtonType btnResume = new ButtonType(Internationalization.get("dialog.pause_resume"),
+            javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        pauseAlert.getButtonTypes().setAll(btnResume);
+        pauseAlert.showAndWait();
+
+        controller.executeCommand("continue", new String[0]);
+      }
+    });
+    Button hintBtn = toolbarButton(Internationalization.get("toolbar.hint"),
+        () -> controller.executeCommand("hint", new String[0]));
 
     toolbar.getChildren().addAll(undoBtn, redoBtn, pauseBtn, hintBtn, spacer, turnLabel);
     return toolbar;
@@ -137,7 +155,7 @@ public class MainView extends BorderPane {
   private Button toolbarButton(String text, Runnable action) {
     Button btn = new Button(text);
     btn.setOnAction(e -> action.run());
-    // style.css : .toolbar-button  /  .toolbar-button:hover
+    // style.css : .toolbar-button / .toolbar-button:hover
     btn.getStyleClass().add("toolbar-button");
     return btn;
   }
@@ -190,7 +208,7 @@ public class MainView extends BorderPane {
   /**
    * Refreshes the entire view from the current game state.
    *
-   * <p>Delegates board and log updates to {@link PlayView}, then refreshes the
+   * <p>Delegates board and log 0tes to {@link PlayView}, then refreshes the
    * toolbar turn indicator.
    *
    * <p>Must be called on the JavaFX Application Thread (e.g. inside
@@ -199,9 +217,11 @@ public class MainView extends BorderPane {
    * @param game the current game state; must not be {@code null}
    */
   public void update(GameCheckers game) {
-    playView.update(game);
+    if (game != null) {
+      playView.update(game);
 
-    String name = game.getCurrentPlayer().getName();
-    turnLabel.setText("Turn: " + name.toUpperCase());
+      String name = game.getCurrentPlayer().getName();
+      turnLabel.setText(Internationalization.get("toolbar.turn") + name.toUpperCase());
+    }
   }
 }

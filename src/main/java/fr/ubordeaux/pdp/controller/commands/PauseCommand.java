@@ -47,20 +47,17 @@ public class PauseCommand implements Command, Helpable {
   */
   @Override
   public void execute() {
-    if (game.getConfiguration().isBlitz()) {
-      if (blitzTimer != null) {
-        if (game.getState() == State.PAUSE) {
-          System.out.println(Internationalization.get("game.already_paused"));
-          return;
-        }
-        blitzTimer.cancel();
-        game.setState(State.PAUSE);
-        System.out.println(Internationalization.get("game.pause"));
-      }
-    } else {
-      System.out.println(Internationalization.get("game.not_blitz"));
+    if (game.getState() == State.PAUSE) {
+      System.out.println(Internationalization.get("game.already_paused"));
+      return;
     }
 
+    if (game.getConfiguration().isBlitz() && blitzTimer != null) {
+      blitzTimer.cancel();
+    }
+
+    game.setState(State.PAUSE);
+    System.out.println(Internationalization.get("game.pause"));
   }
 
   /**

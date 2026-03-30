@@ -35,12 +35,13 @@ public class PauseCommandTest {
   @Test
   public void testExecute_NotInBlitzMode() {
     when(mockConfig.isBlitz()).thenReturn(false);
+    when(mockGame.getState()).thenReturn(State.IN_GAME);
 
     pauseCommand.execute();
 
-    // Timer should not be canceled and state should remain unchanged
+    // Timer should not be canceled but state should be set to PAUSE
     verify(mockTimer, never()).cancel();
-    verify(mockGame, never()).setState(any());
+    verify(mockGame, times(1)).setState(State.PAUSE);
   }
 
   @Test

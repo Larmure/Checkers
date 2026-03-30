@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -62,11 +63,10 @@ public class LogView extends VBox {
     this.getStyleClass().add("log-panel");
 
     this.getChildren().addAll(
-        buildPlayerCard("BLACK", true),
-        buildPlayerCard("WHITE", false),
+        buildPlayerCard(Internationalization.get("logview.player_black"), true),
+        buildPlayerCard(Internationalization.get("logview.player_white"), false),
         buildDivider(),
-        buildLogPanel()
-    );
+        buildLogPanel());
   }
 
   /**
@@ -149,14 +149,13 @@ public class LogView extends VBox {
     VBox box = new VBox(6);
     VBox.setVgrow(box, Priority.ALWAYS);
 
-    Label title = new Label("Move History");
+    Label title = new Label(Internationalization.get("logview.move_history"));
     // style.css : .log-title
     title.getStyleClass().add("log-title");
 
     logArea = new TextArea();
     logArea.setEditable(false);
     logArea.setWrapText(true);
-    logArea.setPromptText("No moves yet...");
     VBox.setVgrow(logArea, Priority.ALWAYS);
     // style.css : .log-area
     logArea.getStyleClass().add("log-area");

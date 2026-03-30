@@ -1,6 +1,8 @@
 package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ConfigDialog;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
@@ -17,9 +19,9 @@ import javafx.stage.Stage;
 /**
  * <h2>Menus</h2>
  * <ul>
- *   <li><b>File</b>: New Game, Load Game, Save Game, Configuration, Info,
- *       Quit.</li>
- *   <li><b>Game</b>: Undo, Redo, Pause, Hint.</li>
+ * <li><b>File</b>: New Game, Load Game, Save Game, Configuration, Info,
+ * Quit.</li>
+ * <li><b>Game</b>: Undo, Redo, Pause, Hint.</li>
  * </ul>
  *
  * <h2>Load / Save dialogs</h2>
@@ -29,12 +31,12 @@ import javafx.stage.Stage;
  * {@code /mnt/c/…} WSL path.
  *
  * <ul>
- *   <li>The <em>Save</em> dialog prompts the user for a file name and
- *       forwards it to {@code controller.executeCommand("save", …)}. The
- *       directory is managed by {@code SaveBoard}.</li>
- *   <li>The <em>Load</em> dialog lists existing saves in {@code Sauvegarde/}
- *       and prompts the user for a file name, then forwards it to
- *       {@code controller.executeCommand("load", …)}.</li>
+ * <li>The <em>Save</em> dialog prompts the user for a file name and
+ * forwards it to {@code controller.executeCommand("save", …)}. The
+ * directory is managed by {@code SaveBoard}.</li>
+ * <li>The <em>Load</em> dialog lists existing saves in {@code Sauvegarde/}
+ * and prompts the user for a file name, then forwards it to
+ * {@code controller.executeCommand("load", …)}.</li>
  * </ul>
  *
  * <h2>Stage reference</h2>
@@ -57,19 +59,22 @@ public class MenuView extends MenuBar {
   /** GUI entry point — used to delegate the quit flow. */
   private GraphicalUserInterface gui;
 
+  /* Shorcut keyboard manager */
   private ShortcutManager shortcutManager;
+
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
    * {@code stage.show()} so that modal dialogs have a proper owner window.
    * May be {@code null} before that call, but all dialog-opening code is only
    * triggered by user interaction (after the stage is visible).
    */
+  @SuppressWarnings("unused")
   private Stage stage;
 
   /**
    * Creates the menu bar and populates it with the File and Game menus.
    *
-   * @param controller the game controller; must not be {@code null}
+   * @param controller      the game controller; must not be {@code null}
    * @param shortcutManager the shortcut manager for keyboard bindings
    */
   public MenuView(GameController controller, ShortcutManager shortcutManager) {
@@ -112,38 +117,38 @@ public class MenuView extends MenuBar {
    *
    * <p>Items and their default shortcuts:
    * <ul>
-   *   <li>New Game — {@code Ctrl+N}</li>
-   *   <li>Load Game — {@code Ctrl+L}</li>
-   *   <li>Save Game — {@code Ctrl+S}</li>
-   *   <li>Configuration — {@code Ctrl+,}</li>
-   *   <li>Info — {@code Ctrl+I}</li>
-   *   <li>Quit — {@code Ctrl+Q}</li>
+   * <li>New Game — {@code Ctrl+N}</li>
+   * <li>Load Game — {@code Ctrl+L}</li>
+   * <li>Save Game — {@code Ctrl+S}</li>
+   * <li>Configuration — {@code Ctrl+,}</li>
+   * <li>Info — {@code Ctrl+I}</li>
+   * <li>Quit — {@code Ctrl+Q}</li>
    * </ul>
    *
    * @return the configured {@link Menu}
    */
   private Menu buildFileMenu() {
-    MenuItem newItem = new MenuItem("New Game");
+    MenuItem newItem = new MenuItem(Internationalization.get("menu.new_game"));
     newItem.setAccelerator(shortcutManager.get("new-game"));
     newItem.setOnAction(e -> controller.executeCommand("new", new String[0]));
 
-    MenuItem loadItem = new MenuItem("Load Game");
+    MenuItem loadItem = new MenuItem(Internationalization.get("menu.load_game"));
     loadItem.setAccelerator(shortcutManager.get("load-game"));
-    loadItem.setOnAction(e -> handleLoad());
+    loadItem.setOnAction(e -> executeWithPause(() -> handleLoad()));
 
-    MenuItem saveItem = new MenuItem("Save Game");
+    MenuItem saveItem = new MenuItem(Internationalization.get("menu.save_game"));
     saveItem.setAccelerator(shortcutManager.get("save-game"));
-    saveItem.setOnAction(e -> openSaveDialog());
+    saveItem.setOnAction(e -> executeWithPause(() -> openSaveDialog()));
 
-    MenuItem configItem = new MenuItem("Configuration");
+    MenuItem configItem = new MenuItem(Internationalization.get("menu.configuration"));
     configItem.setAccelerator(shortcutManager.get("configuration"));
-    configItem.setOnAction(e -> showConfigDialog());
+    configItem.setOnAction(e -> executeWithPause(() -> showConfigDialog()));
 
-    MenuItem infoItem = new MenuItem("Info");
+    MenuItem infoItem = new MenuItem(Internationalization.get("menu.info"));
     infoItem.setAccelerator(shortcutManager.get("info"));
-    infoItem.setOnAction(e -> showInfoDialog());
+    infoItem.setOnAction(e -> executeWithPause(() -> showInfoDialog()));
 
-    MenuItem quitItem = new MenuItem("Quit");
+    MenuItem quitItem = new MenuItem(Internationalization.get("menu.quit"));
     quitItem.setAccelerator(shortcutManager.get("quit"));
     // Delegate to the GUI so the JavaFX confirmation dialog is shown.
     // Falls back to controller.executeCommand if gui is not yet set.
@@ -155,7 +160,7 @@ public class MenuView extends MenuBar {
       }
     });
 
-    Menu fileMenu = new Menu("_File");
+    Menu fileMenu = new Menu(Internationalization.get("menu.file"));
     fileMenu.getItems().addAll(
         newItem, loadItem, saveItem,
         new SeparatorMenuItem(),
@@ -170,50 +175,65 @@ public class MenuView extends MenuBar {
    *
    * <p>Items and their default shortcuts:
    * <ul>
-   *   <li>Undo — {@code Ctrl+U}</li>
-   *   <li>Redo — {@code Ctrl+R}</li>
-   *   <li>Pause — {@code Ctrl+P}</li>
-   *   <li>Hint — {@code Ctrl+H}</li>
+   * <li>Undo — {@code Ctrl+U}</li>
+   * <li>Redo — {@code Ctrl+R}</li>
+   * <li>Pause — {@code Ctrl+P}</li>
+   * <li>Hint — {@code Ctrl+H}</li>
    * </ul>
    *
    * @return the configured {@link Menu}
    */
   private Menu buildGameMenu() {
-    MenuItem undoItem = new MenuItem("Undo");
+    MenuItem undoItem = new MenuItem(Internationalization.get("menu.undo"));
     undoItem.setAccelerator(shortcutManager.get("undo"));
     undoItem.setOnAction(e -> controller.executeCommand("undo", new String[] { "1" }));
 
-    MenuItem redoItem = new MenuItem("Redo");
+    MenuItem redoItem = new MenuItem(Internationalization.get("menu.redo"));
     redoItem.setAccelerator(shortcutManager.get("redo"));
     redoItem.setOnAction(e -> controller.executeCommand("redo", new String[] { "1" }));
 
-    MenuItem pauseItem = new MenuItem("Pause");
+    MenuItem pauseItem = new MenuItem(Internationalization.get("menu.pause"));
     pauseItem.setAccelerator(shortcutManager.get("pause"));
-    pauseItem.setOnAction(e -> controller.executeCommand("pause", new String[0]));
+    pauseItem.setOnAction(e -> {
+      if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+        controller.executeCommand("pause", new String[0]);
 
-    MenuItem hintItem = new MenuItem("Hint");
+        Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
+        pauseAlert.setTitle(Internationalization.get("dialog.pause_title"));
+        pauseAlert.setHeaderText(Internationalization.get("dialog.pause_header"));
+
+        ButtonType btnResume = new ButtonType(Internationalization.get("dialog.pause_resume"),
+            javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        pauseAlert.getButtonTypes().setAll(btnResume);
+        pauseAlert.showAndWait();
+
+        controller.executeCommand("continue", new String[0]);
+      }
+    });
+
+    MenuItem hintItem = new MenuItem(Internationalization.get("menu.hint"));
     hintItem.setAccelerator(shortcutManager.get("hint"));
     hintItem.setOnAction(e -> controller.executeCommand("hint", new String[0]));
 
-    Menu gameMenu = new Menu("_Game");
+    Menu gameMenu = new Menu(Internationalization.get("menu.game"));
     gameMenu.getItems().addAll(
         undoItem, redoItem, new SeparatorMenuItem(), pauseItem, hintItem);
     return gameMenu;
   }
 
   /**
-   * Entry point for the Load action.
-   *
-   * <p>If a game is in progress with unsaved changes, the user is asked
-   * whether to save first (Yes / No / Cancel). Only "Cancel" aborts the load.
-   * In all other cases {@link #openLoadDialog()} is called.
-   */
+  * Entry point for the Load action.
+  *
+  * <p>If a game is in progress with unsaved changes, the user is asked
+  * whether to save first (Yes / No / Cancel). Only "Cancel" aborts the load.
+  * In all other cases {@link #openLoadDialog()} is called.
+  */
   private void handleLoad() {
     if (controller.getGame() != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-      confirm.setTitle("Unsaved changes");
-      confirm.setHeaderText("Current game has unsaved changes.");
-      confirm.setContentText("Save before loading another game?");
+      confirm.setTitle(Internationalization.get("dialog.unsaved_changes"));
+      confirm.setHeaderText(Internationalization.get("dialog.unsaved_changes_header"));
+      confirm.setContentText(Internationalization.get("dialog.unsaved_changes_content"));
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
 
       confirm.showAndWait().ifPresent(response -> {
@@ -243,22 +263,23 @@ public class MenuView extends MenuBar {
     if (SAVE_DIR.exists()) {
       File[] files = SAVE_DIR.listFiles();
       if (files != null && files.length > 0) {
-        StringBuilder sb = new StringBuilder("Available saves:\n");
+        StringBuilder sb = new StringBuilder(Internationalization.get("dialog.available_saves")
+            + "\n");
         for (File f : files) {
           sb.append("  - ").append(f.getName()).append("\n");
         }
         headerText = sb.toString();
       } else {
-        headerText = "No saves found in: " + SAVE_DIR.getPath();
+        headerText = Internationalization.get("dialog.no_saves") + SAVE_DIR.getPath();
       }
     } else {
-      headerText = "Load from: " + SAVE_DIR.getPath();
+      headerText = Internationalization.get("dialog.load_from") + SAVE_DIR.getPath();
     }
 
     TextInputDialog dialog = new TextInputDialog();
-    dialog.setTitle("Load Game");
+    dialog.setTitle(Internationalization.get("dialog.load_game"));
     dialog.setHeaderText(headerText);
-    dialog.setContentText("File name:");
+    dialog.setContentText(Internationalization.get("dialog.file_name"));
 
     dialog.showAndWait().ifPresent(name -> {
       name = name.trim();
@@ -277,15 +298,16 @@ public class MenuView extends MenuBar {
    * based on whether the expected file was actually created on disk.
    */
   public void openSaveDialog() {
-    if (controller.getGame() == null) {
-      showError("No game in progress", "Start a new game before saving.");
+    if (controller.getGame() == null || controller.getGame().checkGameOver() == State.FINISHED) {
+      showError(Internationalization.get("dialog.no_game"), Internationalization.get(
+          "dialog.no_game_content"));
       return;
     }
 
     TextInputDialog dialog = new TextInputDialog();
-    dialog.setTitle("Save Game");
-    dialog.setHeaderText("Save to: " + SAVE_DIR.getPath());
-    dialog.setContentText("File name:");
+    dialog.setTitle(Internationalization.get("dialog.save_game"));
+    dialog.setHeaderText(Internationalization.get("dialog.save_to") + SAVE_DIR.getPath());
+    dialog.setContentText(Internationalization.get("dialog.file_name"));
 
     dialog.showAndWait().ifPresent(name -> {
       name = name.trim();
@@ -299,9 +321,11 @@ public class MenuView extends MenuBar {
       // Confirm that the file was actually written to disk.
       File saved = new File(SAVE_DIR, name);
       if (saved.exists()) {
-        showInfo("Saved", "Game saved as: " + name);
+        showInfo(Internationalization.get("dialog.saved"), Internationalization.get(
+            "dialog.saved_content") + name);
       } else {
-        showError("Save failed", "Could not write to: " + SAVE_DIR.getPath());
+        showError(Internationalization.get("dialog.save_failed"),
+            Internationalization.get("dialog.save_failed_content") + SAVE_DIR.getPath());
       }
     });
   }
@@ -324,8 +348,8 @@ public class MenuView extends MenuBar {
   }
 
   /**
-  * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
-  */
+   * Shows the game configuration dialog (File › Configuration, {@code Ctrl+,}).
+   */
   private void showConfigDialog() {
     openConfigDialog();
   }
@@ -335,14 +359,9 @@ public class MenuView extends MenuBar {
    */
   private void showInfoDialog() {
     Alert alert = new Alert(Alert.AlertType.INFORMATION);
-    alert.setTitle("About Checkers");
-    alert.setHeaderText("Checkers — v1.0");
-    alert.setContentText(
-        "Universite de Bordeaux\n"
-            + "Master Informatique — Projet de Programmation 2025-2026\n\n"
-            + "A checkers game with CLI and GUI interfaces.\n"
-            + "Built with Java 17 + JavaFX.\n\n"
-            + "By Tommy R., Faniry H., Sarah R., Daniel A. and Lalatiana R.");
+    alert.setTitle(Internationalization.get("dialog.about_title"));
+    alert.setHeaderText(Internationalization.get("dialog.about_header"));
+    alert.setContentText(Internationalization.get("dialog.about_content"));
     alert.showAndWait();
   }
 
@@ -354,7 +373,7 @@ public class MenuView extends MenuBar {
    */
   private void showError(String header, String content) {
     Alert a = new Alert(Alert.AlertType.ERROR);
-    a.setTitle("Error");
+    a.setTitle(Internationalization.get("dialog.error"));
     a.setHeaderText(header);
     a.setContentText(content);
     a.showAndWait();
@@ -368,9 +387,31 @@ public class MenuView extends MenuBar {
    */
   private void showInfo(String header, String content) {
     Alert a = new Alert(Alert.AlertType.INFORMATION);
-    a.setTitle("Info");
+    a.setTitle(Internationalization.get("dialog.save_game"));
     a.setHeaderText(header);
     a.setContentText(content);
     a.showAndWait();
+  }
+
+  /**
+   * Helper method to automatically pause the game before opening a dialog,
+   * and resume it after the dialog is closed.
+   *
+   * @param action The method to execute (opening the Load, Save, or Info dialog)
+   */
+  private void executeWithPause(Runnable action) {
+    boolean wasInGame = controller.getGame() != null
+        && controller.getGame().getState() == State.IN_GAME;
+
+    if (wasInGame) {
+      controller.executeCommand("pause", new String[0]);
+    }
+
+    action.run();
+
+    if (wasInGame && controller.getGame() != null
+        && controller.getGame().getState() == State.PAUSE) {
+      controller.executeCommand("continue", new String[0]);
+    }
   }
 }

@@ -35,7 +35,7 @@ public class NewCommand implements Command, Helpable {
    * Constructs a NewCommand with the required context and arguments.
    *
    * @param controller The {@link GameController} that will start the game.
-   * @param args       The string arguments to be parsed (e.g., "-b -s 10").
+   * @param args The string arguments to be parsed (e.g., "-b -s 10").
    */
   public NewCommand(GameController controller, String[] args) {
     this.controller = controller;
@@ -87,8 +87,8 @@ public class NewCommand implements Command, Helpable {
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
-          "a".equals(aiPlayers) || "w".equals(aiPlayers), "a".equals(aiPlayers)
-              || "b".equals(aiPlayers),
+          "a".equals(aiPlayers) || "w".equals(aiPlayers),
+          "a".equals(aiPlayers) || "b".equals(aiPlayers),
           aiTime, aiMode, aiDepth, selectionMode));
 
     } catch (ParseException | NumberFormatException e) {
@@ -98,6 +98,7 @@ public class NewCommand implements Command, Helpable {
 
   /**
    * Defines the available CLI options for the "new" command.
+   *
    * <ul>
    * <li>-b, --blitz : Enable blitz mode</li>
    * <li>-c, --contest : Enable contest mode</li>
@@ -135,5 +136,4 @@ public class NewCommand implements Command, Helpable {
   public String getHelp() {
     return Internationalization.get("new.help");
   }
-
 }

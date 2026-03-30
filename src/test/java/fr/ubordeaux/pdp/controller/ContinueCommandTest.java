@@ -1,6 +1,6 @@
-package fr.ubordeaux.pdp.controller.commands;
+package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import org.junit.jupiter.api.BeforeEach;

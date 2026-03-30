@@ -54,10 +54,10 @@ public class ConfigDialog extends Dialog<Configuration> {
 
   /**
    * Time limit per player in minutes (only meaningful when blitz is on).
-   * Default: 30 min, range 1–120.
+   * range 1–120.
    */
   private final Spinner<Integer> timeSpinner = new Spinner<>(
-      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 120, 30));
+      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 120));
 
   /** Enables AI for the white player. */
   private final CheckBox whiteAiCheck = new CheckBox("White player (AI)");
@@ -74,9 +74,9 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** Enables debug output. */
   private final CheckBox debugCheck = new CheckBox("Debug");
 
-  /** AI thinking time in seconds. Default: Utils.DEFAULT_AI_TIME, range 1–30. */
+  /** AI thinking time in seconds. range 1–30. */
   private final Spinner<Integer> aiTimeSpinner = new Spinner<>(
-      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30, 5));
+      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30));
 
   /** Manages keyboard shortcuts read from and written to {@code .checkersrc}. */
   private final ShortcutManager shortcutManager;

@@ -35,6 +35,7 @@ public class ContinueCommand implements Command {
       gc.startBlitzTimer();
     }
     gc.getGame().setState(State.IN_GAME);
+    gc.triggerAiIfNecessary();
     gc.getGame().notifyObservers();
   }
 }

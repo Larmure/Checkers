@@ -7,6 +7,8 @@ import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientSession;
+import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
@@ -19,7 +21,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
-
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -93,22 +94,34 @@ public class App {
       System.exit(1);
     }
 
-    // Status EXIT_SUCCESS means continue execution normally
-
     GameView view;
+
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface();
+      GameController controller = new GameController(view);
+      controller.start();
+      controller.startNewGame(new Configuration(
+          blitz, time, contest, size, verbose, debug,
+          whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
     } else {
-      view = new CommandLineInterface(verbose, debug);
-    }
-    GameController controller = new GameController(view);
-    controller.start();
-    controller.startNewGame(new Configuration(blitz, time, contest,
-        size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
-    if (status != EXIT_GUI) {
+      CommandLineInterface cli = new CommandLineInterface(verbose, debug);
+      view = cli;
+
+      GameController controller = new GameController(view);
+      ClientSession session = new ClientSession();
+
+      session.setController(controller);
+      ShellCommandRouter router = new ShellCommandRouter(controller, session);
+      cli.setRouter(router);
+
+      controller.start();
+      controller.startNewGame(new Configuration(
+          blitz, time, contest, size, verbose, debug,
+          whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
         System.exit(0);
       }
     }
@@ -134,6 +147,7 @@ public class App {
     contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();
+
     // Options definition
     Options options = new Options();
     options.addOption("h", "help", false, Internationalization.get("opt.help"));
@@ -157,6 +171,7 @@ public class App {
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
+
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -262,7 +277,8 @@ public class App {
           selectionMode = SelectionMode.valueOf(selection);
           System.out.println(Internationalization.get("opt.ai.selection.status", selectionMode));
         } catch (IllegalArgumentException e) {
-          System.err.println(Internationalization.get("app.warn.invalid_ai_selection") + selection);
+          System.err.println(Internationalization.get("app.warn.invalid_ai_selection")
+              + selection);
           selectionMode = Mcts.DEFAULT_SELECTION_MODE;
         }
       }

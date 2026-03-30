@@ -134,6 +134,7 @@ public class Configuration {
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
   }
+  
 
   /**
    * Copy constructor that creates a new Configuration object by copying the

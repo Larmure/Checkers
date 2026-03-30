@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.server;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,30 +10,37 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Discovery service for game servers available on the local network.
- * Listens for UDP broadcasts for 30 seconds and automatically removes
- * servers whose last message is older than 30 seconds.
+ * Discovers game servers broadcasting on the local network via UDP.
+ *
+ * <p>Listens on the well-known discovery port {@value #DISCOVERY_PORT} for up to
+ * {@value #LISTEN_DURATION_MS} ms. A server is considered alive as long as it sent a
+ * broadcast packet within the last {@value #SERVER_EXPIRY_MS} ms.
+ *
+ * <p>Also prints the local machine's IP address before scanning so the user knows which
+ * address to share with other players for the {@code join} command.
  */
 public class ServerListService {
 
-  /** The UDP port for discovery broadcasts. */
   private static final int DISCOVERY_PORT = 12346;
-  /** Total listening duration: 30 seconds as specified. */
   private static final int LISTEN_DURATION_MS = 30_000;
-  /** Short socket timeout to remain responsive in the loop. */
   private static final int SOCKET_TIMEOUT_MS = 1_000;
-  /** A server is considered dead if it has not broadcast for 30 seconds. */
-  private static final int SERVER_EXPIRY_MS = 30_000;
+  private static final int SERVER_EXPIRY_MS = 10_000;
+
+  private ServerListService() {}
 
   /**
-   * Listens for UDP broadcasts for {@value #LISTEN_DURATION_MS} ms
-   * and returns the list of still-active servers (message received within
-   * the last {@value #SERVER_EXPIRY_MS} ms).
+   * Listens for UDP broadcasts and returns servers that are still active.
    *
-   * @return List of strings in the format {@code name:ip:port}.
+   * <p>Broadcast packet format: {@code name:ip:port}
+   *
+   * <p>Prints the local machine's IP address before scanning so the user can share it
+   * with other players.
+   *
+   * @return list of server descriptors in {@code "name:ip:port"} format.
    */
   public static List<String> discoverServers() {
-    // key = "name:ip:port", value = timestamp of the last received message
+    printLocalAddress();
+
     Map<String, Long> serverTimestamps = new ConcurrentHashMap<>();
 
     try (DatagramSocket socket = new DatagramSocket(DISCOVERY_PORT)) {
@@ -41,7 +49,7 @@ public class ServerListService {
       byte[] buffer = new byte[1024];
       long startTime = System.currentTimeMillis();
 
-      System.out.println("Listening for server broadcasts (30s)...");
+      System.out.println("Scanning for servers (30s)...");
 
       while (System.currentTimeMillis() - startTime < LISTEN_DURATION_MS) {
         try {
@@ -50,60 +58,49 @@ public class ServerListService {
 
           String message = new String(packet.getData(), 0, packet.getLength()).trim();
           long now = System.currentTimeMillis();
-
           boolean isNew = !serverTimestamps.containsKey(message);
           serverTimestamps.put(message, now);
 
           if (isNew) {
             String[] parts = message.split(":");
             if (parts.length == 3) {
-              System.out.println("Server found: " + parts[0]
-                  + " at " + parts[1] + ":" + parts[2]);
+              System.out.println("  Found: " + parts[0] + " at " + parts[1] + ":" + parts[2]);
             }
           }
-
-        } catch (SocketTimeoutException e) {
-          // No packet received during the time window — continue normally
+        } catch (SocketTimeoutException ignored) {
+          // Keep listening until the scan window expires.
         }
 
-        // Remove expired servers (no message received for more than 30 seconds)
         long now = System.currentTimeMillis();
-        serverTimestamps.entrySet().removeIf(entry -> {
-          boolean expired = (now - entry.getValue()) > SERVER_EXPIRY_MS;
-          if (expired) {
-            System.out.println("Server expired: " + entry.getKey());
-          }
-          return expired;
-        });
+        serverTimestamps.entrySet().removeIf(
+              entry -> {
+                boolean expired = (now - entry.getValue()) > SERVER_EXPIRY_MS;
+                if (expired) {
+                  System.out.println("  Expired: " + entry.getKey());
+                }
+                return expired;
+              });
       }
-
     } catch (java.net.BindException e) {
-      System.err.println("Port " + DISCOVERY_PORT
-          + " already in use (another discovery running?).");
+      System.err.println("Port " + DISCOVERY_PORT + " already in use.");
     } catch (Exception e) {
-      System.err.println("Error during server discovery: " + e.getMessage());
+      System.err.println("Discovery error: " + e.getMessage());
     }
 
     return new ArrayList<>(serverTimestamps.keySet());
   }
 
   /**
-   * Displays the list of available servers in a formatted way.
+   * Prints the local machine's IP address so the user knows which address to share
+   * with other players for the {@code join} command.
    */
-  public static void displayAvailableServers() {
-    List<String> servers = discoverServers();
-
-    if (servers.isEmpty()) {
-      System.out.println("No game servers available.");
-    } else {
-      System.out.println("\n=== Available Game Servers ===");
-      for (String s : servers) {
-        String[] parts = s.split(":");
-        if (parts.length == 3) {
-          System.out.println("- " + parts[0] + " | Address: " + parts[1] + ":" + parts[2]);
-        }
-      }
-      System.out.println("==============================\n");
+  private static void printLocalAddress() {
+    try {
+      String localIp = InetAddress.getLocalHost().getHostAddress();
+      System.out.println("Your IP address : " + localIp);
+      System.out.println("Share with others: join " + localIp + ":<port>");
+    } catch (Exception e) {
+      System.out.println("Your IP address : (could not determine)");
     }
   }
 }
