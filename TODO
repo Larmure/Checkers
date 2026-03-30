@@ -1,0 +1,15 @@
+@Daniel
+Lors du chargement, il faut pouvoir load des plateau de taille 10 et 12 aussi
+load de l'historique des coup ne marche pas, surtout au niveau des captures, multiple ou pas
+
+@Linda
+Fenêtre de reprise après pause
+
+@Tommy
+-ad n'est plus fonctionnel(proffondeur des ia)
+
+Question pour les profs:
+Différence entre iteratifdepening et -ai Time?
+Toujours en rapport à la question précédente, est ce que si la profondeur est petite et que le 
+temps est grand, est ce que l'ia va faire des recherches plus profondes que la profondeur donnée
+jusqu'à ce que le temps soit écoulé ou est ce que l'ia va s'arrêter à la profondeur donnée ? 
