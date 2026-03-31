@@ -285,14 +285,15 @@ public class Mcts extends Ai {
      *
      * @param currentBoard the current board state at this node 
      *     (used to extract features for the model)
+     * @param undo the undo manager used to apply and revert the child's move for evaluation
      * @return the child with the highest predicted score, or {@code null} if there are no children
      */
-    Node bestChildByMl(Board currentBoard) {
+    Node bestChildByMl(Board currentBoard, ManagerUndoRedo undo) {
       Node best = null;
       double bestScore = Double.NEGATIVE_INFINITY;
 
       for (Node child : children) {
-        double score = evaluateMl(child, currentBoard);
+        double score = evaluateMl(child, currentBoard, undo);
 
         if (score > bestScore) {
           bestScore = score;
@@ -372,7 +373,7 @@ public class Mcts extends Ai {
     while (node.isFullyExpanded(board) && !node.children.isEmpty()) {
       switch (selectionMode) {
         case UCT -> node = node.bestChildByUcb1();
-        case ML -> node = node.bestChildByMl(board);
+        case ML -> node = node.bestChildByMl(board, undo);
         default -> throw new IllegalStateException("Unknown selection mode: " + selectionMode);
       }
       undo.registerMove(node.player, node.move);
@@ -509,10 +510,11 @@ public class Mcts extends Ai {
    * @param child the node whose board state is to be evaluated
    * @param currentBoard the current board state at the node (
    *     used to extract features for the model)
+   * @param undo the undo manager used to apply and revert the child's move for evaluation
    * @return the predicted probability of victory for the root player, or 0 if the model 
    *     is not loaded
    */
-  private double evaluateMl(Node child, Board board) {
+  private double evaluateMl(Node child, Board board, ManagerUndoRedo undo) {
 
     if (mlWeights == null) {
       loadMlWeights(LogisticRegressionTrainer.OUTPUT_FILEPATH);
@@ -525,7 +527,8 @@ public class Mcts extends Ai {
 
     board.applyMove(child.move);
     float[] features = extractFeatures(board);
-
+    undo.registerMove(child.player, child.move);
+    undo.undo(child.player == PlayerColor.WHITE);
     double[] w = mlWeights;
     double b = mlBias;
 
@@ -534,7 +537,7 @@ public class Mcts extends Ai {
       z += w[i] * features[i];
     }
 
-    return 1.0 / (1.0 + Math.exp(-z));
+    return LogisticRegressionTrainer.sigmoid(z);
   }
 
   /**

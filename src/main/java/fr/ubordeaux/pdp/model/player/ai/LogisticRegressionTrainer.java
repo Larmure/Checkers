@@ -55,7 +55,7 @@ public class LogisticRegressionTrainer {
     * @param z The input value (linear combination of features and weights)
     * @return The output of the sigmoid function, representing the predicted probability of winning
    */
-  private double sigmoid(double z) {
+  public static double sigmoid(double z) {
     return 1.0 / (1.0 + Math.exp(-z));
   }
 
