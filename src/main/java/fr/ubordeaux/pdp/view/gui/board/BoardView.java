@@ -527,12 +527,12 @@ public class BoardView extends GridPane {
       }
     } else {
       // A piece is already selected — treat this click as the destination.
-      selRow = -1;
-      selCol = -1;
       String from = toSquare((size - 1) - selRow, selCol);
       String to = toSquare(modelRow, modelCol);
       validDestinationSquares.clear();
       controller.executeMove(from, to, false);
+      selRow = -1;
+      selCol = -1;
     }
   }
 

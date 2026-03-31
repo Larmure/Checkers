@@ -49,6 +49,12 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** Board size selector: 8, 10 or 12. */
   private final ComboBox<Integer> sizeCombo = new ComboBox<>();
 
+  /** Ai type selector. */
+  private final ComboBox<String> aiCombo = new ComboBox<>();
+
+  /** MCTS type selector. */
+  private final ComboBox<String> mctsCombo = new ComboBox<>();
+
   /** Enables blitz mode. Enabling it also enables the time spinner. */
   private final CheckBox blitzCheck = new CheckBox("Blitz mode");
 
@@ -77,6 +83,10 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** AI thinking time in seconds. range 1–30. */
   private final Spinner<Integer> aiTimeSpinner = new Spinner<>(
       new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30));
+
+  /** AI thinking depth. range 1–15. */
+  private final Spinner<Integer> aiDepthSpinner = new Spinner<>(
+      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 15));
 
   /** Manages keyboard shortcuts read from and written to {@code .checkersrc}. */
   private final ShortcutManager shortcutManager;
@@ -115,13 +125,19 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     whiteAiCheck.setSelected(defaults.iswhiteAi());
     blackAiCheck.setSelected(defaults.isblackAi());
+    aiCombo.getItems().addAll("Minimax", "Alpha-Beta", "MCTS");
+    mctsCombo.getItems().addAll("UCT", "ML");
+
     contestCheck.setSelected(defaults.isContest());
     verboseCheck.setSelected(defaults.isVerbose());
     debugCheck.setSelected(defaults.isDebug());
 
     aiTimeSpinner.getValueFactory().setValue((int) defaults.getAiTime());
     aiTimeSpinner.setPrefWidth(80);
-    aiTimeSpinner.setDisable(!defaults.iswhiteAi() && !defaults.isblackAi());
+
+    aiDepthSpinner.getValueFactory().setValue((int) defaults.getAiDepth());
+    aiDepthSpinner.setPrefWidth(80);
+    updateAiControlsState();
 
     // Enable / disable time spinner based on blitz checkbox.
     blitzCheck.selectedProperty().addListener(
@@ -129,12 +145,16 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     // Enable / disable spinner if at least one or the other au moins is checked.
     whiteAiCheck.selectedProperty()
-        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
-            && !blackAiCheck.isSelected()));
+        .addListener((obs, oldV, newV) -> {
+          updateAiControlsState();
+        });
 
     blackAiCheck.selectedProperty()
-        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
-            && !whiteAiCheck.isSelected()));
+        .addListener((obs, oldV, newV) -> {
+          updateAiControlsState();
+        });
+
+    aiCombo.valueProperty().addListener((obs, oldV, newV) -> updateAiControlsState());
 
     getDialogPane().setContent(buildContent());
     getDialogPane().getStyleClass().add("config-dialog");
@@ -232,11 +252,29 @@ public class ConfigDialog extends Dialog<Configuration> {
     grid.add(whiteAiCheck, 0, 0);
     grid.add(blackAiCheck, 0, 1);
 
+    VBox aiModeBox = new VBox(4,
+        new Label("AI mode:"),
+        aiCombo);
+    aiModeBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(aiModeBox, 0, 2);
+
     VBox aiTimeBox = new VBox(4,
         new Label("AI thinking time (sec):"),
         aiTimeSpinner);
     aiTimeBox.setAlignment(Pos.CENTER_LEFT);
-    grid.add(aiTimeBox, 0, 2);
+    grid.add(aiTimeBox, 0, 3);
+
+    VBox aiDepthBox = new VBox(4,
+        new Label("AI thinking depth:"),
+        aiDepthSpinner);
+    aiDepthBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(aiDepthBox, 0, 4);
+
+    VBox mctsBox = new VBox(4,
+        new Label("MCTS selection mode:"),
+        mctsCombo);
+    mctsBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(mctsBox, 0, 5);
 
     return grid;
   }
@@ -265,6 +303,20 @@ public class ConfigDialog extends Dialog<Configuration> {
     grid.setVgap(10);
     grid.setPadding(new Insets(4, 0, 4, 8));
     return grid;
+  }
+
+  /** Updates enabled state of AI-related controls from player selection and AI mode. */
+  private void updateAiControlsState() {
+    boolean aiEnabled = whiteAiCheck.isSelected() || blackAiCheck.isSelected();
+    aiTimeSpinner.setDisable(!aiEnabled);
+    aiCombo.setDisable(!aiEnabled);
+
+    String mode = aiCombo.getValue();
+    boolean depthSupported = "Minimax".equals(mode) || "Alpha-Beta".equals(mode);
+    aiDepthSpinner.setDisable(!aiEnabled || !depthSupported);
+    
+    boolean mctsSelected = "MCTS".equals(mode);
+    mctsCombo.setDisable(!aiEnabled || !mctsSelected);
   }
 
   /**
