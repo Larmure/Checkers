@@ -138,7 +138,12 @@ public class MenuView extends MenuBar {
   private Menu buildFileMenu() {
     MenuItem newItem = new MenuItem(Internationalization.get("menu.new_game"));
     newItem.setAccelerator(shortcutManager.get("new-game"));
-    newItem.setOnAction(e -> controller.executeCommand("new", new String[0]));
+    newItem.setOnAction(e -> {
+      Configuration cfg = (cliConfig != null)
+          ? cliConfig
+          : Configuration.getDefaultConfiguration();
+      controller.startNewGame(cfg);
+    });
 
     MenuItem loadItem = new MenuItem(Internationalization.get("menu.load_game"));
     loadItem.setAccelerator(shortcutManager.get("load-game"));

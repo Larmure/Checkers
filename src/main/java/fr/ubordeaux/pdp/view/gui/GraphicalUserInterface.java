@@ -214,7 +214,11 @@ public class GraphicalUserInterface extends GameView {
    * once the first JavaFX pulse has completed and the window is fully initialized.
    */
   private void showInitialConfigDialog() {
-    Platform.runLater(() -> mainView.openConfigDialog());
+    Platform.runLater(() -> {
+      if (controller.getGame() == null) {
+        mainView.openConfigDialog();
+      }
+    });
   }
 
   /**
@@ -228,7 +232,7 @@ public class GraphicalUserInterface extends GameView {
    * <p>Must be called on the JavaFX Application Thread.
    */
   public void requestQuit() {
-    if (controller.getGame().getState() == State.IN_GAME) {
+    if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
       // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }
