@@ -224,4 +224,20 @@ public class MainView extends BorderPane {
       turnLabel.setText(Internationalization.get("toolbar.turn") + name.toUpperCase());
     }
   }
+
+  /**
+   * Displays a hint to the player by highlighting a suggested move on the board.
+   *
+   * <p>Delegates the hint display to {@link PlayView}, which renders the
+   * suggested move from the specified source position to the destination position.
+   * If {@link PlayView} is not yet initialized, this method does nothing.
+   *
+   * @param from the source position of the suggested move (must not be {@code null})
+   * @param to   the destination position of the suggested move (must not be {@code null})
+   */
+  public void showHint(String from, String to) {
+    if (playView != null) {
+      playView.showHint(from, to);
+    }
+  }
 }

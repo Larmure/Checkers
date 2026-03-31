@@ -167,8 +167,9 @@ public class GraphicalUserInterface extends GameView {
 
   @Override
   public void showHint(String from, String to) {
-    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> "
-        + to + "\n");
+    if (mainView != null) {
+      mainView.showHint(from, to);
+    }
   }
 
   /**

@@ -72,6 +72,15 @@ public class BoardView extends GridPane {
   /** Fill colour for the crown marker drawn on king pieces. */
   private static final Color CROWN_FILL = Color.web("#FFD700");
 
+  /** Color for hint indicators. */
+  private static final Color HINT_COLOR = Color.web("#90EE90"); // Vert clair
+
+  /** Start square for hint indicators. */
+  private String hintFrom = null;
+
+  /** End square for hint indicators. */
+  private String hintTo = null;
+
   /** Default cell size in pixels, used before any responsive binding is set. */
   private static final double DEFAULT_CELL = 68.0;
 
@@ -152,6 +161,8 @@ public class BoardView extends GridPane {
    * @param game the current game state
    */
   public void refresh(GameCheckers game) {
+    this.hintFrom = null;
+    this.hintTo = null;
     this.board = game.getBoard();
     this.size = board.getSizeBoard();
     redraw();
@@ -239,6 +250,13 @@ public class BoardView extends GridPane {
     Rectangle bg = new Rectangle(cell, cell);
     bg.setFill(isSelected ? SELECTED_SQ : (isDark ? DARK_SQ : LIGHT_SQ));
     pane.getChildren().add(bg);
+
+    if (isDark && hintFrom != null && hintTo != null) {
+      String currentSquare = toSquare(modelRow, modelCol);
+      if (currentSquare.equals(hintFrom) || currentSquare.equals(hintTo)) {
+        bg.setFill(SELECTED_SQ);
+      }
+    }
 
     if (isDark) {
       // Add a piece if one is present on this square.
@@ -451,6 +469,9 @@ public class BoardView extends GridPane {
    * @param modelCol model column of the clicked cell
    */
   private void handleClick(int row, int col, int modelRow, int modelCol) {
+    this.hintFrom = null;
+    this.hintTo = null;
+
     if (board == null) {
       return;
     }
@@ -521,5 +542,17 @@ public class BoardView extends GridPane {
    */
   private String toSquare(int modelRow, int modelCol) {
     return "" + (char) ('A' + modelRow) + (modelCol + 1);
+  }
+
+  /**
+   * Shows a hint by temporarily highlighting the "from" and "to" squares.
+   *
+   * @param from Start case 
+   * @param to   Finish case
+   */
+  public void showHint(String from, String to) {
+    this.hintFrom = from;
+    this.hintTo = to;
+    redraw();
   }
 }
