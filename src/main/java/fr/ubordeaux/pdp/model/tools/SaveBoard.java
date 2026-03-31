@@ -125,6 +125,7 @@ public class SaveBoard {
 
     writer.write("ai-mode=" + aiMode + "\n");
     writer.write("ai-depth=" + aiDepth + "\n");
+    writer.write("ai-time=" + config.getAiTime() + "\n");
     writer.write("verbose=" + config.isVerbose() + "\n");
     writer.write("debug=" + config.isDebug() + "\n");
     writer.write("board-size=" + board.getSizeBoard() + "\n");
