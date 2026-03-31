@@ -331,7 +331,7 @@ public class GameController {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }
   }
-  
+
   /**
    * Starts the blitz timer for the current game. 
    * This method initializes a new Timer that schedules a task to run every second. 
@@ -482,6 +482,9 @@ public class GameController {
   public void undoGame(int n) {
     if (game == null) {
       return;
+    } else if (game.getState() == State.FINISHED) {
+      System.out.println(Internationalization.get("game.cannot_undo_finished"));
+      return;
     }
 
     for (int i = 0; i < n; i++) {
@@ -496,6 +499,9 @@ public class GameController {
    */
   public void redoGame(int n) {
     if (game == null) {
+      return;
+    } else if (game.getState() == State.FINISHED) {
+      System.out.println(Internationalization.get("game.cannot_redo_finished"));
       return;
     }
 
