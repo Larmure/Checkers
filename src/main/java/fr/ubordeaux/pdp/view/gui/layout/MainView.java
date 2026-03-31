@@ -236,7 +236,7 @@ public class MainView extends BorderPane {
    * @param to   the destination position of the suggested move (must not be {@code null})
    */
   public void showHint(String from, String to) {
-    if (playView != null) {
+    if (playView != null && !controller.isWhiteAi() || !controller.isBlackAi()) {
       playView.showHint(from, to);
     }
   }

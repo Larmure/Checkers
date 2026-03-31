@@ -251,6 +251,7 @@ public class BoardView extends GridPane {
     bg.setFill(isSelected ? SELECTED_SQ : (isDark ? DARK_SQ : LIGHT_SQ));
     pane.getChildren().add(bg);
 
+    // Hint overlay: light green tint if this cell is part of the current hint.
     if (isDark && hintFrom != null && hintTo != null) {
       String currentSquare = toSquare(modelRow, modelCol);
       if (currentSquare.equals(hintFrom) || currentSquare.equals(hintTo)) {
