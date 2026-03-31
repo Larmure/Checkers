@@ -232,9 +232,6 @@ public class GameController {
       if (configuration.isBlitz()) {
         stopBlitzTimer();
       }
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(
-          game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
     handleGameOver();
@@ -541,9 +538,6 @@ public class GameController {
       if (configuration.isBlitz()) {
         stopBlitzTimer();
       }
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(game.getCurrentPlayer().getName() + " "
-          + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
 
       if (view instanceof GraphicalUserInterface gui) {
