@@ -63,6 +63,9 @@ public class Internationalization {
   public static String get(String key, Object... args) {
     ensureInitialized();
     String pattern = bundle.getString(key);
-    return java.text.MessageFormat.format(pattern.replace("'", "''"), args);
+    if (args.length == 0) {
+      return pattern;
+    }
+    return String.format(pattern, args);
   }
 }
