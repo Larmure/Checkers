@@ -202,9 +202,8 @@ public class App {
       }
 
       if (cmd.hasOption("t")) {
-        int timeMinutes = Integer.parseInt(cmd.getOptionValue("t"));
-        time = timeMinutes * 60; // Convert minutes to seconds
-        System.out.println(Internationalization.get("opt.time.status", timeMinutes));
+        time = Integer.parseInt(cmd.getOptionValue("t"));
+        System.out.println(Internationalization.get("opt.time.status", time));
       }
 
       if (cmd.hasOption("c")) {

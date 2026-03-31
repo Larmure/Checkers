@@ -361,9 +361,6 @@ public class GameController {
         // Update game timing logic
         game.timerPlayer();
 
-        // Notify observers to update UI (both CLI and GUI)
-        game.notifyObservers();
-
         int totalSeconds = game.getCurrentPlayer().getPlayTime();
         // Check if time has run out
         if (totalSeconds <= 0) {
@@ -372,8 +369,13 @@ public class GameController {
           timeExpired = true;
           handleGameOver();
           timeExpired = false;
+          // Notify observers to update UI (both CLI and GUI)
+          game.notifyObservers();
+        } else {
+          if (view instanceof GraphicalUserInterface) {
+            game.notifyObservers();
+          }
         }
-        game.notifyObservers();
       }
     }, 1000, 1000);
   }

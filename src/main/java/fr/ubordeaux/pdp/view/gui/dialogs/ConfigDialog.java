@@ -112,7 +112,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     sizeCombo.setValue(defaults.getSize());
 
     blitzCheck.setSelected(defaults.isBlitz());
-    timeSpinner.getValueFactory().setValue(defaults.getTime() / 60);
+    timeSpinner.getValueFactory().setValue(defaults.getTime());
     timeSpinner.setDisable(!defaults.isBlitz());
     timeSpinner.setPrefWidth(80);
 
