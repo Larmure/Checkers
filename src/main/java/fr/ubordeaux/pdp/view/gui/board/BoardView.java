@@ -3,7 +3,11 @@ package fr.ubordeaux.pdp.view.gui.board;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.view.gui.layout.PlayView;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -123,6 +127,11 @@ public class BoardView extends GridPane {
   private int selCol = -1;
 
   /**
+   * A set of all valid destination squares for the currently selected piece.
+   */
+  private final Set<String> validDestinationSquares = new HashSet<>();
+
+  /**
    * Creates a {@code BoardView} for the given controller.
    *
    * <p>An initial empty 8×8 board is drawn immediately so that the component
@@ -165,6 +174,7 @@ public class BoardView extends GridPane {
     this.hintTo = null;
     this.board = game.getBoard();
     this.size = board.getSizeBoard();
+    validDestinationSquares.clear();
     redraw();
   }
 
@@ -179,6 +189,7 @@ public class BoardView extends GridPane {
   public void drawEmpty(int size) {
     this.board = null;
     this.size = size;
+    validDestinationSquares.clear();
     redraw();
   }
 
@@ -260,6 +271,16 @@ public class BoardView extends GridPane {
     }
 
     if (isDark) {
+      String currentSquare = toSquare(modelRow, modelCol);
+      boolean isHintSquare = (hintFrom != null && hintTo != null
+          && (currentSquare.equals(hintFrom) || currentSquare.equals(hintTo)));
+
+      boolean isValidDest = validDestinationSquares.contains(currentSquare);
+
+      if (isHintSquare || isValidDest) {
+        bg.setFill(SELECTED_SQ);
+      }
+
       // Add a piece if one is present on this square.
       char piece = getPieceChar(modelRow, modelCol);
 
@@ -340,13 +361,12 @@ public class BoardView extends GridPane {
         Dragboard db = e.getDragboard();
         boolean success = false;
         if (db.hasString()) {
-          String from = db.getString();
-          String to = toSquare(mr, mc);
-
           // Clear selection state after the move.
           selRow = -1;
           selCol = -1;
-
+          String from = db.getString();
+          String to = toSquare(mr, mc);
+          validDestinationSquares.clear();
           controller.executeMove(from, to, false);
           success = true;
         }
@@ -482,14 +502,36 @@ public class BoardView extends GridPane {
       if (getPieceChar(modelRow, modelCol) != '_') {
         selRow = row;
         selCol = col;
+
+        validDestinationSquares.clear();
+        GameCheckers game = controller.getGame();
+
+        if (game != null) {
+          int selectedIndex = (modelRow * size + modelCol) / 2;
+          List<Move> possibleMoves = game.getPossibleMoves(game.getCurrentPlayer());
+
+          for (Move m : possibleMoves) {
+            if (m.getFrom() == selectedIndex) {
+              validDestinationSquares.add(board.indexToSquare(m.getTo()));
+
+              if (m.isCapture() && m.getPath() != null) {
+                for (Integer stepIndex : m.getPath()) {
+                  validDestinationSquares.add(board.indexToSquare(stepIndex));
+                }
+              }
+            }
+          }
+        }
+
         redraw();
       }
     } else {
       // A piece is already selected — treat this click as the destination.
-      String from = toSquare((size - 1) - selRow, selCol);
-      String to = toSquare(modelRow, modelCol);
       selRow = -1;
       selCol = -1;
+      String from = toSquare((size - 1) - selRow, selCol);
+      String to = toSquare(modelRow, modelCol);
+      validDestinationSquares.clear();
       controller.executeMove(from, to, false);
     }
   }
