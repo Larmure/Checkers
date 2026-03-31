@@ -5,7 +5,12 @@ import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.MaxEvaluator;
 import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 /**
@@ -23,6 +28,12 @@ public class LogisticRegressionTrainer {
 
   /** The bias term (intercept) for the logistic regression model. */
   private double bias;
+
+  /** The file path where the trained weights will be saved. */
+  public static String OUTPUT_FILEPATH = "ml_weights.txt";
+
+  /** The default number of games to train on. */
+  public static final int DEFAULT_NUM_GAMES = 10;
 
   /**
    * Initializes the logistic regression model with the specified number of features and learning 
@@ -140,7 +151,7 @@ public class LogisticRegressionTrainer {
       PlayerColor currentColor = whiteTurn ? PlayerColor.WHITE : PlayerColor.BLACK;
       AiPlayer currentPlayer = whiteTurn ? whiteAi : blackAi;
 
-      matchHistory.add(extractFeatures(board));
+      matchHistory.add(Mcts.extractFeatures(board));
 
       Move move = currentPlayer.getBestMove(undo, board, currentColor);
       if (move == null) {
@@ -205,35 +216,17 @@ public class LogisticRegressionTrainer {
   }
 
   /**
-  * Extracts a feature vector from the given board state for input into the TensorFlow model.
-  */
-  private float[] extractFeatures(Board board) {
-    int whitePawns = board.whitePawnsCount();
-    int blackPawns = board.blackPawnsCount();
-    int whiteKings = board.whiteCheckersCount();
-    int blackKings = board.blackCheckersCount();
-
-    return new float[] {
-        whitePawns,
-        blackPawns,
-        whiteKings,
-        blackKings,
-        whitePawns - blackPawns,
-        whiteKings - blackKings
-    };
-  }
-
-  /**
    * Launches the training process by running multiple matches and collecting
    * results to evaluate the performance of the logistic regression model. 
    * It prints the outcomes of each match and a summary at the end.
+   *
+   * @param numGames the number of matches to run for training data collection. A higher number
+   *     will generally lead to better model performance but will take more time.
    */
-  public static void lauchTraining() {
+  public static void lauchTraining(int numGames) {
     int whiteWins = 0;
     int blackWins = 0;
     int draws = 0;
-    int numGames = 10;
-
     LogisticRegressionTrainer trainer = new LogisticRegressionTrainer(6, 0.01);
     List<float[]> allX = new java.util.ArrayList<>();
     List<Double> allY = new java.util.ArrayList<>();
@@ -275,8 +268,33 @@ public class LogisticRegressionTrainer {
     if (!allX.isEmpty()) {
       trainer.train(allX, allY, 1000);
       trainer.printFinalWeights();
+      trainer.saveWeightsToFile(OUTPUT_FILEPATH);
     } else {
       System.out.println("Aucune donnée récoltée (que des matchs nuls).");
+    }
+  }
+
+  /**
+   * Saves the learned weights and bias to a file in a format that can be easily 
+   * copied into Mcts.java.
+   *
+   * @param filepath the path to the file where the weights and bias should be saved
+   */
+  private void saveWeightsToFile(String filepath) {
+    try {
+      StringBuilder sb = new StringBuilder();
+      // First line: the weights as a comma-separated list
+      for (int i = 0; i < weights.length; i++) {
+        sb.append(weights[i]).append(i == weights.length - 1 ? "" : ",");
+      }
+      // Second line: the bias value
+      sb.append("\n").append(bias);
+
+      Files.writeString(Paths.get(filepath), sb.toString(),
+          StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+      System.out.println("Poids sauvegardés avec succès dans : " + filepath);
+    } catch (IOException e) {
+      System.err.println("Erreur lors de la sauvegarde des poids : " + e.getMessage());
     }
   }
 }

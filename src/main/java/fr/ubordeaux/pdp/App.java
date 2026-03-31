@@ -82,6 +82,8 @@ public class App {
   /** Flag to set the selection mode for MCTS. */
   private static SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
 
+  private static int numGames = LogisticRegressionTrainer.DEFAULT_NUM_GAMES;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -97,7 +99,7 @@ public class App {
     } else if (status == EXIT_ERROR) {
       System.exit(1);
     } else if (status == EXIT_TRAINING) {
-      LogisticRegressionTrainer.lauchTraining();
+      LogisticRegressionTrainer.lauchTraining(numGames);
       System.exit(0);
     }
 
@@ -178,7 +180,7 @@ public class App {
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
-    options.addOption("tr", "train", false, "train a ML selection function");
+    options.addOption("tr", "train", true, "train a ML selection function");
 
     CommandLineParser parser = new DefaultParser();
     try {
@@ -292,6 +294,9 @@ public class App {
       }
 
       if (cmd.hasOption("tr")) {
+        numGames = Integer
+            .parseInt(cmd.getOptionValue("tr",
+                String.valueOf(LogisticRegressionTrainer.DEFAULT_NUM_GAMES)));
         return EXIT_TRAINING;
       }
 
