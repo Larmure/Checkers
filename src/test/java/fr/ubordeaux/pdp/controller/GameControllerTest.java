@@ -2,8 +2,6 @@ package fr.ubordeaux.pdp.controller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Field;
-import java.util.List;
 
 import fr.ubordeaux.pdp.view.GameView;
 
@@ -13,13 +11,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Field;
 
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mockito;
 
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
-import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
@@ -701,5 +697,47 @@ class GameControllerTest {
       assertDoesNotThrow(() -> controller.displayBoard(),
           "L'affichage du plateau après la séquence ne doit pas générer d'erreur.");
     }
+  }
+
+  // =========================================================
+  // undo / redo - Missing branches coverage
+  // =========================================================
+
+  @Test
+  void testUndoGame_whenGameIsNull_returnsEarly() throws Exception {
+    setFieldNull("game");
+
+    assertDoesNotThrow(() -> controller.undoGame(1));
+  }
+
+  @Test
+  void testUndoGame_whenGameIsFinished_printsMessageAndReturns() throws Exception {
+    forceGameState(State.FINISHED);
+
+    ByteArrayOutputStream out = captureOutput();
+    assertDoesNotThrow(() -> controller.undoGame(1));
+    restoreOutput();
+
+    assertFalse(out.toString().trim().isEmpty(),
+        "An error message must be displayed when the game is finished.");
+  }
+
+  @Test
+  void testRedoGame_whenGameIsNull_returnsEarly() throws Exception {
+    setFieldNull("game");
+
+    assertDoesNotThrow(() -> controller.redoGame(1));
+  }
+
+  @Test
+  void testRedoGame_whenGameIsFinished_printsMessageAndReturns() throws Exception {
+    forceGameState(State.FINISHED);
+
+    ByteArrayOutputStream out = captureOutput();
+    assertDoesNotThrow(() -> controller.redoGame(1));
+    restoreOutput();
+
+    assertFalse(out.toString().trim().isEmpty(),
+        "An error message must be displayed when the game is finished.");
   }
 }
