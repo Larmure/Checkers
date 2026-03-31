@@ -219,6 +219,7 @@ public class GameController {
    * @param configuration The configuration options for the new game.
    */
   public void startNewGame(Configuration configuration) {
+    stopBlitzTimer();
     System.out.println("Initializing new game with options: " + configuration);
     this.game = new GameCheckers(configuration);
     this.configuration = new Configuration(configuration);
@@ -371,8 +372,8 @@ public class GameController {
           timeExpired = true;
           handleGameOver();
           timeExpired = false;
-          game.notifyObservers();
         }
+        game.notifyObservers();
       }
     }, 1000, 1000);
   }
@@ -565,7 +566,7 @@ public class GameController {
 
     if (game.getState() == State.IN_GAME && game.getCurrentPlayer() instanceof AiPlayer) {
       AiPlayer aiPlayer = (AiPlayer) game.getCurrentPlayer();
-
+      final GameCheckers gameActiveAtStart = this.game;
       new Thread(() -> {
         // A brief pause to improve UX and prevent instant moves.
         try {
@@ -580,6 +581,9 @@ public class GameController {
 
         // Switch back to the JavaFX Application Thread to safely update the UI components.
         javafx.application.Platform.runLater(() -> {
+          if (this.game != gameActiveAtStart) {
+            return;
+          }
           if (move == null) {
             System.err.println("No AI move available.");
             game.setState(game.checkGameOver());

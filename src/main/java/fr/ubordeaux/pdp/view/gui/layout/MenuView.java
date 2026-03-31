@@ -84,7 +84,7 @@ public class MenuView extends MenuBar {
    *                        configuration dialogs; may be {@code null}
    */
   public MenuView(GameController controller, ShortcutManager shortcutManager,
-       Configuration cliConfig) {
+      Configuration cliConfig) {
     this.controller = controller;
     this.shortcutManager = shortcutManager;
     this.cliConfig = cliConfig;
@@ -139,9 +139,7 @@ public class MenuView extends MenuBar {
     MenuItem newItem = new MenuItem(Internationalization.get("menu.new_game"));
     newItem.setAccelerator(shortcutManager.get("new-game"));
     newItem.setOnAction(e -> {
-      Configuration cfg = (cliConfig != null)
-          ? cliConfig
-          : Configuration.getDefaultConfiguration();
+      Configuration cfg = Configuration.getDefaultConfiguration();
       controller.startNewGame(cfg);
     });
 
