@@ -7,6 +7,7 @@ import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
@@ -87,7 +88,6 @@ public class App {
   public static void main(String[] args) {
     int status = run(args);
 
-    // Status handling
     if (status == EXIT_INFO) {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
@@ -114,10 +114,23 @@ public class App {
       ShellCommandRouter router = new ShellCommandRouter(controller, session);
       cli.setRouter(router);
 
+      ClientMode mode = session.getMode();
+      boolean effectiveWhiteAi;
+      boolean effectiveBlackAi;
+
+      if (mode != ClientMode.LOCAL) {
+        effectiveWhiteAi = false;
+        effectiveBlackAi = false;
+      } else {
+        effectiveWhiteAi = whiteAi;
+        effectiveBlackAi = blackAi;
+      }
+
       controller.start();
       controller.startNewGame(new Configuration(
           blitz, time, contest, size, verbose, debug,
-          whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+          effectiveWhiteAi, effectiveBlackAi, aiTime, aiMode, aiDepth, selectionMode));
+
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {

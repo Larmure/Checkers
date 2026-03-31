@@ -304,11 +304,8 @@ public class GameController {
   }
 
   /**
-   * Displays the remaining time for the current player if the game is in blitz mode.
-   */
-  /**
    * Displays the remaining time for both players if the game is in blitz mode.
-   */
+   * */
   public void displayTime() {
     if (isBlitz()) {
       String template = Internationalization.get("game.time_remaining");
