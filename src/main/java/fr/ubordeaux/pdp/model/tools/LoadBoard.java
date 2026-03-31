@@ -351,35 +351,75 @@ public class LoadBoard {
           if (tokens.length != 2 || tokens[1].isBlank()) {
             throw new Exception("Invalid ai-mode format: '" + value + "'.");
           }
+
           loadedWhiteAi = true;
           loadedBlackAi = false;
-          loadedWhiteAiAlgorithm = tokens[1];
           loadedBlackAiAlgorithm = null;
+
+          if (tokens[1].equals("MinMax")) {
+            loadedWhiteAiAlgorithm = "minimax";
+          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
+            loadedWhiteAiAlgorithm = "alphabeta";
+          } else if (tokens[1].equals("Mcts")) {
+            loadedWhiteAiAlgorithm = "mcts";
+          } else {
+            throw new Exception("Unknown white AI algorithm: '" + tokens[1] + "'.");
+          }
 
         } else if (value.startsWith("black-")) {
           String[] tokens = value.split("-", 2);
           if (tokens.length != 2 || tokens[1].isBlank()) {
             throw new Exception("Invalid ai-mode format: '" + value + "'.");
           }
+
           loadedWhiteAi = false;
           loadedBlackAi = true;
           loadedWhiteAiAlgorithm = null;
-          loadedBlackAiAlgorithm = tokens[1];
+
+          if (tokens[1].equals("MinMax")) {
+            loadedBlackAiAlgorithm = "minimax";
+          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
+            loadedBlackAiAlgorithm = "alphabeta";
+          } else if (tokens[1].equals("Mcts")) {
+            loadedBlackAiAlgorithm = "mcts";
+          } else {
+            throw new Exception("Unknown black AI algorithm: '" + tokens[1] + "'.");
+          }
 
         } else if (value.startsWith("both-")) {
           String[] tokens = value.split("-", 3);
           if (tokens.length != 3 || tokens[1].isBlank() || tokens[2].isBlank()) {
             throw new Exception("Invalid ai-mode format: '" + value + "'.");
           }
+
           loadedWhiteAi = true;
           loadedBlackAi = true;
-          loadedWhiteAiAlgorithm = tokens[1];
-          loadedBlackAiAlgorithm = tokens[2];
+
+          if (tokens[1].equals("MinMax")) {
+            loadedWhiteAiAlgorithm = "minimax";
+          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
+            loadedWhiteAiAlgorithm = "alphabeta";
+          } else if (tokens[1].equals("Mcts")) {
+            loadedWhiteAiAlgorithm = "mcts";
+          } else {
+            throw new Exception("Unknown white AI algorithm: '" + tokens[1] + "'.");
+          }
+
+          if (tokens[2].equals("MinMax")) {
+            loadedBlackAiAlgorithm = "minimax";
+          } else if (tokens[2].equals("MinMaxAlphaBeta")) {
+            loadedBlackAiAlgorithm = "alphabeta";
+          } else if (tokens[2].equals("Mcts")) {
+            loadedBlackAiAlgorithm = "mcts";
+          } else {
+            throw new Exception("Unknown black AI algorithm: '" + tokens[2] + "'.");
+          }
 
         } else {
           throw new Exception("Invalid ai-mode value: '" + value + "'.");
         }
       }
+
       case "ai-depth" -> {
         int depth = Integer.parseInt(value);
         if (depth <= 0) {
