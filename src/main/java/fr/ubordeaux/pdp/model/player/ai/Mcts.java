@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -374,7 +375,8 @@ public class Mcts extends Ai {
       switch (selectionMode) {
         case UCT -> node = node.bestChildByUcb1();
         case ML -> node = node.bestChildByMl(board, undo);
-        default -> throw new IllegalStateException("Unknown selection mode: " + selectionMode);
+        default -> throw new IllegalStateException(Internationalization.get("ai.unknown_selection",
+            selectionMode));
       }
       undo.registerMove(node.player, node.move);
       board.applyMove(node.move);
@@ -559,10 +561,10 @@ public class Mcts extends Ai {
           mlWeights[i] = Double.parseDouble(firstLine[i]);
         }
         mlBias = Double.parseDouble(lines.get(1));
-        System.out.println("Modèle ML chargé avec succès !");
+        System.out.println(Internationalization.get("ai.training.weights_loaded", filepath));
       }
     } catch (IOException | NumberFormatException e) {
-      System.err.println("Impossible de charger les poids ML : " + e.getMessage());
+      System.err.println(Internationalization.get("ai.training.load_error", e.getMessage()));
     }
   }
 

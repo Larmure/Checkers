@@ -5,7 +5,7 @@ import fr.ubordeaux.pdp.model.core.Move;
 import fr.ubordeaux.pdp.model.evaluation.MaxEvaluator;
 import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
-import fr.ubordeaux.pdp.model.player.ai.Mcts;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -81,7 +81,7 @@ public class LogisticRegressionTrainer {
     * @param epochs Number of full passes over the dataset
    */
   public void train(List<float[]> x, List<Double> y, int epochs) {
-    System.out.println("Début de l'entraînement...");
+    System.out.println(Internationalization.get("ai.training.starting", epochs));
 
     for (int epoch = 0; epoch < epochs; epoch++) {
       double totalLoss = 0;
@@ -110,17 +110,17 @@ public class LogisticRegressionTrainer {
 
       // Display progress every 100 epochs
       if (epoch % 100 == 0) {
-        System.out.printf("Epoch %d | Loss moyenne: %.4f%n", epoch, (totalLoss / x.size()));
+        System.out.printf("Epoch %d | Loss : %.4f%n", epoch, (totalLoss / x.size()));
       }
     }
-    System.out.println("Entraînement terminé !");
+    System.out.println(Internationalization.get("ai.training.completed"));
   }
 
   /**
-    * Prints the final weights that can be copied into Mcts.java.
+    * Prints the final weights obtained after training.
    */
   private void printFinalWeights() {
-    System.out.println("\n=== Results to use in Mcts.java ===");
+    System.out.println("\n=== Results ===");
     System.out.print("double[] learnedWeights = new double[] {");
     for (int i = 0; i < weights.length; i++) {
       System.out.print(weights[i] + (i < weights.length - 1 ? ", " : ""));
@@ -231,7 +231,7 @@ public class LogisticRegressionTrainer {
     List<float[]> allX = new java.util.ArrayList<>();
     List<Double> allY = new java.util.ArrayList<>();
 
-    System.out.println("Lancement de " + numGames + " parties pour la collecte de données...");
+    System.out.println(Internationalization.get("ai.training.matchstarting", numGames));
 
     for (int i = 0; i < numGames; i++) {
       MatchResult result = trainer.runMatch();
@@ -256,21 +256,23 @@ public class LogisticRegressionTrainer {
         }
       }
 
-      System.out.printf("Partie %d terminée : %s (Positions extraites : %d)%n",
-          i + 1, result.winner == null ? "Match nul" : (result.winner + " gagne"),
+      System.out.printf(Internationalization.get("ai.training.matchcomplete"), i + 1,
+          result.winner == null ? Internationalization.get("draw")
+              : Internationalization.get(
+                  "winner", result.winner),
           result.featuresHistory.size());
     }
 
-    System.out.printf("Bilan : %d victoires Blancs, %d victoires Noirs, %d nuls%n",
+    System.out.printf(Internationalization.get("ai.training.summary"),
         whiteWins, blackWins, draws);
-    System.out.println("Total des positions récoltées : " + allX.size());
+    System.out.println(Internationalization.get("ai.training.total", allX.size()));
 
     if (!allX.isEmpty()) {
       trainer.train(allX, allY, 1000);
-      trainer.printFinalWeights();
+      // trainer.printFinalWeights();
       trainer.saveWeightsToFile(OUTPUT_FILEPATH);
     } else {
-      System.out.println("Aucune donnée récoltée (que des matchs nuls).");
+      System.out.println(Internationalization.get("ai.training.no_data"));
     }
   }
 
@@ -292,9 +294,9 @@ public class LogisticRegressionTrainer {
 
       Files.writeString(Paths.get(filepath), sb.toString(),
           StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-      System.out.println("Poids sauvegardés avec succès dans : " + filepath);
+      System.out.println(Internationalization.get("ai.training.weights_saved", filepath));
     } catch (IOException e) {
-      System.err.println("Erreur lors de la sauvegarde des poids : " + e.getMessage());
+      System.err.println(Internationalization.get("ai.training.save_error", e.getMessage()));
     }
   }
 }
