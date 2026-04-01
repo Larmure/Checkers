@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.view.gui.dialogs;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.Mcts;
+import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
@@ -126,7 +127,9 @@ public class ConfigDialog extends Dialog<Configuration> {
     whiteAiCheck.setSelected(defaults.iswhiteAi());
     blackAiCheck.setSelected(defaults.isblackAi());
     aiCombo.getItems().addAll("Minimax", "Alpha-Beta", "MCTS");
+    aiCombo.setValue(toDisplayAiMode(defaults.getAiMode()));
     mctsCombo.getItems().addAll("UCT", "ML");
+    mctsCombo.setValue(defaults.getSelectionMode().name());
 
     contestCheck.setSelected(defaults.isContest());
     verboseCheck.setSelected(defaults.isVerbose());
@@ -314,7 +317,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     String mode = aiCombo.getValue();
     boolean depthSupported = "Minimax".equals(mode) || "Alpha-Beta".equals(mode);
     aiDepthSpinner.setDisable(!aiEnabled || !depthSupported);
-    
+
     boolean mctsSelected = "MCTS".equals(mode);
     mctsCombo.setDisable(!aiEnabled || !mctsSelected);
   }
@@ -326,17 +329,66 @@ public class ConfigDialog extends Dialog<Configuration> {
    */
   private Configuration buildConfiguration() {
     boolean blitz = blitzCheck.isSelected();
-    int timeSec = blitz ? timeSpinner.getValue() : 30;
+    Integer timeValue = timeSpinner.getValue();
+    int timeSec = blitz ? (timeValue != null ? timeValue : Utils.DEFAULT_TIME) : Utils.DEFAULT_TIME;
     boolean contest = contestCheck.isSelected();
-    int size = sizeCombo.getValue();
+    Integer sizeValue = sizeCombo.getValue();
+    int size = sizeValue != null ? sizeValue : Utils.DEFAULT_BOARD_SIZE;
     boolean verbose = verboseCheck.isSelected();
     boolean debug = debugCheck.isSelected();
     boolean whiteAi = whiteAiCheck.isSelected();
     boolean blackAi = blackAiCheck.isSelected();
-    int aiTime = aiTimeSpinner.getValue();
+    Integer aiTimeValue = aiTimeSpinner.getValue();
+    int aiTime = aiTimeValue != null ? aiTimeValue * 1000 : (int) (Ai.DEFAULT_MAX_TIME_MS);
+
+    String aiMode = normalizeAiMode(aiCombo.getValue());
+    int aiDepth = normalizeAiDepth(aiDepthSpinner.getValue());
+    SelectionMode mctsMode = normalizeSelectionMode(mctsCombo.getValue());
 
     return new Configuration(blitz, timeSec, contest, size,
         verbose, debug, whiteAi, blackAi, aiTime,
-        Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
+        aiMode, aiDepth, mctsMode);
+  }
+
+  private static String toDisplayAiMode(String aiMode) {
+    if (aiMode == null) {
+      return "Minimax";
+    }
+    return switch (aiMode.toLowerCase()) {
+      case "alphabeta" -> "Alpha-Beta";
+      case "mcts" -> "MCTS";
+      case "minimax" -> "Minimax";
+      default -> "Minimax";
+    };
+  }
+
+  private static String normalizeAiMode(String aiMode) {
+    if (aiMode == null) {
+      return Utils.DEFAULT_AI_MODE;
+    }
+    return switch (aiMode.trim().toLowerCase()) {
+      case "alpha-beta", "alphabeta" -> "alphabeta";
+      case "mcts" -> "mcts";
+      case "minimax" -> "minimax";
+      default -> Utils.DEFAULT_AI_MODE;
+    };
+  }
+
+  private static int normalizeAiDepth(Integer aiDepth) {
+    if (aiDepth == null || aiDepth <= 0) {
+      return Ai.DEFAULT_DEPTH;
+    }
+    return aiDepth;
+  }
+
+  private static SelectionMode normalizeSelectionMode(String mode) {
+    if (mode == null || mode.isBlank()) {
+      return Mcts.DEFAULT_SELECTION_MODE;
+    }
+    try {
+      return SelectionMode.valueOf(mode.trim().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return Mcts.DEFAULT_SELECTION_MODE;
+    }
   }
 }
