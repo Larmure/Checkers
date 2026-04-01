@@ -11,4 +11,5 @@ target/
 .project
 .idea/
 .vscode/
-
+checkers/ml_weights.txt
+ml_weights.txt
