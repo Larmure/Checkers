@@ -25,7 +25,7 @@ import java.util.function.BiConsumer;
  * <p>The expiry callback receives {@code (invitation, registry)} so it can look up the
  * live {@link PlayerSession} objects and push {@code INVITATION_EXPIRED} messages.
  */
-public class Invitationmanager {
+public class InvitationManager {
 
   private static final AtomicInteger ID_COUNTER = new AtomicInteger(1);
   private static final int SWEEP_PERIOD_SECONDS = 30;
@@ -34,12 +34,11 @@ public class Invitationmanager {
   private final Map<String, Invitation> invitations = new ConcurrentHashMap<>();
 
   /** Scheduled sweep task for expiry checks. */
-  private final ScheduledExecutorService scheduler =
-      Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "invitation-sweeper");
-        t.setDaemon(true);
-        return t;
-      });
+  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+    Thread t = new Thread(r, "invitation-sweeper");
+    t.setDaemon(true);
+    return t;
+  });
 
   /**
    * Starts the background expiry sweeper.
@@ -49,7 +48,7 @@ public class Invitationmanager {
    *                       Receives the expired invitation and the registry.
    */
   public void startSweeper(GameRegistry registry,
-                           BiConsumer<Invitation, GameRegistry> expiryCallback) {
+      BiConsumer<Invitation, GameRegistry> expiryCallback) {
     scheduler.scheduleAtFixedRate(
         () -> sweepExpired(registry, expiryCallback),
         SWEEP_PERIOD_SECONDS, SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
@@ -216,7 +215,7 @@ public class Invitationmanager {
    * Marks all pending-but-expired invitations as expired and fires the callback.
    */
   private void sweepExpired(GameRegistry registry,
-                            BiConsumer<Invitation, GameRegistry> expiryCallback) {
+      BiConsumer<Invitation, GameRegistry> expiryCallback) {
     invitations.values().forEach(inv -> {
       if (inv.getStatus() == Invitation.InvitationStatus.PENDING && inv.isExpired()) {
         inv.markExpired();
@@ -244,9 +243,17 @@ public class Invitationmanager {
       this.error = error;
     }
 
-    public static CreateResult success(Invitation inv) { return new CreateResult(inv, null); }
-    public static CreateResult error(String msg)       { return new CreateResult(null, msg); }
-    public boolean isSuccess() { return invitation != null; }
+    public static CreateResult success(Invitation inv) {
+      return new CreateResult(inv, null);
+    }
+
+    public static CreateResult error(String msg) {
+      return new CreateResult(null, msg);
+    }
+
+    public boolean isSuccess() {
+      return invitation != null;
+    }
   }
 
   /** Result of {@link #accept}. */
@@ -262,9 +269,11 @@ public class Invitationmanager {
     public static AcceptResult success(Invitation inv) {
       return new AcceptResult(inv, null);
     }
-    public static AcceptResult error(String msg)       {
+
+    public static AcceptResult error(String msg) {
       return new AcceptResult(null, msg);
     }
+
     public boolean isSuccess() {
       return invitation != null;
     }
@@ -283,9 +292,11 @@ public class Invitationmanager {
     public static DeclineResult success(Invitation inv) {
       return new DeclineResult(inv, null);
     }
-    public static DeclineResult error(String msg)       {
+
+    public static DeclineResult error(String msg) {
       return new DeclineResult(null, msg);
     }
+
     public boolean isSuccess() {
       return invitation != null;
     }
@@ -301,8 +312,16 @@ public class Invitationmanager {
       this.error = error;
     }
 
-    public static CancelResult success(Invitation inv) { return new CancelResult(inv, null); }
-    public static CancelResult error(String msg)       { return new CancelResult(null, msg); }
-    public boolean isSuccess() { return invitation != null; }
+    public static CancelResult success(Invitation inv) {
+      return new CancelResult(inv, null);
+    }
+
+    public static CancelResult error(String msg) {
+      return new CancelResult(null, msg);
+    }
+
+    public boolean isSuccess() {
+      return invitation != null;
+    }
   }
 }
