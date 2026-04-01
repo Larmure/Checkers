@@ -37,7 +37,7 @@ public class GameServer {
   private final boolean daemon;
   private final GameControllerFactory controllerFactory;
   private final GameRegistry registry = new GameRegistry();
-  private final Invitationmanager invitationManager = new Invitationmanager();
+  private final InvitationManager invitationManager = new InvitationManager();
 
   private Thread discoveryThread;
   private ServerSocket serverSocket;
@@ -189,9 +189,8 @@ public class GameServer {
   private void handleClient(Socket client) {
     try (
         BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        PrintWriter out =
-            new PrintWriter(
-                new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
+        PrintWriter out = new PrintWriter(
+            new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
 
       connectedClients.add(out);
 
@@ -381,7 +380,7 @@ public class GameServer {
       return;
     }
 
-    Invitationmanager.CreateResult result =
+    InvitationManager.CreateResult result =
         invitationManager.createInvitation(sender, toId, registry);
 
     if (!result.isSuccess()) {
@@ -411,7 +410,7 @@ public class GameServer {
    * @param acceptor the player accepting the invitation.
    */
   private void handleAccept(PrintWriter out, PlayerSession acceptor) {
-    Invitationmanager.AcceptResult result = invitationManager.accept(acceptor.getId());
+    InvitationManager.AcceptResult result = invitationManager.accept(acceptor.getId());
 
     if (!result.isSuccess()) {
       out.println("ERROR: " + result.error);
@@ -445,7 +444,7 @@ public class GameServer {
    * @param decliner the player declining.
    */
   private void handleDecline(PrintWriter out, PlayerSession decliner) {
-    Invitationmanager.DeclineResult result = invitationManager.decline(decliner.getId());
+    InvitationManager.DeclineResult result = invitationManager.decline(decliner.getId());
 
     if (!result.isSuccess()) {
       out.println("ERROR: " + result.error);
@@ -474,7 +473,7 @@ public class GameServer {
    * @param canceller the player cancelling their outgoing invitation.
    */
   private void handleCancel(PrintWriter out, PlayerSession canceller) {
-    Invitationmanager.CancelResult result = invitationManager.cancel(canceller.getId());
+    InvitationManager.CancelResult result = invitationManager.cancel(canceller.getId());
 
     if (!result.isSuccess()) {
       out.println("ERROR: " + result.error);
@@ -503,7 +502,7 @@ public class GameServer {
    */
   private void cleanupPlayerInvitations(PlayerSession player) {
     // Cancel outgoing invitation
-    Invitationmanager.CancelResult cancel = invitationManager.cancel(player.getId());
+    InvitationManager.CancelResult cancel = invitationManager.cancel(player.getId());
     if (cancel.isSuccess()) {
       PlayerSession invitee = registry.getPlayer(cancel.invitation.getToPlayerId());
       if (invitee != null) {
@@ -513,7 +512,7 @@ public class GameServer {
     }
 
     // Decline any incoming invitation (so the inviter is unblocked)
-    Invitationmanager.DeclineResult decline = invitationManager.decline(player.getId());
+    InvitationManager.DeclineResult decline = invitationManager.decline(player.getId());
     if (decline.isSuccess()) {
       PlayerSession inviter = registry.getPlayer(decline.invitation.getFromPlayerId());
       if (inviter != null) {
@@ -523,7 +522,7 @@ public class GameServer {
   }
 
   /**
-   * Called by the {@link Invitationmanager} sweeper when an invitation expires.
+   * Called by the {@link InvitationManager} sweeper when an invitation expires.
    *
    * @param inv      the expired invitation.
    * @param registry the player registry.
@@ -576,10 +575,9 @@ public class GameServer {
    * to invite specific opponents.
    */
   private synchronized void tryAutoStart() {
-    List<PlayerSession> idlePlayers =
-        registry.getAllPlayers().stream()
-            .filter(PlayerSession::isIdle)
-            .collect(Collectors.toList());
+    List<PlayerSession> idlePlayers = registry.getAllPlayers().stream()
+        .filter(PlayerSession::isIdle)
+        .collect(Collectors.toList());
 
     if (idlePlayers.size() == 1) {
       idlePlayers.get(0).send(
@@ -589,6 +587,8 @@ public class GameServer {
   }
 
   /**
+   * Handles direct game creation (deprecated).
+   *
    * @deprecated Replaced by the invitation flow ({@link #handleNewInvitation}).
    *             Kept for reference only and no longer called.
    */

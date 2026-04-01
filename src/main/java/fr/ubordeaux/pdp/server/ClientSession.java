@@ -298,15 +298,18 @@ public class ClientSession {
 
     } else if (message.startsWith("INVITATION_SENT")) {
       // e.g.  INVITATION_SENT PLAYER=Bob TIMEOUT=300s
-      System.out.println("\n[invitation] Invitation sent. " + message.substring("INVITATION_SENT".length()).trim());
+      System.out.println("\n[invitation] Invitation sent. "
+          + message.substring("INVITATION_SENT".length()).trim());
       System.out.println("[invitation] Waiting for a response... (type 'cancel' to withdraw)");
 
     } else if (message.startsWith("INVITATION_ACCEPTED")) {
-      System.out.println("\n[invitation] Your invitation was accepted! " + message.substring("INVITATION_ACCEPTED".length()).trim());
+      System.out.println("\n[invitation] Your invitation was accepted! "
+          + message.substring("INVITATION_ACCEPTED".length()).trim());
 
     } else if (message.startsWith("INVITATION_DECLINED")) {
       // e.g.  INVITATION_DECLINED BY=bob
-      System.out.println("\n[invitation] " + message.substring("INVITATION_DECLINED".length()).trim()
+      System.out.println("\n[invitation] "
+          + message.substring("INVITATION_DECLINED".length()).trim()
           + " declined your invitation.");
 
     } else if (message.startsWith("INVITATION_CANCELLED")) {

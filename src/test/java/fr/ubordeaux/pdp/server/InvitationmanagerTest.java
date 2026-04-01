@@ -7,17 +7,17 @@ import java.io.StringWriter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class InvitationmanagerTest {
+class InvitationManagerTest {
 
   private GameRegistry registry;
-  private Invitationmanager manager;
+  private InvitationManager manager;
   private PlayerSession alice;
   private PlayerSession bob;
 
   @BeforeEach
   void setUp() {
     registry = new GameRegistry();
-    manager = new Invitationmanager();
+    manager = new InvitationManager();
 
     alice = registry.registerPlayer("alice", "Alice", new PrintWriter(new StringWriter(), true));
     bob = registry.registerPlayer("bob", "Bob", new PrintWriter(new StringWriter(), true));
@@ -25,8 +25,7 @@ class InvitationmanagerTest {
 
   @Test
   void createInvitationShouldSucceedWhenBothPlayersAreIdle() {
-    Invitationmanager.CreateResult result =
-        manager.createInvitation(alice, "bob", registry);
+    InvitationManager.CreateResult result = manager.createInvitation(alice, "bob", registry);
 
     assertTrue(result.isSuccess());
     assertNotNull(result.invitation);
@@ -37,8 +36,7 @@ class InvitationmanagerTest {
 
   @Test
   void createInvitationShouldFailWhenTargetDoesNotExist() {
-    Invitationmanager.CreateResult result =
-        manager.createInvitation(alice, "charlie", registry);
+    InvitationManager.CreateResult result = manager.createInvitation(alice, "charlie", registry);
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
@@ -49,8 +47,7 @@ class InvitationmanagerTest {
   void createInvitationShouldFailWhenTargetIsAway() {
     bob.setStatus(PlayerSession.Status.AWAY);
 
-    Invitationmanager.CreateResult result =
-        manager.createInvitation(alice, "bob", registry);
+    InvitationManager.CreateResult result = manager.createInvitation(alice, "bob", registry);
 
     assertFalse(result.isSuccess());
     assertTrue(result.error.contains("away"));
@@ -58,8 +55,7 @@ class InvitationmanagerTest {
 
   @Test
   void createInvitationShouldFailWhenInvitingSelf() {
-    Invitationmanager.CreateResult result =
-        manager.createInvitation(alice, "alice", registry);
+    InvitationManager.CreateResult result = manager.createInvitation(alice, "alice", registry);
 
     assertFalse(result.isSuccess());
     assertTrue(result.error.contains("cannot invite yourself"));
@@ -67,20 +63,19 @@ class InvitationmanagerTest {
 
   @Test
   void createInvitationShouldFailWhenTargetIsNoLongerIdleAfterFirstInvitation() {
-    Invitationmanager.CreateResult first =
-        manager.createInvitation(alice, "bob", registry);
-    Invitationmanager.CreateResult second =
-        manager.createInvitation(alice, "bob", registry);
+    InvitationManager.CreateResult first = manager.createInvitation(alice, "bob", registry);
+    InvitationManager.CreateResult second = manager.createInvitation(alice, "bob", registry);
 
     assertTrue(first.isSuccess());
     assertFalse(second.isSuccess());
     assertTrue(second.error.contains("already in a game"));
   }
+
   @Test
   void acceptShouldSucceedWhenInvitationExists() {
     manager.createInvitation(alice, "bob", registry);
 
-    Invitationmanager.AcceptResult result = manager.accept("bob");
+    InvitationManager.AcceptResult result = manager.accept("bob");
 
     assertTrue(result.isSuccess());
     assertNotNull(result.invitation);
@@ -89,7 +84,7 @@ class InvitationmanagerTest {
 
   @Test
   void acceptShouldFailWhenNoInvitationExists() {
-    Invitationmanager.AcceptResult result = manager.accept("bob");
+    InvitationManager.AcceptResult result = manager.accept("bob");
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
@@ -100,7 +95,7 @@ class InvitationmanagerTest {
   void declineShouldSucceedWhenInvitationExists() {
     manager.createInvitation(alice, "bob", registry);
 
-    Invitationmanager.DeclineResult result = manager.decline("bob");
+    InvitationManager.DeclineResult result = manager.decline("bob");
 
     assertTrue(result.isSuccess());
     assertEquals(Invitation.InvitationStatus.DECLINED, result.invitation.getStatus());
@@ -108,7 +103,7 @@ class InvitationmanagerTest {
 
   @Test
   void declineShouldFailWhenNoInvitationExists() {
-    Invitationmanager.DeclineResult result = manager.decline("bob");
+    InvitationManager.DeclineResult result = manager.decline("bob");
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
@@ -118,7 +113,7 @@ class InvitationmanagerTest {
   void cancelShouldSucceedWhenOutgoingInvitationExists() {
     manager.createInvitation(alice, "bob", registry);
 
-    Invitationmanager.CancelResult result = manager.cancel("alice");
+    InvitationManager.CancelResult result = manager.cancel("alice");
 
     assertTrue(result.isSuccess());
     assertEquals(Invitation.InvitationStatus.CANCELLED, result.invitation.getStatus());
@@ -126,7 +121,7 @@ class InvitationmanagerTest {
 
   @Test
   void cancelShouldFailWhenNoOutgoingInvitationExists() {
-    Invitationmanager.CancelResult result = manager.cancel("alice");
+    InvitationManager.CancelResult result = manager.cancel("alice");
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
