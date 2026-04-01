@@ -34,11 +34,13 @@ public class InvitationManager {
   private final Map<String, Invitation> invitations = new ConcurrentHashMap<>();
 
   /** Scheduled sweep task for expiry checks. */
-  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-    Thread t = new Thread(r, "invitation-sweeper");
-    t.setDaemon(true);
-    return t;
-  });
+  private final ScheduledExecutorService scheduler =
+      Executors.newSingleThreadScheduledExecutor(
+          r -> {
+            Thread t = new Thread(r, "invitation-sweeper");
+            t.setDaemon(true);
+            return t;
+          });
 
   /**
    * Starts the background expiry sweeper.

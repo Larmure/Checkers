@@ -4,11 +4,11 @@ import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.commands.HelpClientCommand;
 import fr.ubordeaux.pdp.controller.commands.JoinCommand;
 import fr.ubordeaux.pdp.controller.commands.PingCommand;
-import fr.ubordeaux.pdp.controller.commands.QuitCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
-import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 /**
