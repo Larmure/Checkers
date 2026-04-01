@@ -58,6 +58,9 @@ public class MainView extends BorderPane {
   /** Central play area containing the board and the log panel. */
   private PlayView playView;
 
+  /** Flag indicating whether the GUI is running in server mode. */
+  private final boolean serverMode;
+
   /**
    * Toolbar label indicating whose turn it is.
    * Updated by {@link #update(GameCheckers)}.
@@ -74,10 +77,11 @@ public class MainView extends BorderPane {
    *                      configuration dialogs; may be {@code null}
    */
   public MainView(GameController controller, ConfigManager configManager,
-      Configuration cliConfig) {
+      Configuration cliConfig, boolean serverMode) {
     this.controller = controller;
     this.configManager = configManager;
     this.cliConfig = cliConfig;
+    this.serverMode = serverMode;
     buildLayout();
     // style.css : .root-pane
     this.getStyleClass().add("root-pane");
@@ -89,8 +93,12 @@ public class MainView extends BorderPane {
    */
   private void buildLayout() {
     ShortcutManager shortcutManager = new ShortcutManager(configManager);
-    menuView = new MenuView(controller, shortcutManager, cliConfig);
-    this.setTop(menuView);
+    if (!serverMode) {
+      menuView = new MenuView(controller, shortcutManager, cliConfig);
+      this.setTop(menuView);
+    } else {
+      System.out.println("Mode réseau détecté.");
+    }
 
     playView = new PlayView(controller);
     this.setCenter(playView);
