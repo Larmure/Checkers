@@ -111,7 +111,7 @@ public class App {
 
     session.setController(controller);
     ShellCommandRouter router = new ShellCommandRouter(controller, session);
-    // A VOIR AVEC DANIEL 
+
     if (view instanceof CommandLineInterface) {
       ((CommandLineInterface) view).setRouter(router);
     }

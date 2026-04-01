@@ -422,14 +422,14 @@ public class LoadBoard {
 
       case "ai-depth" -> {
         int depth = Integer.parseInt(value);
-        if (depth <= 0) {
+        if (depth < 0) {
           throw new Exception("Invalid ai-depth: '" + value + "'.");
         }
         loadedAiDepth = depth;
       }
       case "ai-time" -> {
         long aiTime = Long.parseLong(value);
-        if (aiTime <= 0) {
+        if (aiTime < 0) {
           throw new Exception("Invalid ai-time: '" + value + "'.");
         }
         loadedAiTime = aiTime;
