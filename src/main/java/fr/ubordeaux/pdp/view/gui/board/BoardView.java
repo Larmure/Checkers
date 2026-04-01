@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.view.gui.layout.PlayView;
 import java.util.HashSet;
 import java.util.List;
@@ -309,6 +310,10 @@ public class BoardView extends GridPane {
 
       // Drag-and-drop handlers for moving pieces with the mouse
       pane.setOnDragDetected(e -> {
+        if (isAiTurn()) {
+          return; // Disable dragging during AI turns.
+        }
+
         if (getPieceChar(mr, mc) != '_') {
           Dragboard db = pane.startDragAndDrop(TransferMode.MOVE);
           ClipboardContent content = new ClipboardContent();
@@ -490,6 +495,10 @@ public class BoardView extends GridPane {
    * @param modelCol model column of the clicked cell
    */
   private void handleClick(int row, int col, int modelRow, int modelCol) {
+    if (isAiTurn()) {
+      return; // Ignore clicks during AI turns.
+    }
+
     this.hintFrom = null;
     this.hintTo = null;
 
@@ -597,5 +606,15 @@ public class BoardView extends GridPane {
     this.hintFrom = from;
     this.hintTo = to;
     redraw();
+  }
+
+  /**
+   * Checks if the current turn belongs to an AI player.
+   *
+   * @return {@code true} if the current player is an AI, {@code false} otherwise
+   */
+  private boolean isAiTurn() {
+    GameCheckers game = controller.getGame();
+    return game != null && game.getCurrentPlayer() instanceof AiPlayer;
   }
 }

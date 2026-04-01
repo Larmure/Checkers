@@ -238,13 +238,15 @@ public class MainView extends BorderPane {
 
       boolean isAiTurn = game.getCurrentPlayer() instanceof AiPlayer;
 
-      if (undoBtn != null)
+      if (undoBtn != null) {
         undoBtn.setDisable(isAiTurn);
-      if (redoBtn != null)
+      }
+      if (redoBtn != null) {
         redoBtn.setDisable(isAiTurn);
-
-      if (menuView != null)
+      }
+      if (menuView != null) {
         menuView.setDisableUndoRedo(isAiTurn);
+      }
     }
   }
 
