@@ -223,8 +223,17 @@ public class App {
       }
 
       if (cmd.hasOption("t")) {
-        time = Integer.parseInt(cmd.getOptionValue("t"));
-        System.out.println(Internationalization.get("opt.time.status", time));
+        try {
+          time = Integer.parseInt(cmd.getOptionValue("t"));
+          System.out.println(Internationalization.get("opt.time.status", time));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("t")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "time", Utils.DEFAULT_TIME));
+
+          time = Utils.DEFAULT_TIME;
+        }
       }
 
       if (cmd.hasOption("c")) {
@@ -233,8 +242,16 @@ public class App {
       }
 
       if (cmd.hasOption("s")) {
-        size = Integer.parseInt(cmd.getOptionValue("s"));
-        System.out.println(Internationalization.get("opt.size.status") + size + ".");
+        try {
+          size = Integer.parseInt(cmd.getOptionValue("s"));
+          System.out.println(Internationalization.get("opt.size.status") + size + ".");
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("s")));
+          System.out.println(Internationalization.get("app.warn.changed", "size",
+              Utils.DEFAULT_BOARD_SIZE));
+          size = Utils.DEFAULT_BOARD_SIZE;
+        }
       }
 
       if (cmd.hasOption("a")) {
@@ -266,9 +283,16 @@ public class App {
       }
 
       if (cmd.hasOption("at")) {
-        aiTime = Integer.parseInt(cmd.getOptionValue("at"));
-        aiTime *= 1000; // Convert seconds to milliseconds
-        System.out.println(Internationalization.get("opt.ai.time.status", aiTime));
+        try {
+          aiTime = Long.parseLong(cmd.getOptionValue("at")) * 1000;
+          System.out.println(Internationalization.get("opt.ai.time.status", aiTime / 1000));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("at")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "AI time", Ai.DEFAULT_MAX_TIME_MS / 1000));
+          aiTime = Ai.DEFAULT_MAX_TIME_MS;
+        }
       }
 
       if (cmd.hasOption("am")) {
@@ -277,8 +301,16 @@ public class App {
       }
 
       if (cmd.hasOption("ad")) {
-        aiDepth = Integer.parseInt(cmd.getOptionValue("ad"));
-        System.out.println(Internationalization.get("opt.ai.depth.status", aiDepth));
+        try {
+          aiDepth = Integer.parseInt(cmd.getOptionValue("ad"));
+          System.out.println(Internationalization.get("opt.ai.depth.status", aiDepth));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("ad")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "AI depth", Ai.DEFAULT_DEPTH));
+          aiDepth = Ai.DEFAULT_DEPTH;
+        }
       }
 
       if (cmd.hasOption("as")) {
@@ -287,16 +319,23 @@ public class App {
           selectionMode = SelectionMode.valueOf(selection);
           System.out.println(Internationalization.get("opt.ai.selection.status", selectionMode));
         } catch (IllegalArgumentException e) {
-          System.err.println(Internationalization.get("app.warn.invalid_ai_selection")
+          System.out.println(Internationalization.get("app.warn.invalid_ai_selection")
               + selection);
           selectionMode = Mcts.DEFAULT_SELECTION_MODE;
         }
       }
 
       if (cmd.hasOption("tr")) {
-        numGames = Integer
-            .parseInt(cmd.getOptionValue("tr",
-                String.valueOf(LogisticRegressionTrainer.DEFAULT_NUM_GAMES)));
+        try {
+          numGames = Integer.parseInt(cmd.getOptionValue("tr"));
+          System.out.println(Internationalization.get("opt.train.status", numGames));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("tr")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "number of games", LogisticRegressionTrainer.DEFAULT_NUM_GAMES));
+          numGames = LogisticRegressionTrainer.DEFAULT_NUM_GAMES;
+        }
         return EXIT_TRAINING;
       }
 
