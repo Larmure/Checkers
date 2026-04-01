@@ -1,21 +1,23 @@
 package fr.ubordeaux.pdp.controller;
 
 /**
- * Semantic marker for commands specific to the network client.
- * Command hierarchy:
+ * Semantic marker for commands that belong to the network client layer.
+ *
+ * <p>Command hierarchy:
  * <pre>
  * Command (base interface)
  * ├── [Game]           NewCommand, UndoCommand, RedoCommand, SetCommand...
- * │                   → act on GameController / GameCheckers
- * ├── [Server network] ServerListCommand, ServerStartCommand, ServerStopCommand
- * │                   → act on GameServer / ServerListService
- * └── [Client]        JoinCommand, PingCommand, QuitClientCommand, HelpClientCommand
- *                     → act on ClientSession (client connection state)
+ * │                    → act on GameController / GameCheckers
+ * ├── [Network server] ServerListCommand, ServerStartCommand, ServerStopCommand
+ * │                    → act on GameServer / ServerListService
+ * └── [Client]         JoinCommand, PingCommand, QuitClientCommand, HelpClientCommand
+ *                      → act on ClientSession (connection and mode state)
  * </pre>
- * Client commands receive a ClientSession to manipulate
- * the connection state without direct coupling to the {@code client} class.
+ *
+ * <p>Client commands receive a {@link fr.ubordeaux.pdp.server.ClientSession} to
+ * manipulate connection state without coupling directly to the {@code client} shell.
  */
 public interface ClientCommand extends Command {
-    // Marker interface — all client commands implement this in addition to Command,
-    // allowing them to be easily identified and filtered.
+  // Marker interface — allows client commands to be identified and filtered
+  // independently of game or server commands.
 }

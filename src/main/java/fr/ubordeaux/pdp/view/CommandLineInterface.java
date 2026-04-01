@@ -5,6 +5,7 @@ import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import java.io.IOException;
 import java.util.Arrays;
 import org.jline.reader.EndOfFileException;
@@ -15,13 +16,16 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
 /**
- * Concrete implementation of {@link GameView} providing an interactive
- * text-based shell.
- * It reads user input from the standard input, parses it, and forwards it to
- * the
- * {@link GameController}.
+ * Concrete implementation of {@link GameView} providing an interactive text-based shell.
  *
- * @version 1.1
+ * <p>This class has a single responsibility: read input lines and forward them to
+ * {@link ShellCommandRouter}. All dispatch logic (move vs. game command vs. network command)
+ * lives in the router, keeping this class focused on I/O only.
+ *
+ * <p>If no {@link ShellCommandRouter} is injected (standalone game mode), input is forwarded
+ * directly to the {@link GameController}.
+ *
+ * @version 2.0
  */
 public class CommandLineInterface extends GameView {
   /** Flag to enable verbose. */
@@ -35,6 +39,13 @@ public class CommandLineInterface extends GameView {
 
   /** The line reader for handling user input. */
   private LineReader lineReader;
+  private Thread inputThread;
+
+  /**
+   * Optional router — injected when running with network support.
+   * If {@code null}, input is forwarded directly to the controller.
+   */
+  private ShellCommandRouter router;
 
   /**
    * Constructs a CommandLineInterface with specific logging levels.
@@ -48,32 +59,49 @@ public class CommandLineInterface extends GameView {
   }
 
   /**
-   * Renders the current state of the board in the terminal.
+   * Injects the shell command router.
+   *
+   * <p>Call this before {@link #start()} when running with network support so that
+   * {@code join}, {@code ping}, and {@code server} commands are handled correctly.
+   *
+   * @param router the router that dispatches all input.
+   */
+  public void setRouter(ShellCommandRouter router) {
+    this.router = router;
+  }
+
+  /**
+   * Displays the current game state in the terminal.
+   *
+   * <p>Shows the board, the current player's turn, and the remaining time
+   * in blitz mode.
+   *
+   * @param game the current game to display
    */
   @Override
   public void display(GameCheckers game) {
     System.out.println(Internationalization.get("game.board_title"));
-
-    // On utilise le toString() du Board que tu as fourni dans tes fichiers
-    // C'est ici que la Vue "lit" le modèle sans le modifier
     System.out.println(game.getBoard().toString());
 
-    // Affichage des infos de tour
-    String tour = game.getCurrentPlayer().getName();
-    System.out.println(String.format(Internationalization.get("game.turn"), tour));
+    String currentPlayerName = game.getCurrentPlayer().getName();
+    System.out.println(
+          String.format(Internationalization.get("game.turn"), currentPlayerName));
 
     if (controller.isBlitz()) {
       controller.displayTime();
     }
+
     System.out.println("======================\n");
   }
 
   /**
-   * Reacts to notifications from the observed model.
+   * Updates the view when the observed game state changes.
+   *
+   * @param gameCheckers the updated game instance
    */
   @Override
   public void update(GameCheckers gameCheckers) {
-    this.display(gameCheckers);
+    display(gameCheckers);
   }
 
   @Override
@@ -93,23 +121,27 @@ public class CommandLineInterface extends GameView {
       return;
     }
 
-    String trimmed = input.trim();
-    String[] tokens;
-
-    if (trimmed.matches(Utils.MOVE_REGEX)) {
-      tokens = trimmed.split("\\s+");
-      controller.executeMove(tokens[0], tokens[1], false);
-
-    } else if (trimmed.matches(Utils.MANOURY_REGEX)) {
-      tokens = trimmed.split("-");
-      controller.executeMove(tokens[0], tokens[1], true);
-
+    if (router != null) {
+      router.route(input.trim());
     } else {
-      tokens = trimmed.split("\\s+");
+      String trimmed = input.trim();
+      String[] tokens;
 
-      String commandName = tokens[0];
-      String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-      controller.executeCommand(commandName, args);
+      if (trimmed.matches(Utils.MOVE_REGEX)) {
+        tokens = trimmed.split("\\s+");
+        controller.executeMove(tokens[0], tokens[1], false);
+
+      } else if (trimmed.matches(Utils.MANOURY_REGEX)) {
+        tokens = trimmed.split("-");
+        controller.executeMove(tokens[0], tokens[1], true);
+
+      } else {
+        tokens = trimmed.split("\\s+");
+
+        String commandName = tokens[0];
+        String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
+        controller.executeCommand(commandName, args);
+      }
     }
   }
 
@@ -123,12 +155,12 @@ public class CommandLineInterface extends GameView {
         terminal = TerminalBuilder.terminal();
       } catch (IOException ex) {
         System.getLogger(CommandLineInterface.class.getName())
-            .log(System.Logger.Level.ERROR, (String) null, ex);
+              .log(System.Logger.Level.ERROR, (String) null, ex);
       }
       lineReader = LineReaderBuilder.builder()
-          .terminal(terminal)
-          .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
-          .build();
+            .terminal(terminal)
+            .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
+            .build();
 
       lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }
@@ -164,5 +196,19 @@ public class CommandLineInterface extends GameView {
    */
   public void setLineReader(LineReader lineReader) {
     this.lineReader = lineReader;
+  }
+
+  /**
+   * Waits for the input thread to finish. This is useful for testing purposes to
+   * ensure that all input processing
+   * is completed before assertions are made.
+   *
+   * @throws InterruptedException if the current thread is interrupted while
+   *                              waiting.
+   */
+  public void join() throws InterruptedException {
+    if (inputThread != null) {
+      inputThread.join();
+    }
   }
 }

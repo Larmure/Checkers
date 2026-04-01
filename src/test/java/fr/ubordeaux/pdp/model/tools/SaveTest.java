@@ -1,16 +1,15 @@
 package fr.ubordeaux.pdp.model.tools;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
-
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.Move;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.Mcts;
 
@@ -196,7 +195,7 @@ public class SaveTest {
 
             /*for (String cell : t.split(" ")) {
                 assertTrue(
-                        cell.equals("-") || cell.equals("o") || cell.equals("x") || cell.equals("O")
+                        cell.equals("_") || cell.equals("o") || cell.equals("x") || cell.equals("O")
                                 || cell.equals("X"),
                         "Caractère invalide dans le plateau : '" + cell + "' (ligne : " + t + ")");
             }*/
@@ -283,4 +282,80 @@ public class SaveTest {
                 "Sauvegarder deux fois doit écraser le fichier, pas l'agrandir.");
 
     }
+  @Test
+  void testBoardRowCountMatchesSizeForReal() throws Exception {
+    int size = 10;
+    GameCheckers game = newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    SaveBoard sauvegarde = new SaveBoard(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_rows_real.txt");
+
+    String content = Files.readString(getSavePath("test_rows_real.txt"));
+    String boardSection = content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
+
+    int rowCount = 0;
+    for (String line : boardSection.split("\n")) {
+      String t = line.trim();
+      if (t.startsWith("[") || t.isBlank() || t.startsWith("#")) {
+        continue;
+      }
+      String[] cells = t.split("\\s+");
+      if (cells.length == size) {
+        rowCount++;
+      }
+    }
+
+    assertEquals(size, rowCount,
+        "Le nombre de lignes du plateau doit correspondre à la taille.");
+  }
+  @Test
+  void testBoardCellsContainOnlyValidCharsForReal() throws Exception {
+    int size = 10;
+    GameCheckers game = newGame(size, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    SaveBoard sauvegarde = new SaveBoard(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_chars_real.txt");
+
+    String content = Files.readString(getSavePath("test_chars_real.txt"));
+    String boardSection = content.substring(content.indexOf("[game]"), content.indexOf("[history]"));
+
+    for (String line : boardSection.split("\n")) {
+      String t = line.trim();
+      if (t.startsWith("[") || t.isBlank() || t.startsWith("#")) {
+        continue;
+      }
+
+      for (String cell : t.split("\\s+")) {
+        assertTrue(
+            cell.equals("_") || cell.equals("o") || cell.equals("x")
+                || cell.equals("O") || cell.equals("X"),
+            "Caractère invalide dans le plateau : '" + cell + "'");
+      }
+    }
+  }
+
+  @Test
+  void testTimeModeClassicWhenBlitzDisabled() throws Exception {
+    GameCheckers game = newGame(10, false, Utils.DEFAULT_TIME, Utils.DEFAULT_DEBUG);
+    SaveBoard sauvegarde = new SaveBoard(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_classic_mode.txt");
+
+    String content = Files.readString(getSavePath("test_classic_mode.txt"));
+    assertTrue(content.contains("time-mode=classic"),
+        "Quand blitz est désactivé, time-mode doit être classic.");
+  }
+
+  @Test
+  void testDebugFalseWrittenCorrectly() throws Exception {
+    GameCheckers game = newGame(10, Utils.DEFAULT_BLITZ, Utils.DEFAULT_TIME, false);
+    SaveBoard sauvegarde = new SaveBoard(game.getBoard(), game);
+
+    sauvegarde.saveToFile("test_debug_false.txt");
+
+    String content = Files.readString(getSavePath("test_debug_false.txt"));
+    assertTrue(content.contains("debug=false"),
+        "Quand debug est désactivé, debug=false doit être écrit.");
+  }
+
 }

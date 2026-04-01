@@ -3,36 +3,44 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.ClientCommand;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.ClientSession;
+import java.util.Scanner;
 
 /**
- * Commande CLIENT : {@code join [IP[:PORT]]}
- * Se connecte au serveur de jeu à l'adresse indiquée.
- * Par défaut : {@code localhost:12345}.
- * Distinction des responsabilités :
- * - Cette classe gère la logique de parsing de l'adresse et délègue
- *   la connexion TCP à {@link ClientSession}.
- * - Elle n'a aucune connaissance de {@code GameController} ou {@code GameServer}.
+ * Client command: {@code join [IP[:PORT]]}.
+ *
+ * <p>Connects to a game server and performs the mandatory {@code REGISTER} handshake.
+ * On success, the session switches to {@link fr.ubordeaux.pdp.server.ClientMode#CONNECTED}.
+ *
+ * <p>Protocol sequence:
+ *
+ * <pre>
+ * Client → Server: (TCP connect)
+ * Client → Server: REGISTER &lt;id&gt; &lt;id&gt;
+ * Server → Client: WELCOME &lt;id&gt;   (on success)
+ * Server → Client: ERROR ...       (if ID already taken)
+ * </pre>
+ *
+ * <p>Defaults to {@code localhost:12345} if no address is provided.
+ *
+ * <p>Category: [CLIENT]
  */
 public class JoinCommand implements ClientCommand, Helpable {
 
-  /** The client session to which this command belongs. */
   private final ClientSession session;
-  /** The address provided by the user. */
-  private final String address; // peut être null → valeurs par défaut
+  private final String address;
 
   /**
-   * Creates a join command for the current client session.
+   * Creates a join command for the given client session and target address.
    *
-   * @param session current client session
-   * @param address address provided by the user ({@code "host:port"},
-   *     {@code "host"}, or {@code null} for default values)
+   * @param session the current client session.
+   * @param address target address as {@code "host:port"}, {@code "host"}, or {@code null}
+   *     to use the defaults.
    */
   public JoinCommand(ClientSession session, String address) {
     this.session = session;
     this.address = address;
   }
 
-  /** Executes the join command. */
   @Override
   public void execute() {
     String host = session.getDefaultHost();
@@ -45,19 +53,38 @@ public class JoinCommand implements ClientCommand, Helpable {
         try {
           port = Integer.parseInt(parts[1].trim());
         } catch (NumberFormatException e) {
-          System.out.println("Invalid port in '" + address
-              + "'. Using default: " + session.getDefaultPort());
+          System.out.println(
+              "Invalid port in '" + address + "'. Using default: " + session.getDefaultPort());
         }
       }
     }
 
+    // Step 1: open TCP connection.
     session.connect(host, port);
+
+    if (!session.isConnected()) {
+      return;
+    }
+
+    // Step 2: REGISTER handshake — server requires REGISTER <id> <name>.
+    // The player ID is also used as the display name.
+    Scanner scanner = new Scanner(System.in);
+    System.out.print("Player ID: ");
+    String id = scanner.nextLine().trim();
+
+    if (id.isBlank()) {
+      System.out.println("Player ID cannot be empty. Disconnecting.");
+      session.disconnect();
+      return;
+    }
+
+    session.send("REGISTER " + id + " " + id);
+    System.out.println("Waiting for server response...");
+    // Server response (WELCOME or ERROR) is printed by the listener thread.
   }
 
-  /** Returns the help message for this command. */
   @Override
   public String getHelp() {
-    return "join [IP[:PORT]] — Connects to a game server. "
-        + "Defaults to localhost:12345 if no address is given.";
+    return "join [IP[:PORT]] — Connects to a server and registers (default: localhost:12345).";
   }
 }

@@ -7,6 +7,9 @@ import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
+import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
@@ -88,16 +91,14 @@ public class App {
   public static void main(String[] args) {
     int status = run(args);
 
-    // Status handling
     if (status == EXIT_INFO) {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
       System.exit(1);
     }
 
-    // Status EXIT_SUCCESS means continue execution normally
-
     GameView view;
+
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
           size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
@@ -105,14 +106,38 @@ public class App {
       view = new CommandLineInterface(verbose, debug);
     }
     GameController controller = new GameController(view);
+
+    ClientSession session = new ClientSession();
+
+    session.setController(controller);
+    ShellCommandRouter router = new ShellCommandRouter(controller, session);
+    // A VOIR AVEC DANIEL 
+    if (view instanceof CommandLineInterface) {
+      ((CommandLineInterface) view).setRouter(router);
+    }
+
+    ClientMode mode = session.getMode();
+    boolean effectiveWhiteAi;
+    boolean effectiveBlackAi;
+
+    if (mode != ClientMode.LOCAL) {
+      effectiveWhiteAi = false;
+      effectiveBlackAi = false;
+    } else {
+      effectiveWhiteAi = whiteAi;
+      effectiveBlackAi = blackAi;
+    }
+
     controller.start();
-    
+
     if (status != EXIT_GUI) {
       controller.startNewGame(new Configuration(blitz, time, contest,
-          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+          size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
+          aiMode, aiDepth, selectionMode));
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
         System.exit(0);
       }
     }
@@ -138,6 +163,7 @@ public class App {
     contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();
+
     // Options definition
     Options options = new Options();
     options.addOption("h", "help", false, Internationalization.get("opt.help"));
@@ -161,6 +187,7 @@ public class App {
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
+
     CommandLineParser parser = new DefaultParser();
     try {
       CommandLine cmd = parser.parse(options, args);
@@ -266,7 +293,8 @@ public class App {
           selectionMode = SelectionMode.valueOf(selection);
           System.out.println(Internationalization.get("opt.ai.selection.status", selectionMode));
         } catch (IllegalArgumentException e) {
-          System.err.println(Internationalization.get("app.warn.invalid_ai_selection") + selection);
+          System.err.println(Internationalization.get("app.warn.invalid_ai_selection")
+              + selection);
           selectionMode = Mcts.DEFAULT_SELECTION_MODE;
         }
       }

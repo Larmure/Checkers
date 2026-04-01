@@ -8,16 +8,11 @@ import java.util.List;
 /**
  * Network command: {@code server list}.
  *
- * <p>Listens for UDP broadcasts for 30 seconds and displays active servers
- * whose last message was received less than 30 seconds ago.
+ * <p>Prints the local machine's IP address, then listens for UDP broadcasts for 30 seconds
+ * and displays all active servers found on the network.
  */
 public class ServerListCommand implements Command, Helpable {
 
-  /**
-   * Executes the server list command by discovering active game servers on the local network
-   * and displaying them in a formatted list. If no servers are found, it informs the
-   * user accordingly.
-   */
   @Override
   public void execute() {
     List<String> servers = ServerListService.discoverServers();
@@ -27,27 +22,22 @@ public class ServerListCommand implements Command, Helpable {
       return;
     }
 
-    System.out.println("\n╔════════════════════════════════════════╗");
-    System.out.println("║   Available Game Servers               ║");
-    System.out.println("╠════════════════════════════════════════╣");
+    System.out.println("\n╔══════════════════════════════════════════════╗");
+    System.out.println("║          Available Game Servers              ║");
+    System.out.println("╠══════════════════════════════════════════════╣");
     for (int i = 0; i < servers.size(); i++) {
       String[] parts = servers.get(i).split(":");
       String name = parts.length > 0 ? parts[0] : "Unknown";
       String ip = parts.length > 1 ? parts[1] : "?";
       String port = parts.length > 2 ? parts[2] : "?";
-      System.out.printf("║ %d. %-15s %s:%-6s ║%n", i + 1, name, ip, port);
+      System.out.printf("║  %d. %-12s  %s:%-6s           ║%n", i + 1, name, ip, port);
     }
-    System.out.println("╚════════════════════════════════════════╝");
-    System.out.println("Use 'join <ip>:<port>' to connect\n");
+    System.out.println("╚══════════════════════════════════════════════╝");
+    System.out.println("Use: join <ip>:<port> to connect.\n");
   }
 
-  /**
-   * Returns the help message for this command.
-   *
-   * @return a string describing how to use the server list command
-   */
   @Override
   public String getHelp() {
-    return "server list - Lists all game servers on the local network (30-second scan).";
+    return "server list — Lists active game servers on the local network (30s scan).";
   }
 }

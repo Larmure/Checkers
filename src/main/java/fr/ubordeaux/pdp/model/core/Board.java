@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 /**
  * Represents a draughts (checkers) board encoded with bitboards.
  *
@@ -1179,7 +1180,7 @@ public class Board {
    * Helper method to convert a bit index to its corresponding cell string for display.
    *
    * @param bitIndex bit index of the square, or -1 for light squares
-   * @return string representation of the cell's contents ("o  ", "O  ", "x  ", "X  ", or "_  ")
+   * @return string representation of the cell's contents
    */
   private String cellString(int bitIndex) {
     String res = "";
@@ -1210,11 +1211,9 @@ public class Board {
     sb.append("\n");
 
     for (int row = sizeBoard - 1; row >= 0; row--) {
-
       for (int col = 0; col < sizeBoard; col++) {
         int bitIndex = boardToBitIndex(row, col);
         sb.append(cellString(bitIndex));
-
       }
       sb.append("\n");
     }
