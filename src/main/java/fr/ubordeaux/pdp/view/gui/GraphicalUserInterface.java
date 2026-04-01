@@ -60,11 +60,14 @@ public class GraphicalUserInterface extends GameView {
   /** Optional configuration provided by CLI flags at startup. */
   private final Configuration cliConfig;
 
+  /** Flag indicating whether the GUI is running in server mode. */
+  private final boolean serverMode;
+
   /**
    * Creates the GUI with default configuration values.
    */
-  public GraphicalUserInterface() {
-    this(null);
+  public GraphicalUserInterface(boolean serverMode) {
+    this(null, serverMode);
   }
 
   /**
@@ -73,8 +76,9 @@ public class GraphicalUserInterface extends GameView {
    * @param cliConfig configuration forwarded to prefill the GUI configuration
    *                  dialog; may be {@code null}
    */
-  public GraphicalUserInterface(Configuration cliConfig) {
+  public GraphicalUserInterface(Configuration cliConfig, boolean serverMode) {
     this.cliConfig = cliConfig;
+    this.serverMode = serverMode;
   }
 
   /**
@@ -93,7 +97,7 @@ public class GraphicalUserInterface extends GameView {
       stage = new Stage();
       ConfigManager configManager = new ConfigManager();
       configManager.load();
-      mainView = new MainView(controller, configManager, cliConfig);
+      mainView = new MainView(controller, configManager, cliConfig, serverMode);
 
       final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
       double initW = 1200;

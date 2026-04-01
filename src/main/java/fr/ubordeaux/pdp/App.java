@@ -139,7 +139,8 @@ public class App {
 
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
-          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode),
+          serverMode);
     } else {
       view = new CommandLineInterface(verbose, debug);
     }
