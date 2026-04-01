@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
@@ -53,6 +54,12 @@ public class MainView extends BorderPane {
 
   /** Central play area containing the board and the log panel. */
   private PlayView playView;
+
+  /** Undo button in the toolbar. */
+  private Button undoBtn;
+
+  /** Redo button in the toolbar. */
+  private Button redoBtn;
 
   /**
    * Toolbar label indicating whose turn it is.
@@ -114,10 +121,16 @@ public class MainView extends BorderPane {
     // style.css : .turn-label
     turnLabel.getStyleClass().add("turn-label");
 
-    Button undoBtn = toolbarButton(Internationalization.get("toolbar.undo"),
-        () -> controller.executeCommand("undo", new String[] { "1" }));
-    Button redoBtn = toolbarButton(Internationalization.get("toolbar.redo"),
-        () -> controller.executeCommand("redo", new String[] { "1" }));
+    undoBtn = toolbarButton(Internationalization.get("toolbar.undo"), () -> {
+      int steps = (controller.isWhiteAi() != controller.isBlackAi()) ? 2 : 1;
+      controller.executeCommand("undo", new String[] { String.valueOf(steps) });
+    });
+
+    redoBtn = toolbarButton(Internationalization.get("toolbar.redo"), () -> {
+      int steps = (controller.isWhiteAi() != controller.isBlackAi()) ? 2 : 1;
+      controller.executeCommand("redo", new String[] { String.valueOf(steps) });
+    });
+
     Button pauseBtn = toolbarButton(Internationalization.get("toolbar.pause"), () -> {
       if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
         controller.executeCommand("pause", new String[0]);
@@ -222,6 +235,16 @@ public class MainView extends BorderPane {
 
       String name = game.getCurrentPlayer().getName();
       turnLabel.setText(Internationalization.get("toolbar.turn") + name.toUpperCase());
+
+      boolean isAiTurn = game.getCurrentPlayer() instanceof AiPlayer;
+
+      if (undoBtn != null)
+        undoBtn.setDisable(isAiTurn);
+      if (redoBtn != null)
+        redoBtn.setDisable(isAiTurn);
+
+      if (menuView != null)
+        menuView.setDisableUndoRedo(isAiTurn);
     }
   }
 

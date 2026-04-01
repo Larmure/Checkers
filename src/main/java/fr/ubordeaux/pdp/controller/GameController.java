@@ -484,6 +484,7 @@ public class GameController {
     for (int i = 0; i < n; i++) {
       game.undoManage();
     }
+    triggerAiIfNecessary();
   }
 
   /**
@@ -502,6 +503,7 @@ public class GameController {
     for (int i = 0; i < n; i++) {
       game.redoManage();
     }
+    triggerAiIfNecessary();
   }
 
   /**
