@@ -59,15 +59,17 @@ public class DiscoveryService implements Runnable {
 
       System.out.println("Discovery service started, broadcasting every 10 seconds...");
 
-      while (running) {
+      while (running && !Thread.currentThread().isInterrupted()) {
         DatagramPacket packet =
             new DatagramPacket(buffer, buffer.length, broadcastAddress, DISCOVERY_PORT);
         socket.send(packet);
         Thread.sleep(BROADCAST_INTERVAL);
       }
 
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.err.println("Discovery service error: " + e.getMessage());
     }
   }
 }
