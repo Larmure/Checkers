@@ -98,11 +98,38 @@ public class ShellCommandRouter {
     String command = tokens[0].toLowerCase();
 
     switch (command) {
-      case "server" -> handleServerCommand(tokens);
-      case "join" -> handleJoin(tokens);
-      case "ping" -> handlePing();
-      case "quit" -> handleQuit();
-      case "help" -> new HelpClientCommand().execute();
+      case "server"  -> handleServerCommand(tokens);
+      case "join"    -> handleJoin(tokens);
+      case "ping"    -> handlePing();
+      case "quit"    -> handleQuit();
+      case "help"    -> new HelpClientCommand().execute();
+
+      // ---- Invitation commands (forwarded to server when CONNECTED) -------
+      case "accept", "decline", "cancel" -> {
+        if (blockIf(ClientMode.LOCAL,
+            "Not connected to a server. Use 'join' first.")) {
+          return;
+        }
+        if (blockIf(ClientMode.SERVER,
+            "Cannot use invitation commands in SERVER mode.")) {
+          return;
+        }
+        session.send(command.toUpperCase());
+      }
+
+      // ---- Presence commands (forwarded to server when CONNECTED) ---------
+      case "away", "back" -> {
+        if (blockIf(ClientMode.LOCAL,
+            "Not connected to a server. Use 'join' first.")) {
+          return;
+        }
+        if (blockIf(ClientMode.SERVER,
+            "Cannot use presence commands in SERVER mode.")) {
+          return;
+        }
+        session.send(command.toUpperCase());
+      }
+
       default -> handleLocalOrRemote(input, tokens);
     }
   }

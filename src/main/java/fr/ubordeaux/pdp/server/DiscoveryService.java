@@ -10,16 +10,21 @@ import java.net.InetAddress;
  * <p>This service periodically sends a discovery message containing the server
  * name, local IP address, and TCP port.
  */
-
 public class DiscoveryService implements Runnable {
   /** The name of the game server. */
   private final String serverName;
+
   /** The TCP port for the game server. */
   private final int tcpPort;
+
   /** The UDP port for discovery messages. */
   private static final int DISCOVERY_PORT = 12346;
+
   /** The interval between broadcast messages. */
-  private static final int BROADCAST_INTERVAL = 10000; // 10 secondes
+  private static final int BROADCAST_INTERVAL = 10000;
+
+  /** Controls the broadcast loop lifecycle. */
+  private volatile boolean running = true;
 
   /**
    * Constructs a DiscoveryService with the specified server name and TCP port.
@@ -33,13 +38,20 @@ public class DiscoveryService implements Runnable {
   }
 
   /**
+   * Stops the discovery loop.
+   */
+  public void stop() {
+    running = false;
+  }
+
+  /**
    * Runs the discovery service, broadcasting the server's presence at regular intervals.
    */
   @Override
   public void run() {
     try (DatagramSocket socket = new DatagramSocket()) {
       socket.setBroadcast(true);
-      InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255"); // broadcast
+      InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
 
       String localIp = InetAddress.getLocalHost().getHostAddress();
       String message = serverName + ":" + localIp + ":" + tcpPort;
@@ -47,11 +59,10 @@ public class DiscoveryService implements Runnable {
 
       System.out.println("Discovery service started, broadcasting every 10 seconds...");
 
-      while (true) {
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, broadcastAddress,
-            DISCOVERY_PORT);
+      while (running) {
+        DatagramPacket packet =
+            new DatagramPacket(buffer, buffer.length, broadcastAddress, DISCOVERY_PORT);
         socket.send(packet);
-        //System.out.println("Broadcast sent: " + message);
         Thread.sleep(BROADCAST_INTERVAL);
       }
 

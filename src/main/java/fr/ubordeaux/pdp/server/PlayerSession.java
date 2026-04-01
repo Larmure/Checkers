@@ -12,9 +12,20 @@ import java.io.PrintWriter;
  */
 public class PlayerSession {
 
-  /** Possible lifecycle states for a connected player. */
+  /**
+   * Possible lifecycle states for a connected player.
+   *
+   * <pre>
+   * IDLE      → available; default state after connecting or finishing a game.
+   * AWAY      → marked absent; invitations cannot be sent to this player.
+   * WAITGAME  → has received an invitation and is waiting to accept or decline.
+   * INGAME    → currently playing a game session.
+   * </pre>
+   */
   public enum Status {
     IDLE,
+    AWAY,
+    WAITGAME,
     INGAME
   }
 
@@ -88,12 +99,33 @@ public class PlayerSession {
   }
 
   /**
-   * Returns whether the player is currently idle.
+   * Returns whether the player is currently idle (available for a new game or invitation).
    *
-   * @return {@code true} if the player is not currently in a game
+   * <p>Only {@link Status#IDLE} players can receive invitations and be auto-matched.
+   * {@link Status#AWAY} and {@link Status#WAITGAME} are both considered non-idle.
+   *
+   * @return {@code true} if the player's status is {@link Status#IDLE}.
    */
   public boolean isIdle() {
     return status == Status.IDLE;
+  }
+
+  /**
+   * Returns whether the player has marked themselves as away.
+   *
+   * @return {@code true} if the player's status is {@link Status#AWAY}.
+   */
+  public boolean isAway() {
+    return status == Status.AWAY;
+  }
+
+  /**
+   * Returns whether the player is waiting for an invitation response.
+   *
+   * @return {@code true} if the player's status is {@link Status#WAITGAME}.
+   */
+  public boolean isWaitingForInvitation() {
+    return status == Status.WAITGAME;
   }
 
   /** Records a win and increments the games-played counter. */
@@ -155,16 +187,35 @@ public class PlayerSession {
   public int getGamesPlayed() {
     return gamesPlayed;
   }
-  
+
   @Override
   public String toString() {
     return String.format(
-          "%-10s %-15s %-6s W:%d L:%d D:%d",
-          id,
-          name,
-          status.name().toLowerCase(),
-          wins,
-          losses,
-          draws);
+        "%-10s %-15s %-9s W:%d L:%d D:%d",
+        id,
+        name,
+        status.name().toLowerCase(),
+        wins,
+        losses,
+        draws);
+  }
+
+  /**
+   * Returns a detailed multi-line string with all player statistics.
+   * Used by the {@code PLAYERS <id>} command.
+   *
+   * @return formatted player details.
+   */
+  public String toDetailedString() {
+    return String.format(
+        "ID       : %s%n"
+            + "Name     : %s%n"
+            + "Status   : %s%n"
+            + "Games    : %d%n"
+            + "Wins     : %d%n"
+            + "Losses   : %d%n"
+            + "Draws    : %d",
+        id, name, status.name().toLowerCase(),
+        gamesPlayed, wins, losses, draws);
   }
 }
