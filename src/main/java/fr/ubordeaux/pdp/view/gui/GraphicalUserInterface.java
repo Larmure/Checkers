@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.view.gui;
 
 import fr.ubordeaux.pdp.ConfigManager;
+import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
@@ -56,6 +57,26 @@ public class GraphicalUserInterface extends GameView {
 
   private boolean gameOverAlert = false;
 
+  /** Optional configuration provided by CLI flags at startup. */
+  private final Configuration cliConfig;
+
+  /**
+   * Creates the GUI with default configuration values.
+   */
+  public GraphicalUserInterface() {
+    this(null);
+  }
+
+  /**
+   * Creates the GUI with an optional preloaded CLI configuration.
+   *
+   * @param cliConfig configuration forwarded to prefill the GUI configuration
+   *                  dialog; may be {@code null}
+   */
+  public GraphicalUserInterface(Configuration cliConfig) {
+    this.cliConfig = cliConfig;
+  }
+
   /**
    * Bootstraps the JavaFX runtime, creates the primary window, and shows it.
    *
@@ -72,7 +93,7 @@ public class GraphicalUserInterface extends GameView {
       stage = new Stage();
       ConfigManager configManager = new ConfigManager();
       configManager.load();
-      mainView = new MainView(controller, configManager);
+      mainView = new MainView(controller, configManager, cliConfig);
 
       final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
       double initW = 1200;
@@ -100,6 +121,7 @@ public class GraphicalUserInterface extends GameView {
       mainView.passStageToMenu(stage);
       mainView.passGuiToMenu(this);
 
+      showInitialConfigDialog();
       // Intercept the window close button (X) — same logic as the Quit menu item.
       stage.setOnCloseRequest(e -> {
         e.consume(); // prevent immediate close
@@ -186,6 +208,20 @@ public class GraphicalUserInterface extends GameView {
   }
 
   /**
+   * Opens the configuration dialog after the primary stage is visible.
+   *
+   * <p>The dialog is scheduled with {@link Platform#runLater} to ensure it is shown
+   * once the first JavaFX pulse has completed and the window is fully initialized.
+   */
+  private void showInitialConfigDialog() {
+    Platform.runLater(() -> {
+      if (controller.getGame() == null) {
+        mainView.openConfigDialog();
+      }
+    });
+  }
+
+  /**
    * Handles a quit request from the menu or the window close button.
    *
    * <p>If the current game has unsaved changes, an {@link Alert} asks the user
@@ -196,7 +232,7 @@ public class GraphicalUserInterface extends GameView {
    * <p>Must be called on the JavaFX Application Thread.
    */
   public void requestQuit() {
-    if (controller.getGame().getState() == State.IN_GAME) {
+    if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
       // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }

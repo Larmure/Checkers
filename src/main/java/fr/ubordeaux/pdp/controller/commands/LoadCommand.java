@@ -13,14 +13,10 @@ import java.nio.file.Paths;
 /**
  * Loads a previously saved game from a file in the save directory.
  *
- * <p>The load process runs in two passes:
- *
- * <ol>
- *   <li>A first pass reads the configuration from {@code [settings]} to determine
- *       the board size and game options.</li>
- *   <li>A second pass reconstructs the full game state (board + history) using
- *       a {@link GameCheckers} built from the loaded configuration.</li>
- * </ol>
+ * <p>The load process reads the save file in a single pass.
+ * Settings, board rows, and history are collected from the file, then the
+ * corresponding {@link GameCheckers} instance is reconstructed and injected
+ * into the controller.
  *
  * <p>On success, the controller is updated via
  * {@link GameController#setGame(GameCheckers, Configuration)}.
@@ -68,23 +64,13 @@ public class LoadCommand implements Command, Helpable {
       return;
     }
 
-    // Pass 1: read configuration from [settings]
-    Configuration defaultConfig = Configuration.getDefaultConfiguration();
-    LoadBoard firstPass = new LoadBoard(new GameCheckers(defaultConfig));
-    firstPass.loadGameData(fileName);
+    LoadBoard loader = new LoadBoard();
+    loader.loadGameData(fileName);
 
-    Configuration loadedConfig = firstPass.getLoadedConfiguration();
-    if (loadedConfig == null) {
-      System.out.println("Loading error: could not read configuration.");
-      return;
-    }
+    GameCheckers loadedGame = loader.getLoadedGame();
+    Configuration loadedConfig = loader.getLoadedConfiguration();
 
-    // Pass 2: reconstruct full game state with the correct configuration
-    GameCheckers loadedGame = new GameCheckers(loadedConfig);
-    LoadBoard secondPass = new LoadBoard(loadedGame);
-    secondPass.loadGameData(fileName);
-
-    if (secondPass.getLoadedConfiguration() == null) {
+    if (loadedGame == null || loadedConfig == null) {
       System.out.println("Loading error: could not restore game state.");
       return;
     }

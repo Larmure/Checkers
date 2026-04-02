@@ -191,6 +191,7 @@ public class GameController {
    * @param configuration the configuration options for the new game
    */
   public void startNewGame(Configuration configuration) {
+    stopBlitzTimer();
     System.out.println("Initializing new game with options: " + configuration);
     this.game = new GameCheckers(configuration);
     this.configuration = new Configuration(configuration);
@@ -304,11 +305,8 @@ public class GameController {
   }
 
   /**
-   * Displays the remaining time for the current player if the game is in blitz mode.
-   */
-  /**
    * Displays the remaining time for both players if the game is in blitz mode.
-   */
+   * */
   public void displayTime() {
     if (isBlitz()) {
       String template = Internationalization.get("game.time_remaining");
@@ -331,7 +329,7 @@ public class GameController {
       System.out.println(Internationalization.get("game.time_not_blitz"));
     }
   }
-  
+
   /**
    * Starts the blitz timer for the current game. 
    * This method initializes a new Timer that schedules a task to run every second. 
@@ -356,9 +354,6 @@ public class GameController {
         // Update game timing logic
         game.timerPlayer();
 
-        // Notify observers to update UI (both CLI and GUI)
-        game.notifyObservers();
-
         int totalSeconds = game.getCurrentPlayer().getPlayTime();
         // Check if time has run out
         if (totalSeconds <= 0) {
@@ -367,7 +362,12 @@ public class GameController {
           timeExpired = true;
           handleGameOver();
           timeExpired = false;
+          // Notify observers to update UI (both CLI and GUI)
           game.notifyObservers();
+        } else {
+          if (view instanceof GraphicalUserInterface) {
+            game.notifyObservers();
+          }
         }
       }
     }, 1000, 1000);
@@ -563,7 +563,7 @@ public class GameController {
 
     if (game.getState() == State.IN_GAME && game.getCurrentPlayer() instanceof AiPlayer) {
       AiPlayer aiPlayer = (AiPlayer) game.getCurrentPlayer();
-
+      final GameCheckers gameActiveAtStart = this.game;
       new Thread(() -> {
         // A brief pause to improve UX and prevent instant moves.
         try {
@@ -577,35 +577,33 @@ public class GameController {
             game.getManagerUndoRedo(), game.getBoard(), game.getCurrentColor());
 
         // Switch back to the JavaFX Application Thread to safely update the UI components.
-
-        try {
-          javafx.application.Platform.runLater(() -> {
-            if (move == null) {
-              System.err.println("No AI move available.");
-              game.setState(game.checkGameOver());
-              handleGameOver();
-              return;
-            }
-
-            if (configuration.isBlitz()) {
-              startBlitzTimer();
-            }
-
-            String fromSquare = game.getBoard().indexToSquare(move.getFrom());
-            String toSquare = game.getBoard().indexToSquare(move.getTo());
-
-            // Apply the calculated move to the game board.
-            game.applyMove(fromSquare, toSquare, false);
-
+        javafx.application.Platform.runLater(() -> {
+          if (this.game != gameActiveAtStart) {
+            return;
+          }
+          if (move == null) {
+            System.err.println("No AI move available.");
             game.setState(game.checkGameOver());
             handleGameOver();
+            return;
+          }
 
-            // Recursively call to check if the next player is also an AI (AI vs AI match).
-            triggerAiIfNecessary();
-          });
-        } catch (IllegalStateException e) {
-          // Ignore when JavaFX toolkit is not initialized during non-GUI tests.
-        }
+          if (configuration.isBlitz()) {
+            startBlitzTimer();
+          }
+
+          String fromSquare = game.getBoard().indexToSquare(move.getFrom());
+          String toSquare = game.getBoard().indexToSquare(move.getTo());
+
+          // Apply the calculated move to the game board.
+          game.applyMove(fromSquare, toSquare, false);
+
+          game.setState(game.checkGameOver());
+          handleGameOver();
+
+          // Recursively call to check if the next player is also an AI (AI vs AI match).
+          triggerAiIfNecessary();
+        });
       }, "AI-Thinking-Thread").start();
     }
   }

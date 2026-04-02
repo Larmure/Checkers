@@ -92,7 +92,8 @@ public class ConfigDialog extends Dialog<Configuration> {
    * @param onShortcutsChanged callback invoked after shortcuts are saved,
    *                           used to refresh menu accelerators
    */
-  public ConfigDialog(ShortcutManager shortcutManager, Runnable onShortcutsChanged) {
+  public ConfigDialog(ShortcutManager shortcutManager, Runnable onShortcutsChanged,
+      Configuration initialConfig) {
     super();
     this.shortcutManager = shortcutManager;
     this.onShortcutsChanged = onShortcutsChanged;
@@ -104,12 +105,14 @@ public class ConfigDialog extends Dialog<Configuration> {
         ButtonData.OK_DONE);
     getDialogPane().getButtonTypes().addAll(startButton, ButtonType.CANCEL);
 
-    Configuration defaults = Configuration.getDefaultConfiguration();
+    Configuration defaults = initialConfig != null
+        ? initialConfig
+        : Configuration.getDefaultConfiguration();
     sizeCombo.getItems().addAll(8, 10, 12);
     sizeCombo.setValue(defaults.getSize());
 
     blitzCheck.setSelected(defaults.isBlitz());
-    timeSpinner.getValueFactory().setValue(defaults.getTime() / 60);
+    timeSpinner.getValueFactory().setValue(defaults.getTime());
     timeSpinner.setDisable(!defaults.isBlitz());
     timeSpinner.setPrefWidth(80);
 
@@ -119,7 +122,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     verboseCheck.setSelected(defaults.isVerbose());
     debugCheck.setSelected(defaults.isDebug());
 
-    aiTimeSpinner.getValueFactory().setValue((int) defaults.getAiTime());
+    aiTimeSpinner.getValueFactory().setValue((int) (defaults.getAiTime() / 1000));
     aiTimeSpinner.setPrefWidth(80);
     aiTimeSpinner.setDisable(!defaults.iswhiteAi() && !defaults.isblackAi());
 
@@ -281,7 +284,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     boolean debug = debugCheck.isSelected();
     boolean whiteAi = whiteAiCheck.isSelected();
     boolean blackAi = blackAiCheck.isSelected();
-    int aiTime = aiTimeSpinner.getValue();
+    long aiTime = aiTimeSpinner.getValue() * 1000L;
 
     return new Configuration(blitz, timeSec, contest, size,
         verbose, debug, whiteAi, blackAi, aiTime,

@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
@@ -48,6 +49,9 @@ public class MainView extends BorderPane {
   /** Configuration manager used to initialise the {@link ShortcutManager}. */
   private final ConfigManager configManager;
 
+  /** Optional configuration provided from CLI startup flags. */
+  private final Configuration cliConfig;
+
   /** Top menu bar (File / Game menus + keyboard shortcuts). */
   private MenuView menuView;
 
@@ -66,10 +70,14 @@ public class MainView extends BorderPane {
    * @param controller    the game controller; must not be {@code null}
    * @param configManager the configuration manager used to load and persist
    *                      keyboard shortcuts; must not be {@code null}
+   * @param cliConfig     optional CLI configuration used to prefill
+   *                      configuration dialogs; may be {@code null}
    */
-  public MainView(GameController controller, ConfigManager configManager) {
+  public MainView(GameController controller, ConfigManager configManager,
+      Configuration cliConfig) {
     this.controller = controller;
     this.configManager = configManager;
+    this.cliConfig = cliConfig;
     buildLayout();
     // style.css : .root-pane
     this.getStyleClass().add("root-pane");
@@ -81,7 +89,7 @@ public class MainView extends BorderPane {
    */
   private void buildLayout() {
     ShortcutManager shortcutManager = new ShortcutManager(configManager);
-    menuView = new MenuView(controller, shortcutManager);
+    menuView = new MenuView(controller, shortcutManager, cliConfig);
     this.setTop(menuView);
 
     playView = new PlayView(controller);
@@ -223,5 +231,15 @@ public class MainView extends BorderPane {
       String name = game.getCurrentPlayer().getName();
       turnLabel.setText(Internationalization.get("toolbar.turn") + name.toUpperCase());
     }
+  }
+
+  /**
+   * Opens the configuration dialog managed by {@link MenuView}.
+   *
+   * <p>This is typically called by the GUI after the primary stage is shown,
+   * so the dialog has a valid window owner and appears modally.
+   */
+  public void openConfigDialog() {
+    menuView.openConfigDialog();
   }
 }

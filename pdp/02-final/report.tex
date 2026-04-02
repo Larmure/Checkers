@@ -1,14 +1,15 @@
 \documentclass[a4paper]{article}
 
+\usepackage[svgnames]{xcolor}
 \usepackage{pdp}
 
 %------------------------------------------------------------------------------
 %	REPORT INFORMATION
 %------------------------------------------------------------------------------
 
-\title{ProjectName -- C/Java/Python}
+\title{Checkers -- Java}
 \subtitle{Rapport final}
-\author{Étudiant1, Étudiant2, Étudiant3, Étudiant4, Étudiant5}
+\author{RANDRIAMIHAJA Lalatiana, RAMANANAHERISOA Fy-Tommy, HOAREAU Faniry, ATWI Daniel, RAZAFINDRAKOTO Sarah}
 
 %------------------------------------------------------------------------------
 
@@ -27,35 +28,195 @@
 
 \section*{Introduction}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+\section{Contexte et objectifs du projet}
 
-Pellentesque iaculis molestie euismod. In hac habitasse platea dictumst. Duis eu
-gravida sem. Vivamus pulvinar, tellus auctor sollicitudin iaculis, quam massa
-blandit ligula, in mollis est tellus et velit. Nulla gravida sapien nibh, nec
-faucibus lorem aliquam sed. Curabitur rutrum elit purus, et congue neque
-venenatis vitae. Sed non magna nisi. Pellentesque euismod non ipsum a hendrerit.
-Pellentesque vehicula tincidunt lacinia. Sed rhoncus porttitor facilisis.
+Le projet a pour objectif de concevoir et développer un logiciel permettant de jouer au jeu de
+dames conformément aux règles officielles. Le programme doit permettre à deux joueurs de
+s'affronter sur un damier, soit en mode local, soit à distance via un réseau.
 
-Etiam sed molestie odio. Nunc cursus sollicitudin est vitae posuere. Nullam
-pellentesque metus eu dui porttitor bibendum. Morbi egestas arcu ut urna dictum
-placerat non non nisl. Quisque non ante in eros cursus pulvinar. Sed augue
-libero, eleifend a urna eget, pellentesque condimentum odio. Sed sed dui non
-diam mattis interdum eget sed urna. Integer consectetur, erat id rutrum posuere,
-dui velit dictum mi, quis tincidunt magna diam sit amet nunc. Etiam dui augue,
-sollicitudin rhoncus nisl a, rhoncus tempor purus.
+Le logiciel garantit le respect strict des règles du jeu tout en proposant une expérience
+utilisateur claire, robuste et extensible. Il s'inscrit dans une démarche de développement
+logiciel complète, intégrant la qualité du code, la documentation, les tests et les performances.
 
-Suspendisse cursus erat et metus fermentum ullamcorper. Etiam eros arcu, dapibus
-quis efficitur ut, congue id nunc. Pellentesque aliquam venenatis convallis.
-Nulla nisi justo, aliquet quis lacus eget, aliquet maximus velit. Maecenas ex
-turpis, iaculis eget dignissim non, efficitur vel mi. Maecenas pharetra elit
-ornare sem suscipit ornare id id sapien. Vivamus sem neque, consectetur vitae
-aliquet non, finibus eu lectus. Fusce aliquam ipsum ut viverra vehicula. Donec
-ultrices varius nulla vel finibus. Donec convallis fringilla ante id porta.
+\subsection{Variantes supportées}
+\label{sec:variantes}
+
+Le jeu de dames se décline en plusieurs variantes internationales, que le programme supporte via
+une option de configuration du plateau :
+
+\begin{itemize}
+    \item \textbf{Draughts} (style anglo-saxon) : plateau de $8 \times 8$ ;
+    \item \textbf{Jeu de dames international} : plateau de $10 \times 10$, chaque joueur disposant
+    de 20 pions ;
+    \item \textbf{Dames canadiennes} : plateau de $12 \times 12$.
+\end{itemize}
+
+\subsection{Règles du jeu}
+
+\subsubsection{Mise en place et déroulement}
+
+Le damier est orienté avec une case foncée en bas à gauche. Les pions se placent exclusivement
+sur les cases foncées des quatre premières rangées de chaque camp. Les joueurs jouent chacun à
+leur tour ; les blancs commencent toujours.
+
+\subsubsection{Déplacements}
+
+\begin{itemize}
+    \item Un \textbf{pion} se déplace d'une case vers l'avant en diagonale.
+    \item Un pion atteignant la dernière rangée adverse et s'y arrêtant est promu en
+    \textbf{dame} : un point jaune s'ajoute à celui-ci.
+    \item Une \textbf{dame} se déplace librement sur une même diagonale, d'autant de cases
+    qu'elle le souhaite, en avant comme en arrière.
+\end{itemize}
+
+% TODO: insérer figure du plateau de jeu
+
+\subsubsection{La prise par un pion}
+\label{sec:prise-pion}
+
+Un pion capture un pion adverse en sautant par-dessus lui pour se poser sur la case vide
+située immédiatement derrière. La prise peut s'effectuer vers l'avant comme vers l'arrière.
+
+\textbf{La prise est obligatoire.} De plus, si après une capture le pion se retrouve à nouveau
+en position de prise, il doit continuer jusqu'à épuisement des captures possibles (rafle). Les
+pions capturés sont retirés du plateau uniquement à l'issue complète de la rafle, et non au fur
+et à mesure.
+
+% TODO: insérer figure "La prise de pion" 
+
+\subsubsection{La prise majoritaire}
+\label{sec:prise-majoritaire}
+
+Lorsque plusieurs séquences de capture sont possibles, le joueur est tenu de choisir celle qui
+capture le plus grand nombre de pièces, quel que soit leur rang. Ainsi, une séquence permettant
+de prendre deux pions est prioritaire sur la prise d'une dame isolée.
+
+% TODO: insérer figure "La prise majoritaire" 
+
+\subsubsection{La prise par la dame}
+\label{sec:prise-dame}
+
+Grâce à son amplitude de mouvement, la dame dispose de capacités de capture étendues. Elle doit
+prendre tout pion situé sur sa diagonale dès lors qu'une case libre est disponible
+immédiatement après. On ne peut passer qu'une seule fois sur un même pion, mais on peut traverser deux
+fois la même case.
+
+% TODO: insérer figure "La prise par la dame" 
+
+\subsection{Conditions de fin de partie}
+
+Une partie prend fin dans l'un des cas suivants :
+
+\begin{description}
+    \item[Victoire par capture.] Un joueur remporte la partie en capturant l'intégralité des
+    pièces adverses.
+
+    \item[Victoire par blocage.] Si un joueur ne peut effectuer aucun déplacement alors qu'il
+    lui reste des pièces, il perd immédiatement la partie.
+
+    \item[Nulle par accord de position.] La partie est déclarée nulle si la même position se
+    reproduit trois fois au cours de la partie (règle de la répétition triple).
+
+    \item[Nulle par absence de progrès.] Si aucune capture ni aucun mouvement de pion n'est
+    effectué pendant 25 tours consécutifs (soit 50 demi-coups), la partie est déclarée nulle.
+
+    \item[Nulle en fin de partie.] Lorsqu'un joueur ne dispose plus que d'une seule pièce, si
+    aucune issue décisive n'est atteinte en 16 tours (soit 32 demi-coups), la partie est
+    déclarée nulle faute de matériel suffisant.
+
+    \item[Nulle par blocage mutuel.] Dans le cas exceptionnel où aucun des deux joueurs ne
+    peut effectuer de mouvement, la partie est également déclarée nulle.
+\end{description}
+
+%------------------------------------------------------------------------------
+%	Options au lancement
+%------------------------------------------------------------------------------
+
+\section{Options au lancement}
+\label{sec:options}
+
+Le programme se lance depuis la ligne de commande via l'exécutable \texttt{checkers}.
+La syntaxe générale est la suivante :
+
+\begin{minted}[frame=single]{text}
+checkers [OPTIONS]
+\end{minted}
+
+Si aucune option n'est fournie, le programme démarre une interface en ligne de commande
+avec les paramètres par défaut. Les options incorrectes provoquent l'affichage d'un
+message d'erreur sur \texttt{stderr} ainsi que l'aide du programme, puis le programme
+se termine avec le code de retour~1.
+
+\begin{table}[!ht]
+  \centering
+  \begin{tabular}{lll}
+    \hline
+    \textbf{Option}                    & \textbf{Option longue}          & \textbf{Description} \\
+    \hline
+    \texttt{-h}                        & \texttt{--help}                 & Affiche l'aide du programme. \\
+    \texttt{-V}                        & \texttt{--version}              & Affiche la version du programme. \\
+    \texttt{-v}                        & \texttt{--verbose}              & Active le mode verbeux. \\
+    \texttt{-d}                        & \texttt{--debug}                & Active l'affichage des messages de debug. \\
+    \texttt{-g}                        & \texttt{--gui}                  & Lance l'interface graphique. \\
+    \texttt{-b}                        & \texttt{--blitz}                & Active le mode blitz. \\
+    \texttt{-t TIME}                   & \texttt{--time TIME}            & Limite de temps en minutes (défaut : 30). \\
+    \texttt{-c}                        & \texttt{--contest}              & Active le mode contest. \\
+    \texttt{-s SIZE}                   & \texttt{--size SIZE}            & Taille du damier : 8, 10 ou 12 (défaut : 8). \\
+    \texttt{-a [COLOR]}                & \texttt{--ai [COLOR]}           & Active l'IA pour la couleur donnée (W/B/A). \\
+    \texttt{-at TIME}                  & \texttt{--ai-time TIME}         & Temps de réflexion de l'IA en secondes (défaut : 5). \\
+    \texttt{-am MODE}                  & \texttt{--ai-mode MODE}         & Algorithme : \texttt{minimax}, \texttt{alphabeta}, \texttt{iterative}, \texttt{mcts}. \\
+    \texttt{-ad DEPTH}                 & \texttt{--ai-depth DEPTH}       & Profondeur maximale de recherche. \\
+    \texttt{-as SELECTION}             & \texttt{--ai-mcts-selection}    & Sélection MCTS : \texttt{uct} (défaut) ou \texttt{ml}. \\
+    \hline
+  \end{tabular}
+  \caption{Options du programme.}
+  \label{tab:options}
+\end{table}
+
+\paragraph{Mode blitz.}
+L'option \texttt{-b}/\texttt{--blitz} lance une partie en mode blitz. Le temps de
+réflexion accordé à chaque joueur est fixé à 30~minutes par défaut ; il peut être
+modifié via \texttt{-t TIME}. Si \texttt{-t} est fourni sans \texttt{-b}, un
+avertissement est affiché mais l'option est ignorée.
+
+\paragraph{Interface graphique.}
+L'option \texttt{-g}/\texttt{--gui} lance l'interface graphique JavaFX à la place
+du shell interactif. Toutes les autres options restent applicables.
+
+\paragraph{Joueur artificiel.}
+L'option \texttt{-a}/\texttt{--ai} remplace le joueur de la couleur indiquée par
+une IA. Les valeurs acceptées pour \texttt{COLOR} sont \texttt{W} (blancs),
+\texttt{B} (noirs) et \texttt{A} (les deux). Si aucune couleur n'est précisée,
+les blancs sont contrôlés par l'IA par défaut.
+
+\paragraph{Taille du damier.}
+L'option \texttt{-s}/\texttt{--size} accepte les valeurs \texttt{8}, \texttt{10}
+et \texttt{12}, correspondant respectivement aux variantes Draughts, internationale
+et canadienne décrites à la section~\ref{sec:variantes}.
+
+\paragraph{Temps de réflexion de l'IA.}
+L'option \texttt{-at}/\texttt{--ai-time} borne le temps de réflexion de l'IA en
+secondes. Si le délai est écoulé, le meilleur coup trouvé jusqu'alors est joué.
+Par défaut, le temps de réflexion est de 5~secondes.
+
+\paragraph{Algorithme de recherche.}
+L'option \texttt{-am}/\texttt{--ai-mode} sélectionne l'algorithme utilisé par l'IA.
+Les valeurs acceptées sont \texttt{minimax} (défaut), \texttt{alphabeta} pour le
+Minimax avec élagage $\alpha$-$\beta$, \texttt{iterative} pour l'approfondissement
+itératif, et \texttt{mcts} pour le Monte Carlo Tree Search.
+
+\paragraph{Profondeur de recherche.}
+L'option \texttt{-ad}/\texttt{--ai-depth} fixe la profondeur maximale de l'arbre
+de recherche. Si elle n'est pas spécifiée, la profondeur est déterminée
+automatiquement en fonction du temps de réflexion disponible.
+
+\paragraph{Fonction de sélection MCTS.}
+L'option \texttt{-as}/\texttt{--ai-mcts-selection} permet de choisir la politique
+de sélection utilisée par l'algorithme MCTS. La valeur \texttt{uct} (défaut)
+applique la formule UCT standard ; la valeur \texttt{ml} substitue une fonction
+de sélection obtenue par apprentissage automatique.
+
+
 
 \section{Première section}
 

@@ -7,6 +7,7 @@ import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
@@ -78,6 +79,9 @@ public class App {
   /** Flag to set the selection mode for MCTS. */
   private static SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
 
+  /** Flag indicating whether GUI mode was requested on the CLI. */
+  private static boolean guiMode = false;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -87,7 +91,6 @@ public class App {
   public static void main(String[] args) {
     int status = run(args);
 
-    // Status handling
     if (status == EXIT_INFO) {
       System.exit(0);
     } else if (status == EXIT_ERROR) {
@@ -97,27 +100,40 @@ public class App {
     GameView view;
 
     if (status == EXIT_GUI) {
-      view = new GraphicalUserInterface();
-      GameController controller = new GameController(view);
-      controller.start();
-      controller.startNewGame(new Configuration(
-          blitz, time, contest, size, verbose, debug,
-          whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+      view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
+          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
     } else {
-      CommandLineInterface cli = new CommandLineInterface(verbose, debug);
-      view = cli;
+      view = new CommandLineInterface(verbose, debug);
+    }
+    GameController controller = new GameController(view);
 
-      GameController controller = new GameController(view);
-      ClientSession session = new ClientSession();
+    ClientSession session = new ClientSession();
 
-      session.setController(controller);
-      ShellCommandRouter router = new ShellCommandRouter(controller, session);
-      cli.setRouter(router);
+    session.setController(controller);
+    ShellCommandRouter router = new ShellCommandRouter(controller, session);
 
-      controller.start();
-      controller.startNewGame(new Configuration(
-          blitz, time, contest, size, verbose, debug,
-          whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+    if (view instanceof CommandLineInterface) {
+      ((CommandLineInterface) view).setRouter(router);
+    }
+
+    ClientMode mode = session.getMode();
+    boolean effectiveWhiteAi;
+    boolean effectiveBlackAi;
+
+    if (mode != ClientMode.LOCAL) {
+      effectiveWhiteAi = false;
+      effectiveBlackAi = false;
+    } else {
+      effectiveWhiteAi = whiteAi;
+      effectiveBlackAi = blackAi;
+    }
+
+    controller.start();
+
+    if (status != EXIT_GUI) {
+      controller.startNewGame(new Configuration(blitz, time, contest,
+          size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
+          aiMode, aiDepth, selectionMode));
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
@@ -204,7 +220,7 @@ public class App {
 
       if (cmd.hasOption("g")) {
         System.out.println(Internationalization.get("app.gui.launch"));
-        return EXIT_GUI;
+        guiMode = true;
       }
 
       if (cmd.hasOption("b")) {
@@ -284,7 +300,7 @@ public class App {
       }
 
       System.out.println(Internationalization.get("app.welcome"));
-      return EXIT_SUCCESS;
+      return guiMode ? EXIT_GUI : EXIT_SUCCESS;
 
     } catch (ParseException e) {
       String message;
@@ -367,6 +383,7 @@ public class App {
     verbose = false;
     debug = false;
     blitz = false;
+    guiMode = false;
     time = Utils.DEFAULT_TIME;
     contest = false;
     size = Utils.DEFAULT_BOARD_SIZE;

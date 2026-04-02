@@ -58,7 +58,6 @@
 /* Main board GridPane — drop shadow effect.
    Used in BoardView constructor via: this.getStyleClass().add("board-grid") */
 .board-grid {
-    filter: drop-shadow(0px 6px 20px rgba(0,0,0,0.5));
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 6);
 }
 
