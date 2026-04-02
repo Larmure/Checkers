@@ -503,27 +503,20 @@ public class GameCheckers implements Subject {
   private boolean isEndgameScenario() {
     int whitePawns = 0;
     int blackPawns = 0;
-    int whiteKings = 0;
-    int blackKings = 0;
+    int whiteCheckers = 0;
+    int blackCheckers = 0;
 
-    for (int i = 0; i < board.getIndexMax(); i++) {
-      if (board.isBitWhitePawn(i)) {
-        whitePawns++;
-      } else if (board.isBitBlackPawn(i)) {
-        blackPawns++;
-      } else if (board.isBitWhiteChecker(i)) {
-        whiteKings++;
-      } else if (board.isBitBlackChecker(i)) {
-        blackKings++;
-      }
-    }
+    whitePawns = board.countWhitePawns();
+    blackPawns = board.countBlackPawns();
+    whiteCheckers = board.countWhiteCheckers();
+    blackCheckers = board.countBlackCheckers();
 
-    int whiteTotal = whitePawns + whiteKings;
-    int blackTotal = blackPawns + blackKings;
+    int whiteTotal = whitePawns + whiteCheckers;
+    int blackTotal = blackPawns + blackCheckers;
 
-    boolean whiteAdvantage = (whiteTotal == 3 && blackTotal == 1 && blackKings == 1
+    boolean whiteAdvantage = (whiteTotal == 3 && blackTotal == 1 && blackCheckers == 1
         && blackPawns == 0);
-    boolean blackAdvantage = (blackTotal == 3 && whiteTotal == 1 && whiteKings == 1
+    boolean blackAdvantage = (blackTotal == 3 && whiteTotal == 1 && whiteCheckers == 1
         && whitePawns == 0);
 
     return whiteAdvantage || blackAdvantage;
