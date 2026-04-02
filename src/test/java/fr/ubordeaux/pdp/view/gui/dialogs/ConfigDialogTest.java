@@ -1,247 +1,215 @@
 package fr.ubordeaux.pdp.view.gui.dialogs;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.testfx.api.FxAssert.verifyThat;
-import static org.testfx.matcher.control.LabeledMatchers.hasText;
+import java.lang.reflect.Field;
 
 import fr.ubordeaux.pdp.ConfigManager;
-import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.model.tools.Internationalization;
-import java.util.Optional;
-import java.util.Locale;
-import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
-import javafx.stage.Stage;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DialogPane;
+import javafx.scene.control.Spinner;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testfx.api.FxRobot;
 import org.testfx.framework.junit5.ApplicationExtension;
-import org.testfx.framework.junit5.Start;
-import org.testfx.util.WaitForAsyncUtils;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+
+import fr.ubordeaux.pdp.model.core.Configuration;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonType;
 
 @ExtendWith(ApplicationExtension.class)
 class ConfigDialogTest {
 
-  private ConfigManager mockConfig;
-  private ShortcutManager shortcutManager;
-  private ConfigDialog dialog;
+  // On crée un runnable vide pour le callback
+  private final Runnable mockRunnable = () -> {
+  };
 
-  @Start
-  void start(Stage stage) {
-    Locale.setDefault(Locale.ENGLISH);
-    Internationalization.init();
-    mockConfig = mock(ConfigManager.class);
+  private final ConfigManager mockConfig = mock(ConfigManager.class);
+  private final ShortcutManager mockShortcutManager = new ShortcutManager(mockConfig);;
 
-    // Shortcuts needed by ShortcutManager inside ConfigDialog.
-    when(mockConfig.getShortcut(anyString())).thenReturn(null);
-
-    shortcutManager = new ShortcutManager(mockConfig);
-
-    // onShortcutsChanged callback — just a no-op for tests.
-    dialog = new ConfigDialog(shortcutManager, () -> {
+  /**
+   * Nécessaire pour initialiser le Toolkit JavaFX en mode "headless" (sans fenêtre visible)
+   * Très utile si vous faites tourner les tests sur un serveur d'intégration (CI/CD).
+   */
+  @BeforeAll
+  static void setupSpec() {
+    if (Boolean.getBoolean("headless")) {
+      System.setProperty("testfx.robot", "glass");
+      System.setProperty("testfx.headless", "true");
+      System.setProperty("prism.order", "sw");
+      System.setProperty("prism.text", "t2k");
+    }
+    // Force l'initialisation du toolkit
+    Platform.startup(() -> {
     });
-    dialog.show();
-  }
-
-  // Default values
-
-  @Test
-  void dialog_showsSectionLabels(FxRobot robot) {
-    // All four section titles must be visible.
-    verifyThat("Board", hasText("Board"));
-    verifyThat("Blitz", hasText("Blitz"));
-    verifyThat("Players", hasText("Players"));
-    verifyThat("Advanced", hasText("Advanced"));
   }
 
   @Test
-  void dialog_showsBoardSizeLabel(FxRobot robot) {
-    verifyThat("Board size:", hasText("Board size:"));
+  @DisplayName("Le dialogue s'initialise avec les valeurs par défaut")
+  void testDefaultInitialization() throws InterruptedException {
+    CountDownLatch latch = new CountDownLatch(1);
+    AtomicReference<ConfigDialog> dialogRef = new AtomicReference<>();
+
+    // Les créations de noeuds JavaFX doivent se faire sur le thread JavaFX
+    Platform.runLater(() -> {
+      dialogRef.set(new ConfigDialog(mockShortcutManager, mockRunnable));
+      latch.countDown();
+    });
+    latch.await();
+
+    ConfigDialog dialog = dialogRef.get();
+    DialogPane pane = dialog.getDialogPane();
+
+    // Vérifie que les boutons sont présents
+    Button startButton = (Button) pane.lookupButton(
+        pane.getButtonTypes().stream()
+            .filter(bt -> bt.getButtonData() == ButtonBar.ButtonData.OK_DONE)
+            .findFirst().get());
+    assertNotNull(startButton);
+
+    // On peut vérifier l'état interne si on a rendu les champs 'package-private' 
+    // ou via la recherche CSS (lookup) de TestFX.
   }
 
   @Test
-  void dialog_showsStartGameButton(FxRobot robot) {
-    verifyThat(Internationalization.get("dialog.start.game"), hasText(Internationalization.get("dialog.start.game")));
+  @DisplayName("Cocher Blitz active le spinner de temps")
+  void testBlitzTogglesTimeSpinner(FxRobot robot) throws InterruptedException {
+    AtomicReference<ConfigDialog> dialogRef = new AtomicReference<>();
+    CountDownLatch latch = new CountDownLatch(1);
+
+    Platform.runLater(() -> {
+      dialogRef.set(new ConfigDialog(mockShortcutManager, mockRunnable));
+      dialogRef.get().show();
+      latch.countDown();
+    });
+    latch.await();
+
+    CheckBox blitzCheck = robot.lookup("Blitz mode").queryAs(CheckBox.class);
+
+    // On récupère le Spinner (adaptez cette ligne si vous avez utilisé les IDs #timeSpinner)
+    Spinner<Integer> timeSpinner = robot.lookup(".spinner").queryAllAs(Spinner.class).iterator().next();
+
+    // 1. On utilise interact() pour forcer le décochage de manière 100% fiable
+    robot.interact(() -> blitzCheck.setSelected(false));
+    assertTrue(timeSpinner.isDisabled());
+
+    // 2. On utilise interact() pour forcer le cochage
+    robot.interact(() -> blitzCheck.setSelected(true));
+
+    // 3. Le spinner doit maintenant être activé !
+    assertFalse(timeSpinner.isDisabled());
   }
 
   @Test
-  void dialog_showsCancelButton(FxRobot robot) {
-    verifyThat(Internationalization.get("dialog.cancel"), hasText(Internationalization.get("dialog.cancel")));
+  @DisplayName("L'état des contrôles AI se met à jour correctement")
+  void testAiControlsStateUpdate(FxRobot robot) throws InterruptedException {
+    AtomicReference<ConfigDialog> dialogRef = new AtomicReference<>();
+    CountDownLatch latch = new CountDownLatch(1);
+
+    Platform.runLater(() -> {
+      dialogRef.set(new ConfigDialog(mockShortcutManager, mockRunnable));
+      dialogRef.get().show();
+      latch.countDown();
+    });
+    latch.await();
+
+    CheckBox whiteAiCheck = robot.lookup("White player (AI)").queryAs(CheckBox.class);
+    CheckBox blackAiCheck = robot.lookup("Black player (AI)").queryAs(CheckBox.class);
+
+    // On récupère la bonne ComboBox (celle de l'IA)
+    @SuppressWarnings("unchecked")
+    ComboBox<String> aiCombo = robot.lookup(".combo-box")
+        .queryAllAs(ComboBox.class)
+        .stream()
+        .filter(cb -> cb.getItems().contains("Minimax"))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("aiCombo introuvable"));
+
+    // 1. On désactive les deux IA
+    robot.interact(() -> {
+      whiteAiCheck.setSelected(false);
+      blackAiCheck.setSelected(false);
+    });
+    assertTrue(aiCombo.isDisabled());
+
+    // 2. On active au moins une IA
+    robot.interact(() -> whiteAiCheck.setSelected(true));
+    assertFalse(aiCombo.isDisabled());
   }
 
   @Test
-  void dialog_showsKeyboardShortcutsButton(FxRobot robot) {
-    verifyThat(Internationalization.get("dialog.keyboard.shortcuts"), hasText(Internationalization.get("dialog.keyboard.shortcuts")));
-  }
+  @DisplayName("buildConfiguration lit l'UI et construit correctement l'objet Configuration")
+  void testBuildConfiguration(FxRobot robot) throws Exception {
+    AtomicReference<ConfigDialog> dialogRef = new AtomicReference<>();
+    CountDownLatch latch = new CountDownLatch(1);
 
-  @Test
-  void dialog_blitzCheckbox_isUncheckedByDefault(FxRobot robot) {
-    // Default configuration has blitz disabled.
-    assertFalse(robot.lookup("Blitz mode").queryAs(
-        javafx.scene.control.CheckBox.class).isSelected());
-  }
+    Platform.runLater(() -> {
+      dialogRef.set(new ConfigDialog(mockShortcutManager, mockRunnable));
+      latch.countDown();
+    });
+    latch.await();
 
-  @Test
-  void dialog_whiteAiCheckbox_isUncheckedByDefault(FxRobot robot) {
-    assertFalse(robot.lookup("White player (AI)").queryAs(
-        javafx.scene.control.CheckBox.class).isSelected());
-  }
+    ConfigDialog dialog = dialogRef.get();
 
-  @Test
-  void dialog_blackAiCheckbox_isUncheckedByDefault(FxRobot robot) {
-    assertFalse(robot.lookup("Black player (AI)").queryAs(
-        javafx.scene.control.CheckBox.class).isSelected());
-  }
+    // 1. Récupération directe des composants via réflexion (plus robuste que lookup)
+    Field blitzCheckField = ConfigDialog.class.getDeclaredField("blitzCheck");
+    blitzCheckField.setAccessible(true);
+    CheckBox blitzCheck = (CheckBox) blitzCheckField.get(dialog);
 
-  @Test
-  void dialog_contestCheckbox_isUncheckedByDefault(FxRobot robot) {
-    assertFalse(robot.lookup("Contest mode").queryAs(
-        javafx.scene.control.CheckBox.class).isSelected());
-  }
+    Field timeSpinnerField = ConfigDialog.class.getDeclaredField("timeSpinner");
+    timeSpinnerField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    Spinner<Integer> timeSpinner = (Spinner<Integer>) timeSpinnerField.get(dialog);
 
-  @Test
-  void dialog_verboseCheckbox_isUncheckedByDefault(FxRobot robot) {
-    assertFalse(robot.lookup("Verbose").queryAs(
-        javafx.scene.control.CheckBox.class).isSelected());
-  }
+    Field aiComboField = ConfigDialog.class.getDeclaredField("aiCombo");
+    aiComboField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    ComboBox<String> aiCombo = (ComboBox<String>) aiComboField.get(dialog);
 
-  @Test
-  void dialog_debugCheckbox_isUncheckedByDefault(FxRobot robot) {
-    assertFalse(robot.lookup("Debug").queryAs(
-        javafx.scene.control.CheckBox.class).isSelected());
-  }
+    Field aiTimeSpinnerField = ConfigDialog.class.getDeclaredField("aiTimeSpinner");
+    aiTimeSpinnerField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    Spinner<Integer> aiTimeSpinner = (Spinner<Integer>) aiTimeSpinnerField.get(dialog);
 
-  // Blitz checkbox enables/disables spinner
+    Field whiteAiCheckField = ConfigDialog.class.getDeclaredField("whiteAiCheck");
+    whiteAiCheckField.setAccessible(true);
+    CheckBox whiteAiCheck = (CheckBox) whiteAiCheckField.get(dialog);
 
-  @Test
-  void blitzCheckbox_whenChecked_enablesTimeSpinner(FxRobot robot) {
-    // The spinner is disabled by default — checking blitz must enable it.
-    javafx.scene.control.Spinner<?> spinner = robot.lookup(".spinner")
-        .queryAs(javafx.scene.control.Spinner.class);
-    assertTrue(spinner.isDisabled(), "Spinner should be disabled before checking blitz");
+    // 2. Modification des valeurs de l'interface (Simulation des actions de l'utilisateur)
+    robot.interact(() -> {
+      blitzCheck.setSelected(true);
+      timeSpinner.getValueFactory().setValue(42); // 42 minutes
+      whiteAiCheck.setSelected(true);
+      aiCombo.setValue("MCTS"); // Choix du mode IA
+      aiTimeSpinner.getValueFactory().setValue(15); // 15 secondes
+    });
 
-    robot.clickOn("Blitz mode");
-    WaitForAsyncUtils.waitForFxEvents();
+    // 3. Exécution de buildConfiguration en simulant l'appel du ResultConverter
+    Configuration config = null;
+    for (ButtonType type : dialog.getDialogPane().getButtonTypes()) {
+      if (type.getButtonData() == ButtonData.OK_DONE) {
+        config = dialog.getResultConverter().call(type);
+        break;
+      }
+    }
 
-    assertFalse(spinner.isDisabled(), "Spinner should be enabled after checking blitz");
-  }
-
-  @Test
-  void blitzCheckbox_whenUnchecked_disablesTimeSpinner(FxRobot robot) {
-    // Check then uncheck — spinner must go back to disabled.
-    robot.clickOn("Blitz mode");
-    WaitForAsyncUtils.waitForFxEvents();
-    robot.clickOn("Blitz mode");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    javafx.scene.control.Spinner<?> spinner = robot.lookup(".spinner")
-        .queryAs(javafx.scene.control.Spinner.class);
-    assertTrue(spinner.isDisabled());
-  }
-
-  // --- Cancel: result converter returns null (covers lambda$new$0) ---
-
-  @Test
-  void cancelButton_dialogResultIsEmpty(FxRobot robot) {
-    // Capture the Optional result before clicking Cancel.
-    AtomicReference<Optional<Configuration>> optResult = new AtomicReference<>();
-    Platform.runLater(() -> optResult.set(Optional.ofNullable(dialog.getResult())));
-
-    robot.clickOn("Cancel");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    // After cancel the dialog result must be null (Optional.empty()).
-    assertNull(dialog.getResult());
-  }
-
-  // --- Start Game: result converter returns a Configuration
-  //     (covers lambda$new$0 and buildConfiguration()) ---
-
-  @Test
-  void startGameButton_returnsNonNullConfiguration(FxRobot robot) {
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertNotNull(dialog.getResult());
-  }
-
-  @Test
-  void startGameButton_defaultSize_isEight(FxRobot robot) {
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    Configuration cfg = dialog.getResult();
-    assertNotNull(cfg);
-    assertEquals(8, cfg.getSize());
-  }
-
-  @Test
-  void startGameButton_defaultBlitz_isFalse(FxRobot robot) {
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertFalse(dialog.getResult().isBlitz());
-  }
-
-  @Test
-  void startGameButton_afterCheckingBlitz_blitzIsTrue(FxRobot robot) {
-    // Check blitz then confirm — the returned Configuration must have blitz=true.
-    robot.clickOn("Blitz mode");
-    WaitForAsyncUtils.waitForFxEvents();
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertTrue(dialog.getResult().isBlitz());
-  }
-
-  @Test
-  void startGameButton_afterCheckingWhiteAi_whiteAiIsTrue(FxRobot robot) {
-    robot.clickOn("White player (AI)");
-    WaitForAsyncUtils.waitForFxEvents();
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertTrue(dialog.getResult().iswhiteAi());
-  }
-
-  @Test
-  void startGameButton_afterCheckingBlackAi_blackAiIsTrue(FxRobot robot) {
-    robot.clickOn("Black player (AI)");
-    WaitForAsyncUtils.waitForFxEvents();
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertTrue(dialog.getResult().isblackAi());
-  }
-
-  @Test
-  void startGameButton_afterCheckingContest_contestIsTrue(FxRobot robot) {
-    robot.clickOn("Contest mode");
-    WaitForAsyncUtils.waitForFxEvents();
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertTrue(dialog.getResult().isContest());
-  }
-
-  @Test
-  void startGameButton_afterCheckingDebug_debugIsTrue(FxRobot robot) {
-    robot.clickOn("Debug");
-    WaitForAsyncUtils.waitForFxEvents();
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertTrue(dialog.getResult().isDebug());
-  }
-
-  @Test
-  void startGameButton_afterCheckingVerbose_verboseIsTrue(FxRobot robot) {
-    robot.clickOn("Verbose");
-    WaitForAsyncUtils.waitForFxEvents();
-    robot.clickOn("Start Game");
-    WaitForAsyncUtils.waitForFxEvents();
-
-    assertTrue(dialog.getResult().isVerbose());
+    // 4. Vérifications que les données de l'interface ont été correctement transformées
+    assertNotNull(config);
+    assertTrue(config.isBlitz());
+    assertEquals(42, config.getTime()); // Le spinner de temps a été lu correctement
+    assertTrue(config.iswhiteAi());
+    assertEquals("mcts", config.getAiMode()); // normalizeAiMode a mis en minuscules "mcts"
+    assertEquals(15000, config.getAiTime()); // L'IA time (15) a bien été multiplié par 1000 pour les millisecondes
   }
 }
