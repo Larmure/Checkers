@@ -1,5 +1,5 @@
 \documentclass[a4paper]{article}
-
+\usepackage[svgnames]{xcolor}
 \usepackage{pdp}
 
 %------------------------------------------------------------------------------
@@ -125,6 +125,96 @@ Une partie prend fin dans l'un des cas suivants :
     \item[Nulle par blocage mutuel.] Dans le cas exceptionnel où aucun des deux joueurs ne
     peut effectuer de mouvement, la partie est également déclarée nulle.
 \end{description}
+
+%------------------------------------------------------------------------------
+%	Options au lancement
+%------------------------------------------------------------------------------
+
+\section{Options au lancement}
+\label{sec:options}
+
+Le programme se lance depuis la ligne de commande via l'exécutable \texttt{checkers}.
+La syntaxe générale est la suivante :
+
+\begin{minted}[frame=single]{text}
+checkers [OPTIONS]
+\end{minted}
+
+Si aucune option n'est fournie, le programme démarre une interface en ligne de commande
+avec les paramètres par défaut. Les options incorrectes provoquent l'affichage d'un
+message d'erreur sur \texttt{stderr} ainsi que l'aide du programme, puis le programme
+se termine avec le code de retour~1.
+
+\begin{table}[!ht]
+  \centering
+  \begin{tabular}{lll}
+    \hline
+    \textbf{Option}                    & \textbf{Option longue}          & \textbf{Description} \\
+    \hline
+    \texttt{-h}                        & \texttt{--help}                 & Affiche l'aide du programme. \\
+    \texttt{-V}                        & \texttt{--version}              & Affiche la version du programme. \\
+    \texttt{-v}                        & \texttt{--verbose}              & Active le mode verbeux. \\
+    \texttt{-d}                        & \texttt{--debug}                & Active l'affichage des messages de debug. \\
+    \texttt{-g}                        & \texttt{--gui}                  & Lance l'interface graphique. \\
+    \texttt{-b}                        & \texttt{--blitz}                & Active le mode blitz. \\
+    \texttt{-t TIME}                   & \texttt{--time TIME}            & Limite de temps en minutes (défaut : 30). \\
+    \texttt{-c}                        & \texttt{--contest}              & Active le mode contest. \\
+    \texttt{-s SIZE}                   & \texttt{--size SIZE}            & Taille du damier : 8, 10 ou 12 (défaut : 8). \\
+    \texttt{-a [COLOR]}                & \texttt{--ai [COLOR]}           & Active l'IA pour la couleur donnée (W/B/A). \\
+    \texttt{-at TIME}                  & \texttt{--ai-time TIME}         & Temps de réflexion de l'IA en secondes (défaut : 5). \\
+    \texttt{-am MODE}                  & \texttt{--ai-mode MODE}         & Algorithme : \texttt{minimax}, \texttt{alphabeta}, \texttt{iterative}, \texttt{mcts}. \\
+    \texttt{-ad DEPTH}                 & \texttt{--ai-depth DEPTH}       & Profondeur maximale de recherche. \\
+    \texttt{-as SELECTION}             & \texttt{--ai-mcts-selection}    & Sélection MCTS : \texttt{uct} (défaut) ou \texttt{ml}. \\
+    \hline
+  \end{tabular}
+  \caption{Options du programme.}
+  \label{tab:options}
+\end{table}
+
+\paragraph{Mode blitz.}
+L'option \texttt{-b}/\texttt{--blitz} lance une partie en mode blitz. Le temps de
+réflexion accordé à chaque joueur est fixé à 30~minutes par défaut ; il peut être
+modifié via \texttt{-t TIME}. Si \texttt{-t} est fourni sans \texttt{-b}, un
+avertissement est affiché mais l'option est ignorée.
+
+\paragraph{Interface graphique.}
+L'option \texttt{-g}/\texttt{--gui} lance l'interface graphique JavaFX à la place
+du shell interactif. Toutes les autres options restent applicables.
+
+\paragraph{Joueur artificiel.}
+L'option \texttt{-a}/\texttt{--ai} remplace le joueur de la couleur indiquée par
+une IA. Les valeurs acceptées pour \texttt{COLOR} sont \texttt{W} (blancs),
+\texttt{B} (noirs) et \texttt{A} (les deux). Si aucune couleur n'est précisée,
+les blancs sont contrôlés par l'IA par défaut.
+
+\paragraph{Taille du damier.}
+L'option \texttt{-s}/\texttt{--size} accepte les valeurs \texttt{8}, \texttt{10}
+et \texttt{12}, correspondant respectivement aux variantes Draughts, internationale
+et canadienne décrites à la section~\ref{sec:prise-pion}.
+
+\paragraph{Temps de réflexion de l'IA.}
+L'option \texttt{-at}/\texttt{--ai-time} borne le temps de réflexion de l'IA en
+secondes. Si le délai est écoulé, le meilleur coup trouvé jusqu'alors est joué.
+Par défaut, le temps de réflexion est de 5~secondes.
+
+\paragraph{Algorithme de recherche.}
+L'option \texttt{-am}/\texttt{--ai-mode} sélectionne l'algorithme utilisé par l'IA.
+Les valeurs acceptées sont \texttt{minimax} (défaut), \texttt{alphabeta} pour le
+Minimax avec élagage $\alpha$-$\beta$, \texttt{iterative} pour l'approfondissement
+itératif, et \texttt{mcts} pour le Monte Carlo Tree Search.
+
+\paragraph{Profondeur de recherche.}
+L'option \texttt{-ad}/\texttt{--ai-depth} fixe la profondeur maximale de l'arbre
+de recherche. Si elle n'est pas spécifiée, la profondeur est déterminée
+automatiquement en fonction du temps de réflexion disponible.
+
+\paragraph{Fonction de sélection MCTS.}
+L'option \texttt{-as}/\texttt{--ai-mcts-selection} permet de choisir la politique
+de sélection utilisée par l'algorithme MCTS. La valeur \texttt{uct} (défaut)
+applique la formule UCT standard ; la valeur \texttt{ml} substitue une fonction
+de sélection obtenue par apprentissage automatique.
+
+
 
 \section{Première section}
 
