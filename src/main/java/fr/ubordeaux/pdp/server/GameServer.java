@@ -2,7 +2,6 @@ package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
-import fr.ubordeaux.pdp.view.HeadlessView;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -23,18 +22,49 @@ import java.util.stream.Collectors;
 /**
  * Multi-client TCP game server.
  *
- * <p>Accepts client connections, registers players, creates game sessions,
- * and routes network commands to the appropriate session.
+ * <p>Accepts client connections, registers players, creates game sessions
+ * via the invitation system, and routes network commands to the appropriate
+ * session.
+ *
+ * <h2>GUI-only mode</h2>
+ *
+ * <p>When {@code guiOnly} is {@code true} (started via {@code --gui --server}
+ * in App):
+ *
+ * <ul>
+ *   <li>Every {@code GAME_START} message carries {@code mode=GUI} so clients
+ *       know they must render graphically.</li>
+ *   <li>Cross-mode invitations (GUI ↔ CLI) are blocked at invitation time —
+ *       not at connection time. All clients may connect regardless of
+ *       interface.</li>
+ *   <li>The {@code WELCOME} response carries {@code mode=GUI} so the client
+ *       can warn the user immediately after connecting.</li>
+ * </ul>
+ *
+ * <h2>Lifecycle</h2>
+ *
+ * <p>Created and started by
+ * {@link fr.ubordeaux.pdp.controller.commands.ServerStartCommand}
+ * or directly by {@link fr.ubordeaux.pdp.App}.
  */
 public class GameServer {
 
-  private static final int DEFAULT_PORT = 12345;
   private static final int CLIENT_TIMEOUT_MS = 180_000;
-  /** Client inactivity timeout: 3 minutes. */
 
   private final int tcpPort;
   private final String serverName;
+
+  /**
+   * Reserved for server launch mode configuration.
+   * Kept because callers still pass it explicitly.
+   */
   private final boolean daemon;
+
+  /**
+   * When {@code true}, all {@code GAME_START} messages carry {@code mode=GUI}.
+   */
+  private final boolean guiOnly;
+
   private final GameControllerFactory controllerFactory;
   private final GameRegistry registry = new GameRegistry();
   private final InvitationManager invitationManager = new InvitationManager();
@@ -48,40 +78,33 @@ public class GameServer {
       Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   /**
-   * Creates a new game server.
+   * Unique constructor — all parameters are explicit to avoid boolean-argument
+   * confusion.
    *
-   * @param serverName the broadcast server name
-   * @param tcpPort the TCP listening port
-   * @param controllerFactory factory used to create a new controller for each session
-   * @param daemon whether the server runs in daemon mode
+   * @param serverName name broadcast over UDP discovery
+   * @param tcpPort TCP listening port
+   * @param controllerFactory factory producing a fresh controller per game session
+   * @param daemon server daemon flag
+   * @param guiOnly {@code true} to tag all games with {@code mode=GUI}
    */
-  public GameServer(
-      String serverName, int tcpPort, GameControllerFactory controllerFactory, boolean daemon) {
+  public GameServer(String serverName, int tcpPort,
+                    GameControllerFactory controllerFactory, boolean daemon, boolean guiOnly) {
     this.serverName = serverName;
     this.tcpPort = tcpPort;
     this.controllerFactory = controllerFactory;
     this.daemon = daemon;
+    this.guiOnly = guiOnly;
   }
 
   /**
-   * Creates a new non-daemon game server.
+   * Binds the server socket, starts UDP discovery and the invitation sweeper,
+   * then blocks accepting client connections until {@link #stop()} is called.
    *
-   * @param serverName the broadcast server name
-   * @param tcpPort the TCP listening port
-   * @param controllerFactory factory used to create a new controller for each session
-   */
-  public GameServer(String serverName, int tcpPort, GameControllerFactory controllerFactory) {
-    this(serverName, tcpPort, controllerFactory, false);
-  }
-
-  /**
-   * Starts the server socket and the discovery service.
-   *
-   * @throws IOException if the server cannot bind to the TCP port
+   * @throws IOException if the port is already in use or cannot be bound
    */
   public void start() throws IOException {
     if (running) {
-      System.out.println("Server is already running on port " + tcpPort + ".");
+      System.out.println("[server] Already running on port " + tcpPort + ".");
       return;
     }
 
@@ -89,16 +112,13 @@ public class GameServer {
       serverSocket = new ServerSocket(tcpPort);
     } catch (java.net.BindException e) {
       throw new IOException(
-          "Port "
-              + tcpPort
-              + " is already in use. Stop the existing server or choose another port.",
-          e);
+          "Port " + tcpPort + " is already in use. "
+              + "Stop the existing server or choose another port.", e);
     }
 
     running = true;
     clientPool = Executors.newCachedThreadPool();
 
-    // Start the invitation expiry sweeper
     invitationManager.startSweeper(registry, this::handleInvitationExpiry);
 
     DiscoveryService discovery = new DiscoveryService(serverName, tcpPort);
@@ -106,40 +126,42 @@ public class GameServer {
     discoveryThread.setDaemon(true);
     discoveryThread.start();
 
-    System.out.println("Discovery broadcasting on UDP 12346.");
+    System.out.println("[server] Started on port " + tcpPort
+        + (guiOnly ? " (GUI-only mode)" : "") + ".");
+    System.out.println("[server] Discovery broadcasting on UDP 12346.");
 
     while (running) {
       try {
         Socket client = serverSocket.accept();
         client.setSoTimeout(CLIENT_TIMEOUT_MS);
-        System.out.println("Client connected: " + client.getInetAddress());
+        System.out.println("[server] Client connected: " + client.getInetAddress());
         clientPool.submit(() -> handleClient(client));
       } catch (IOException e) {
         if (running) {
-          System.err.println("Error accepting client: " + e.getMessage());
+          System.err.println("[server] Error accepting client: " + e.getMessage());
         }
       }
     }
   }
 
   /**
-   * Stops the server and closes all active resources.
+   * Stops the server: notifies all clients with {@code BYE}, closes the socket,
+   * shuts down the thread pool, and stops the invitation sweeper.
    */
   public void stop() {
     if (!running) {
-      System.out.println("Server is not running.");
+      System.out.println("[server] Server is not running.");
       return;
     }
 
     running = false;
-
     invitationManager.stopSweeper();
 
     for (PrintWriter out : connectedClients) {
       try {
         out.println("BYE");
       } catch (Exception ignored) {
-        // Ignore client notification failures during shutdown.
+        // Ignore client notification failure during shutdown.
       }
     }
     connectedClients.clear();
@@ -149,108 +171,105 @@ public class GameServer {
         serverSocket.close();
       }
     } catch (IOException e) {
-      System.err.println("Error closing server socket: " + e.getMessage());
+      System.err.println("[server] Error closing socket: " + e.getMessage());
     }
 
     if (clientPool != null) {
       clientPool.shutdownNow();
     }
-
     if (discoveryThread != null) {
       discoveryThread.interrupt();
     }
 
-    System.out.println("Server stopped.");
+    System.out.println("[server] Server stopped.");
   }
 
-  /**
-   * Returns whether the server is currently running.
-   *
-   * @return {@code true} if the server is running
-   */
+  /** @return {@code true} if the server is currently running */
   public boolean isRunning() {
     return running;
   }
 
-  /**
-   * Returns the TCP port used by the server.
-   *
-   * @return the listening TCP port
-   */
+  /** @return the TCP port the server is listening on */
   public int getPort() {
     return tcpPort;
   }
 
+  /** @return {@code true} if this server tags all games as {@code mode=GUI} */
+  public boolean isGuiOnly() {
+    return guiOnly;
+  }
+
   /**
-   * Handles a newly connected client socket.
+   * Handles a newly connected client socket end-to-end: handshake → message loop.
    *
-   * @param client the client socket
+   * <p>Expected first line from the client:
+   *
+   * <pre>
+   * REGISTER &lt;id&gt; &lt;name&gt; &lt;GUI|CLI&gt;
+   * </pre>
+   *
+   * <p>All clients are accepted regardless of interface mode. The
+   * {@code guiOnly} flag is communicated back in the {@code WELCOME} response
+   * and enforced later at invitation time — not here.
+   *
+   * @param client the newly accepted socket
    */
   private void handleClient(Socket client) {
     try (
-        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+        BufferedReader in = new BufferedReader(
+            new InputStreamReader(client.getInputStream()));
         PrintWriter out = new PrintWriter(
-            new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
-
+            new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)
+    ) {
       connectedClients.add(out);
 
       String handshake = in.readLine();
       if (handshake == null || !handshake.startsWith("REGISTER ")) {
-        out.println("ERROR: First message must be REGISTER <id> <name>");
+        out.println("ERROR: First message must be REGISTER <id> <name> <GUI|CLI>");
         return;
       }
 
-      String[] parts = handshake.split("\\s+", 3);
-      if (parts.length < 3) {
-        out.println("ERROR: Usage: REGISTER <id> <name>");
+      String[] parts = handshake.split("\\s+", 4);
+      if (parts.length < 4) {
+        out.println("ERROR: Usage: REGISTER <id> <name> <GUI|CLI>");
         return;
       }
 
       String playerId = parts[1];
       String playerName = parts[2];
+      String interfaceMode = parts[3].trim().toUpperCase();
 
-      PlayerSession player = registry.registerPlayer(playerId, playerName, out);
+      if (!interfaceMode.equals("GUI") && !interfaceMode.equals("CLI")) {
+        out.println("ERROR: Invalid interface mode. Expected GUI or CLI.");
+        return;
+      }
+
+      PlayerSession player = registry.registerPlayer(playerId, playerName, out, interfaceMode);
       if (player == null) {
         out.println("ERROR: Player ID '" + playerId + "' is already taken.");
         return;
       }
 
-      out.println("WELCOME " + playerId);
-      System.out.println("Player registered: " + playerId + " (" + playerName + ")");
+      out.println("WELCOME " + playerId + (guiOnly ? " mode=GUI" : " mode=ANY"));
+      System.out.println("[server] Registered: " + playerId
+          + " (" + playerName + ") [" + interfaceMode + "]");
 
       tryAutoStart();
-
       processMessages(in, out, player);
 
     } catch (SocketTimeoutException e) {
-      System.out.println("Client timed out after 3 minute of inactivity.");
+      System.out.println("[server] Client timed out after 3 minutes of inactivity.");
     } catch (IOException e) {
-      System.out.println("Client disconnected: " + e.getMessage());
+      System.out.println("[server] Client disconnected: " + e.getMessage());
     }
   }
 
   /**
-   * Processes all messages received from a connected player.
+   * Reads and dispatches commands from a registered player until they disconnect.
    *
-   * <p>Supported commands:
-   * <ul>
-   *   <li>{@code PING} — latency check.
-   *   <li>{@code QUIT} — graceful disconnect.
-   *   <li>{@code STATUS} — server statistics.
-   *   <li>{@code PLAYERS [id]} — list players or show details for a specific player.
-   *   <li>{@code SCOREBOARD} — wins/losses/draws leaderboard.
-   *   <li>{@code NEW <target_id>} — send a game invitation.
-   *   <li>{@code ACCEPT} — accept a pending invitation.
-   *   <li>{@code DECLINE} — decline a pending invitation.
-   *   <li>{@code CANCEL} — cancel an outgoing invitation.
-   *   <li>{@code AWAY} — mark yourself as away (no invitations accepted).
-   *   <li>{@code BACK} — return to idle status.
-   *   <li>{@code MOVE <from-to>} — make a move in an active game.
-   * </ul>
-   *
-   * @param in     the client input stream
-   * @param out    the client output stream
-   * @param player the registered player
+   * @param in client input stream
+   * @param out client output stream
+   * @param player registered player
    * @throws IOException if reading from the socket fails
    */
   private void processMessages(BufferedReader in, PrintWriter out, PlayerSession player)
@@ -269,42 +288,38 @@ public class GameServer {
           long elapsed = System.currentTimeMillis() - t0;
           out.println("PONG TIME=" + elapsed + "ms");
         }
+
         case "QUIT" -> {
           out.println("BYE");
           cleanupPlayerInvitations(player);
           registry.removePlayer(player.getId());
           connectedClients.remove(out);
-          System.out.println("Player " + player.getId() + " disconnected.");
+          System.out.println("[server] Player " + player.getId() + " disconnected.");
           return;
         }
-        case "STATUS" -> {
-          int playerCount = registry.getPlayerCount();
-          int sessionCount = registry.getActiveSessionCount();
-          out.println(
-              "STATUS port=" + tcpPort + " players=" + playerCount
-                  + " sessions=" + sessionCount);
-        }
+
+        case "STATUS" -> out.println(
+            "STATUS port=" + tcpPort
+                + " players=" + registry.getPlayerCount()
+                + " sessions=" + registry.getActiveSessionCount()
+                + (guiOnly ? " mode=GUI" : ""));
+
         case "PLAYERS" -> {
           if (rest.isBlank()) {
-            // List all players
             String list = registry.getPlayersFormatted();
             out.println(list.isEmpty() ? "PLAYERS none" : "PLAYERS\n" + list);
           } else {
-            // Detail for one player
-            String targetId = rest.trim();
-            PlayerSession target = registry.getPlayer(targetId);
+            PlayerSession target = registry.getPlayer(rest.trim());
             if (target == null) {
-              out.println("ERROR: Player '" + targetId + "' not found.");
+              out.println("ERROR: Player '" + rest.trim() + "' not found.");
             } else {
               out.println("PLAYER_INFO\n" + target.toDetailedString());
             }
           }
         }
+
         case "SCOREBOARD" -> out.println("SCOREBOARD\n" + registry.getScoreboardFormatted());
 
-        // ----------------------------------------------------------------
-        // Invitation commands
-        // ----------------------------------------------------------------
         case "NEW" -> {
           if (rest.isBlank()) {
             out.println("ERROR: Usage: NEW <player_id>");
@@ -312,38 +327,31 @@ public class GameServer {
           }
           handleNewInvitation(out, player, rest.trim());
         }
+
         case "ACCEPT" -> handleAccept(out, player);
         case "DECLINE" -> handleDecline(out, player);
         case "CANCEL" -> handleCancel(out, player);
 
-        // ----------------------------------------------------------------
-        // Presence commands
-        // ----------------------------------------------------------------
         case "AWAY" -> {
           if (player.getStatus() == PlayerSession.Status.INGAME) {
             out.println("ERROR: Cannot go away while in a game.");
           } else if (player.getStatus() == PlayerSession.Status.WAITGAME) {
-            out.println("ERROR: You have a pending invitation. "
-                + "Use DECLINE first, then AWAY.");
+            out.println("ERROR: You have a pending invitation. Use DECLINE first, then AWAY.");
           } else {
             player.setStatus(PlayerSession.Status.AWAY);
             out.println("STATUS_CHANGED away");
-            System.out.println("Player " + player.getId() + " is now away.");
           }
         }
+
         case "BACK" -> {
           if (player.getStatus() == PlayerSession.Status.INGAME) {
             out.println("ERROR: Cannot use BACK while in a game.");
           } else {
             player.setStatus(PlayerSession.Status.IDLE);
             out.println("STATUS_CHANGED idle");
-            System.out.println("Player " + player.getId() + " is back (idle).");
           }
         }
 
-        // ----------------------------------------------------------------
-        // In-game move
-        // ----------------------------------------------------------------
         case "MOVE" -> {
           GameSession session = registry.getSessionForPlayer(player.getId());
           if (session == null) {
@@ -357,26 +365,41 @@ public class GameServer {
             }
           }
         }
+
         default -> out.println("ERROR: Unknown command '" + cmd + "'.");
       }
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Invitation handlers
-  // -------------------------------------------------------------------------
-
   /**
-   * Handles a {@code NEW <target_id>} command: sends a game invitation.
+   * Handles {@code NEW <target_id>}: creates and delivers an invitation.
    *
-   * @param out    requester's output stream.
-   * @param sender the player sending the invitation.
-   * @param toId   the target player's ID.
+   * <p>Invitations are only allowed between players using the same client type
+   * ({@code GUI} with {@code GUI}, or {@code CLI} with {@code CLI}) so both
+   * sides render the same kind of game session.
+   *
+   * @param out requester output stream
+   * @param sender inviting player
+   * @param toId target player id
    */
   private void handleNewInvitation(PrintWriter out, PlayerSession sender, String toId) {
     if (!sender.isIdle()) {
       out.println("ERROR: You must be idle to send an invitation "
           + "(current status: " + sender.getStatus().name().toLowerCase() + ").");
+      return;
+    }
+
+    PlayerSession invitee = registry.getPlayer(toId);
+    if (invitee == null) {
+      out.println("ERROR: Player '" + toId + "' not found.");
+      return;
+    }
+
+    if (!sender.getInterfaceMode().equals(invitee.getInterfaceMode())) {
+      out.println("ERROR: Interface mode mismatch — you are ["
+          + sender.getInterfaceMode() + "] and '" + toId + "' is ["
+          + invitee.getInterfaceMode() + "]. Both players must use the same "
+          + "client type (both GUI or both CLI).");
       return;
     }
 
@@ -389,119 +412,72 @@ public class GameServer {
     }
 
     Invitation inv = result.invitation;
-    PlayerSession invitee = registry.getPlayer(toId);
 
-    // Notify inviter
     out.println("INVITATION_SENT PLAYER=" + invitee.getName()
         + " TIMEOUT=" + Invitation.TIMEOUT_SECONDS + "s");
 
-    // Notify invitee
     invitee.send("INVITATION_RECEIVED FROM=" + sender.getId()
         + " EXPIRES=" + Invitation.TIMEOUT_SECONDS + "s");
 
-    System.out.println("Invitation " + inv.getInvitationId()
+    System.out.println("[server] Invitation " + inv.getInvitationId()
         + ": " + sender.getId() + " → " + toId);
   }
 
-  /**
-   * Handles an {@code ACCEPT} command: starts the game if pre-conditions hold.
-   *
-   * @param out      acceptor's output stream.
-   * @param acceptor the player accepting the invitation.
-   */
+  /** Handles {@code ACCEPT}. */
   private void handleAccept(PrintWriter out, PlayerSession acceptor) {
     InvitationManager.AcceptResult result = invitationManager.accept(acceptor.getId());
-
     if (!result.isSuccess()) {
       out.println("ERROR: " + result.error);
       return;
     }
 
-    Invitation inv = result.invitation;
-    PlayerSession inviter = registry.getPlayer(inv.getFromPlayerId());
-
+    PlayerSession inviter = registry.getPlayer(result.invitation.getFromPlayerId());
     if (inviter == null) {
       out.println("ERROR: The player who invited you has disconnected.");
       acceptor.setStatus(PlayerSession.Status.IDLE);
       return;
     }
 
-    // Restore both players to IDLE before starting the session
     acceptor.setStatus(PlayerSession.Status.IDLE);
     inviter.setStatus(PlayerSession.Status.IDLE);
-
-    // Notify inviter that the invitation was accepted and the game is starting
     inviter.send("INVITATION_ACCEPTED STARTING_GAME");
-
-    // Start the game session
     startInvitedGame(inviter, acceptor);
   }
 
-  /**
-   * Handles a {@code DECLINE} command.
-   *
-   * @param out      decliner's output stream.
-   * @param decliner the player declining.
-   */
+  /** Handles {@code DECLINE}. */
   private void handleDecline(PrintWriter out, PlayerSession decliner) {
     InvitationManager.DeclineResult result = invitationManager.decline(decliner.getId());
-
     if (!result.isSuccess()) {
       out.println("ERROR: " + result.error);
       return;
     }
 
-    Invitation inv = result.invitation;
-    PlayerSession inviter = registry.getPlayer(inv.getFromPlayerId());
-
-    // Restore invitee status
+    PlayerSession inviter = registry.getPlayer(result.invitation.getFromPlayerId());
     decliner.setStatus(PlayerSession.Status.IDLE);
     out.println("INVITATION_DECLINED");
-
-    // Notify inviter
     if (inviter != null) {
       inviter.send("INVITATION_DECLINED BY=" + decliner.getId());
     }
-
-    System.out.println("Invitation " + inv.getInvitationId() + " declined by " + decliner.getId());
   }
 
-  /**
-   * Handles a {@code CANCEL} command.
-   *
-   * @param out       canceller's output stream.
-   * @param canceller the player cancelling their outgoing invitation.
-   */
+  /** Handles {@code CANCEL}. */
   private void handleCancel(PrintWriter out, PlayerSession canceller) {
     InvitationManager.CancelResult result = invitationManager.cancel(canceller.getId());
-
     if (!result.isSuccess()) {
       out.println("ERROR: " + result.error);
       return;
     }
 
-    Invitation inv = result.invitation;
-    PlayerSession invitee = registry.getPlayer(inv.getToPlayerId());
-
+    PlayerSession invitee = registry.getPlayer(result.invitation.getToPlayerId());
     out.println("INVITATION_CANCELLED");
-
-    // Restore invitee to IDLE and notify them
     if (invitee != null) {
       invitee.setStatus(PlayerSession.Status.IDLE);
       invitee.send("INVITATION_CANCELLED BY=" + canceller.getId());
     }
-
-    System.out.println("Invitation " + inv.getInvitationId()
-        + " cancelled by " + canceller.getId());
   }
 
-  /**
-   * Cleans up any pending invitations (sent or received) when a player disconnects.
-   *
-   * @param player the disconnecting player.
-   */
+  /** Cleans up all pending invitations when a player disconnects. */
   private void cleanupPlayerInvitations(PlayerSession player) {
-    // Cancel outgoing invitation
     InvitationManager.CancelResult cancel = invitationManager.cancel(player.getId());
     if (cancel.isSuccess()) {
       PlayerSession invitee = registry.getPlayer(cancel.invitation.getToPlayerId());
@@ -511,7 +487,6 @@ public class GameServer {
       }
     }
 
-    // Decline any incoming invitation (so the inviter is unblocked)
     InvitationManager.DeclineResult decline = invitationManager.decline(player.getId());
     if (decline.isSuccess()) {
       PlayerSession inviter = registry.getPlayer(decline.invitation.getFromPlayerId());
@@ -521,12 +496,7 @@ public class GameServer {
     }
   }
 
-  /**
-   * Called by the {@link InvitationManager} sweeper when an invitation expires.
-   *
-   * @param inv      the expired invitation.
-   * @param registry the player registry.
-   */
+  /** Called by the sweeper for each invitation that timed out. */
   private void handleInvitationExpiry(Invitation inv, GameRegistry registry) {
     PlayerSession inviter = registry.getPlayer(inv.getFromPlayerId());
     PlayerSession invitee = registry.getPlayer(inv.getToPlayerId());
@@ -538,41 +508,40 @@ public class GameServer {
     if (inviter != null) {
       inviter.send("INVITATION_EXPIRED TO=" + inv.getToPlayerId() + " (no response)");
     }
-
-    System.out.println("Invitation " + inv.getInvitationId() + " expired.");
+    System.out.println("[server] Invitation " + inv.getInvitationId() + " expired.");
   }
 
   /**
-   * Creates a game session for two players who agreed via an invitation.
+   * Starts a game session between two players who have agreed via invitation.
    *
-   * @param inviter  player who sent the invitation (plays first).
-   * @param invitee  player who accepted the invitation.
+   * <p>Appends {@code mode=GUI} to {@code GAME_START} when {@link #guiOnly}
+   * is {@code true}.
    */
   private synchronized void startInvitedGame(PlayerSession inviter, PlayerSession invitee) {
     List<PlayerSession> pair = List.of(inviter, invitee);
+
     GameController sessionController = controllerFactory.create();
-    sessionController.startNewGame(
-        fr.ubordeaux.pdp.model.core.Configuration.getDefaultConfiguration());
+    sessionController.startNewGame(Configuration.getDefaultConfiguration());
 
     GameSession session = registry.createSession(pair, sessionController);
 
     String playerList = inviter.getId() + " " + invitee.getId();
+    String modeTag = guiOnly ? " mode=GUI" : "";
 
-    for (PlayerSession p : pair) {
-      p.send("GAME_START session=" + session.getSessionId()
+    for (PlayerSession player : pair) {
+      player.send("GAME_START session=" + session.getSessionId()
           + " players=" + playerList
-          + " first=" + inviter.getId());
+          + " first=" + inviter.getId()
+          + modeTag);
     }
 
-    System.out.println("Invited game started: " + session.getSessionId()
-        + " between " + playerList);
+    System.out.println("[server] Game started: " + session.getSessionId()
+        + " between " + playerList + (guiOnly ? " [GUI]" : ""));
   }
 
   /**
-   * Notifies a newly connected player to wait for an invitation if they are alone.
-   *
-   * <p>Auto-matching is disabled in invitation mode. Players must use {@code NEW <id>}
-   * to invite specific opponents.
+   * Notifies the sole connected idle player that they are waiting for an opponent.
+   * Auto-matching is disabled; players use {@code NEW <id>} to invite each other.
    */
   private synchronized void tryAutoStart() {
     List<PlayerSession> idlePlayers = registry.getAllPlayers().stream()
@@ -583,62 +552,6 @@ public class GameServer {
       idlePlayers.get(0).send(
           "WAITING You are the only player connected. "
               + "Use 'players' to list others, then 'new <id>' to invite someone.");
-    }
-  }
-
-  /**
-   * Handles direct game creation (deprecated).
-   *
-   * @deprecated Replaced by the invitation flow ({@link #handleNewInvitation}).
-   *             Kept for reference only and no longer called.
-   */
-  @Deprecated
-  private void handleNewGame(PrintWriter out, PlayerSession requester, String[] participantIds) {
-    out.println("ERROR: Direct game creation is replaced by the invitation system. "
-        + "Use 'new <player_id>' to invite a player.");
-  }
-
-  /**
-   * Starts the server in standalone mode.
-   *
-   * @param args command-line arguments
-   */
-  public static void main(String[] args) {
-    int port = DEFAULT_PORT;
-    boolean daemonMode = false;
-
-    for (int i = 0; i < args.length; i++) {
-      switch (args[i]) {
-        case "-s", "--server" -> {
-          if (i + 1 < args.length) {
-            try {
-              port = Integer.parseInt(args[++i]);
-            } catch (NumberFormatException ignored) {
-              port = DEFAULT_PORT;
-            }
-          }
-        }
-        case "-d", "--daemon" -> daemonMode = true;
-        default -> {
-        }
-      }
-    }
-
-    GameControllerFactory factory = () -> new GameController(new HeadlessView());
-    GameServer server = new GameServer("GameServer", port, factory, daemonMode);
-
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  System.out.println("\nShutting down server...");
-                  server.stop();
-                }));
-
-    try {
-      server.start();
-    } catch (IOException e) {
-      System.err.println("Failed to start server: " + e.getMessage());
     }
   }
 }

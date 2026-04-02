@@ -68,7 +68,8 @@ public class ServerStartCommand implements Command, Helpable {
     GameControllerFactory factory = () -> new GameController(new HeadlessView());
 
     final int finalPort = port;
-    activeServer = new GameServer("GameServer", finalPort, factory);
+    boolean guiOnly = session != null && session.isGuiMode();
+    activeServer = new GameServer("GameServer", finalPort, factory, false, guiOnly);
     GameServer ref = activeServer;
 
     Thread serverThread =

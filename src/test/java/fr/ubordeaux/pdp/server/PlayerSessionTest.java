@@ -16,10 +16,11 @@ class PlayerSessionTest {
   void constructor_initializesFieldsCorrectly() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
 
     assertEquals("p1", session.getId());
     assertEquals("Daniel", session.getName());
+    assertEquals("GUI", session.getInterfaceMode());
     assertEquals(PlayerSession.Status.IDLE, session.getStatus());
     assertTrue(session.isIdle());
     assertEquals(0, session.getWins());
@@ -33,7 +34,7 @@ class PlayerSessionTest {
     StringWriter buffer = new StringWriter();
     PrintWriter out = new PrintWriter(buffer, true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     session.send("HELLO");
 
     assertTrue(buffer.toString().contains("HELLO"));
@@ -43,7 +44,7 @@ class PlayerSessionTest {
   void setStatus_changesStatusAndIdleFlag() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     session.setStatus(PlayerSession.Status.INGAME);
 
     assertEquals(PlayerSession.Status.INGAME, session.getStatus());
@@ -54,7 +55,7 @@ class PlayerSessionTest {
   void recordWin_incrementsWinsAndGamesPlayed() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     session.recordWin();
 
     assertEquals(1, session.getWins());
@@ -67,7 +68,7 @@ class PlayerSessionTest {
   void recordLoss_incrementsLossesAndGamesPlayed() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     session.recordLoss();
 
     assertEquals(0, session.getWins());
@@ -80,7 +81,7 @@ class PlayerSessionTest {
   void recordDraw_incrementsDrawsAndGamesPlayed() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     session.recordDraw();
 
     assertEquals(0, session.getWins());
@@ -93,7 +94,7 @@ class PlayerSessionTest {
   void multipleResults_accumulateCorrectly() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     session.recordWin();
     session.recordLoss();
     session.recordDraw();
@@ -109,7 +110,7 @@ class PlayerSessionTest {
   void toString_containsMainSessionInformationWhenIdle() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     String text = session.toString();
 
     assertTrue(text.contains("p1"));
@@ -124,7 +125,7 @@ class PlayerSessionTest {
   void toString_containsUpdatedStatisticsAndStatus() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
-    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out, "GUI");
     session.setStatus(PlayerSession.Status.INGAME);
     session.recordWin();
     session.recordDraw();

@@ -111,7 +111,7 @@ public class App {
 
     if (serverMode) {
       GameControllerFactory factory = () -> new GameController(new HeadlessView());
-      GameServer server = new GameServer("GameServer", serverPort, factory, daemonMode);
+      GameServer server = new GameServer("GameServer", serverPort, factory, daemonMode, guiMode);
 
       Runtime.getRuntime().addShutdownHook(
           new Thread(
@@ -120,34 +120,53 @@ public class App {
                 server.stop();
               }));
 
-      try {
-        if (daemonMode) {
-          System.out.println("Server running in daemon mode.");
-        } else {
-          System.out.println("Server running in server mode.");
-        }
-
-        server.start();
-        return;
-      } catch (IOException e) {
-        System.err.println("Failed to start server: " + e.getMessage());
-        System.exit(1);
+      if (daemonMode) {
+        System.out.println("Server running in daemon mode.");
+      } else {
+        System.out.println("Server running in server mode.");
       }
+
+      Thread serverThread =
+          new Thread(
+              () -> {
+                try {
+                  server.start();
+                } catch (IOException e) {
+                  System.err.println("Failed to start server: " + e.getMessage());
+                }
+              },
+              "game-server-main");
+      serverThread.setDaemon(false);
+      serverThread.start();
+      return;
     }
 
     GameView view;
 
+    ClientSession session = new ClientSession();
+    session.setGuiMode(guiMode);
     if (status == EXIT_GUI) {
-      view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
-          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode),
-          serverMode);
+      view = new GraphicalUserInterface(
+          new Configuration(
+              blitz,
+              time,
+              contest,
+              size,
+              verbose,
+              debug,
+              whiteAi,
+              blackAi,
+              aiTime,
+              aiMode,
+              aiDepth,
+              selectionMode),
+          serverMode,
+          session);
     } else {
       view = new CommandLineInterface(verbose, debug);
     }
+
     GameController controller = new GameController(view);
-
-    ClientSession session = new ClientSession();
-
     session.setController(controller);
     ShellCommandRouter router = new ShellCommandRouter(controller, session);
 
@@ -289,8 +308,12 @@ public class App {
       }
 
       if (cmd.hasOption("g")) {
-        System.out.println(Internationalization.get("app.gui.launch"));
         guiMode = true;
+        if (!serverMode) {
+          System.out.println(Internationalization.get("app.gui.launch"));
+        } else {
+          System.out.println("Server will host GUI-only games.");
+        }
       }
 
       if (cmd.hasOption("b")) {
@@ -370,6 +393,9 @@ public class App {
       }
 
       System.out.println(Internationalization.get("app.welcome"));
+      if (serverMode) {
+        return EXIT_SUCCESS;
+      }
       return guiMode ? EXIT_GUI : EXIT_SUCCESS;
 
     } catch (ParseException e) {

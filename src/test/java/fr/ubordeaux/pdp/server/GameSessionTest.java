@@ -24,8 +24,10 @@ class GameSessionTest {
 
   @BeforeEach
   void setUp() {
-    alice = new PlayerSession("alice", "Alice", new PrintWriter(new StringWriter(), true));
-    bob = new PlayerSession("bob", "Bob", new PrintWriter(new StringWriter(), true));
+    alice = new PlayerSession(
+        "alice", "Alice", new PrintWriter(new StringWriter(), true), "GUI");
+    bob = new PlayerSession(
+        "bob", "Bob", new PrintWriter(new StringWriter(), true), "GUI");
     controller = new FakeGameController();
     session = new GameSession(List.of(alice, bob), controller);
   }

@@ -6,6 +6,8 @@ import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
 import javafx.geometry.Insets;
@@ -61,6 +63,20 @@ public class MainView extends BorderPane {
   /** Flag indicating whether the GUI is running in server mode. */
   private final boolean serverMode;
 
+  private final ClientSession session;
+
+  /** Toolbar button: undo. */
+  private Button undoButton;
+
+  /** Toolbar button: redo. */
+  private Button redoButton;
+
+  /** Toolbar button: pause. */
+  private Button pauseButton;
+
+  /** Toolbar button: hint. */
+  private Button hintButton;
+
   /**
    * Toolbar label indicating whose turn it is.
    * Updated by {@link #update(GameCheckers)}.
@@ -74,14 +90,15 @@ public class MainView extends BorderPane {
    * @param configManager the configuration manager used to load and persist
    *                      keyboard shortcuts; must not be {@code null}
    * @param cliConfig     optional CLI configuration used to prefill
-   *                      configuration dialogs; may be {@code null}
+   *                      configuration dialogs; may be {@code null}  // style.css : .root-pane
    */
   public MainView(GameController controller, ConfigManager configManager,
-      Configuration cliConfig, boolean serverMode) {
+                  Configuration cliConfig, boolean serverMode, ClientSession session) {
     this.controller = controller;
     this.configManager = configManager;
     this.cliConfig = cliConfig;
     this.serverMode = serverMode;
+    this.session = session;
     buildLayout();
     // style.css : .root-pane
     this.getStyleClass().add("root-pane");
@@ -104,6 +121,7 @@ public class MainView extends BorderPane {
     this.setCenter(playView);
 
     this.setBottom(buildToolbar());
+    refreshToolbarState();
   }
 
   /**
@@ -119,43 +137,57 @@ public class MainView extends BorderPane {
     HBox toolbar = new HBox(10);
     toolbar.setPadding(new Insets(10, 20, 10, 20));
     toolbar.setAlignment(Pos.CENTER_LEFT);
-    // style.css : .toolbar
     toolbar.getStyleClass().add("toolbar");
 
-    // Spacer pushes the turn label to the right edge.
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
 
     turnLabel = new Label(Internationalization.get("toolbar.turn") + "BLACK");
-    // style.css : .turn-label
     turnLabel.getStyleClass().add("turn-label");
 
-    Button undoBtn = toolbarButton(Internationalization.get("toolbar.undo"),
-        () -> controller.executeCommand("undo", new String[] { "1" }));
-    Button redoBtn = toolbarButton(Internationalization.get("toolbar.redo"),
-        () -> controller.executeCommand("redo", new String[] { "1" }));
-    Button pauseBtn = toolbarButton(Internationalization.get("toolbar.pause"), () -> {
-      if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
-        controller.executeCommand("pause", new String[0]);
+    undoButton = toolbarButton(
+        Internationalization.get("toolbar.undo"),
+        () -> controller.executeCommand("undo", new String[] {"1"}));
 
-        Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
-        pauseAlert.setTitle(Internationalization.get("dialog.pause_title"));
-        pauseAlert.setHeaderText(Internationalization.get("dialog.pause_header"));
+    redoButton = toolbarButton(
+        Internationalization.get("toolbar.redo"),
+        () -> controller.executeCommand("redo", new String[] {"1"}));
 
-        ButtonType btnResume = new ButtonType(Internationalization.get("dialog.pause_resume"),
-            javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
-        pauseAlert.getButtonTypes().setAll(btnResume);
-        pauseAlert.showAndWait();
+    pauseButton = toolbarButton(
+        Internationalization.get("toolbar.pause"),
+        () -> {
+          if (controller.getGame() != null
+              && controller.getGame().getState() == State.IN_GAME) {
+            controller.executeCommand("pause", new String[0]);
 
-        controller.executeCommand("continue", new String[0]);
-      }
-    });
-    Button hintBtn = toolbarButton(Internationalization.get("toolbar.hint"),
+            Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
+            pauseAlert.setTitle(Internationalization.get("dialog.pause_title"));
+            pauseAlert.setHeaderText(Internationalization.get("dialog.pause_header"));
+
+            ButtonType resumeButton = new ButtonType(
+                Internationalization.get("dialog.pause_resume"),
+                javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+            pauseAlert.getButtonTypes().setAll(resumeButton);
+            pauseAlert.showAndWait();
+
+            controller.executeCommand("continue", new String[0]);
+          }
+        });
+
+    hintButton = toolbarButton(
+        Internationalization.get("toolbar.hint"),
         () -> controller.executeCommand("hint", new String[0]));
 
-    toolbar.getChildren().addAll(undoBtn, redoBtn, pauseBtn, hintBtn, spacer, turnLabel);
+    toolbar.getChildren().addAll(
+        undoButton,
+        redoButton,
+        pauseButton,
+        hintButton,
+        spacer,
+        turnLabel);
     return toolbar;
   }
+
 
   /**
    * Creates a styled toolbar button.
@@ -186,7 +218,9 @@ public class MainView extends BorderPane {
    * @param stage the application's primary stage; must not be {@code null}
    */
   public void passStageToMenu(Stage stage) {
-    menuView.setStage(stage);
+    if (menuView != null) {
+      menuView.setStage(stage);
+    }
   }
 
   /**
@@ -195,7 +229,9 @@ public class MainView extends BorderPane {
    * chooses to save before quitting.
    */
   public void openSaveDialog() {
-    menuView.openSaveDialog();
+    if (menuView != null) {
+      menuView.openSaveDialog();
+    }
   }
 
   /**
@@ -206,7 +242,9 @@ public class MainView extends BorderPane {
    * @param gui the GUI instance; must not be {@code null}
    */
   public void passGuiToMenu(GraphicalUserInterface gui) {
-    menuView.setGui(gui);
+    if (menuView != null) {
+      menuView.setGui(gui);
+    }
   }
 
   /**
@@ -233,6 +271,7 @@ public class MainView extends BorderPane {
    * @param game the current game state; must not be {@code null}
    */
   public void update(GameCheckers game) {
+    refreshToolbarState();
     if (game != null) {
       playView.update(game);
 
@@ -248,6 +287,25 @@ public class MainView extends BorderPane {
    * so the dialog has a valid window owner and appears modally.
    */
   public void openConfigDialog() {
-    menuView.openConfigDialog();
+    if (menuView != null) {
+      menuView.openConfigDialog();
+    }
+  }
+
+  private void refreshToolbarState() {
+    boolean localMode = session == null || session.getMode() == ClientMode.LOCAL;
+
+    if (undoButton != null) {
+      undoButton.setDisable(!localMode);
+    }
+    if (redoButton != null) {
+      redoButton.setDisable(!localMode);
+    }
+    if (pauseButton != null) {
+      pauseButton.setDisable(!localMode);
+    }
+    if (hintButton != null) {
+      hintButton.setDisable(!localMode);
+    }
   }
 }

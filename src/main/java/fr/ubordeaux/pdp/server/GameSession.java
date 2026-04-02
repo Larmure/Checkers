@@ -29,7 +29,6 @@ public class GameSession {
   private final String sessionId;
   private final List<PlayerSession> players;
   private final GameController controller;
-
   private int currentTurnIndex = 0;
   private volatile boolean active = true;
 

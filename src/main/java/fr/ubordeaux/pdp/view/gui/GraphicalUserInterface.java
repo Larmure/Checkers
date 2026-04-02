@@ -5,6 +5,8 @@ import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
@@ -63,22 +65,28 @@ public class GraphicalUserInterface extends GameView {
   /** Flag indicating whether the GUI is running in server mode. */
   private final boolean serverMode;
 
+  private final ClientSession session;
+
   /**
    * Creates the GUI with default configuration values.
    */
-  public GraphicalUserInterface(boolean serverMode) {
-    this(null, serverMode);
+  public GraphicalUserInterface(boolean serverMode, ClientSession session) {
+    this(null, serverMode,session);
   }
 
   /**
    * Creates the GUI with an optional preloaded CLI configuration.
    *
    * @param cliConfig configuration forwarded to prefill the GUI configuration
-   *                  dialog; may be {@code null}
+   *     dialog; may be {@code null}
+   * @param serverMode {@code true} if the GUI runs in server mode
+   * @param session shared client session
    */
-  public GraphicalUserInterface(Configuration cliConfig, boolean serverMode) {
+  public GraphicalUserInterface(
+      Configuration cliConfig, boolean serverMode, ClientSession session) {
     this.cliConfig = cliConfig;
     this.serverMode = serverMode;
+    this.session = session;
   }
 
   /**
@@ -97,7 +105,7 @@ public class GraphicalUserInterface extends GameView {
       stage = new Stage();
       ConfigManager configManager = new ConfigManager();
       configManager.load();
-      mainView = new MainView(controller, configManager, cliConfig, serverMode);
+      mainView = new MainView(controller, configManager, cliConfig, serverMode, session);
 
       final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
       double initW = 1200;
@@ -236,10 +244,28 @@ public class GraphicalUserInterface extends GameView {
    * <p>Must be called on the JavaFX Application Thread.
    */
   public void requestQuit() {
+    if (session != null && session.getMode() == ClientMode.CONNECTED) {
+      Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+      confirm.setTitle(Internationalization.get("gui.quit.title"));
+      confirm.setHeaderText("Disconnect from online game?");
+      confirm.setContentText("You are currently connected to a server. "
+          + "Do you want to disconnect and quit?");
+      confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+
+      confirm.showAndWait().ifPresent(response -> {
+        if (response == ButtonType.YES) {
+          session.send("QUIT");
+          session.disconnect();
+          doQuit();
+        }
+      });
+      return;
+    }
+
     if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
-      // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }
+
     if (controller.getGame() != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
       confirm.setTitle(Internationalization.get("gui.quit.title"));
@@ -249,7 +275,7 @@ public class GraphicalUserInterface extends GameView {
 
       confirm.showAndWait().ifPresent(response -> {
         if (response == ButtonType.YES) {
-          mainView.openSaveDialog(); // delegate to MenuView's save dialog
+          mainView.openSaveDialog();
           doQuit();
         } else if (response == ButtonType.NO) {
           doQuit();
