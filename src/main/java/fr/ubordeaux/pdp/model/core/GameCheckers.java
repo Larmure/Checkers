@@ -431,8 +431,13 @@ public class GameCheckers implements Subject {
   public void undoManage() {
     if (managerUndoRedo.undo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-      notifyObservers();
     }
+
+    if (!positionHistory.isEmpty()) {
+      positionHistory.remove(positionHistory.size() - 1);
+    }
+
+    notifyObservers();
   }
 
   /**
@@ -442,8 +447,10 @@ public class GameCheckers implements Subject {
   public void redoManage() {
     if (managerUndoRedo.redo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-      notifyObservers();
     }
+
+    positionHistory.add(board.boardString());
+    notifyObservers();
   }
 
   /**
