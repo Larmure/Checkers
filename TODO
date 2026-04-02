@@ -1,7 +1,5 @@
 @Daniel
-Lors du chargement, il faut pouvoir load des plateau de taille 10 et 12 aussi
 Load de l'historique des coup ne marche pas, surtout au niveau des captures, multiple ou pas
-
 
 @Linda
 Fenêtre de reprise après pause
@@ -9,6 +7,10 @@ Fenêtre de reprise après pause
 
 @Tommy
 -ad n'est plus fonctionnel(proffondeur des ia)
+
+
+@
+chargement avec deux ia non fonctionnelle, les deux ia ne joue plus après chargement
 
 
 Question pour les profs:
