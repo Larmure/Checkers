@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.model.core;
 
 import fr.ubordeaux.pdp.model.player.PlayerColor;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * Represents a draughts (checkers) board encoded with bitboards.
@@ -78,7 +78,8 @@ public class Board {
    */
   public Board(int size) {
     if (!Utils.VALID_SIZES.contains(size)) {
-      throw new IllegalArgumentException("Invalid board size: " + size);
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.invalid_size", size));
     }
     this.sizeBoard = size;
     this.indexMax = (this.sizeBoard * this.sizeBoard) / 2;
@@ -504,7 +505,8 @@ public class Board {
    */
   private void promoteBit(int index) {
     if (index < 0 || index >= indexMax) {
-      throw new IllegalArgumentException("Move out of board bounds");
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.index_out_of_bounds", index));
     }
     if (isBitWhitePawn(index)) {
       removeWhitePawn(index);
@@ -516,7 +518,8 @@ public class Board {
       addBlackChecker(index);
       return;
     }
-    throw new IllegalArgumentException("No piece at source index: " + index);
+    throw new IllegalArgumentException(
+        Internationalization.get("board.error.no_piece_at_index", index));
   }
 
   // ---------------------------------------------------------------------------
@@ -1102,17 +1105,20 @@ public class Board {
    */
   public int squareToIndex(String square) {
     if (square == null) {
-      throw new IllegalArgumentException("Invalid square format: " + square);
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.null_square"));
     }
     char rowChar = Character.toUpperCase(square.charAt(0));
     int row = rowChar - 'A';
     int col = Integer.parseInt(square.substring(1)) - 1;
 
     if (row < 0 || row >= this.sizeBoard || col < 0 || col >= this.sizeBoard) {
-      throw new IllegalArgumentException("Index hors limites");
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.square_out_of_bounds", square));
     }
     if ((row + col) % 2 != 0) {
-      throw new IllegalArgumentException("Case blanche invalide: " + square);
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.invalid_light_square", square));
     }
     return (row * sizeBoard + col) / 2;
   }
@@ -1236,7 +1242,8 @@ public class Board {
   */
   public void restorePiece(int index, Piece type) {
     if (index < 0 || index >= indexMax) {
-      throw new IllegalArgumentException("Index hors limites");
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.index_out_of_bounds", index));
     }
     switch (type) {
       case WHITE_PAWN:
@@ -1252,7 +1259,8 @@ public class Board {
         addBlackChecker(index);
         break;
       default:
-        throw new IllegalArgumentException("Invalid piece: " + type);
+        throw new IllegalArgumentException(
+            Internationalization.get("board.error.invalid_piece_type", type));
     }
   }
 
@@ -1385,7 +1393,8 @@ public class Board {
    */
   public int manouryToIndex(int manoury) {
     if (manoury < 1 || manoury > this.indexMax) {
-      throw new IllegalArgumentException("Case Manoury hors limites: " + manoury);
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.manoury_out_of_bounds", manoury));
     }
 
     int zeroBasedManoury = manoury - 1;
@@ -1412,7 +1421,8 @@ public class Board {
    */
   public int indexToManoury(int index) {
     if (index < 0 || index >= this.indexMax) {
-      throw new IllegalArgumentException("Index interne hors limites: " + index);
+      throw new IllegalArgumentException(
+          Internationalization.get("board.error.internal_index_out_of_bounds", index));
     }
 
     int squaresPerRow = sizeBoard / 2;
@@ -1426,7 +1436,7 @@ public class Board {
 
     return (rowFromTop * squaresPerRow) + colInRow + 1; // +1 because Manoury starts at 1
   }
-  
+
   /**
    * Returns the total count of white pawns currently on the board by summing the
    * bit counts of both white pawn bitboards.
