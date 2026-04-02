@@ -556,11 +556,15 @@ public class Mcts extends Ai {
       List<String> lines = Files.readAllLines(Paths.get(filepath));
       if (lines.size() >= 2) {
         String[] firstLine = lines.get(0).split(",");
-        mlWeights = new double[firstLine.length];
+        double[] tempWeights = new double[firstLine.length];
         for (int i = 0; i < firstLine.length; i++) {
-          mlWeights[i] = Double.parseDouble(firstLine[i]);
+          tempWeights[i] = Double.parseDouble(firstLine[i]);
         }
-        mlBias = Double.parseDouble(lines.get(1));
+        double tempBias = Double.parseDouble(lines.get(1));
+
+        mlWeights = tempWeights;
+        mlBias = tempBias;
+
         System.out.println(Internationalization.get("ai.training.weights_loaded", filepath));
       }
     } catch (IOException | NumberFormatException e) {

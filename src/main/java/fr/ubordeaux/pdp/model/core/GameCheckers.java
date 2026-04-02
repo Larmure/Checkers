@@ -501,15 +501,10 @@ public class GameCheckers implements Subject {
    * @return {@code true} if the game is in an endgame scenario, {@code false} otherwise.
    */
   private boolean isEndgameScenario() {
-    int whitePawns = 0;
-    int blackPawns = 0;
-    int whiteCheckers = 0;
-    int blackCheckers = 0;
-
-    whitePawns = board.countWhitePawns();
-    blackPawns = board.countBlackPawns();
-    whiteCheckers = board.countWhiteCheckers();
-    blackCheckers = board.countBlackCheckers();
+    int whitePawns = board.whitePawnsCount();
+    int blackPawns = board.blackPawnsCount();
+    int whiteCheckers = board.whiteCheckersCount();
+    int blackCheckers = board.blackCheckersCount();
 
     int whiteTotal = whitePawns + whiteCheckers;
     int blackTotal = blackPawns + blackCheckers;
