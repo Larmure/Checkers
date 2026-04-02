@@ -128,6 +128,176 @@ Une partie prend fin dans l'un des cas suivants :
     peut effectuer de mouvement, la partie est également déclarée nulle.
 \end{description}
 
+% ============================================================
+%  Section 1.6 — Versions existantes
+%  À inclure dans le rapport principal avec \input{versions_existantes}
+% ============================================================
+
+\subsection{Versions existantes}
+
+Dans le cadre de notre phase d'analyse, nous avons étudié deux projets open-source
+de jeu de dames afin d'identifier des approches architecturales et algorithmiques
+pertinentes pour notre développement.
+
+% -----------------------------------------------------------
+\subsubsection*{AwsDame}
+% -----------------------------------------------------------
+
+\textbf{AwsDame}~\cite{awsdame} est une plateforme de jeu de dames multijoueur
+en temps réel développée dans un environnement JavaScript/Node.js.
+Bien que la pile technologique diffère de la nôtre (Java), son architecture
+réseau orientée événements offre des points de comparaison instructifs.
+
+En particulier, ce projet adopte une logique de \emph{matchmaking automatique}
+entre joueurs connectés, une idée que nous avons reprise dans notre propre
+serveur TCP. Notre classe \texttt{GameServer} implémente en effet une méthode
+\texttt{tryAutoStart()} qui détecte automatiquement la disponibilité de deux
+joueurs inactifs et déclenche une session sans intervention manuelle~:
+
+\begin{verbatim}
+// GameServer.java — démarrage automatique d'une partie
+List<PlayerSession> idlePlayers = registry.getAllPlayers().stream()
+    .filter(PlayerSession::isIdle)
+    .collect(Collectors.toList());
+
+if (idlePlayers.size() >= 2) {
+    List<PlayerSession> pair = idlePlayers.subList(0, 2);
+    GameSession session = registry.createSession(pair, sessionController);
+    // notification GAME_START envoyée aux deux joueurs
+}
+\end{verbatim}
+
+Contrairement à AwsDame qui s'appuie sur WebSockets, notre solution repose sur
+des sockets TCP bruts avec un protocole textuel simple (\texttt{REGISTER},
+\texttt{MOVE}, \texttt{GAME\_OVER}, etc.), ce qui facilite les tests en ligne
+de commande et l'intégration avec un client Java natif.
+
+% -----------------------------------------------------------
+\subsubsection*{Raven Checkers}
+% -----------------------------------------------------------
+
+\textbf{Raven Checkers}~\cite{ravencheckers} est un programme de dames
+open-source développé en Python, conçu à des fins pédagogiques pour l'étude
+des tactiques de jeu et des algorithmes d'intelligence artificielle.
+Il couple la fonction d'évaluation de \emph{Simple Checkers} aux algorithmes
+de recherche du projet AIMA~\cite{aima}.
+
+L'analyse de ce projet a principalement influencé notre implémentation
+des algorithmes d'IA. Raven Checkers propose un MinMax classique sans
+gestion du temps, ce qui le rend peu adapté à des contraintes de jeu réel.
+Notre implémentation y répond de trois façons~:
+
+\begin{enumerate}
+
+  \item \textbf{Approfondissement itératif.} Plutôt que de fixer une
+  profondeur statique, nos classes \texttt{MinMax} et \texttt{MinMaxAlphaBeta}
+  explorent l'arbre niveau par niveau, de la profondeur~1 jusqu'à
+  \texttt{maxDepth}, et conservent uniquement le résultat du dernier
+  niveau entièrement exploré. Si le budget temps expire en cours de niveau,
+  l'exploration partielle est abandonnée via une exception interne
+  \texttt{TimeExceededException}, garantissant qu'aucun résultat
+  incomplet n'est retenu.
+
+  \item \textbf{Élagage alpha-bêta.} La classe \texttt{MinMaxAlphaBeta}
+  maintient deux bornes $\alpha$ (meilleur score garanti pour le maximisant)
+  et $\beta$ (meilleur score garanti pour le minimisant). Dès que
+  $\beta \leq \alpha$, les branches restantes sont élagées, réduisant
+  significativement le nombre de n\oe{}uds évalués par rapport au MinMax pur.
+
+  \item \textbf{MCTS avec mode de sélection configurable.} Au-delà du MinMax,
+  notre classe \texttt{Mcts} implémente la méthode de Monte Carlo Tree Search,
+  avec un mode de sélection paramétrable (\texttt{UCT} ou \texttt{ML}) défini
+  par l'énumération \texttt{SelectionMode}. Cette flexibilité est absente
+  de Raven Checkers, qui ne propose qu'un seul algorithme de recherche.
+
+\end{enumerate}
+
+La fabrique \texttt{Ai.buildAi(Configuration)} centralise le choix
+de l'algorithme à l'exécution~:
+
+\begin{verbatim}
+// Ai.java — sélection de l'algorithme via la configuration
+switch (aiMode.toLowerCase()) {
+    case "minimax"   -> return new MinMax(depth, timeMs);
+    case "alphabeta" -> return new MinMaxAlphaBeta(depth, timeMs);
+    case "mcts"      -> {
+        Mcts mcts = new Mcts(depth, timeMs);
+        mcts.setSelectionMode(cfg.getSelectionMode());
+        return mcts;
+    }
+}
+\end{verbatim}
+
+% -----------------------------------------------------------
+\subsubsection*{Bilan comparatif}
+% -----------------------------------------------------------
+
+Le tableau~\ref{tab:comparaison} synthétise les principales différences entre
+les deux projets analysés et notre propre implémentation.
+
+\begin{table}[h]
+  \centering
+  \caption{Comparaison des projets existants et de notre implémentation}
+  \label{tab:comparaison}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{|l|c|c|c|}
+    \hline
+    \textbf{Critère}               & \textbf{AwsDame} & \textbf{Raven Checkers} & \textbf{Notre projet} \\
+    \hline
+    Langage                        & JavaScript       & Python                  & Java                  \\
+    \hline
+    Transport réseau               & WebSocket        & —                       & TCP (sockets)         \\
+    \hline
+    Matchmaking automatique        & Oui              & —                       & Oui                   \\
+    \hline
+    Suivi des scores               & —                & —                       & Oui (W/L/D)           \\
+    \hline
+    MinMax                         & —                & Oui                     & Oui                   \\
+    \hline
+    Élagage alpha-bêta             & —                & Non                     & Oui                   \\
+    \hline
+    Approfondissement itératif     & —                & Non                     & Oui                   \\
+    \hline
+    MCTS                           & —                & Non                     & Oui                   \\
+    \hline
+    Contrainte de temps pour l'IA  & —                & Non                     & Oui (configurable)    \\
+    \hline
+  \end{tabular}
+\end{table}
+
+L'étude de ces deux projets nous a permis de valider nos choix de conception
+et d'identifier les lacunes à combler~: gestion du temps dans la recherche
+adversariale, richesse algorithmique de l'IA, et protocole réseau adapté
+à un client Java interactif.
+
+% -----------------------------------------------------------
+%  Entrées bibliographiques à ajouter dans votre .bib
+% -----------------------------------------------------------
+%
+% @misc{awsdame,
+%   author       = {mortexsa},
+%   title        = {{AwsDame} — Multiplayer Checkers Platform},
+%   year         = {2023},
+%   howpublished = {\url{https://github.com/mortexsa/AwsDame}},
+%   note         = {Consulté le \today}
+% }
+%
+% @misc{ravencheckers,
+%   author       = {Corfman, Brandon},
+%   title        = {{Raven Checkers} — Open-source Checkers with AI},
+%   year         = {2023},
+%   howpublished = {\url{https://github.com/bcorfman/raven-checkers}},
+%   note         = {Consulté le \today}
+% }
+%
+% @book{aima,
+%   author    = {Russell, Stuart and Norvig, Peter},
+%   title     = {Artificial Intelligence: A Modern Approach},
+%   edition   = {4},
+%   publisher = {Pearson},
+%   year      = {2020}
+% }
+
 %------------------------------------------------------------------------------
 %	Options au lancement
 %------------------------------------------------------------------------------
