@@ -1,4 +1,5 @@
 \documentclass[a4paper]{article}
+
 \usepackage[svgnames]{xcolor}
 \usepackage{pdp}
 
@@ -38,6 +39,7 @@ utilisateur claire, robuste et extensible. Il s'inscrit dans une démarche de d�
 logiciel complète, intégrant la qualité du code, la documentation, les tests et les performances.
 
 \subsection{Variantes supportées}
+\label{sec:variantes}
 
 Le jeu de dames se décline en plusieurs variantes internationales, que le programme supporte via
 une option de configuration du plateau :
@@ -190,7 +192,7 @@ les blancs sont contrôlés par l'IA par défaut.
 \paragraph{Taille du damier.}
 L'option \texttt{-s}/\texttt{--size} accepte les valeurs \texttt{8}, \texttt{10}
 et \texttt{12}, correspondant respectivement aux variantes Draughts, internationale
-et canadienne décrites à la section~\ref{sec:prise-pion}.
+et canadienne décrites à la section~\ref{sec:variantes}.
 
 \paragraph{Temps de réflexion de l'IA.}
 L'option \texttt{-at}/\texttt{--ai-time} borne le temps de réflexion de l'IA en
