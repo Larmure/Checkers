@@ -7,11 +7,6 @@ Fenêtre de reprise après pause
 Il faudrait que quand on clique sur sur sauvegarde le jeu se met automatiquement
 en pause en ia vs ia, non?
 
-
-@Tommy
--ad n'est plus fonctionnel(proffondeur des ia)
-
-
 @
 Chargement avec deux ia non fonctionnelle, les deux ia ne joue plus après chargement
 On dervrait peut être rajouter un paramètre pour enregistrer la langue du jeu et pour pouvoir la modifier
