@@ -85,7 +85,7 @@ public class CommandLineInterface extends GameView {
 
     String currentPlayerName = game.getCurrentPlayer().getName();
     System.out.println(
-          String.format(Internationalization.get("game.turn"), currentPlayerName));
+        String.format(Internationalization.get("game.turn"), currentPlayerName));
 
     if (controller.isBlitz()) {
       controller.displayTime();
@@ -155,12 +155,12 @@ public class CommandLineInterface extends GameView {
         terminal = TerminalBuilder.terminal();
       } catch (IOException ex) {
         System.getLogger(CommandLineInterface.class.getName())
-              .log(System.Logger.Level.ERROR, (String) null, ex);
+            .log(System.Logger.Level.ERROR, (String) null, ex);
       }
       lineReader = LineReaderBuilder.builder()
-            .terminal(terminal)
-            .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
-            .build();
+          .terminal(terminal)
+          .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
+          .build();
 
       lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }

@@ -195,8 +195,8 @@ public class GameCheckers implements Subject {
       try {
         int manouryFrom = Integer.valueOf(fromS);
         int manouryTo = Integer.valueOf(toS);
-        from = this.board.manouryToIndex(manouryFrom);
-        to = this.board.manouryToIndex(manouryTo);
+        from = manouryFrom;
+        to = manouryTo;
       } catch (IllegalArgumentException e) {
         System.err.println(Internationalization.get("game.invalid_square") + " "
             + e.getMessage());
@@ -230,9 +230,9 @@ public class GameCheckers implements Subject {
               getCurrentPlayer().getName()));
       if (isManoury) {
         for (Move m : possibleMoves) {
-          String fromSquare = String.valueOf(this.board.indexToManoury(m.getFrom()));
-          String toSquare = String.valueOf(this.board.indexToManoury(m.getTo()));
-          System.out.println("  -> " + fromSquare + " " + toSquare);
+          String fromSquare = String.valueOf(m.getFrom());
+          String toSquare = String.valueOf(m.getTo());
+          System.out.println("  -> " + fromSquare + "-" + toSquare);
         }
       } else {
         for (Move m : possibleMoves) {
