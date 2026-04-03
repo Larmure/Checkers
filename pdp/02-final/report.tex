@@ -4,6 +4,9 @@
 \usepackage{pdp}
 \usepackage{longtable}
 \usepackage{amsmath}
+\usepackage{caption}
+\usepackage{placeins}
+\captionsetup[figure]{justification=centering, singlelinecheck=false}
 
 %------------------------------------------------------------------------------
 %	REPORT INFORMATION
@@ -11,7 +14,13 @@
 
 \title{Checkers -- Java}
 \subtitle{Rapport final}
-\author{RANDRIAMIHAJA Lalatiana, RAMANANAHERISOA Fy-Tommy, HOAREAU Faniry, ATWI Daniel, RAZAFINDRAKOTO Sarah}
+\author{%
+  \parbox[t]{0.8\textwidth}{%
+    \raggedright
+    RANDRIAMIHAJA Lalatiana \\ RAMANANAHERISOA Fy-Tommy \\ 
+    HOAREAU Faniry \\ ATWI Daniel \\ RAZAFINDRAKOTO Sarah \\
+  }%
+}
 
 %------------------------------------------------------------------------------
 
@@ -43,15 +52,33 @@ logiciel complète, intégrant la qualité du code, la documentation, les tests 
 \subsection{Variantes supportées}
 \label{sec:variantes}
 
-Le jeu de dames se décline en plusieurs variantes internationales, que le programme supporte via
-une option de configuration du plateau :
+Le jeu de dames se décline en plusieurs variantes internationales, que le programme supporte via 
+une option de configuration du plateau. Le style anglo-saxon, appelé Draughts, se joue sur un plateau de 8×8, 
+chaque joueur disposant de 12 pions. Le jeu de dames international adopte quant à lui un plateau de 10×10, 
+avec 20 pions par joueur. Enfin, les dames canadiennes étendent encore la surface de jeu avec un plateau de 12×12, 
+portant le nombre de pions à 30 par joueur.
 
-\begin{itemize}
-    \item \textbf{Draughts} (style anglo-saxon) : plateau de $8 \times 8$ ;
-    \item \textbf{Jeu de dames international} : plateau de $10 \times 10$, chaque joueur disposant
-    de 20 pions ;
-    \item \textbf{Dames canadiennes} : plateau de $12 \times 12$.
-\end{itemize}
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/board_8x8.png}
+        \caption{Plateau $8\times8$}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/board_10x10.png}
+        \caption{Plateau $10\times10$}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/board_12x12.png}
+        \caption{Plateau $12\times12$}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsection{Règles du jeu}
 
@@ -63,15 +90,26 @@ leur tour ; les blancs commencent toujours.
 
 \subsubsection{Déplacements}
 
-\begin{itemize}
-    \item Un \textbf{pion} se déplace d'une case vers l'avant en diagonale.
-    \item Un pion atteignant la dernière rangée adverse et s'y arrêtant est promu en
-    \textbf{dame} : un point jaune s'ajoute à celui-ci.
-    \item Une \textbf{dame} se déplace librement sur une même diagonale, d'autant de cases
-    qu'elle le souhaite, en avant comme en arrière.
-\end{itemize}
+Un pion se déplace d'une case vers l'avant en diagonale. Lorsqu'il atteint la dernière rangée adverse et s'y arrête, 
+il est promu en dame, ce qui se matérialise visuellement par l'ajout d'un point jaune. La dame bénéficie alors d'une 
+mobilité bien supérieure : elle peut parcourir librement une diagonale entière, d'autant de cases qu'elle le souhaite, 
+aussi bien vers l'avant que vers l'arrière.
 
-% TODO: insérer figure du plateau de jeu
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/move_pawn.png}
+        \caption{Déplacement d'un pion}
+    \end{minipage}
+    \hspace{1cm}
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/move_checker.png}
+        \caption{Déplacement d'une dame}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsubsection{La prise par un pion}
 \label{sec:prise-pion}
@@ -84,7 +122,21 @@ en position de prise, il doit continuer jusqu'à épuisement des captures possib
 pions capturés sont retirés du plateau uniquement à l'issue complète de la rafle, et non au fur
 et à mesure.
 
-% TODO: insérer figure "La prise de pion" 
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/pawn_capture.png}
+        \caption{Prise d'un pion}
+    \end{minipage}
+    \hspace{1cm}
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/rafle.png}
+        \caption{Rafle}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsubsection{La prise majoritaire}
 \label{sec:prise-majoritaire}
@@ -93,7 +145,15 @@ Lorsque plusieurs séquences de capture sont possibles, le joueur est tenu de ch
 capture le plus grand nombre de pièces, quel que soit leur rang. Ainsi, une séquence permettant
 de prendre deux pions est prioritaire sur la prise d'une dame isolée.
 
-% TODO: insérer figure "La prise majoritaire" 
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/majority_capture.png}
+        \caption{Prise majoritaire~: 2 pions vs 1 dame}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsubsection{La prise par la dame}
 \label{sec:prise-dame}
@@ -103,7 +163,21 @@ prendre tout pion situé sur sa diagonale dès lors qu'une case libre est dispon
 immédiatement après. On ne peut passer qu'une seule fois sur un même pion, mais on peut traverser deux
 fois la même case.
 
-% TODO: insérer figure "La prise par la dame" 
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/capture_checker.png}
+        \caption{Prise par la dame}
+    \end{minipage}
+    \hspace{1cm}
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/capture_checker_2.png}
+        \caption{Prise par la dame avec passage sur une même case}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsection{Conditions de fin de partie}
 
@@ -276,34 +350,6 @@ et d'identifier les lacunes à combler~: gestion du temps dans la recherche
 adversariale, richesse algorithmique de l'IA, et protocole réseau adapté
 à un client Java interactif.
 
-% -----------------------------------------------------------
-%  Entrées bibliographiques à ajouter dans votre .bib
-% -----------------------------------------------------------
-%
-% @misc{awsdame,
-%   author       = {mortexsa},
-%   title        = {{AwsDame} — Multiplayer Checkers Platform},
-%   year         = {2023},
-%   howpublished = {\url{https://github.com/mortexsa/AwsDame}},
-%   note         = {Consulté le \today}
-% }
-%
-% @misc{ravencheckers,
-%   author       = {Corfman, Brandon},
-%   title        = {{Raven Checkers} — Open-source Checkers with AI},
-%   year         = {2023},
-%   howpublished = {\url{https://github.com/bcorfman/raven-checkers}},
-%   note         = {Consulté le \today}
-% }
-%
-% @book{aima,
-%   author    = {Russell, Stuart and Norvig, Peter},
-%   title     = {Artificial Intelligence: A Modern Approach},
-%   edition   = {4},
-%   publisher = {Pearson},
-%   year      = {2020}
-% }
-
 \section{Algorithme et Structure de données}
 
 \subsection{Bitboard}
@@ -417,6 +463,8 @@ Fonction GenererCoupsDame(bitboard_dame, direction):
         
     Retourner coups_possibles
 \end{minted}
+
+\FloatBarrier
 
 
 \section{Architecture du projet}
