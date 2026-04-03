@@ -2,6 +2,8 @@
 
 \usepackage[svgnames]{xcolor}
 \usepackage{pdp}
+\usepackage{longtable}
+\usepackage{amsmath}
 
 %------------------------------------------------------------------------------
 %	REPORT INFORMATION
@@ -154,7 +156,8 @@ serveur TCP. Notre classe \texttt{GameServer} implémente en effet une méthode
 \texttt{tryAutoStart()} qui détecte automatiquement la disponibilité de deux
 joueurs inactifs et déclenche une session sans intervention manuelle~:
 
-\begin{verbatim}
+{\large
+  \begin{minted}[frame=single]{java}
 // GameServer.java — démarrage automatique d'une partie
 List<PlayerSession> idlePlayers = registry.getAllPlayers().stream()
     .filter(PlayerSession::isIdle)
@@ -165,7 +168,8 @@ if (idlePlayers.size() >= 2) {
     GameSession session = registry.createSession(pair, sessionController);
     // notification GAME_START envoyée aux deux joueurs
 }
-\end{verbatim}
+  \end{minted}
+}
 
 Contrairement à AwsDame qui s'appuie sur WebSockets, notre solution repose sur
 des sockets TCP bruts avec un protocole textuel simple (\texttt{REGISTER},
@@ -215,7 +219,8 @@ Notre implémentation y répond de trois façons~:
 La fabrique \texttt{Ai.buildAi(Configuration)} centralise le choix
 de l'algorithme à l'exécution~:
 
-\begin{verbatim}
+{\large
+  \begin{minted}[frame=single]{java}
 // Ai.java — sélection de l'algorithme via la configuration
 switch (aiMode.toLowerCase()) {
     case "minimax"   -> return new MinMax(depth, timeMs);
@@ -226,7 +231,8 @@ switch (aiMode.toLowerCase()) {
         return mcts;
     }
 }
-\end{verbatim}
+\end{minted}
+}
 
 % -----------------------------------------------------------
 \subsubsection*{Bilan comparatif}
@@ -298,106 +304,122 @@ adversariale, richesse algorithmique de l'IA, et protocole réseau adapté
 %   year      = {2020}
 % }
 
-%------------------------------------------------------------------------------
-%	Options au lancement
-%------------------------------------------------------------------------------
+\section{Algorithme et Structure de données}
 
-\section{Options au lancement}
-\label{sec:options}
+\subsection{Bitboard}
 
-Le programme se lance depuis la ligne de commande via l'exécutable \texttt{checkers}.
-La syntaxe générale est la suivante :
+Nous utilisons des bitboards pour représenter l'état du plateau. Cette approche permet de représenter l'état du plateau sous forme d'entiers primitifs et de calculer les coups de manière globale via des opérations bit à bit, offrant des performances bien supérieures aux matrices 2D classiques.
 
-\begin{minted}[frame=single]{text}
-checkers [OPTIONS]
-\end{minted}
+\subsubsection{Représentation et Numérotation des cases}
 
-Si aucune option n'est fournie, le programme démarre une interface en ligne de commande
-avec les paramètres par défaut. Les options incorrectes provoquent l'affichage d'un
-message d'erreur sur \texttt{stderr} ainsi que l'aide du programme, puis le programme
-se termine avec le code de retour~1.
+Sur les \(100\) cases d'un plateau standard (\(10 \times 10\)), seules les 50 cases noires sont utilisées. Nous utilisons la \textbf{notation de Manoury} pour numéroter ces cases actives de 0 à 49, de bas en haut et de gauche à droite.
+
+L'état complet du jeu est encodé sur quelques entiers de 64 bits (\texttt{long} en Java), où chaque bit correspond à une case active (1 si la case est occupée, 0 si elle est vide). Cela nous évite d'écrire des formules mathématiques complexes pour définir l'état du plateau : tout repose sur l'indexation binaire.
+
+\[
+\begin{array}{cccccccccc}
+\cdot & 45 & \cdot & 46 & \cdot & 47 & \cdot & 48 & \cdot & 49 \\
+40 & \cdot & 41 & \cdot & 42 & \cdot & 43 & \cdot & 44 & \cdot \\
+\cdot & 35 & \cdot & 36 & \cdot & 37 & \cdot & 38 & \cdot & 39 \\
+30 & \cdot & 31 & \cdot & 32 & \cdot & 33 & \cdot & 34 & \cdot \\
+\cdot & 25 & \cdot & 26 & \cdot & 27 & \cdot & 28 & \cdot & 29 \\
+20 & \cdot & 21 & \cdot & 22 & \cdot & 23 & \cdot & 24 & \cdot \\
+\cdot & 15 & \cdot & 16 & \cdot & 17 & \cdot & 18 & \cdot & 19 \\
+10 & \cdot & 11 & \cdot & 12 & \cdot & 13 & \cdot & 14 & \cdot \\
+\cdot & 5 & \cdot & 6 & \cdot & 7 & \cdot & 8 & \cdot & 9 \\
+0 & \cdot & 1 & \cdot & 2 & \cdot & 3 & \cdot & 4 & \cdot
+\end{array}
+\]
+
+\subsubsection{Gain de mémoire chiffré}
+
+L'intérêt premier du bitboard est la compression des données. Comparons cette approche avec une structure de données "classique" comme un tableau à deux dimensions en Java (\texttt{int[10][10]}).
+Un tableau 2D classique nécessite 100 cases, chacune stockant un entier de 32 bits, soit un total de 3200 bits pour représenter l'état du plateau. En revanche, avec les bitboards, 
+nous représentons l'ensemble du plateau avec seulement 4 variables de type \texttt{long} (64 bits chacune) : une pour les pions blancs, une pour les pions noirs, 
+un pour les dames blanches et un pour les dames noires. Cela représente seulement 256 bits au total.
+
+Le gain en mémoire vive est d'un facteur 12, ce qui accélère drastiquement les copies de plateaux lors de la recherche de l'IA.
+
+\subsubsection{Application des opérations binaires}
+
+L'avantage majeur du bitboard n'est pas seulement le stockage, mais la manipulation du plateau via le processeur. Au lieu de parcourir le plateau case par case, nous utilisons :
+\begin{itemize}
+  \item \textbf{ET logique} (\(\land\)) : Pour détecter les collisions (ex : croiser un masque de déplacement avec le bitboard des pièces adverses).
+  \item \textbf{OU logique} (\(\lor\)) : Pour fusionner les bitboards (ex : \(\text{Blancs} \lor \text{Noirs}\)) et obtenir la carte de toutes les cases occupées.
+  \item \textbf{NON logique} (\(\lnot\)) : Pour inverser la carte d'occupation et isoler instantanément toutes les cases vides du damier.
+  \item \textbf{Décalage binaire} (\(\ll\), \(\gg\)) : Pour translater toutes les pièces d'un joueur dans une direction donnée en une seule instruction d'horloge.
+\end{itemize}
+
+
+\subsection{Algorithmes de manipulation}
+
+L'intérêt de la section précédente prend tout son sens ici : la génération des coups légaux repose sur la translation temporelle des bits.
 
 \begin{table}[!ht]
-  \centering
-  \begin{tabular}{lll}
-    \hline
-    \textbf{Option}                    & \textbf{Option longue}          & \textbf{Description} \\
-    \hline
-    \texttt{-h}                        & \texttt{--help}                 & Affiche l'aide du programme. \\
-    \texttt{-V}                        & \texttt{--version}              & Affiche la version du programme. \\
-    \texttt{-v}                        & \texttt{--verbose}              & Active le mode verbeux. \\
-    \texttt{-d}                        & \texttt{--debug}                & Active l'affichage des messages de debug. \\
-    \texttt{-g}                        & \texttt{--gui}                  & Lance l'interface graphique. \\
-    \texttt{-b}                        & \texttt{--blitz}                & Active le mode blitz. \\
-    \texttt{-t TIME}                   & \texttt{--time TIME}            & Limite de temps en minutes (défaut : 30). \\
-    \texttt{-c}                        & \texttt{--contest}              & Active le mode contest. \\
-    \texttt{-s SIZE}                   & \texttt{--size SIZE}            & Taille du damier : 8, 10 ou 12 (défaut : 8). \\
-    \texttt{-a [COLOR]}                & \texttt{--ai [COLOR]}           & Active l'IA pour la couleur donnée (W/B/A). \\
-    \texttt{-at TIME}                  & \texttt{--ai-time TIME}         & Temps de réflexion de l'IA en secondes (défaut : 5). \\
-    \texttt{-am MODE}                  & \texttt{--ai-mode MODE}         & Algorithme : \texttt{minimax}, \texttt{alphabeta}, \texttt{iterative}, \texttt{mcts}. \\
-    \texttt{-ad DEPTH}                 & \texttt{--ai-depth DEPTH}       & Profondeur maximale de recherche. \\
-    \texttt{-as SELECTION}             & \texttt{--ai-mcts-selection}    & Sélection MCTS : \texttt{uct} (défaut) ou \texttt{ml}. \\
-    \hline
-  \end{tabular}
-  \caption{Options du programme.}
-  \label{tab:options}
+    \centering
+    \caption{Comparaison des décalages binaires selon la taille du plateau}
+    \label{tab:comparaison-offsets}
+    \begin{tabular}{|c|c|c||c|c||c|c|}
+        \hline
+        \textbf{Taille Plateau} & \multicolumn{2}{c||}{\textbf{8x8 (32 bits)}} & \multicolumn{2}{c||}{\textbf{10x10 (50 bits)}} & \multicolumn{2}{c|}{\textbf{12x12 (72 bits)}} \\ \hline
+        \textbf{Transition Ligne} & \textbf{P $\to$ I} & \textbf{I $\to$ P} & \textbf{P $\to$ I} & \textbf{I $\to$ P} & \textbf{P $\to$ I} & \textbf{I $\to$ P} \\ \hline
+        Haut-Gauche & $+3$ & $+4$ & $+4$ & $+5$ & $+5$ & $+6$ \\ \hline
+        Haut-Droite & $+4$ & $+5$ & $+5$ & $+6$ & $+6$ & $+7$ \\ \hline
+        Bas-Gauche  & $-5$ & $-4$ & $-6$ & $-5$ & $-7$ & $-6$ \\ \hline
+        Bas-Droite  & $-4$ & $-3$ & $-5$ & $-4$ & $-6$ & $-5$ \\ \hline
+    \end{tabular}
 \end{table}
 
-\paragraph{Mode blitz.}
-L'option \texttt{-b}/\texttt{--blitz} lance une partie en mode blitz. Le temps de
-réflexion accordé à chaque joueur est fixé à 30~minutes par défaut ; il peut être
-modifié via \texttt{-t TIME}. Si \texttt{-t} est fourni sans \texttt{-b}, un
-avertissement est affiché mais l'option est ignorée.
+\subsubsection{Déplacement et prise par un pion}
 
-\paragraph{Interface graphique.}
-L'option \texttt{-g}/\texttt{--gui} lance l'interface graphique JavaFX à la place
-du shell interactif. Toutes les autres options restent applicables.
+Lorsqu'un pion se déplace, on décale l'ensemble de son bitboard d'une direction donnée. Si le bit "atterrit" sur une position valide (une case vide, vérifiée via une opération \(\land\) sur le bitboard inversé \(\lnot(\text{Occupées})\)), le coup est légal.
 
-\paragraph{Joueur artificiel.}
-L'option \texttt{-a}/\texttt{--ai} remplace le joueur de la couleur indiquée par
-une IA. Les valeurs acceptées pour \texttt{COLOR} sont \texttt{W} (blancs),
-\texttt{B} (noirs) et \texttt{A} (les deux). Si aucune couleur n'est précisée,
-les blancs sont contrôlés par l'IA par défaut.
+\paragraph{Exemple concret de prise :}
+Pour qu'une capture soit possible, un pion doit sauter par-dessus un pion adverse et atterrir sur une case vide. Sur un plateau \(10 \times 10\), supposons un pion blanc en case 32 (ligne paire). S'il veut capturer un pion noir situé en haut à gauche (case 27, ligne impaire), le décalage pour atteindre le pion noir est de \(+5\). Pour atterrir derrière ce pion, le saut continue vers la case 21 (ligne paire), nécessitant un nouveau décalage de \(+6\).
 
-\paragraph{Taille du damier.}
-L'option \texttt{-s}/\texttt{--size} accepte les valeurs \texttt{8}, \texttt{10}
-et \texttt{12}, correspondant respectivement aux variantes Draughts, internationale
-et canadienne décrites à la section~\ref{sec:variantes}.
+Le décalage total pour cette prise est donc constant : \(5 + 6 = 11\) bits. L'opération binaire simplifiée de cette validation ressemble à cela :
 
-\paragraph{Temps de réflexion de l'IA.}
-L'option \texttt{-at}/\texttt{--ai-time} borne le temps de réflexion de l'IA en
-secondes. Si le délai est écoulé, le meilleur coup trouvé jusqu'alors est joué.
-Par défaut, le temps de réflexion est de 5~secondes.
+\[
+\text{CibleSaut} = (\text{PionBlanc} \gg 5) \land \text{PionNoir}
+\]
+\[
+\text{AtterrissageValide} = (\text{CibleSaut} \gg 6) \land \lnot(\text{Occupées})
+\]
 
-\paragraph{Algorithme de recherche.}
-L'option \texttt{-am}/\texttt{--ai-mode} sélectionne l'algorithme utilisé par l'IA.
-Les valeurs acceptées sont \texttt{minimax} (défaut), \texttt{alphabeta} pour le
-Minimax avec élagage $\alpha$-$\beta$, \texttt{iterative} pour l'approfondissement
-itératif, et \texttt{mcts} pour le Monte Carlo Tree Search.
+% TODO : insérer ici une capture d'écran illustrant cette prise spécifique (de 32 vers 21 en passant par 27) pour satisfaire le correcteur!!!!
+% \begin{figure}[!ht]
+%   \centering
+%   \includegraphics[width=0.6\textwidth]{votre_image_prise.png}
+%   \caption{Exemple d'une prise de la case 32 vers la case 21.}
+%   \label{fig:exemple_prise}
+% \end{figure}
 
-\paragraph{Profondeur de recherche.}
-L'option \texttt{-ad}/\texttt{--ai-depth} fixe la profondeur maximale de l'arbre
-de recherche. Si elle n'est pas spécifiée, la profondeur est déterminée
-automatiquement en fonction du temps de réflexion disponible.
+\subsubsection{Déplacement et prise par une dame}
 
-\paragraph{Fonction de sélection MCTS.}
-L'option \texttt{-as}/\texttt{--ai-mcts-selection} permet de choisir la politique
-de sélection utilisée par l'algorithme MCTS. La valeur \texttt{uct} (défaut)
-applique la formule UCT standard ; la valeur \texttt{ml} substitue une fonction
-de sélection obtenue par apprentissage automatique.
+Contrairement au pion, la dame peut parcourir un nombre illimité de cases vides sur une diagonale. D'un point de vue binaire, un simple décalage ne suffit pas : il faut propager le bit sur toute la diagonale jusqu'à rencontrer un obstacle. C'est la technique du \textit{sliding piece generation}.
+
+Voici le pseudo-code illustrant la génération des coups possibles pour une dame :
+
+\begin{minted}[frame=single]{text}
+Fonction GenererCoupsDame(bitboard_dame, direction):
+    coups_possibles = 0
+    // Premier decalage dans la direction souhaitee
+    rayons = decaler(bitboard_dame, direction)
+    
+    // Tant qu'on se deplace sur des cases vides
+    Tant que rayons != 0:
+        // On valide les cases vides rencontrees comme coups possibles
+        coups_possibles = coups_possibles OU (rayons ET cases_vides)
+        
+        // On continue la propagation uniquement depuis les cases vides
+        // La propagation s'arrete si on touche une piece ou le bord
+        rayons = decaler(rayons ET cases_vides, direction)
+        
+    Retourner coups_possibles
+\end{minted}
 
 
-
-\section{Première section}
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-\section{Seconde section}
+\section{Architecture du projet}
 
 Voici un exemple de code en Python :
 
@@ -417,18 +439,15 @@ Un exemple d'image flottante (Fig.~\ref{fig:example}).
   \caption{Une architecture en couches}\label{fig:example}
 \end{figure}
 
-\section*{Conclusion}
+\section{Explication approfondie}
 
-Suspendisse sit amet nisi placerat, vestibulum nisl vel, iaculis nunc.
-Suspendisse quis libero vel ipsum gravida congue nec id arcu. Donec vel mi
-viverra, commodo urna vitae, tincidunt lectus. Fusce pellentesque, lectus a
-placerat vestibulum, magna lectus placerat nibh, vehicula pellentesque lacus
-erat non nulla. Suspendisse maximus, turpis at suscipit egestas, libero massa
-ultrices libero, at tincidunt velit eros a eros. Maecenas id tempor nunc.
-Phasellus condimentum porttitor sapien in sagittis. Proin in metus diam. Mauris
-in turpis sed ex viverra iaculis. Sed lobortis, tellus vitae congue blandit, leo
-elit auctor libero, id tempor ante dolor quis quam. Donec eget ligula quam.
-Maecenas porttitor massa vel felis elementum tristique.
+\section{Revue critique de projet}
+
+\subsection{Bug}
+
+\subsection{Axes d'amélioration}
+
+\section*{Conclusion}
 
 %------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
@@ -445,25 +464,156 @@ Maecenas porttitor massa vel felis elementum tristique.
 
 \section{Liste des 40 besoins}
 
-F1. Lancement du programme
-F2. Fichier de configuration
-F3. Internationalisation (i18n)
-F4. Interface en ligne de commande
-F5. Mode blitz
-F6. Mode contest
-F7. Interface graphique
-F8. Mode IA
-F9. Taille du damier
-F10. Gestion des règles
-F11. Gestion des erreurs de l’utilisateur
-F12. Gestion du undo/redo
-F13. Gestion des conseils
-F14. Gestion du blitz
-F15. Shell interactif
-F16. Proposer de sauvegarder avant de quitter
-F17. Édition de la commande en cours
-F18. Historique des commandes tapées
-F19. Complétion des commandes
-F20. Notation des coups
+\begin{longtable}{|c|p{8cm}|c|}
+\caption{État d'avancement des besoins fonctionnels} \label{tab:besoins} \\
+
+\hline 
+\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} \\ \hline
+\endfirsthead
+
+\hline
+\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} \\ \hline
+\endhead
+
+\hline \multicolumn{3}{r}{\textit{Suite à la page suivante...}} \\
+\endfoot
+
+\hline
+\endlastfoot
+
+F1 & Lancement du programme & \\ \hline
+F2 & Fichier de configuration & \\ \hline
+F3 & Internationalisation (i18n) & \\ \hline
+F4 & Interface en ligne de commande & \\ \hline
+F5 & Mode blitz & \\ \hline
+F6 & Mode contest & \\ \hline
+F7 & Interface graphique & \\ \hline
+F8 & Mode IA & \\ \hline
+F9 & Taille du damier & \\ \hline
+F10 & Gestion des règles & \\ \hline
+F11 & Gestion des erreurs de l’utilisateur & \\ \hline
+F12 & Gestion du undo/redo & \\ \hline
+F13 & Gestion des conseils & \\ \hline
+F14 & Gestion du blitz & \\ \hline
+F15 & Shell interactif & \\ \hline
+F16 & Proposer de sauvegarder avant de quitter & \\ \hline
+F17 & Édition de la commande en cours & \\ \hline
+F18 & Historique des commandes tapées & \\ \hline
+F19 & Complétion des commandes & \\ \hline
+F20 & Notation des coups & \\ \hline
+F21 & Sauvegarde et restauration d’une partie & \\ \hline
+F22 & Commentaires dans la sauvegarde & \\ \hline
+F23 & Format des paramètres du jeu & \\ \hline
+F24 & Format du damier & \\ \hline
+F25 & Format de l’historique & \\ \hline
+F26 & Module bitboard & \\ \hline
+F27 & Algorithmes de manipulation des bitboards & \\ \hline
+F28 & Menus de l’application & \\ \hline
+F29 & Raccourcis clavier & \\ \hline
+F30 & Drag’n’Drop & \\ \hline
+F31 & Temps de réflexion borné & \\ \hline
+F32 & Minimax avec $\alpha\beta$-pruning & \\ \hline
+F33 & Fonctions d’évaluation pour Minimax & \\ \hline
+F34 & Approfondissement itératif de Minimax & \\ \hline
+F35 & Profondeur de recherche de Minimax & \\ \hline
+F36 & Monte Carlo Tree Search (MCTS) & \\ \hline
+F37 & Fonction de sélection par Machine Learning & \\ \hline
+F38 & Découverte de serveurs et connexion client-serveur basique & \\ \hline
+F39 & Serveur multi-clients et gestion de parties & \\ \hline
+F40 & Système d’invitations et gestion avancée des joueurs & \\ \hline
+\end{longtable} 
+
+
+
+
 
 \end{document}
+
+
+%------------------------------------------------------------------------------
+%	Options au lancement
+%------------------------------------------------------------------------------
+
+% \section{Options au lancement}
+% \label{sec:options}
+
+% Le programme se lance depuis la ligne de commande via l'exécutable \texttt{checkers}.
+% La syntaxe générale est la suivante :
+
+% \begin{minted}[frame=single]{text}
+% checkers [OPTIONS]
+% \end{minted}
+
+% Si aucune option n'est fournie, le programme démarre une interface en ligne de commande
+% avec les paramètres par défaut. Les options incorrectes provoquent l'affichage d'un
+% message d'erreur sur \texttt{stderr} ainsi que l'aide du programme, puis le programme
+% se termine avec le code de retour~1.
+
+% \begin{table}[!ht]
+%   \centering
+%   \begin{tabular}{lll}
+%     \hline
+%     \textbf{Option}                    & \textbf{Option longue}          & \textbf{Description} \\
+%     \hline
+%     \texttt{-h}                        & \texttt{--help}                 & Affiche l'aide du programme. \\
+%     \texttt{-V}                        & \texttt{--version}              & Affiche la version du programme. \\
+%     \texttt{-v}                        & \texttt{--verbose}              & Active le mode verbeux. \\
+%     \texttt{-d}                        & \texttt{--debug}                & Active l'affichage des messages de debug. \\
+%     \texttt{-g}                        & \texttt{--gui}                  & Lance l'interface graphique. \\
+%     \texttt{-b}                        & \texttt{--blitz}                & Active le mode blitz. \\
+%     \texttt{-t TIME}                   & \texttt{--time TIME}            & Limite de temps en minutes (défaut : 30). \\
+%     \texttt{-c}                        & \texttt{--contest}              & Active le mode contest. \\
+%     \texttt{-s SIZE}                   & \texttt{--size SIZE}            & Taille du damier : 8, 10 ou 12 (défaut : 8). \\
+%     \texttt{-a [COLOR]}                & \texttt{--ai [COLOR]}           & Active l'IA pour la couleur donnée (W/B/A). \\
+%     \texttt{-at TIME}                  & \texttt{--ai-time TIME}         & Temps de réflexion de l'IA en secondes (défaut : 5). \\
+%     \texttt{-am MODE}                  & \texttt{--ai-mode MODE}         & Algorithme : \texttt{minimax}, \texttt{alphabeta}, \texttt{iterative}, \texttt{mcts}. \\
+%     \texttt{-ad DEPTH}                 & \texttt{--ai-depth DEPTH}       & Profondeur maximale de recherche. \\
+%     \texttt{-as SELECTION}             & \texttt{--ai-mcts-selection}    & Sélection MCTS : \texttt{uct} (défaut) ou \texttt{ml}. \\
+%     \hline
+%   \end{tabular}
+%   \caption{Options du programme.}
+%   \label{tab:options}
+% \end{table}
+
+% \paragraph{Mode blitz.}
+% L'option \texttt{-b}/\texttt{--blitz} lance une partie en mode blitz. Le temps de
+% réflexion accordé à chaque joueur est fixé à 30~minutes par défaut ; il peut être
+% modifié via \texttt{-t TIME}. Si \texttt{-t} est fourni sans \texttt{-b}, un
+% avertissement est affiché mais l'option est ignorée.
+
+% \paragraph{Interface graphique.}
+% L'option \texttt{-g}/\texttt{--gui} lance l'interface graphique JavaFX à la place
+% du shell interactif. Toutes les autres options restent applicables.
+
+% \paragraph{Joueur artificiel.}
+% L'option \texttt{-a}/\texttt{--ai} remplace le joueur de la couleur indiquée par
+% une IA. Les valeurs acceptées pour \texttt{COLOR} sont \texttt{W} (blancs),
+% \texttt{B} (noirs) et \texttt{A} (les deux). Si aucune couleur n'est précisée,
+% les blancs sont contrôlés par l'IA par défaut.
+
+% \paragraph{Taille du damier.}
+% L'option \texttt{-s}/\texttt{--size} accepte les valeurs \texttt{8}, \texttt{10}
+% et \texttt{12}, correspondant respectivement aux variantes Draughts, internationale
+% et canadienne décrites à la section~\ref{sec:variantes}.
+
+% \paragraph{Temps de réflexion de l'IA.}
+% L'option \texttt{-at}/\texttt{--ai-time} borne le temps de réflexion de l'IA en
+% secondes. Si le délai est écoulé, le meilleur coup trouvé jusqu'alors est joué.
+% Par défaut, le temps de réflexion est de 5~secondes.
+
+% \paragraph{Algorithme de recherche.}
+% L'option \texttt{-am}/\texttt{--ai-mode} sélectionne l'algorithme utilisé par l'IA.
+% Les valeurs acceptées sont \texttt{minimax} (défaut), \texttt{alphabeta} pour le
+% Minimax avec élagage $\alpha$-$\beta$, \texttt{iterative} pour l'approfondissement
+% itératif, et \texttt{mcts} pour le Monte Carlo Tree Search.
+
+% \paragraph{Profondeur de recherche.}
+% L'option \texttt{-ad}/\texttt{--ai-depth} fixe la profondeur maximale de l'arbre
+% de recherche. Si elle n'est pas spécifiée, la profondeur est déterminée
+% automatiquement en fonction du temps de réflexion disponible.
+
+% \paragraph{Fonction de sélection MCTS.}
+% L'option \texttt{-as}/\texttt{--ai-mcts-selection} permet de choisir la politique
+% de sélection utilisée par l'algorithme MCTS. La valeur \texttt{uct} (défaut)
+% applique la formule UCT standard ; la valeur \texttt{ml} substitue une fonction
+% de sélection obtenue par apprentissage automatique.
