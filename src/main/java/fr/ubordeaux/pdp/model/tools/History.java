@@ -105,7 +105,7 @@ public class History {
       switch (colorChar) {
         case 'W' -> color = PlayerColor.WHITE;
         case 'B' -> color = PlayerColor.BLACK;
-        default -> 
+        default ->
           throw new IllegalArgumentException("History line must start with W or B: " + line);
       }
 
@@ -137,9 +137,9 @@ public class History {
       }
 
       if (cm.getMove().getCaptured().size() == 1) {
-        line += " {Prise simple}";
+        line += " {Prise simple} " + capturesString(cm.getMove());
       } else if (cm.getMove().getCaptured().size() >= 1) {
-        line += " {Prise multiple}";
+        line += " {Prise multiple} " + capturesString(cm.getMove());
       }
 
       if (cm.getMove().isPromotion()) {
@@ -150,6 +150,20 @@ public class History {
       h += line;
     }
     return h;
+  }
+
+  /**
+   * Generates a string representation of the captured pieces in a move.
+   *
+   * @param move the move containing captured pieces.
+   * @return a formatted string of the captured pieces.
+   */
+  private String capturesString(Move move) {
+    StringBuilder sb = new StringBuilder();
+    for (Integer cp : move.getCaptured()) {
+      sb.append(cp).append(";");
+    }
+    return sb.toString();
   }
 
   /**
