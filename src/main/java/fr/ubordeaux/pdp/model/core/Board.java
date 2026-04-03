@@ -1379,6 +1379,27 @@ public class Board {
     return sizeBoard;
   }
 
+  /**
+   * Creates a deep copy of this board.
+   *
+   * <p>The returned board has the same size and identical piece bitboards, but is an
+   * independent instance that can be safely mutated for AI search.
+   *
+   * @return a deep copy of this board state
+   */
+  public Board copy() {
+    Board clone = new Board(this.sizeBoard);
+    clone.whitePawns1 = this.whitePawns1;
+    clone.whitePawns2 = this.whitePawns2;
+    clone.blackPawns1 = this.blackPawns1;
+    clone.blackPawns2 = this.blackPawns2;
+    clone.whiteCheckers1 = this.whiteCheckers1;
+    clone.whiteCheckers2 = this.whiteCheckers2;
+    clone.blackCheckers1 = this.blackCheckers1;
+    clone.blackCheckers2 = this.blackCheckers2;
+    return clone;
+  }
+
   // ---------------------------------------------------------------------------
   // Manoury Conversion Utilities
   // ---------------------------------------------------------------------------

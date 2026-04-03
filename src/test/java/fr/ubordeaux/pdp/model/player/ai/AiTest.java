@@ -25,6 +25,7 @@ class AiTest {
     undo = Mockito.mock(ManagerUndoRedo.class);
     board = Mockito.mock(Board.class);
     evaluator = Mockito.mock(Evaluator.class);
+    Mockito.when(board.copy()).thenReturn(board);
 
     ai = new MinMax(3, 1000);
   }
