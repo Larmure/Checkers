@@ -139,15 +139,15 @@ public class Client {
   public void dispatchDefault(String commandName, String[] tokens) {
     switch (session.getMode()) {
       case LOCAL -> {
-        String[] args =
-            tokens.length > 1 ? Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
+        String[] args = tokens.length > 1 ? Arrays.copyOfRange(tokens,
+            1, tokens.length) : new String[0];
         controller.executeCommand(commandName, args);
       }
       case CONNECTED -> session.send(String.join(" ", tokens));
       case SERVER ->
-          System.out.println(
-              "[blocked] Game commands are unavailable in SERVER mode.\n"
-                  + "          Use 'server stop' to return to local mode.");
+        System.out.println(
+            "[blocked] Game commands are unavailable in SERVER mode.\n"
+                + "          Use 'server stop' to return to local mode.");
       default -> throw new IllegalStateException("Unexpected mode: " + session.getMode());
     }
   }
@@ -158,7 +158,7 @@ public class Client {
    * @param sub sub-command word.
    * @param args remaining arguments (e.g. port number).
    */
-  public  void dispatchServerCommand(String sub, String args) {
+  public void dispatchServerCommand(String sub, String args) {
     switch (sub) {
       case "list" -> {
         if (blockUnless(ClientMode.LOCAL, "server list is only available in LOCAL mode.")) {
@@ -173,7 +173,7 @@ public class Client {
           break;
         }
         String portArg = args.isBlank() ? null : args.trim();
-        String[] startArgs = portArg == null ? new String[0] : new String[] {portArg};
+        String[] startArgs = portArg == null ? new String[0] : new String[] { portArg };
         new ServerStartCommand(null, startArgs, session).execute();
       }
       case "stop" -> {
@@ -184,10 +184,10 @@ public class Client {
         new ServerStopCommand(session).execute();
       }
       default ->
-          System.out.println(
-              "Unknown server command: '"
-                  + sub
-                  + "'.\nAvailable: server list | server start [PORT] | server stop");
+        System.out.println(
+            "Unknown server command: '"
+                + sub
+                + "'.\nAvailable: server list | server start [PORT] | server stop");
     }
   }
 
@@ -229,8 +229,10 @@ public class Client {
    * SERVER    →  [server:12345] >
    * CONNECTED →  [192.168.1.1:12345] >
    * </pre>
+   *
+   * @return the prompt string to display before each input line.
    */
-  public  String prompt() {
+  public String prompt() {
     return switch (session.getMode()) {
       case SERVER -> "[server:" + ServerStartCommand.activeServer.getPort() + "] > ";
       case CONNECTED -> "[" + session.getCurrentServer() + "] > ";
@@ -238,6 +240,11 @@ public class Client {
     };
   }
 
+  /**
+   * For testing purposes: allows running the client without invoking the main class.
+   *
+   * @param args  not used.
+  */
   public static void main(String[] args) {
     new Client().run();
   }

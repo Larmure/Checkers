@@ -11,10 +11,10 @@ target/
 .project
 .idea/
 .vscode/
-
-
 pdp/02-final/report.aux
 pdp/02-final/report.log
 pdp/02-final/report.out
 pdp/02-final/_minted-report/3FFA339487ED8C45E9ABFB74BED19714F73D778D6577DD371281B40198477396.pygtex
 pdp/02-final/_minted-report/default.pygstyle
+checkers/ml_weights.txt
+ml_weights.txt

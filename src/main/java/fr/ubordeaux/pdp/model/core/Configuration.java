@@ -1,4 +1,3 @@
-
 package fr.ubordeaux.pdp.model.core;
 
 import fr.ubordeaux.pdp.model.player.ai.Ai;
@@ -95,6 +94,11 @@ public class Configuration {
           + Ai.DEFAULT_MAX_TIME_MS + " ms.");
       aiTime = Ai.DEFAULT_MAX_TIME_MS;
     }
+    if (aiDepth <= 0) {
+      System.out.println("Warning: Invalid AI depth, changed to "
+          + Ai.DEFAULT_DEPTH + ".");
+      aiDepth = Ai.DEFAULT_DEPTH;
+    }
 
     this.blitz = blitz;
     this.time = time;
@@ -134,7 +138,6 @@ public class Configuration {
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
   }
-  
 
   /**
    * Copy constructor that creates a new Configuration object by copying the

@@ -14,7 +14,9 @@ public class PlayerSession {
 
   /** Possible lifecycle states for a connected player. */
   public enum Status {
+    /** Player is not currently in a game. */
     IDLE,
+    /** Player is currently in a game. */
     INGAME
   }
 
@@ -155,16 +157,16 @@ public class PlayerSession {
   public int getGamesPlayed() {
     return gamesPlayed;
   }
-  
+
   @Override
   public String toString() {
     return String.format(
-          "%-10s %-15s %-6s W:%d L:%d D:%d",
-          id,
-          name,
-          status.name().toLowerCase(),
-          wins,
-          losses,
-          draws);
+        "%-10s %-15s %-6s W:%d L:%d D:%d",
+        id,
+        name,
+        status.name().toLowerCase(),
+        wins,
+        losses,
+        draws);
   }
 }
