@@ -93,29 +93,49 @@ public class History {
         continue;
       }
 
-      line = line.replaceAll("\\{.*?\\}", "").trim();
-
-      if (line.isEmpty()) {
-        continue;
-      }
-
       char colorChar = line.charAt(0);
       PlayerColor color;
 
       switch (colorChar) {
         case 'W' -> color = PlayerColor.WHITE;
         case 'B' -> color = PlayerColor.BLACK;
-        default -> 
+        default ->
           throw new IllegalArgumentException("History line must start with W or B: " + line);
       }
 
-      String moveText = line.substring(1).trim();
+      String afterColor = line.substring(1).trim();
+
+      // Extract moveText (first token - before first space)
+      int firstSpace = afterColor.indexOf(" ");
+      String moveText;
+      if (firstSpace != -1) {
+        moveText = afterColor.substring(0, firstSpace);
+      } else {
+        moveText = afterColor;
+      }
 
       if (moveText.isEmpty()) {
         throw new IllegalArgumentException("Missing move after color: " + line);
       }
 
-      Move move = Move.fromSaveString(moveText);
+      // Extract captures (after last closing brace if exists, or from the end)
+      String capturesString = null;
+      int lastBrace = afterColor.lastIndexOf("}");
+      if (lastBrace != -1) {
+        capturesString = afterColor.substring(lastBrace + 1).trim();
+      } else {
+        // If no brace, capture everything after the move
+        String rest = afterColor.substring(moveText.length()).trim();
+        if (!rest.isEmpty() && rest.contains(";")) {
+          capturesString = rest;
+        }
+      }
+
+      if (capturesString != null && capturesString.isEmpty()) {
+        capturesString = null;
+      }
+
+      Move move = Move.fromSaveString(moveText, capturesString);
       history.add(new ColorMove(color, move));
     }
   }
@@ -137,9 +157,9 @@ public class History {
       }
 
       if (cm.getMove().getCaptured().size() == 1) {
-        line += " {Prise simple}";
+        line += " {Prise simple} " + capturesString(cm.getMove());
       } else if (cm.getMove().getCaptured().size() >= 1) {
-        line += " {Prise multiple}";
+        line += " {Prise multiple} " + capturesString(cm.getMove());
       }
 
       if (cm.getMove().isPromotion()) {
@@ -150,6 +170,20 @@ public class History {
       h += line;
     }
     return h;
+  }
+
+  /**
+   * Generates a string representation of the captured pieces in a move.
+   *
+   * @param move the move containing captured pieces.
+   * @return a formatted string of the captured pieces.
+   */
+  private String capturesString(Move move) {
+    StringBuilder sb = new StringBuilder();
+    for (Integer cp : move.getCaptured()) {
+      sb.append(cp).append(";");
+    }
+    return sb.toString();
   }
 
   /**
