@@ -93,12 +93,6 @@ public class History {
         continue;
       }
 
-      line = line.replaceAll("\\{.*?\\}", "").trim();
-
-      if (line.isEmpty()) {
-        continue;
-      }
-
       char colorChar = line.charAt(0);
       PlayerColor color;
 
@@ -109,13 +103,39 @@ public class History {
           throw new IllegalArgumentException("History line must start with W or B: " + line);
       }
 
-      String moveText = line.substring(1).trim();
+      String afterColor = line.substring(1).trim();
+
+      // Extract moveText (first token - before first space)
+      int firstSpace = afterColor.indexOf(" ");
+      String moveText;
+      if (firstSpace != -1) {
+        moveText = afterColor.substring(0, firstSpace);
+      } else {
+        moveText = afterColor;
+      }
 
       if (moveText.isEmpty()) {
         throw new IllegalArgumentException("Missing move after color: " + line);
       }
 
-      Move move = Move.fromSaveString(moveText);
+      // Extract captures (after last closing brace if exists, or from the end)
+      String capturesString = null;
+      int lastBrace = afterColor.lastIndexOf("}");
+      if (lastBrace != -1) {
+        capturesString = afterColor.substring(lastBrace + 1).trim();
+      } else {
+        // If no brace, capture everything after the move
+        String rest = afterColor.substring(moveText.length()).trim();
+        if (!rest.isEmpty() && rest.contains(";")) {
+          capturesString = rest;
+        }
+      }
+
+      if (capturesString != null && capturesString.isEmpty()) {
+        capturesString = null;
+      }
+
+      Move move = Move.fromSaveString(moveText, capturesString);
       history.add(new ColorMove(color, move));
     }
   }
