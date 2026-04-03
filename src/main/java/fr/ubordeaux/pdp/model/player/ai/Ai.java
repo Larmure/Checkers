@@ -269,7 +269,7 @@ public abstract class Ai {
         mcts.setSelectionMode(cfg.getSelectionMode());
         return mcts;
       case "iterative":
-        // return new IterativeDeepening(depth, timeMs);
+        return new IterativeDeepening(depth, timeMs);
       default:
         throw new IllegalArgumentException("Invalid AI mode: " + aiMode);
     }
