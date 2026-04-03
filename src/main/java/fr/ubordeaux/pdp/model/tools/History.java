@@ -55,7 +55,7 @@ public class History {
     if (history.size() != 0) {
       history.removeLast();
     } else {
-      throw new IllegalArgumentException("History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.empty"));
     }
   }
 
@@ -69,7 +69,7 @@ public class History {
     if (history.size() != 0) {
       return history.peekLast().getMove();
     } else {
-      throw new IllegalArgumentException("History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.empty"));
     }
   }
 
@@ -100,7 +100,8 @@ public class History {
         case 'W' -> color = PlayerColor.WHITE;
         case 'B' -> color = PlayerColor.BLACK;
         default ->
-          throw new IllegalArgumentException("History line must start with W or B: " + line);
+          throw new IllegalArgumentException(
+              Internationalization.get("history.error.invalid_line_prefix", line));
       }
 
       String afterColor = line.substring(1).trim();
@@ -115,7 +116,8 @@ public class History {
       }
 
       if (moveText.isEmpty()) {
-        throw new IllegalArgumentException("Missing move after color: " + line);
+        throw new IllegalArgumentException(
+            Internationalization.get("history.error.missing_move_after_color", line));
       }
 
       // Extract captures (after last closing brace if exists, or from the end)
@@ -157,13 +159,15 @@ public class History {
       }
 
       if (cm.getMove().getCaptured().size() == 1) {
-        line += " {Prise simple} " + capturesString(cm.getMove());
+        line += " {" + Internationalization.get("history.capture.single") + "} "
+            + capturesString(cm.getMove());
       } else if (cm.getMove().getCaptured().size() >= 1) {
-        line += " {Prise multiple} " + capturesString(cm.getMove());
+        line += " {" + Internationalization.get("history.capture.multiple") + "} "
+            + capturesString(cm.getMove());
       }
 
       if (cm.getMove().isPromotion()) {
-        line += " {Promotion}";
+        line += " {" + Internationalization.get("history.promotion") + "}";
       }
 
       line += "\n";
@@ -206,7 +210,7 @@ public class History {
     if (redoHistory.size() != 0) {
       return redoHistory.peekLast().getMove();
     } else {
-      throw new IllegalArgumentException("Redo History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.redo_empty"));
     }
   }
 
@@ -219,7 +223,7 @@ public class History {
     if (!redoHistory.isEmpty()) {
       redoHistory.removeLast();
     } else {
-      throw new IllegalArgumentException("Redo History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.redo_empty"));
     }
   }
 

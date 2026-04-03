@@ -87,8 +87,6 @@ class HistoryTest {
         assertThrows(IllegalArgumentException.class, () -> history.getLastMove());
     }
 
-
-    
     @Test
     void testHistoryStringWhitePrefix() {
         history.addMove(PlayerColor.WHITE, simpleMove());
@@ -105,19 +103,20 @@ class HistoryTest {
     void testHistoryStringSimpleCapture() {
         history.addMove(PlayerColor.WHITE, singleCapture());
         String s = history.historyString();
-        assertTrue(s.contains("{Prise simple}"));
+        assertTrue(s.contains("{" + Internationalization.get("history.capture.single") + "}"));
     }
 
     @Test
     void testHistoryStringMultipleCapture() {
         history.addMove(PlayerColor.WHITE, multiCapture());
-        assertTrue(history.historyString().contains("{Prise multiple}"));
+        assertTrue(history.historyString()
+                .contains("{" + Internationalization.get("history.capture.multiple") + "}"));
     }
 
     @Test
     void testHistoryStringPromotion() {
         history.addMove(PlayerColor.WHITE, promotionMove());
-        assertTrue(history.historyString().contains("{Promotion}"));
+        assertTrue(history.historyString().contains("{" + Internationalization.get("history.promotion") + "}"));
     }
 
     @Test
@@ -127,6 +126,6 @@ class HistoryTest {
         String s = history.historyString();
         assertTrue(s.contains("W 21-17"));
         assertTrue(s.contains("B 21x14"));
-        assertTrue(s.contains("{Prise simple}"));
+        assertTrue(s.contains("{" + Internationalization.get("history.capture.single") + "}"));
     }
 }

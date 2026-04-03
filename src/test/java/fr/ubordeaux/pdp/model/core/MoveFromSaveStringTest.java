@@ -84,9 +84,9 @@ public class MoveFromSaveStringTest {
 
   @Test
   public void fromSaveString_singleCapture_isCapture() {
-    Move move = Move.fromSaveString("21x14");
+    Move move = Move.fromSaveString("21x14", "17;");
 
-    //assertTrue(move.isCapture());
+    assertTrue(move.isCapture());
   }
 
   @Test
@@ -139,9 +139,34 @@ public class MoveFromSaveStringTest {
 
   @Test
   public void fromSaveString_multiCapture_isCapture() {
+    Move move = Move.fromSaveString("21x14x7", "17;10;");
+
+    assertTrue(move.isCapture());
+  }
+
+  @Test
+  public void fromSaveString_multiCapture_isNotSimpleMove() {
     Move move = Move.fromSaveString("21x14x7");
 
-    //assertTrue(move.isCapture());
+    assertFalse(move.isSimpleMove());
+  }
+
+  @Test
+  public void fromSaveString_longMultiCapture_withFourSquares() {
+    Move move = Move.fromSaveString("21x14x7x2", "17;10;5;");
+
+    assertEquals(21, move.getFrom());
+    assertEquals(2, move.getTo());
+    assertEquals(Arrays.asList(21, 14, 7, 2), move.getPath());
+    assertTrue(move.isCapture());
+  }
+
+  @Test
+  public void fromSaveString_multiCapture_withoutCapturedList_isNotSimpleMove() {
+    Move move = Move.fromSaveString("21x14x7", "17;10;");
+
+    assertFalse(move.isSimpleMove());
+    assertTrue(move.isCapture());
   }
 
   // ---------------------------------------------------------------------------
@@ -164,9 +189,39 @@ public class MoveFromSaveStringTest {
 
   @Test
   public void fromSaveString_multiCaptureWithPromotion_isCapture() {
-    Move move = Move.fromSaveString("21x14x7 (promotion)");
+    Move move = Move.fromSaveString("21x14x7 (promotion)", "17;10;");
 
-    //assertTrue(move.isCapture());
+    assertTrue(move.isCapture());
+  }
+
+  @Test
+  public void fromSaveString_singleCapture_withCapturedSquares_parsesCapturedList() {
+    Move move = Move.fromSaveString("21x14", "17;");
+
+    assertTrue(move.isCapture());
+    assertEquals(Arrays.asList(17), move.getCaptured());
+  }
+
+  @Test
+  public void fromSaveString_multiCapture_withCapturedSquares_parsesCapturedList() {
+    Move move = Move.fromSaveString("21x14x7", "17;10;");
+
+    assertTrue(move.isCapture());
+    assertEquals(Arrays.asList(17, 10), move.getCaptured());
+  }
+
+  @Test
+  public void fromSaveString_simpleMove_withCapturedSquares_marksAsCapture() {
+    Move move = Move.fromSaveString("21-14", "17;");
+
+    assertTrue(move.isCapture());
+    assertFalse(move.isSimpleMove());
+    assertEquals(Arrays.asList(17), move.getCaptured());
+  }
+
+  @Test
+  public void fromSaveString_capture_withInvalidCapturedSquare_throwsIllegalArgumentException() {
+    assertThrows(IllegalArgumentException.class, () -> Move.fromSaveString("21x14", "17;abc;"));
   }
 
   // ---------------------------------------------------------------------------
@@ -198,13 +253,14 @@ public class MoveFromSaveStringTest {
   public void fromSaveString_roundTripCaptureWithPromotion_preservesAllFields() {
     Move original = new Move(Arrays.asList(21, 14, 7), Arrays.asList(17, 10));
     original.setPromotion(true);
-    Move restored = Move.fromSaveString(original.toString());
+    // For round-trip, we need to provide the captured squares since toString doesn't include them
+    Move restored = Move.fromSaveString(original.toString(), "17;10;");
 
     assertEquals(original.getFrom(), restored.getFrom());
     assertEquals(original.getTo(), restored.getTo());
     assertEquals(original.getPath(), restored.getPath());
     assertTrue(restored.isPromotion());
-    //assertTrue(restored.isCapture());
+    assertTrue(restored.isCapture());
   }
 
   // ---------------------------------------------------------------------------
