@@ -5,9 +5,9 @@
     "editor.defaultFormatter": "redhat.java",
     "editor.rulers": [
       100
-    ]
+    ],
+    "editor.formatOnSave": true
   },
-  "editor.formatOnSave": true,
   "java.format.settings.url": "${workspaceFolder}/.checkstyle/google_checks.xml",
   "java.format.settings.profile": "GoogleStyle",
   "java.format.comments.enabled": false

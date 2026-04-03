@@ -66,6 +66,12 @@ public class MenuView extends MenuBar {
   /** Optional configuration provided from CLI startup flags. */
   private final Configuration cliConfig;
 
+  /** Game menu item: undo last move. */
+  private MenuItem undoItem;
+
+  /** Game menu item: redo last undone move. */
+  private MenuItem redoItem;
+
   /**
    * Primary application stage. Set by {@link #setStage(Stage)} after
    * {@code stage.show()} so that modal dialogs have a proper owner window.
@@ -195,13 +201,19 @@ public class MenuView extends MenuBar {
    * @return the configured {@link Menu}
    */
   private Menu buildGameMenu() {
-    MenuItem undoItem = new MenuItem(Internationalization.get("menu.undo"));
+    undoItem = new MenuItem(Internationalization.get("menu.undo"));
     undoItem.setAccelerator(shortcutManager.get("undo"));
-    undoItem.setOnAction(e -> controller.executeCommand("undo", new String[] { "1" }));
+    undoItem.setOnAction(e -> {
+      int steps = (controller.isWhiteAi() != controller.isBlackAi()) ? 2 : 1;
+      controller.executeCommand("undo", new String[] { String.valueOf(steps) });
+    });
 
-    MenuItem redoItem = new MenuItem(Internationalization.get("menu.redo"));
+    redoItem = new MenuItem(Internationalization.get("menu.redo"));
     redoItem.setAccelerator(shortcutManager.get("redo"));
-    redoItem.setOnAction(e -> controller.executeCommand("redo", new String[] { "1" }));
+    redoItem.setOnAction(e -> {
+      int steps = (controller.isWhiteAi() != controller.isBlackAi()) ? 2 : 1;
+      controller.executeCommand("redo", new String[] { String.valueOf(steps) });
+    });
 
     MenuItem pauseItem = new MenuItem(Internationalization.get("menu.pause"));
     pauseItem.setAccelerator(shortcutManager.get("pause"));
@@ -423,6 +435,20 @@ public class MenuView extends MenuBar {
     if (wasInGame && controller.getGame() != null
         && controller.getGame().getState() == State.PAUSE) {
       controller.executeCommand("continue", new String[0]);
+    }
+  }
+
+  /**
+   * Enables or disables the Undo and Redo menu items. Called by the controller
+   *
+   * @param disable true to disable the items, false to enable them
+   */
+  public void setDisableUndoRedo(boolean disable) {
+    if (undoItem != null) {
+      undoItem.setDisable(disable);
+    }
+    if (redoItem != null) {
+      redoItem.setDisable(disable);
     }
   }
 }
