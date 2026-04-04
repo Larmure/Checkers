@@ -176,7 +176,7 @@ public class Move {
    * @throws IllegalArgumentException if the string format is invalid
    */
   public static Move fromSaveString(String text) {
-    return fromSaveString(text, null);
+    return fromSaveString(text, false, null);
   }
 
   /**
@@ -187,8 +187,7 @@ public class Move {
    * @return the created move instance
    * @throws IllegalArgumentException if the string format is invalid
    */
-  public static Move fromSaveString(String text, String capturesString) {
-    System.out.println("Parsing move from string: '" + text + "'"); // Debug statement
+  public static Move fromSaveString(String text, boolean promotion, String capturesString) {
     if (text == null) {
       throw new IllegalArgumentException("Move text is null");
     }
@@ -196,14 +195,6 @@ public class Move {
     String s = text.trim();
     if (s.isEmpty()) {
       throw new IllegalArgumentException("Move text is empty");
-    }
-
-    boolean promotion = false;
-    String promoSuffix = "(promotion)";
-
-    if (s.endsWith(promoSuffix)) {
-      promotion = true;
-      s = s.substring(0, s.length() - promoSuffix.length()).trim();
     }
 
     boolean isCapture = s.contains("x");
