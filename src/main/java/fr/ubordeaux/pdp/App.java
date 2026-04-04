@@ -457,4 +457,49 @@ public class App {
     aiDepth = Ai.DEFAULT_DEPTH;
     selectionMode = Mcts.DEFAULT_SELECTION_MODE;
   }
+
+  /**
+   * Returns the maximum time allowed for AI moves.
+   *
+   * @return AI time limit in milliseconds.
+   */
+  public static long getAiTime() {
+    return aiTime;
+  }
+
+  /**
+   * Returns the configured search depth for AI algorithms.
+   *
+   * @return AI search depth.
+   */
+  public static int getAiDepth() {
+    return aiDepth;
+  }
+
+  /**
+   * Checks whether white is controlled by an AI player.
+   *
+   * @return true if white AI is enabled.
+   */
+  public static boolean isWhiteAi() {
+    return whiteAi;
+  }
+
+  /**
+   * Checks whether black is controlled by an AI player.
+   *
+   * @return true if black AI is enabled.
+   */
+  public static boolean isBlackAi() {
+    return blackAi;
+  }
+
+  /**
+   * Returns the selection strategy used by the MCTS AI.
+   *
+   * @return active MCTS selection mode.
+   */
+  public static SelectionMode getSelectionMode() {
+    return selectionMode;
+  }
 }
