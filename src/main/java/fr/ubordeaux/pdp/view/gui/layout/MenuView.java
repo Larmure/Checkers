@@ -321,7 +321,7 @@ public class MenuView extends MenuBar {
    * based on whether the expected file was actually created on disk.
    */
   public void openSaveDialog() {
-    if (controller.getGame() == null || controller.getGame().checkGameOver() == State.FINISHED) {
+    if (controller.getGame() == null || controller.getGame().getState() == State.FINISHED) {
       showError(Internationalization.get("dialog.no_game"), Internationalization.get(
           "dialog.no_game_content"));
       return;

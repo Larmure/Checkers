@@ -55,8 +55,8 @@ public class SaveBoard {
    * @throws IOException if the file cannot be created or written
    */
   public void saveToFile(String fileName) throws IOException {
-    if (game.checkGameOver() == State.FINISHED) {
-      System.out.println("The game is already over");
+    if (game.getState() == State.FINISHED) {
+      System.out.println("Save refused: the game is already over.");
       return;
     }
     createSaveDirectory();
@@ -98,29 +98,34 @@ public class SaveBoard {
     String aiDepth = "0";
 
     if (whiteIsAi && blackIsAi) {
-      AiPlayer whitePlayer = (AiPlayer) game.getWhitePlayer();
-      AiPlayer blackPlayer = (AiPlayer) game.getBlackPlayer();
+      throw new IOException("Saving with two AI players is not supported.");
+    }
 
-      String whiteAlgo = whitePlayer.getAlgorithm().getClass().getSimpleName();
-      String blackAlgo = blackPlayer.getAlgorithm().getClass().getSimpleName();
+    if (whiteIsAi || blackIsAi) {
+      AiPlayer aiPlayer = whiteIsAi
+          ? (AiPlayer) game.getWhitePlayer()
+          : (AiPlayer) game.getBlackPlayer();
 
-      aiMode = "both-" + whiteAlgo + "-" + blackAlgo;
-      aiDepth = whitePlayer.getAlgorithm().getMaxDepth()
-          + "-" + blackPlayer.getAlgorithm().getMaxDepth();
+      String algorithmName = aiPlayer.getAlgorithm().getClass().getSimpleName();
+      String algorithm;
 
-    } else if (whiteIsAi) {
-      AiPlayer whitePlayer = (AiPlayer) game.getWhitePlayer();
+      if ("MinMax".equals(algorithmName)) {
+        algorithm = "minimax";
+      } else if ("MinMaxAlphaBeta".equals(algorithmName)) {
+        algorithm = "alphabeta";
+      } else if ("Mcts".equals(algorithmName)) {
+        algorithm = "mcts";
+      } else {
+        throw new IOException("Unknown AI algorithm: " + algorithmName);
+      }
 
-      String whiteAlgo = whitePlayer.getAlgorithm().getClass().getSimpleName();
-      aiMode = "white-" + whiteAlgo;
-      aiDepth = String.valueOf(whitePlayer.getAlgorithm().getMaxDepth());
+      if (whiteIsAi) {
+        aiMode = "white-" + algorithm;
+      } else {
+        aiMode = "black-" + algorithm;
+      }
 
-    } else if (blackIsAi) {
-      AiPlayer blackPlayer = (AiPlayer) game.getBlackPlayer();
-
-      String blackAlgo = blackPlayer.getAlgorithm().getClass().getSimpleName();
-      aiMode = "black-" + blackAlgo;
-      aiDepth = String.valueOf(blackPlayer.getAlgorithm().getMaxDepth());
+      aiDepth = String.valueOf(aiPlayer.getAlgorithm().getMaxDepth());
     }
 
     writer.write("ai-mode=" + aiMode + "\n");

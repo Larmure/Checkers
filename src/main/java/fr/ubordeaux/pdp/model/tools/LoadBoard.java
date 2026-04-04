@@ -65,10 +65,8 @@ public class LoadBoard {
   private Boolean loadedWhiteAi = null;
   /** The loaded black AI flag. */
   private Boolean loadedBlackAi = null;
-  /** The loaded white AI algorithm name. */
-  private String loadedWhiteAiAlgorithm = null;
-  /** The loaded black AI algorithm name. */
-  private String loadedBlackAiAlgorithm = null;
+  /** The loaded AI algorithm name. */
+  private String loadedAiMode = null;
   /**the loaded depth of AI.*/
   private int loadedAiDepth = 0;
   /** Buffered move history. */
@@ -204,8 +202,7 @@ public class LoadBoard {
     loadedAiDepth = 0;
     loadedWhiteAi = null;
     loadedBlackAi = null;
-    loadedWhiteAiAlgorithm = null;
-    loadedBlackAiAlgorithm = null;
+    loadedAiMode = null;
     historyBuffer = new StringBuilder();
     loadedBoardLines = new ArrayList<>();
   }
@@ -248,6 +245,15 @@ public class LoadBoard {
   }
 
   /**
+   * Checks whether at least one AI player is active.
+   *
+   * @return {@code true} if white or black is controlled by an AI
+   */
+  private boolean hasActiveAi() {
+    return Boolean.TRUE.equals(loadedWhiteAi) || Boolean.TRUE.equals(loadedBlackAi);
+  }
+
+  /**
    * Checks that all mandatory sections were found.
    *
    * @return {@code true} if the file is valid
@@ -277,6 +283,21 @@ public class LoadBoard {
               + loadedBoardLines.size()
               + ".");
       return false;
+    }
+
+    if (hasActiveAi()) {
+      if (loadedAiMode == null || loadedAiMode.equals("none")) {
+        System.err.println("Format error: active AI requires a valid ai-mode.");
+        return false;
+      }
+      if (loadedAiDepth <= 0) {
+        System.err.println("Format error: active AI requires ai-depth > 0.");
+        return false;
+      }
+      if (loadedAiTime <= 0) {
+        System.err.println("Format error: active AI requires ai-time > 0.");
+        return false;
+      }
     }
     return true;
   }
@@ -343,77 +364,21 @@ public class LoadBoard {
         if (value.equalsIgnoreCase("none")) {
           loadedWhiteAi = false;
           loadedBlackAi = false;
-          loadedWhiteAiAlgorithm = null;
-          loadedBlackAiAlgorithm = null;
+          loadedAiMode = "none";
 
         } else if (value.startsWith("white-")) {
-          String[] tokens = value.split("-", 2);
-          if (tokens.length != 2 || tokens[1].isBlank()) {
-            throw new Exception("Invalid ai-mode format: '" + value + "'.");
-          }
-
+          String algo = value.substring("white-".length()).toLowerCase();
+          validateAiAlgorithm(algo);
           loadedWhiteAi = true;
           loadedBlackAi = false;
-          loadedBlackAiAlgorithm = null;
-
-          if (tokens[1].equals("MinMax")) {
-            loadedWhiteAiAlgorithm = "minimax";
-          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
-            loadedWhiteAiAlgorithm = "alphabeta";
-          } else if (tokens[1].equals("Mcts")) {
-            loadedWhiteAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown white AI algorithm: '" + tokens[1] + "'.");
-          }
+          loadedAiMode = algo;
 
         } else if (value.startsWith("black-")) {
-          String[] tokens = value.split("-", 2);
-          if (tokens.length != 2 || tokens[1].isBlank()) {
-            throw new Exception("Invalid ai-mode format: '" + value + "'.");
-          }
-
+          String algo = value.substring("black-".length()).toLowerCase();
+          validateAiAlgorithm(algo);
           loadedWhiteAi = false;
           loadedBlackAi = true;
-          loadedWhiteAiAlgorithm = null;
-
-          if (tokens[1].equals("MinMax")) {
-            loadedBlackAiAlgorithm = "minimax";
-          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
-            loadedBlackAiAlgorithm = "alphabeta";
-          } else if (tokens[1].equals("Mcts")) {
-            loadedBlackAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown black AI algorithm: '" + tokens[1] + "'.");
-          }
-
-        } else if (value.startsWith("both-")) {
-          String[] tokens = value.split("-", 3);
-          if (tokens.length != 3 || tokens[1].isBlank() || tokens[2].isBlank()) {
-            throw new Exception("Invalid ai-mode format: '" + value + "'.");
-          }
-
-          loadedWhiteAi = true;
-          loadedBlackAi = true;
-
-          if (tokens[1].equals("MinMax")) {
-            loadedWhiteAiAlgorithm = "minimax";
-          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
-            loadedWhiteAiAlgorithm = "alphabeta";
-          } else if (tokens[1].equals("Mcts")) {
-            loadedWhiteAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown white AI algorithm: '" + tokens[1] + "'.");
-          }
-
-          if (tokens[2].equals("MinMax")) {
-            loadedBlackAiAlgorithm = "minimax";
-          } else if (tokens[2].equals("MinMaxAlphaBeta")) {
-            loadedBlackAiAlgorithm = "alphabeta";
-          } else if (tokens[2].equals("Mcts")) {
-            loadedBlackAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown black AI algorithm: '" + tokens[2] + "'.");
-          }
+          loadedAiMode = algo;
 
         } else {
           throw new Exception("Invalid ai-mode value: '" + value + "'.");
@@ -422,7 +387,7 @@ public class LoadBoard {
 
       case "ai-depth" -> {
         int depth = Integer.parseInt(value);
-        if (depth < 0) {
+        if (depth < 0 || depth >= 15) {
           throw new Exception("Invalid ai-depth: '" + value + "'.");
         }
         loadedAiDepth = depth;
@@ -438,6 +403,20 @@ public class LoadBoard {
       default -> {
         // Unknown keys are ignored.
       }
+    }
+  }
+
+  /**
+   * Validates the loaded AI algorithm name.
+   *
+   * @param algo the algorithm name read from the save file
+   * @throws Exception if the algorithm is not supported
+   */
+  private void validateAiAlgorithm(String algo) throws Exception {
+    if (!algo.equals("minimax")
+        && !algo.equals("alphabeta")
+        && !algo.equals("mcts")) {
+      throw new Exception("Unknown AI algorithm: '" + algo + "'.");
     }
   }
 
@@ -515,12 +494,7 @@ public class LoadBoard {
     int aiDepth = loadedAiDepth != 0 ? loadedAiDepth : defaults.getAiDepth();
     long aiTime = loadedAiTime != 0 ? loadedAiTime : defaults.getAiTime();
 
-    String aiMode = defaults.getAiMode();
-    if (loadedWhiteAiAlgorithm != null) {
-      aiMode = loadedWhiteAiAlgorithm;
-    } else if (loadedBlackAiAlgorithm != null) {
-      aiMode = loadedBlackAiAlgorithm;
-    }
+    String aiMode = loadedAiMode != null ? loadedAiMode : defaults.getAiMode();
 
     return new Configuration(
         blitz,

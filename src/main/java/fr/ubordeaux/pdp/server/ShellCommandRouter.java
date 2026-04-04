@@ -9,6 +9,7 @@ import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import java.util.Arrays;
 
 /**
  * Single dispatch point for all user input.
@@ -54,7 +55,17 @@ public class ShellCommandRouter {
 
     String trimmed = input.trim();
 
-    if (isMove(trimmed)) {
+    if (session.getMode() == ClientMode.LOCAL && isMove(trimmed)) {
+      handleLocalMove(trimmed);
+      return;
+    }
+
+    if (session.getMode() == ClientMode.LOCAL && isManouryMove(trimmed)) {
+      handleLocalManouryMove(trimmed);
+      return;
+    }
+
+    if (session.getMode() == ClientMode.CONNECTED && isMove(trimmed)) {
       handleMove(trimmed);
       return;
     }
@@ -66,26 +77,53 @@ public class ShellCommandRouter {
    * Returns {@code true} if the input matches the move regex (e.g. {@code E1 F2}).
    *
    * @param input trimmed input line.
+   * @return {@code true} if the input matches {@link Utils#MOVE_REGEX}.
    */
   private boolean isMove(String input) {
     return input.matches(Utils.MOVE_REGEX);
   }
 
   /**
-   * Handles a move command.
+   * Returns {@code true} if the input matches the Manoury move regex
+   * (e.g. {@code 12-16}).
    *
-   * <p>If connected, sends {@code MOVE from-to} to the remote server.
-   *  Otherwise,  executes locally via the controller.
+   * @param input trimmed input line.
+   * @return {@code true} if the input matches {@link Utils#MANOURY_REGEX}.
+   */
+  private boolean isManouryMove(String input) {
+    return input.matches(Utils.MANOURY_REGEX);
+  }
+
+  /**
+   * Handles a local standard move.
+   *
+   * @param input trimmed move string (e.g. {@code "E1 F2"}).
+   */
+  private void handleLocalMove(String input) {
+    String[] tokens = input.split("\\s+");
+    controller.executeMove(tokens[0], tokens[1], false);
+  }
+
+  /**
+   * Handles a local Manoury move.
+   *
+   * @param input trimmed move string (e.g. {@code "12-16"}).
+   */
+  private void handleLocalManouryMove(String input) {
+    String[] tokens = input.split("-");
+    controller.executeMove(tokens[0], tokens[1], true);
+  }
+
+  /**
+   * Handles a move command in connected mode.
+   *
+   * <p>Sends {@code MOVE from-to} to the remote server.
    *
    * @param input trimmed move string (e.g. {@code "E1 F2"}).
    */
   private void handleMove(String input) {
     String[] tokens = input.split("\\s+");
-    if (session.getMode() == ClientMode.CONNECTED) {
-      session.send("MOVE " + tokens[0] + "-" + tokens[1]);
-    } else {
-      controller.executeMove(tokens[0], tokens[1], false);
-    }
+    session.send("MOVE " + tokens[0] + "-" + tokens[1]);
   }
 
   /**
@@ -206,7 +244,7 @@ public class ShellCommandRouter {
         String commandName = tokens[0];
         String[] args =
             tokens.length > 1
-                ? java.util.Arrays.copyOfRange(tokens, 1, tokens.length)
+                ? Arrays.copyOfRange(tokens, 1, tokens.length)
                 : new String[0];
         controller.executeCommand(commandName, args);
       }
@@ -218,6 +256,7 @@ public class ShellCommandRouter {
    * Returns {@code true} if the command is allowed in SERVER mode.
    *
    * @param cmd lowercase command keyword.
+   * @return {@code true} if the command is allowed in SERVER mode.
    */
   private boolean isServerManagementCommand(String cmd) {
     return cmd.equals("status") || cmd.equals("players") || cmd.equals("scoreboard");
