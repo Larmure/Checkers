@@ -1,13 +1,7 @@
 package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.controller.commands.HelpClientCommand;
-import fr.ubordeaux.pdp.controller.commands.JoinCommand;
-import fr.ubordeaux.pdp.controller.commands.PingCommand;
-import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
-import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
-import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
-import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
+import fr.ubordeaux.pdp.controller.commands.*;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import java.util.Arrays;
 
@@ -212,10 +206,16 @@ public class ShellCommandRouter {
 
   /** Handles the {@code quit} command. */
   private void handleQuit() {
-    QuitClientCommand quit = new QuitClientCommand(session);
-    quit.execute();
-    if (quit.shouldExit()) {
-      System.exit(0);
+    switch (session.getMode()) {
+      case LOCAL -> new QuitCommand(controller).execute();
+      case CONNECTED -> {
+        new QuitClientCommand(session).execute();
+        new QuitCommand(controller).execute();
+      }
+      case SERVER -> System.out.println(
+          "[blocked] Use 'server stop' to stop the server.");
+      default -> throw new IllegalStateException(
+          "Unexpected mode: " + session.getMode());
     }
   }
 
