@@ -9,6 +9,7 @@ import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
+import java.util.Locale;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -242,7 +243,8 @@ public class MainView extends BorderPane {
       playView.update(game);
 
       String name = game.getCurrentPlayer().getName();
-      turnLabel.setText(Internationalization.get("toolbar.turn") + name.toUpperCase());
+      turnLabel.setText(Internationalization.get("toolbar.turn")
+          + name.toUpperCase(Locale.ROOT));
 
       boolean isAiTurn = game.getCurrentPlayer() instanceof AiPlayer;
 

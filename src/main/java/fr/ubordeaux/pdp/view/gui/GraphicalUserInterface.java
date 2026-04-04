@@ -4,10 +4,12 @@ import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -143,9 +145,8 @@ public class GraphicalUserInterface extends GameView {
     }
     gameOverAlert = true;
 
-    String winnerName = game.isWhiteTurn()
-        ? game.getBlackPlayer().getName()
-        : game.getWhitePlayer().getName();
+    Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
+    String winnerName = winner.getName();
 
     Platform.runLater(() -> {
       Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -233,18 +234,20 @@ public class GraphicalUserInterface extends GameView {
    * <p>Must be called on the JavaFX Application Thread.
    */
   public void requestQuit() {
-    if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+    GameCheckers game = controller.getGame();
+    if (game != null && game.getState() == State.IN_GAME) {
       // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }
-    if (controller.getGame() != null && controller.hasUnsavedChanges()) {
+    if (game != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
       confirm.setTitle(Internationalization.get("gui.quit.title"));
       confirm.setHeaderText(Internationalization.get("gui.quit.unsaved_changes"));
       confirm.setContentText(Internationalization.get("gui.quit.save_prompt"));
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
 
-      confirm.showAndWait().ifPresent(response -> {
+      Optional<ButtonType> result = confirm.showAndWait();
+      result.ifPresent(response -> {
         if (response == ButtonType.YES) {
           mainView.openSaveDialog(); // delegate to MenuView's save dialog
           doQuit();
@@ -265,6 +268,5 @@ public class GraphicalUserInterface extends GameView {
    */
   private void doQuit() {
     Platform.exit();
-    System.exit(0);
   }
 }

@@ -7,6 +7,7 @@ import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
+import java.util.Locale;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -46,6 +47,9 @@ import javafx.scene.layout.VBox;
  * the user cancels.
  */
 public class ConfigDialog extends Dialog<Configuration> {
+
+  /** Display label for Minimax AI mode. */
+  private static final String MINIMAX = "Minimax";
 
   /** Board size selector: 8, 10 or 12. */
   private final ComboBox<Integer> sizeCombo = new ComboBox<>();
@@ -320,7 +324,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     aiCombo.setDisable(!aiEnabled);
 
     String mode = aiCombo.getValue();
-    boolean depthSupported = "Minimax".equals(mode) || "Alpha-Beta".equals(mode);
+    boolean depthSupported = MINIMAX.equals(mode) || "Alpha-Beta".equals(mode);
     aiDepthSpinner.setDisable(!aiEnabled || !depthSupported);
 
     boolean mctsSelected = "MCTS".equals(mode);
@@ -357,13 +361,13 @@ public class ConfigDialog extends Dialog<Configuration> {
 
   private static String toDisplayAiMode(String aiMode) {
     if (aiMode == null) {
-      return "Minimax";
+      return MINIMAX;
     }
-    return switch (aiMode.toLowerCase()) {
+    return switch (aiMode.toLowerCase(Locale.ROOT)) {
       case "alphabeta" -> "Alpha-Beta";
       case "mcts" -> "MCTS";
-      case "minimax" -> "Minimax";
-      default -> "Minimax";
+      case "minimax" -> MINIMAX;
+      default -> MINIMAX;
     };
   }
 
@@ -371,7 +375,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     if (aiMode == null) {
       return Utils.DEFAULT_AI_MODE;
     }
-    return switch (aiMode.trim().toLowerCase()) {
+    return switch (aiMode.trim().toLowerCase(Locale.ROOT)) {
       case "alpha-beta", "alphabeta" -> "alphabeta";
       case "mcts" -> "mcts";
       case "minimax" -> "minimax";
@@ -391,7 +395,7 @@ public class ConfigDialog extends Dialog<Configuration> {
       return Mcts.DEFAULT_SELECTION_MODE;
     }
     try {
-      return SelectionMode.valueOf(mode.trim().toUpperCase());
+      return SelectionMode.valueOf(mode.trim().toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
       return Mcts.DEFAULT_SELECTION_MODE;
     }

@@ -61,7 +61,7 @@ public class MenuView extends MenuBar {
   private GraphicalUserInterface gui;
 
   /** Keyboard shortcut manager used to bind menu accelerators. */
-  private ShortcutManager shortcutManager;
+  private final ShortcutManager shortcutManager;
 
   /** Optional configuration provided from CLI startup flags. */
   private final Configuration cliConfig;

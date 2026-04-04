@@ -1,7 +1,14 @@
 package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.controller.commands.*;
+import fr.ubordeaux.pdp.controller.commands.HelpClientCommand;
+import fr.ubordeaux.pdp.controller.commands.JoinCommand;
+import fr.ubordeaux.pdp.controller.commands.PingCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import java.util.Arrays;
 
@@ -161,7 +168,7 @@ public class ShellCommandRouter {
           return;
         }
         String portArg = args.isBlank() ? null : args.trim();
-        String[] startArgs = portArg == null ? new String[0] : new String[]{portArg};
+        String[] startArgs = portArg == null ? new String[0] : new String[] { portArg };
         new ServerStartCommand(controller, startArgs, session).execute();
       }
       case "stop" -> {
@@ -171,9 +178,9 @@ public class ShellCommandRouter {
         new ServerStopCommand(session).execute();
       }
       default ->
-          System.out.println(
-              "Unknown server command: '" + sub + "'.\n"
-                  + "Available: server list | server start [PORT] | server stop");
+        System.out.println(
+            "Unknown server command: '" + sub + "'.\n"
+                + "Available: server list | server start [PORT] | server stop");
     }
   }
 
@@ -236,16 +243,15 @@ public class ShellCommandRouter {
           session.send(raw);
         } else {
           System.out.println("""
-                             [blocked] Game commands unavailable in SERVER mode.
-                                       Use 'server stop' to return to local mode.""");
+              [blocked] Game commands unavailable in SERVER mode.
+                        Use 'server stop' to return to local mode.""");
         }
       }
       case LOCAL -> {
         String commandName = tokens[0];
-        String[] args =
-            tokens.length > 1
-                ? Arrays.copyOfRange(tokens, 1, tokens.length)
-                : new String[0];
+        String[] args = tokens.length > 1
+            ? Arrays.copyOfRange(tokens, 1, tokens.length)
+            : new String[0];
         controller.executeCommand(commandName, args);
       }
       default -> throw new IllegalStateException("Unexpected mode: " + session.getMode());
