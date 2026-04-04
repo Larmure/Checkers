@@ -487,7 +487,140 @@ Un exemple d'image flottante (Fig.~\ref{fig:example}).
   \caption{Une architecture en couches}\label{fig:example}
 \end{figure}
 
-\section{Explication approfondie}
+\section{Explication approfondie : Monte Carlo Tree Search (MCTS)}
+
+\subsection{Logique théorique de l'algorithme}
+
+Contrairement à l'algorithme Minimax qui tente d'évaluer exhaustivement toutes les branches jusqu'à une profondeur donnée, 
+le MCTS repose sur des simulations statistiques probabilistes. La recherche s'effectue en répétant une boucle de quatre phases fondamentales
+ jusqu'à épuisement du temps de réflexion imparti :
+
+\subsubsection{Sélection} 
+À chaque itération, l'algorithme part de la racine de l'arbre (l'état actuel du damier) et descend vers les feuilles. 
+Pour choisir quel chemin emprunter, il utilise la formule UCT (Upper Confidence Bound applied to Trees):
+$$UCT_{j} = \frac{w_{j}}{n_{j}} + C \sqrt{\frac{\ln n}{n_{j}}}$$
+
+Où :
+\begin{itemize}
+    \item $w_j$ représente le nombre de victoires accumulées par les simulations passant par le nœud enfant $j$.
+    \item $n_j$ est le nombre total de simulations ayant traversé ce nœud $j$.
+    \item $n$ est le nombre total de visites du nœud parent.
+    \item $C$ est la constante d'exploration.
+\end{itemize}
+
+\textit{Concrètement :} Cette formule résout le dilemme "Exploration vs Exploitation". Le terme de gauche 
+favorise les coups ayant un fort taux de victoire (exploitation), tandis que le terme de droite grandit pour les coups peu testés
+ (exploration). Si un nœud enfant n'a jamais été visité, sa valeur est considérée comme infinie pour forcer l'algorithme à tester chaque
+  coup légal au moins une fois.
+
+\subsubsection{Expansion} 
+Une fois arrivé sur un nœud dont tous les coups possibles n'ont pas encore été explorés, l'algorithme choisit un de ces mouvements
+ non testés, crée un nouveau nœud dans l'arbre pour représenter ce nouvel état, et passe à la phase suivante.
+
+\subsubsection{Simulation} 
+Depuis ce nœud nouvellement créé, l'algorithme lance une partie virtuelle. Il joue des coups totalement aléatoires pour les deux 
+joueurs jusqu'à atteindre un état final (victoire, défaite ou égalité).
+\subsubsection{Rétropropagation}  
+Une fois la partie simulée terminée, le résultat (victoire, défaite ou nul) est remonté le long de l'arbre en suivant
+ le chemin exact pris lors de la phase de sélection. Tous les nœuds ancêtres traversés voient leurs statistiques mises à jour :
+  incrémentation de leur compteur de visites, et ajustement de leur score de victoire selon le camp gagnant.
+
+% ----------------------------------------------------------------------
+
+% ----------------------------------------------------------------------
+
+\subsection{Implémentation et optimisations dans notre projet}
+
+Notre classe \texttt{Mcts} gère cette recherche de manière optimisée en traduisant cette théorie à travers des choix d'architecture précis.
+
+\subsubsection{Traduction des phases en code}
+La boucle principale est gérée par la méthode \texttt{calculateBestMove()}, qui s'exécute tant que la limite de temps (\texttt{isTimeExceeded}) n'est pas atteinte. 
+
+Lors de la phase de \textbf{sélection}, la formule UCT est appliquée par \texttt{bestChildByUcb1()}. Si $n_j = 0$, la méthode renvoie 
+\texttt{Double.MAX\_VALUE} pour assurer l'exploration initiale :
+
+\begin{minted}[frame=single, fontsize=\small]{java}
+double score = child.visits == 0
+    ? Double.MAX_VALUE
+    : child.winRate() + explorationConstant * Math.sqrt(logVisits / child.visits);
+\end{minted}
+
+Lors de la \textbf{simulation} (\texttt{simulate()}), pour éviter des parties virtuelles infinies sur des situations bloquées, nous avons 
+introduit une limite stricte de profondeur (\texttt{SIMULATION\_DEPTH = 60}). Si cette limite est atteinte sans vainqueur, la partie rapporte 
+un score de parité (\texttt{DRAW\_SCORE = 0.5}), contre \texttt{WIN\_SCORE = 1.0} pour une victoire.
+
+\subsubsection{Optimisation mémoire (ManagerUndoRedo)}
+L'un des plus grands défis du MCTS est la gestion de la mémoire. Au lieu de cloner l'objet \texttt{Board} des milliers de fois pour
+ chaque nœud et simulation (ce qui saturerait la RAM et ralentirait drastiquement l'exécution), nous utilisons une instance unique 
+ du plateau couplée à un \texttt{ManagerUndoRedo}. Chaque coup testé lors de la sélection, de l'expansion et de la simulation est 
+ appliqué physiquement sur le plateau, puis proprement annulé lors de la phase de \texttt{backpropagate} :
+
+\begin{minted}[frame=single, fontsize=\small]{java}
+// Rétropropagation : on remonte jusqu'à la racine en annulant les coups joués
+while (current != null) {
+    current.visits++;
+    // Mise à jour des scores...
+    
+    // Annulation physique du coup sur le plateau unique
+    if (current.move != null) {
+        undo.undo(current.player == PlayerColor.WHITE);
+    }
+    current = current.parent;
+}
+\end{minted}
+
+\subsubsection{Guidage par Machine Learning}
+
+\paragraph{Pipeline d'entraînement du modèle}
+Pour générer les poids (\texttt{mlWeights}) et le biais (\texttt{mlBias}) utilisés par cette fonction, nous avons implémenté un pipeline
+ d'apprentissage supervisé autonome dans la classe \texttt{LogisticRegressionTrainer}. L'entraînement s'effectue via l'option en ligne de 
+ commande \texttt{-tr}. Le processus se divise en trois grandes étapes :
+
+\begin{enumerate}
+    \item \textbf{Génération des données par Self-Play :} L'application fait s'affronter deux instances de l'IA (MCTS pur) l'une 
+    contre l'autre. Pour éviter les parties infinies, une limite stricte de 100 coups est fixée (\texttt{MAX\_MOVES}). À chaque demi-coup,
+     un vecteur de 6 caractéristiques (\textit{features}) est extrait du plateau :
+    \begin{itemize}
+        \item Nombre de pions blancs et noirs.
+        \item Nombre de dames blanches et noires.
+        \item Différentiel de pions (Blancs - Noirs).
+        \item Différentiel de dames (Blancs - Noirs).
+    \end{itemize}
+    Si la partie aboutit à une victoire, tous les vecteurs de cette partie sont étiquetés avec le résultat réel 
+    ($1.0$ pour une victoire des blancs, $0.0$ pour les noirs). Les parties nulles sont ignorées pour ne pas bruiter le modèle.
+
+    \item \textbf{Optimisation par descente de gradient :} Une fois les données collectées (par défaut sur 10 parties), 
+    la méthode \texttt{train()} ajuste les poids itérativement sur 1000 \textit{epochs}. À chaque étape, pour chaque vecteur d'état,
+     le modèle effectue une prédiction. L'erreur par rapport au résultat réel (\textit{label}) est calculée, et les poids sont mis à 
+     jour selon un taux d'apprentissage (\texttt{learningRate = 0.01}) :
+    $$W_{j} = W_{j} - \alpha \times \text{erreur} \times X_{j}$$
+    Où $\alpha$ est le taux d'apprentissage, $W_j$ le poids de la caractéristique $j$, et $X_j$ la valeur de la caractéristique.
+
+    \item \textbf{Sauvegarde et chargement :} À l'issue de l'entraînement, les poids finaux et le biais sont sauvegardés dans un 
+    fichier texte (\texttt{ml\_weights.txt}). Ce fichier est ensuite chargé dynamiquement par \texttt{Mcts} lors de son 
+    instanciation, garantissant une séparation propre entre la phase d'entraînement et la phase d'inférence (jeu).
+\end{enumerate}
+
+\paragraph{Bilan de l'approche}
+Bien évidemment, ce mode de sélection par apprentissage automatique n'a pas démontré de gain significatif en termes de 
+performance ou de qualité de jeu par rapport à l'UCT classique. Cela s'explique par la simplicité de notre modèle : 
+la régression logistique est un modèle linéaire, et nos 6 \textit{features} mathématiques (uniquement basées sur le comptage matériel)
+ ne capturent pas les subtilités positionnelles du jeu de dames. 
+
+Cependant, cette implémentation robuste démontre l'extensibilité de notre architecture. Le pipeline de génération de données, 
+d'entraînement et d'inférence est pleinement fonctionnel, ce qui ouvre la porte à des améliorations futures plus sophistiquées 
+(comme le remplacement de la régression logistique par un réseau de neurones profond évaluant des motifs complexes) pour renforcer drastiquement 
+l'intelligence de notre agent.
+
+\subsubsection{Détermination du meilleur coup final}
+
+À l'épuisement du temps de réflexion imparti, l'arbre cesse de croître. Quelle que soit l'heuristique de sélection utilisée durant la recherche 
+(la formule UCT classique ou les prédictions du modèle de Machine Learning), la décision finale ne se base pas sur ces scores d'évaluation. 
+
+L'IA fait appel à la méthode \texttt{mostVisitedChild()}, qui sélectionne le nœud enfant de la racine possédant le 
+\textbf{plus grand nombre de visites}. Ce critère est privilégié car il est statistiquement le plus robuste : une branche très visitée 
+signifie qu'elle a continuellement été considérée comme la plus prometteuse par l'algorithme, et qu'elle a survécu à un grand nombre de
+ simulations face aux meilleures réponses possibles de l'adversaire.
 
 \section{Revue critique de projet}
 
