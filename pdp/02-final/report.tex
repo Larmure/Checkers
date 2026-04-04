@@ -230,7 +230,7 @@ serveur TCP. Notre classe \texttt{GameServer} implémente en effet une méthode
 \texttt{tryAutoStart()} qui détecte automatiquement la disponibilité de deux
 joueurs inactifs et déclenche une session sans intervention manuelle~:
 
-{\large
+{\small
   \begin{minted}[frame=single]{java}
 // GameServer.java — démarrage automatique d'une partie
 List<PlayerSession> idlePlayers = registry.getAllPlayers().stream()
@@ -293,7 +293,7 @@ Notre implémentation y répond de trois façons~:
 La fabrique \texttt{Ai.buildAi(Configuration)} centralise le choix
 de l'algorithme à l'exécution~:
 
-{\large
+{\small
   \begin{minted}[frame=single]{java}
 // Ai.java — sélection de l'algorithme via la configuration
 switch (aiMode.toLowerCase()) {
@@ -388,18 +388,24 @@ Le gain en mémoire vive est d'un facteur 12, ce qui accélère drastiquement le
 
 \subsubsection{Application des opérations binaires}
 
-L'avantage majeur du bitboard n'est pas seulement le stockage, mais la manipulation du plateau via le processeur. Au lieu de parcourir le plateau case par case, nous utilisons :
+L'avantage majeur du bitboard n'est pas seulement le stockage, mais la manipulation du plateau via le processeur. 
+Au lieu de parcourir le plateau case par case, nous utilisons :
 \begin{itemize}
-  \item \textbf{ET logique} (\(\land\)) : Pour détecter les collisions (ex : croiser un masque de déplacement avec le bitboard des pièces adverses).
-  \item \textbf{OU logique} (\(\lor\)) : Pour fusionner les bitboards (ex : \(\text{Blancs} \lor \text{Noirs}\)) et obtenir la carte de toutes les cases occupées.
-  \item \textbf{NON logique} (\(\lnot\)) : Pour inverser la carte d'occupation et isoler instantanément toutes les cases vides du damier.
-  \item \textbf{Décalage binaire} (\(\ll\), \(\gg\)) : Pour translater toutes les pièces d'un joueur dans une direction donnée en une seule instruction d'horloge.
+  \item \textbf{ET logique} (\(\land\)) : Pour détecter les collisions (ex : croiser un masque de déplacement 
+  avec le bitboard des pièces adverses).
+  \item \textbf{OU logique} (\(\lor\)) : Pour fusionner les bitboards (ex : \(\text{Blancs} \lor \text{Noirs}\)) 
+  et obtenir la carte de toutes les cases occupées.
+  \item \textbf{NON logique} (\(\lnot\)) : Pour inverser la carte d'occupation et isoler instantanément toutes les 
+  cases vides du damier.
+  \item \textbf{Décalage binaire} (\(\ll\), \(\gg\)) : Pour translater toutes les pièces d'un joueur dans 
+  une direction donnée en une seule instruction d'horloge.
 \end{itemize}
 
 
 \subsection{Algorithmes de manipulation}
 
-L'intérêt de la section précédente prend tout son sens ici : la génération des coups légaux repose sur la translation temporelle des bits.
+L'intérêt de la section précédente prend tout son sens ici : la génération des coups légaux repose sur la translation 
+temporelle des bits.
 
 \begin{table}[!ht]
     \centering
@@ -418,12 +424,19 @@ L'intérêt de la section précédente prend tout son sens ici : la génération
 
 \subsubsection{Déplacement et prise par un pion}
 
-Lorsqu'un pion se déplace, on décale l'ensemble de son bitboard d'une direction donnée. Si le bit "atterrit" sur une position valide (une case vide, vérifiée via une opération \(\land\) sur le bitboard inversé \(\lnot(\text{Occupées})\)), le coup est légal.
+Lorsqu'un pion se déplace, on décale l'ensemble de son bitboard d'une direction donnée. 
+Si le bit "atterrit" sur une position valide (une case vide, vérifiée via une opération \(\land\) 
+sur le bitboard inversé \(\lnot(\text{Occupées})\)), le coup est légal.
 
 \paragraph{Exemple concret de prise :}
-Pour qu'une capture soit possible, un pion doit sauter par-dessus un pion adverse et atterrir sur une case vide. Sur un plateau \(10 \times 10\), supposons un pion blanc en case 32 (ligne paire). S'il veut capturer un pion noir situé en haut à gauche (case 27, ligne impaire), le décalage pour atteindre le pion noir est de \(+5\). Pour atterrir derrière ce pion, le saut continue vers la case 21 (ligne paire), nécessitant un nouveau décalage de \(+6\).
+Pour qu'une capture soit possible, un pion doit sauter par-dessus un pion adverse et atterrir sur une case vide. 
+Sur un plateau \(10 \times 10\), supposons un pion blanc en case 32 (ligne paire). 
+S'il veut capturer un pion noir situé en haut à gauche (case 27, ligne impaire), 
+le décalage pour atteindre le pion noir est de \(+5\). Pour atterrir derrière ce pion, 
+le saut continue vers la case 21 (ligne paire), nécessitant un nouveau décalage de \(+6\).
 
-Le décalage total pour cette prise est donc constant : \(5 + 6 = 11\) bits. L'opération binaire simplifiée de cette validation ressemble à cela :
+Le décalage total pour cette prise est donc constant : \(5 + 6 = 11\) bits. 
+L'opération binaire simplifiée de cette validation ressemble à cela :
 
 \[
 \text{CibleSaut} = (\text{PionBlanc} \gg 5) \land \text{PionNoir}
@@ -442,10 +455,13 @@ Le décalage total pour cette prise est donc constant : \(5 + 6 = 11\) bits. L'o
 
 \subsubsection{Déplacement et prise par une dame}
 
-Contrairement au pion, la dame peut parcourir un nombre illimité de cases vides sur une diagonale. D'un point de vue binaire, un simple décalage ne suffit pas : il faut propager le bit sur toute la diagonale jusqu'à rencontrer un obstacle. C'est la technique du \textit{sliding piece generation}.
+Contrairement au pion, la dame peut parcourir un nombre illimité de cases vides sur une diagonale. 
+D'un point de vue binaire, un simple décalage ne suffit pas : il faut propager le bit sur toute la diagonale 
+jusqu'à rencontrer un obstacle. C'est la technique du \textit{sliding piece generation}.
 
 Voici le pseudo-code illustrant la génération des coups possibles pour une dame :
 
+{ \small
 \begin{minted}[frame=single]{text}
 Fonction GenererCoupsDame(bitboard_dame, direction):
     coups_possibles = 0
@@ -463,29 +479,61 @@ Fonction GenererCoupsDame(bitboard_dame, direction):
         
     Retourner coups_possibles
 \end{minted}
+}
+
 
 \FloatBarrier
 
+% ============================================================
+%  Section 3 — Architecture du projet
+% ============================================================
 
 \section{Architecture du projet}
 
-Voici un exemple de code en Python :
+\subsection{Le Moteur de Jeu}
 
-{\large
-  \begin{minted}[frame=single]{python}
-def hello_world():
-    print("Hello, World!")
-hello_world()
-  \end{minted}
+L'architecture de notre application repose sur le patron Modèle-Vue-Contrôleur (MVC). Cette section détaille la conception de notre moteur de jeu (qui incarne le Modèle) et la façon dont il interagit avec le reste du programme pour assurer le bon déroulement d'une partie.
+
+\subsubsection{Rôle et responsabilités}
+
+Le moteur de jeu, regroupé dans le package \texttt{model}, a pour unique mission de simuler et de faire tourner la partie de dames. Il se concentre purement sur la logique mathématique et les règles officielles : il ne gère absolument pas les clics de souris, la saisie clavier ou l'affichage graphique. 
+
+Ses responsabilités sont réparties entre deux classes majeures. D'un côté, la classe \texttt{Board} agit comme le moteur physique du damier : elle manipule les pièces, valide si un coup respecte la géométrie du plateau et applique les règles de prises obligatoires. De l'autre, la classe \texttt{GameCheckers} incarne l'arbitre de la partie. C'est elle qui maintient l'état global du système. Elle garde la trace du joueur actif, stocke l'historique des mouvements pour permettre les retours en arrière (undo/redo), et détecte les conditions de fin de partie (victoire, blocage, ou match nul par répétition).
+
+\subsubsection{Interface de communication (API)}
+
+Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{GameCheckers} expose une interface de communication claire basée sur des actions d'entrée et des notifications de sortie.
+
+En entrée, l'interface graphique ou textuelle ne modifie jamais le plateau directement. Elle passe par le \texttt{GameController} qui interroge d'abord le moteur via \texttt{getPossibleMoves(player)} pour s'assurer qu'une action est légale, puis lui demande de l'exécuter avec la méthode \texttt{applyMove(from, to)}.
+
+En sortie, le moteur dicte le rythme grâce au patron de conception Observateur. Au lieu de forcer l'interface graphique à vérifier constamment si quelque chose a changé, le moteur travaille en silence et émet un signal de mise à jour via \texttt{notifyObservers()} uniquement lorsqu'un mouvement valide vient de modifier l'état du jeu.
+
+\subsubsection{Choix techniques et boucle de contrôle}
+
+D'un point de vue technique, la représentation du plateau ne repose pas sur un simple tableau à deux dimensions, mais sur des \textit{bitboards} (comme détaillé dans la section algorithmique). Ce choix garantit un accès et une manipulation en temps $O(1)$ via des opérations binaires.
+
+Concernant la dynamique, le jeu s'exécute au tour par tour, géré par une machine à états simple définie par l'énumération \texttt{State} (\texttt{IN\_GAME}, \texttt{PAUSE}, \texttt{FINISHED}). L'évolution du système lors de l'application d'un coup suit toujours la même séquence logique stricte :
+
+{\small
+\begin{minted}[frame=single]{java}
+// Extrait simplifié de GameCheckers.java : évolution de l'état du système
+public void applyMove(String from, String to, boolean isManoury) {
+    // 1. Délégation de la physique au plateau
+    board.applyMove(move);
+    
+    // 2. Mise à jour de l'état global (historique et tour de jeu)
+    managerUndoRedo.registerMove(currentColor, move);
+    this.isWhiteTurn = !this.isWhiteTurn;
+    
+    // 3. Signal de fin d'opération à l'interface
+    notifyObservers();
+}
+\end{minted}
 }
 
-Un exemple d'image flottante (Fig.~\ref{fig:example}).
+Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vérifie si la partie est terminée. Si le jeu continue, il oriente le flux vers une attente de saisie utilisateur, ou lance immédiatement la réflexion de l'algorithme si le joueur suivant est une intelligence artificielle.
 
-\begin{figure}[!ht]
-  \centering
-  \frame{\includegraphics[width=.85\textwidth]{layered_architectures.png}}
-  \caption{Une architecture en couches}\label{fig:example}
-\end{figure}
+\subsubsection{Indépendance du moteur}
 
 \section{Explication approfondie : Monte Carlo Tree Search (MCTS)}
 
@@ -621,6 +669,10 @@ L'IA fait appel à la méthode \texttt{mostVisitedChild()}, qui sélectionne le 
 \textbf{plus grand nombre de visites}. Ce critère est privilégié car il est statistiquement le plus robuste : une branche très visitée 
 signifie qu'elle a continuellement été considérée comme la plus prometteuse par l'algorithme, et qu'elle a survécu à un grand nombre de
  simulations face aux meilleures réponses possibles de l'adversaire.
+Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
+
+Ce choix de conception a été décisif pour notre flux de travail. Il nous a permis de développer, de faire tourner et de tester massivement l'intégralité du moteur de jeu et de l'IA via une interface textuelle simple, avant même de commencer à coder l'interface graphique. Remplacer le terminal par la vue JavaFX n'a nécessité aucune modification des classes du moteur.
+\section{Explication approfondie}
 
 \section{Revue critique de projet}
 
