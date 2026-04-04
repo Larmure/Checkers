@@ -84,20 +84,24 @@ public class Configuration {
           + Utils.DEFAULT_BOARD_SIZE + ".");
       size = Utils.DEFAULT_BOARD_SIZE;
     }
-    if (!Utils.VALID_AI_MODES.contains(aiMode)) {
-      System.out.println("Warning: Invalid AI mode, changed to "
-          + Utils.DEFAULT_AI_MODE + ".");
-      aiMode = Utils.DEFAULT_AI_MODE;
-    }
-    if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
-      System.out.println("Warning: Invalid AI time, changed to "
-          + Ai.DEFAULT_MAX_TIME_MS + " ms.");
-      aiTime = Ai.DEFAULT_MAX_TIME_MS;
-    }
-    if (aiDepth <= 0) {
-      System.out.println("Warning: Invalid AI depth, changed to "
-          + Ai.DEFAULT_DEPTH + ".");
-      aiDepth = Ai.DEFAULT_DEPTH;
+
+    boolean hasAi = whiteAi || blackAi;
+    if(hasAi) {
+      if (!Utils.VALID_AI_MODES.contains(aiMode)) {
+        System.out.println("Warning: Invalid AI mode, changed to "
+            + Utils.DEFAULT_AI_MODE + ".");
+        aiMode = Utils.DEFAULT_AI_MODE;
+      }
+      if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
+        System.out.println("Warning: Invalid AI time, changed to "
+            + Ai.DEFAULT_MAX_TIME_MS + " ms.");
+        aiTime = Ai.DEFAULT_MAX_TIME_MS;
+      }
+      if (aiDepth <= 0) {
+        System.out.println("Warning: Invalid AI depth, changed to "
+            + Ai.DEFAULT_DEPTH + ".");
+        aiDepth = Ai.DEFAULT_DEPTH;
+      }
     }
 
     this.blitz = blitz;

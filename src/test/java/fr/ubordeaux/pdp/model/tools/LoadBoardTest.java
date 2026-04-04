@@ -16,6 +16,13 @@ public class LoadBoardTest {
 
   private static final String SAVE_DIR = "Sauvegarde";
 
+  private static class TestableLoadBoard extends LoadBoard {
+    @Override
+    protected void exitOnLoadError() {
+      throw new IllegalStateException("LOAD_ABORTED");
+    }
+  }
+
   private Path getSavePath(String fileName) {
     return Path.of(System.getProperty("user.dir"), SAVE_DIR, fileName);
   }
@@ -110,7 +117,7 @@ public class LoadBoardTest {
 
     writeSaveFile("load_ok.txt", content);
 
-    LoadBoard loader = new LoadBoard();
+    LoadBoard loader = new TestableLoadBoard();
     loader.loadGameData("load_ok.txt");
 
     GameCheckers game = loader.getLoadedGame();
@@ -159,9 +166,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_square.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_square.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_square.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -185,9 +191,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_size.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_size.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_size.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -208,9 +213,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_missing_game.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_missing_game.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_missing_game.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -226,9 +230,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_missing_settings.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_missing_settings.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_missing_settings.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -253,9 +256,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_missing_history.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_missing_history.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_missing_history.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -282,7 +284,7 @@ public class LoadBoardTest {
 
     writeSaveFile("load_white_turn.txt", content);
 
-    LoadBoard loader = new LoadBoard();
+    LoadBoard loader = new TestableLoadBoard();
     loader.loadGameData("load_white_turn.txt");
 
     GameCheckers game = loader.getLoadedGame();
@@ -309,7 +311,7 @@ public class LoadBoardTest {
 
     writeSaveFile("load_empty_board.txt", content);
 
-    LoadBoard loader = new LoadBoard();
+    LoadBoard loader = new TestableLoadBoard();
     loader.loadGameData("load_empty_board.txt");
 
     GameCheckers game = loader.getLoadedGame();
@@ -318,6 +320,7 @@ public class LoadBoardTest {
     Board board = game.getBoard();
     assertBoardEmpty(board);
   }
+
   @Test
   void testLoadRestoresBlitzVerboseDebugAndWhiteAiConfig() throws IOException {
     int n = 10;
@@ -336,7 +339,7 @@ public class LoadBoardTest {
 
     writeSaveFile("load_white_ai_ok.txt", content);
 
-    LoadBoard loader = new LoadBoard();
+    LoadBoard loader = new TestableLoadBoard();
     loader.loadGameData("load_white_ai_ok.txt");
 
     GameCheckers game = loader.getLoadedGame();
@@ -374,7 +377,7 @@ public class LoadBoardTest {
 
     writeSaveFile("load_black_ai_ok.txt", content);
 
-    LoadBoard loader = new LoadBoard();
+    LoadBoard loader = new TestableLoadBoard();
     loader.loadGameData("load_black_ai_ok.txt");
 
     Configuration config = loader.getLoadedConfiguration();
@@ -405,7 +408,7 @@ public class LoadBoardTest {
 
     writeSaveFile("load_comments_ok.txt", content);
 
-    LoadBoard loader = new LoadBoard();
+    LoadBoard loader = new TestableLoadBoard();
     loader.loadGameData("load_comments_ok.txt");
 
     assertNotNull(loader.getLoadedGame());
@@ -428,9 +431,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_starting_player.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_starting_player.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_starting_player.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -451,9 +453,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_time_mode.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_time_mode.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_time_mode.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -474,9 +475,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_debug.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_debug.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_debug.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -497,9 +497,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_verbose.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_verbose.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_verbose.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -520,9 +519,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_ai_mode.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_ai_mode.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_ai_mode.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -545,9 +543,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_ai_algo.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_ai_algo.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_ai_algo.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -570,9 +567,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_ai_depth_zero.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_ai_depth_zero.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_ai_depth_zero.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -595,9 +591,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_ai_time_zero.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_ai_time_zero.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_ai_time_zero.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -619,9 +614,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_ai_depth_negative.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_ai_depth_negative.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_ai_depth_negative.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -643,9 +637,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_ai_depth_too_large.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_ai_depth_too_large.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_ai_depth_too_large.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -667,9 +660,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_ai_time_negative.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_ai_time_negative.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_ai_time_negative.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -697,9 +689,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_char.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_char.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_char.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -721,9 +712,8 @@ public class LoadBoardTest {
 
     writeSaveFile("load_bad_row_length.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_bad_row_length.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_row_length.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
@@ -738,11 +728,9 @@ public class LoadBoardTest {
 
     writeSaveFile("load_incomplete_board.txt", content);
 
-    LoadBoard loader = new LoadBoard();
-    loader.loadGameData("load_incomplete_board.txt");
-
+    LoadBoard loader = new TestableLoadBoard();
+    assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_incomplete_board.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
   }
-
 }
