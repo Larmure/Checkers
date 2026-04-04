@@ -120,6 +120,13 @@ public class History {
             Internationalization.get("history.error.missing_move_after_color", line));
       }
 
+      // Extract promotion from line
+      boolean promotion = false;
+      String promoSuffix = "(promotion)";
+      if (line.contains(promoSuffix)) {
+        promotion = true;
+      }
+
       // Extract captures (after last closing brace if exists, or from the end)
       String capturesString = null;
       int lastBrace = afterColor.lastIndexOf("}");
@@ -137,7 +144,7 @@ public class History {
         capturesString = null;
       }
 
-      Move move = Move.fromSaveString(moveText, capturesString);
+      Move move = Move.fromSaveString(moveText, promotion, capturesString);
       history.add(new ColorMove(color, move));
     }
   }
