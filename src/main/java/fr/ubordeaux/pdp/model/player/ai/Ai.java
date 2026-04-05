@@ -95,12 +95,15 @@ public abstract class Ai {
       Evaluator evaluator) {
     validateParameters(undo, board, player, evaluator);
 
-    List<Move> validMoves = getValidMoves(board, player);
+    Board searchBoard = board.copy();
+    ManagerUndoRedo searchUndo = new ManagerUndoRedo(searchBoard);
+    List<Move> validMoves = getValidMoves(searchBoard, player);
     if (validMoves.isEmpty()) {
       return null;
     }
 
-    return calculateBestMove(undo, board, player, evaluator, validMoves);
+    Move bestMove = calculateBestMove(searchUndo, searchBoard, player, evaluator, validMoves);
+    return copyMove(bestMove);
   }
 
   /**
@@ -189,6 +192,27 @@ public abstract class Ai {
   }
 
   /**
+   * Returns an independent copy of a move so AI search metadata cannot leak into gameplay.
+   *
+   * @param move the move to copy
+   * @return a detached move instance, or {@code null} if input is {@code null}
+   */
+  private Move copyMove(Move move) {
+    if (move == null) {
+      return null;
+    }
+
+    Move copiedMove;
+    if (move.isSimpleMove()) {
+      copiedMove = new Move(move.getFrom(), move.getTo());
+    } else {
+      copiedMove = new Move(move.getPath(), move.getCaptured());
+    }
+    copiedMove.setPromotion(move.isPromotion());
+    return copiedMove;
+  }
+
+  /**
    * Checks if the time limit has been exceeded.
    *
    * @param startTime the start time in milliseconds
@@ -269,7 +293,7 @@ public abstract class Ai {
         mcts.setSelectionMode(cfg.getSelectionMode());
         return mcts;
       case "iterative":
-        // return new IterativeDeepening(depth, timeMs);
+        return new IterativeDeepening(depth, timeMs);
       default:
         throw new IllegalArgumentException("Invalid AI mode: " + aiMode);
     }

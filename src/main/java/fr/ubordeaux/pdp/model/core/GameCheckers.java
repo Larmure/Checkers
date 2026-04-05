@@ -43,6 +43,8 @@ public class GameCheckers implements Subject {
   private int endGameCount = 0;
   /** Stores the history of board positions. */
   private List<String> positionHistory = new ArrayList<>();
+  /** Indicates whether the game ended in a draw. */
+  private boolean draw = false;
 
   /**
    * Initializes a new game instance with the specified configuration.
@@ -195,8 +197,8 @@ public class GameCheckers implements Subject {
       try {
         int manouryFrom = Integer.valueOf(fromS);
         int manouryTo = Integer.valueOf(toS);
-        from = this.board.manouryToIndex(manouryFrom);
-        to = this.board.manouryToIndex(manouryTo);
+        from = manouryFrom;
+        to = manouryTo;
       } catch (IllegalArgumentException e) {
         System.err.println(Internationalization.get("game.invalid_square") + " "
             + e.getMessage());
@@ -230,9 +232,9 @@ public class GameCheckers implements Subject {
               getCurrentPlayer().getName()));
       if (isManoury) {
         for (Move m : possibleMoves) {
-          String fromSquare = String.valueOf(this.board.indexToManoury(m.getFrom()));
-          String toSquare = String.valueOf(this.board.indexToManoury(m.getTo()));
-          System.out.println("  -> " + fromSquare + " " + toSquare);
+          String fromSquare = String.valueOf(m.getFrom());
+          String toSquare = String.valueOf(m.getTo());
+          System.out.println("  -> " + fromSquare + "-" + toSquare);
         }
       } else {
         for (Move m : possibleMoves) {
@@ -272,23 +274,32 @@ public class GameCheckers implements Subject {
   /**
    * Evaluates if the game has reached an end condition.
    *
-   * 
-   * <p>Currently checks if the active player has any legal moves remaining.
-   * If not, the game transitions to FinishedState.
+   * <p>If a terminal condition is reached, the game transitions to
+   * {@link State#FINISHED} and the draw flag is updated accordingly.
    *
    * @return The new state if the game is over, otherwise the current state.
    */
   public State checkGameOver() {
     Player currentPlayer = isWhiteTurn ? whitePlayer : blackPlayer;
 
-    // A player loses immediately if they cannot make a move.
-    if (getPossibleMoves(currentPlayer).isEmpty()) {
+    boolean whiteHasMoves = !getPossibleMoves(whitePlayer).isEmpty();
+    boolean blackHasMoves = !getPossibleMoves(blackPlayer).isEmpty();
+
+    // If both players have no moves, the game is finished as a draw.
+    if (!whiteHasMoves && !blackHasMoves) {
+      System.out.println(Internationalization.get("game.game_over"));
+      System.out.println(Internationalization.get("game.game_draw"));
+      draw = true;
       setState(State.FINISHED);
       return this.state;
     }
 
-    // If both players have no moves, the game is also finished (draw).
-    if (getPossibleMoves(whitePlayer).isEmpty() && getPossibleMoves(blackPlayer).isEmpty()) {
+    // A player loses immediately if they cannot make a move.
+    if (getPossibleMoves(currentPlayer).isEmpty()) {
+      System.out.println(Internationalization.get("game.game_over"));
+      System.out.println(Internationalization.get("game.game_winner") + " "
+          + (isWhiteTurn ? blackPlayer.getName() : whitePlayer.getName()));
+      draw = false;
       setState(State.FINISHED);
       return this.state;
     }
@@ -296,6 +307,10 @@ public class GameCheckers implements Subject {
     // 25 turn *2 = 50 half-turns without progress (no captures or pawn moves) is a common rule 
     // for declaring a draw.
     if (noProgressCount >= 50) {
+      System.out.println(Internationalization.get("game.game_over"));
+      System.out.println(Internationalization.get("game.game_draw"));
+      System.out.println(Internationalization.get("game.game_over_no_progress"));
+      draw = true;
       setState(State.FINISHED);
       return this.state;
     }
@@ -303,6 +318,10 @@ public class GameCheckers implements Subject {
     // 16 turns *2 = 32 half-turns in an endgame scenario (one player has only one piece left) 
     // is often considered a draw due to insufficient material.
     if (endGameCount >= 32) {
+      System.out.println(Internationalization.get("game.game_over"));
+      System.out.println(Internationalization.get("game.game_draw"));
+      System.out.println(Internationalization.get("game.game_over_endgame"));
+      draw = true;
       setState(State.FINISHED);
       return this.state;
     }
@@ -314,13 +333,29 @@ public class GameCheckers implements Subject {
           .filter(sig -> sig.equals(currentSignature))
           .count();
       if (occurrences >= 3) {
+        System.out.println(Internationalization.get("game.game_over"));
+        System.out.println(Internationalization.get("game.game_draw"));
         System.out.println(Internationalization.get("game.game_over_repetition"));
+        draw = true;
         setState(State.FINISHED);
         return this.state;
       }
     }
 
+    draw = false;
     return this.state;
+  }
+
+  /**
+   * Returns whether the current game result is a draw.
+   *
+   * <p>This flag is updated by {@link #checkGameOver()} whenever a terminal
+   * condition is evaluated.
+   *
+   * @return {@code true} if the game ended in a draw; {@code false} otherwise.
+   */
+  public boolean isDraw() {
+    return draw;
   }
 
   /**
@@ -418,8 +453,13 @@ public class GameCheckers implements Subject {
   public void undoManage() {
     if (managerUndoRedo.undo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-      notifyObservers();
     }
+
+    if (!positionHistory.isEmpty()) {
+      positionHistory.remove(positionHistory.size() - 1);
+    }
+
+    notifyObservers();
   }
 
   /**
@@ -429,8 +469,10 @@ public class GameCheckers implements Subject {
   public void redoManage() {
     if (managerUndoRedo.redo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-      notifyObservers();
     }
+
+    positionHistory.add(board.boardString());
+    notifyObservers();
   }
 
   /**
@@ -481,29 +523,17 @@ public class GameCheckers implements Subject {
    * @return {@code true} if the game is in an endgame scenario, {@code false} otherwise.
    */
   private boolean isEndgameScenario() {
-    int whitePawns = 0;
-    int blackPawns = 0;
-    int whiteKings = 0;
-    int blackKings = 0;
+    int whitePawns = board.whitePawnsCount();
+    int blackPawns = board.blackPawnsCount();
+    int whiteCheckers = board.whiteCheckersCount();
+    int blackCheckers = board.blackCheckersCount();
 
-    for (int i = 0; i < board.getIndexMax(); i++) {
-      if (board.isBitWhitePawn(i)) {
-        whitePawns++;
-      } else if (board.isBitBlackPawn(i)) {
-        blackPawns++;
-      } else if (board.isBitWhiteChecker(i)) {
-        whiteKings++;
-      } else if (board.isBitBlackChecker(i)) {
-        blackKings++;
-      }
-    }
+    int whiteTotal = whitePawns + whiteCheckers;
+    int blackTotal = blackPawns + blackCheckers;
 
-    int whiteTotal = whitePawns + whiteKings;
-    int blackTotal = blackPawns + blackKings;
-
-    boolean whiteAdvantage = (whiteTotal == 3 && blackTotal == 1 && blackKings == 1
+    boolean whiteAdvantage = (whiteTotal == 3 && blackTotal == 1 && blackCheckers == 1
         && blackPawns == 0);
-    boolean blackAdvantage = (blackTotal == 3 && whiteTotal == 1 && whiteKings == 1
+    boolean blackAdvantage = (blackTotal == 3 && whiteTotal == 1 && whiteCheckers == 1
         && whitePawns == 0);
 
     return whiteAdvantage || blackAdvantage;

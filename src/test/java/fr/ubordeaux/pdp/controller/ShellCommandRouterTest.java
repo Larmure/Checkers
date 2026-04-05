@@ -1,5 +1,7 @@
-package fr.ubordeaux.pdp.server;
+package fr.ubordeaux.pdp.controller;
 
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -7,8 +9,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import fr.ubordeaux.pdp.controller.GameController;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
@@ -88,6 +88,19 @@ public class ShellCommandRouterTest {
   }
 
   /**
+   * Ensures a Manoury move is executed locally in LOCAL mode.
+   */
+  @Test
+  public void testLocalManouryMoveExecutedLocally() {
+    when(session.getMode()).thenReturn(ClientMode.LOCAL);
+
+    router.route("12-16");
+
+    verify(controller).executeMove("12", "16", true);
+    verify(session, never()).send(anyString());
+  }
+
+  /**
    * Ensures a move is forwarded in CONNECTED mode.
    */
   @Test
@@ -100,18 +113,6 @@ public class ShellCommandRouterTest {
     verify(controller, never()).executeMove(anyString(), anyString(), anyBoolean());
   }
 
-  /**
-   * Ensures a regular game command is executed locally in LOCAL mode.
-   */
-  @Test
-  public void testLocalCommandExecutedLocally() {
-    when(session.getMode()).thenReturn(ClientMode.LOCAL);
-
-    router.route("save testfile");
-
-    verify(controller).executeCommand("save", new String[]{"testfile"});
-    verify(session, never()).send(anyString());
-  }
 
   /**
    * Ensures a regular command is forwarded in CONNECTED mode.

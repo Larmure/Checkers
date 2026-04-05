@@ -203,23 +203,6 @@ public class PlayerSession {
   @Override
   public String toString() {
     return String.format(
-        "%-10s %-15s %-9s W:%d L:%d D:%d",
-        id,
-        name,
-        status.name().toLowerCase(),
-        wins,
-        losses,
-        draws);
-  }
-
-  /**
-   * Returns a detailed multi-line string with all player statistics.
-   * Used by the {@code PLAYERS <id>} command.
-   *
-   * @return formatted player details.
-   */
-  public String toDetailedString() {
-    return String.format(
         "ID       : %s%n"
             + "Name     : %s%n"
             + "Status   : %s%n"

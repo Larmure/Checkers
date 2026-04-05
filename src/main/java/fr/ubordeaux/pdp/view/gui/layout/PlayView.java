@@ -146,4 +146,21 @@ public class PlayView extends HBox {
   public LogView getLogView() {
     return logView;
   }
+
+  /**
+   * Displays a hint to the player by highlighting a suggested move on the game board.
+   *
+   * <p>Delegates the hint display to {@link BoardView}, which renders the
+   * visual highlighting for the suggested move from the specified source position
+   * to the destination position. If {@link BoardView} is not yet initialized,
+   * this method does nothing.
+   *
+   * @param from the source position of the suggested move (must not be {@code null})
+   * @param to   the destination position of the suggested move (must not be {@code null})
+   */
+  public void showHint(String from, String to) {
+    if (boardView != null) {
+      boardView.showHint(from, to);
+    }
+  }
 }

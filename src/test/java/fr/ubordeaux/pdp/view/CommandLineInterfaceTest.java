@@ -1,16 +1,20 @@
 package fr.ubordeaux.pdp.view;
 
-import fr.ubordeaux.pdp.controller.GameController;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
-
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class CommandLineInterfaceTest {
 
@@ -22,13 +26,19 @@ class CommandLineInterfaceTest {
     cli = new CommandLineInterface(true, true);
     spyController = new SpyController(null);
     cli.setController(spyController);
+
+    ClientSession session = mock(ClientSession.class);
+    when(session.getMode()).thenReturn(ClientMode.LOCAL);
+
+    ShellCommandRouter router = new ShellCommandRouter(spyController, session);
+    cli.setRouter(router);
   }
 
   @Test
   void testDisplayCalls() {
     GameCheckers game = new GameCheckers(Configuration.getDefaultConfiguration());
-    /*assertDoesNotThrow(() -> cli.display(game));*/
-    /*assertDoesNotThrow(() -> cli.update(game));*/
+    /* assertDoesNotThrow(() -> cli.display(game)); */
+    /* assertDoesNotThrow(() -> cli.update(game)); */
   }
 
   @Test
@@ -45,7 +55,6 @@ class CommandLineInterfaceTest {
 
   @Test
   void testHandleInputEmpty() {
-    // Should not crash or call anything
     assertDoesNotThrow(() -> cli.handleInput(""));
     assertDoesNotThrow(() -> cli.handleInput(null));
     assertFalse(spyController.executeCommandCalled);
@@ -54,9 +63,8 @@ class CommandLineInterfaceTest {
 
   @Test
   void testReadInputWithCommands() {
-    // Mock LineReader to return inputs then throw EndOfFileException
     LineReader mockReader = mock(LineReader.class);
-    when(mockReader.readLine(anyString()))
+    when(mockReader.readLine(">> "))
         .thenReturn("show")
         .thenReturn("B2 C3")
         .thenThrow(new EndOfFileException());
@@ -72,12 +80,14 @@ class CommandLineInterfaceTest {
     assertNull(cli.readInput(), "End of input must return null.");
   }
 
-  // --- Spy class ---
-  private static class SpyController extends GameController {
+  /**
+   * Spy controller used to observe local command execution.
+   */
+  private static class SpyController extends fr.ubordeaux.pdp.controller.GameController {
     boolean executeCommandCalled = false;
     boolean executeMoveCalled = false;
 
-    public SpyController(GameView view) {
+    SpyController(GameView view) {
       super(view);
     }
 

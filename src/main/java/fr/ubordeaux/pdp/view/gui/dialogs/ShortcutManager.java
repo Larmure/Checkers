@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.view.gui.dialogs;
 import fr.ubordeaux.pdp.ConfigManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -91,11 +92,11 @@ public class ShortcutManager {
       boolean alt = false;
       KeyCode code = null;
       for (String token : tokens) {
-        switch (token.trim().toLowerCase()) {
+        switch (token.trim().toLowerCase(Locale.ROOT)) {
           case "ctrl" -> ctrl = true;
           case "shift" -> shift = true;
           case "alt" -> alt = true;
-          default -> code = KeyCode.valueOf(token.trim().toUpperCase());
+          default -> code = KeyCode.valueOf(token.trim().toUpperCase(Locale.ROOT));
         }
       }
       if (code == null) {

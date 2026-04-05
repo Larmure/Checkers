@@ -42,13 +42,12 @@ class ServerListServiceTest {
       String stdout = out.toString();
       String stderr = err.toString();
 
-      boolean printedAddress =
-          stdout.contains("Your IP address : ") || stdout.contains("Your IP address : (could not determine)");
+      boolean printedAddress = stdout.contains("Your IP address : ")
+          || stdout.contains("Your IP address : (could not determine)");
 
-      boolean printedScanMessage =
-          stdout.contains("Scanning for servers (30s)...")
-              || stderr.contains("Port 12346 already in use.")
-              || stderr.contains("Discovery error:");
+      boolean printedScanMessage = stdout.contains("Scanning for servers (30s)...")
+          || stderr.contains("Port 12346 already in use.")
+          || stderr.contains("Discovery error:");
 
       assertTrue(
           printedAddress,

@@ -1,4 +1,3 @@
-
 package fr.ubordeaux.pdp.model.core;
 
 import fr.ubordeaux.pdp.model.player.ai.Ai;
@@ -73,27 +72,40 @@ public class Configuration {
    * @param selectionMode The selection function used in MCTS.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
-      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, long aiTime,
-      String aiMode, int aiDepth, SelectionMode selectionMode) {
+                       boolean verbose, boolean debug, boolean whiteAi,
+                       boolean blackAi, long aiTime,
+                       String aiMode, int aiDepth, SelectionMode selectionMode) {
+
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
       time = Utils.DEFAULT_TIME;
     }
+
     if (!Utils.VALID_SIZES.contains(size)) {
       System.out.println("Warning: Invalid board size, changed to "
           + Utils.DEFAULT_BOARD_SIZE + ".");
       size = Utils.DEFAULT_BOARD_SIZE;
     }
-    if (!Utils.VALID_AI_MODES.contains(aiMode)) {
-      System.out.println("Warning: Invalid AI mode, changed to "
-          + Utils.DEFAULT_AI_MODE + ".");
-      aiMode = Utils.DEFAULT_AI_MODE;
-    }
-    if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
-      System.out.println("Warning: Invalid AI time, changed to "
-          + Ai.DEFAULT_MAX_TIME_MS + " ms.");
-      aiTime = Ai.DEFAULT_MAX_TIME_MS;
+
+    if (whiteAi || blackAi) {
+      if (!Utils.VALID_AI_MODES.contains(aiMode)) {
+        System.out.println("Warning: Invalid AI mode, changed to "
+            + Utils.DEFAULT_AI_MODE + ".");
+        aiMode = Utils.DEFAULT_AI_MODE;
+      }
+
+      if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
+        System.out.println("Warning: Invalid AI time, changed to "
+            + Ai.DEFAULT_MAX_TIME_MS + " ms.");
+        aiTime = Ai.DEFAULT_MAX_TIME_MS;
+      }
+
+      if (aiDepth <= 0 || aiDepth > Ai.MAX_SAFE_DEPTH) {
+        System.out.println("Warning: Invalid AI depth, changed to "
+            + Ai.DEFAULT_DEPTH + ".");
+        aiDepth = Ai.DEFAULT_DEPTH;
+      }
     }
 
     this.blitz = blitz;
@@ -134,7 +146,6 @@ public class Configuration {
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
   }
-  
 
   /**
    * Copy constructor that creates a new Configuration object by copying the

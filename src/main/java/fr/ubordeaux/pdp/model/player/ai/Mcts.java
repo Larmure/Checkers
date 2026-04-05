@@ -6,13 +6,11 @@ import fr.ubordeaux.pdp.model.evaluation.Evaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import org.tensorflow.SavedModelBundle;
-import org.tensorflow.Tensor;
-import org.tensorflow.ndarray.FloatNdArray;
-import org.tensorflow.ndarray.StdArrays;
-import org.tensorflow.types.TFloat32;
 
 /**
  * Monte Carlo Tree Search (MCTS) implementation for the checkers AI.
@@ -46,7 +44,7 @@ public class Mcts extends Ai {
    *
    * <p>Increase this to explore more broadly; decrease it to focus on already-promising moves.
    */
-  static final double DEFAULT_EXPLORATION = Math.sqrt(2);
+  public static final double DEFAULT_EXPLORATION = Math.sqrt(2);
 
   /**
    * Maximum number of moves per random simulation.
@@ -74,8 +72,11 @@ public class Mcts extends Ai {
   /** The selection mode for this instance. */
   private SelectionMode selectionMode;
 
-  /** The TensorFlow model for evaluating board states. */
-  private SavedModelBundle tfModel;
+  /** The learned weights for the logistic regression model. */
+  private static double[] mlWeights = null;
+
+  /** The learned bias for the logistic regression model. */
+  private static double mlBias = 0.0;
 
   // -------------------------------------------------------------------------
   // Constructors
@@ -285,14 +286,15 @@ public class Mcts extends Ai {
      *
      * @param currentBoard the current board state at this node 
      *     (used to extract features for the model)
+     * @param undo the undo manager used to apply and revert the child's move for evaluation
      * @return the child with the highest predicted score, or {@code null} if there are no children
      */
-    Node bestChildByMl(Board currentBoard) {
+    Node bestChildByMl(Board currentBoard, ManagerUndoRedo undo) {
       Node best = null;
       double bestScore = Double.NEGATIVE_INFINITY;
 
       for (Node child : children) {
-        double score = evaluateWithTf(child, currentBoard);
+        double score = evaluateMl(child, currentBoard, undo);
 
         if (score > bestScore) {
           bestScore = score;
@@ -372,8 +374,9 @@ public class Mcts extends Ai {
     while (node.isFullyExpanded(board) && !node.children.isEmpty()) {
       switch (selectionMode) {
         case UCT -> node = node.bestChildByUcb1();
-        case ML -> node = node.bestChildByMl(board);
-        default -> throw new IllegalStateException("Unknown selection mode: " + selectionMode);
+        case ML -> node = node.bestChildByMl(board, undo);
+        default -> throw new IllegalStateException(Internationalization.get("ai.unknown_selection",
+            selectionMode));
       }
       undo.registerMove(node.player, node.move);
       board.applyMove(node.move);
@@ -482,62 +485,12 @@ public class Mcts extends Ai {
   // -------------------------------------------------------------------------
 
   /**
-   * Loads a TensorFlow model from the specified path for evaluating board states during simulation.
-   *
-   * @param modelPath the file path to the TensorFlow SavedModel directory
-   */
-  public void loadModel(String modelPath) {
-    try {
-      this.tfModel = SavedModelBundle.load(modelPath, "serve");
-    } catch (Exception e) {
-      System.err.println(Internationalization.get("mcts.model.load_failed", modelPath,
-          e.getMessage()));
-      this.tfModel = null;
-    }
-  }
-
-  /**
-   * Evaluates the given board state using the loaded TensorFlow model, returning a score from the
-   * perspective of the root player.
-   *
-   * @param child the node whose board state is to be evaluated
-   * @param currentBoard the current board state at the node (
-   *     used to extract features for the model)
-   * @return the predicted probability of victory for the root player, or 0 if the model 
-   *     is not loaded
-   */
-  private double evaluateWithTf(Node child, Board board) {
-    if (this.tfModel == null) {
-      throw new IllegalStateException("Le modèle TF n'est pas chargé !");
-    }
-
-    board.applyMove(child.move);
-
-    float[] features = extractFeatures(board);
-    float[][] batch = new float[][] { features };
-
-    double score;
-
-    try (TFloat32 inputTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(batch))) {
-
-      try (Tensor resultTensor = this.tfModel.session().runner()
-          .feed("serving_default_input_1", inputTensor)
-          .fetch("StatefulPartitionedCall")
-          .run()
-          .get(0)) {
-
-        FloatNdArray result = (FloatNdArray) resultTensor;
-        score = result.getFloat(0, 0);
-      }
-    }
-
-    return score;
-  }
-
-  /**
   * Extracts a feature vector from the given board state for input into the TensorFlow model.
+  *
+  * @param board the board state to extract features from
+  * @return a float array containing the extracted features in the order expected by the model
   */
-  private float[] extractFeatures(Board board) {
+  public static float[] extractFeatures(Board board) {
     int whitePawns = board.whitePawnsCount();
     int blackPawns = board.blackPawnsCount();
     int whiteKings = board.whiteCheckersCount();
@@ -551,6 +504,75 @@ public class Mcts extends Ai {
         whitePawns - blackPawns,
         whiteKings - blackKings
     };
+  }
+
+  /**
+   * Evaluates the given child node's board state using the logistic regression model.
+   * This methode loads the model weights from file on first call and caches them
+   * for subsequent calls. If the model is not loaded successfully, an exception is thrown to
+   * prevent silent failures.
+   *
+   * @param child the node whose board state is to be evaluated
+   * @param currentBoard the current board state at the node (
+   *     used to extract features for the model)
+   * @param undo the undo manager used to apply and revert the child's move for evaluation
+   * @return the predicted probability of victory for the root player, or 0 if the model 
+   *     is not loaded
+   */
+  private double evaluateMl(Node child, Board board, ManagerUndoRedo undo) {
+
+    if (mlWeights == null) {
+      loadMlWeights(LogisticRegressionTrainer.OUTPUT_FILEPATH);
+
+      if (mlWeights == null) {
+        throw new IllegalStateException("ML weights not loaded; cannot evaluate"
+            + "\n Be sure to use -tr option before running MCTS with ML selection mode.");
+      }
+    }
+
+    board.applyMove(child.move);
+    float[] features = extractFeatures(board);
+    undo.registerMove(child.player, child.move);
+    undo.undo(child.player == PlayerColor.WHITE);
+    double[] w = mlWeights;
+    double b = mlBias;
+
+    double z = b;
+    for (int i = 0; i < w.length; i++) {
+      z += w[i] * features[i];
+    }
+
+    return LogisticRegressionTrainer.sigmoid(z);
+  }
+
+  /**
+   * Loads the logistic regression model weights from a file. 
+   * The file should have the following format:
+   * - First line: comma-separated weight values (one per feature)
+   * - Second line: bias value
+   *
+   * @param filepath the path to the weights file
+   * @throws IllegalStateException if the weights cannot be loaded successfully
+   */
+  public static void loadMlWeights(String filepath) {
+    try {
+      List<String> lines = Files.readAllLines(Paths.get(filepath));
+      if (lines.size() >= 2) {
+        String[] firstLine = lines.get(0).split(",");
+        double[] tempWeights = new double[firstLine.length];
+        for (int i = 0; i < firstLine.length; i++) {
+          tempWeights[i] = Double.parseDouble(firstLine[i]);
+        }
+        double tempBias = Double.parseDouble(lines.get(1));
+
+        mlWeights = tempWeights;
+        mlBias = tempBias;
+
+        System.out.println(Internationalization.get("ai.training.weights_loaded", filepath));
+      }
+    } catch (IOException | NumberFormatException e) {
+      System.err.println(Internationalization.get("ai.training.load_error", e.getMessage()));
+    }
   }
 
   // -------------------------------------------------------------------------

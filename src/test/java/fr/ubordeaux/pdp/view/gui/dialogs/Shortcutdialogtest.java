@@ -6,11 +6,15 @@ import static org.testfx.matcher.control.LabeledMatchers.hasText;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import javafx.stage.Stage;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testfx.api.FxRobot;
 import org.testfx.framework.junit5.ApplicationExtension;
 import org.testfx.framework.junit5.Start;
+
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 
 @ExtendWith(ApplicationExtension.class)
 class ShortcutDialogTest {
@@ -68,8 +72,11 @@ class ShortcutDialogTest {
 
   @Test
   void resetButton_callsResetToDefaultsOnManager(FxRobot robot) {
-    // Click the "Reset to defaults" button and verify the manager is notified.
-    robot.clickOn("Reset to defaults");
+    // 1. On récupère le bouton par son texte (s'il n'est pas traduit dynamiquement)
+    Button resetBtn = robot.lookup("Reset to defaults").queryAs(Button.class);
+
+    // 2. On déclenche l'action de manière 100% fiable
+    robot.interact(() -> resetBtn.fire());
 
     verify(mockConfig, atLeastOnce()).setShortcut(eq("new-game"), anyString());
     verify(mockConfig, atLeastOnce()).setShortcut(eq("quit"), anyString());
@@ -79,7 +86,11 @@ class ShortcutDialogTest {
 
   @Test
   void okButton_callsSaveOnManager(FxRobot robot) {
-    robot.clickOn("OK");
+    // 1. On cherche le bouton par son type standard (ignore la langue de l'OS)
+    Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+
+    // 2. On le déclenche
+    robot.interact(() -> okButton.fire());
 
     verify(mockConfig).saveShortcuts();
   }
@@ -88,7 +99,11 @@ class ShortcutDialogTest {
 
   @Test
   void cancelButton_doesNotCallSave(FxRobot robot) {
-    robot.clickOn("Cancel");
+    // 1. On cherche le bouton par son type standard (trouvera "Annuler" si l'OS est en français)
+    Button cancelButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+
+    // 2. On le déclenche
+    robot.interact(() -> cancelButton.fire());
 
     verify(mockConfig, never()).saveShortcuts();
   }

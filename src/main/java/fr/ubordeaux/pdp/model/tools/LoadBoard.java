@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.Piece;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -52,29 +53,33 @@ public class LoadBoard {
   /** The loaded starting color. */
   private Boolean loadedStartingWhite = null;
   /** The loaded board size. */
-  private int loadedBoardSize = 0;
+  private Integer loadedBoardSize = null;
   /** The loaded blitz mode flag. */
   private Boolean loadedBlitz = null;
   /** The loaded debug mode flag. */
   private Boolean loadedDebug = null;
   /** The loaded verbose mode flag. */
   private Boolean loadedVerbose = null;
-  /** The loaded Time of AI. */
-  private long loadedAiTime = 0;
+  /** The loaded AI time. */
+  private Long loadedAiTime = null;
   /** The loaded white AI flag. */
   private Boolean loadedWhiteAi = null;
   /** The loaded black AI flag. */
   private Boolean loadedBlackAi = null;
-  /** The loaded white AI algorithm name. */
-  private String loadedWhiteAiAlgorithm = null;
-  /** The loaded black AI algorithm name. */
-  private String loadedBlackAiAlgorithm = null;
-  /**the loaded depth of AI.*/
-  private int loadedAiDepth = 0;
+  /** The loaded AI algorithm name. */
+  private String loadedAiMode = null;
+  /** The loaded AI depth. */
+  private Integer loadedAiDepth = null;
+
   /** Buffered move history. */
   private StringBuilder historyBuffer = new StringBuilder();
   /** Buffered board lines from the [game] section. */
   private List<String> loadedBoardLines = new ArrayList<>();
+  private List<Integer> loadedBoardLineNumbers = new ArrayList<>();
+  /** Whether the parser is currently inside a block comment. */
+  private boolean insideBlockComment = false;
+  /** Line where the current block comment started. */
+  private int blockCommentStartLine = -1;
 
   /** Creates a loader. */
   public LoadBoard() {
@@ -82,8 +87,6 @@ public class LoadBoard {
 
   /**
    * Loads game data from a file in the save directory.
-   *
-   * <p>Stops at the first format error and prints a descriptive message.
    *
    * @param fileName the save file name
    */
@@ -94,7 +97,7 @@ public class LoadBoard {
     resetState();
 
     if (!file.exists()) {
-      System.err.println("Loading error: file not found at " + path);
+      failLoad("Loading error: file not found at " + path);
       return;
     }
 
@@ -105,7 +108,15 @@ public class LoadBoard {
 
       while ((line = reader.readLine()) != null) {
         lineNum++;
-        String clean = stripComments(line);
+
+        String clean;
+        try {
+          clean = stripComments(line, lineNum);
+        } catch (Exception e) {
+          failLoad("Format error at line " + lineNum + ": " + e.getMessage());
+          return;
+        }
+
         if (clean.isEmpty()) {
           continue;
         }
@@ -124,22 +135,26 @@ public class LoadBoard {
         }
 
         try {
-          processSectionData(currentSection, clean);
+          processSectionData(currentSection, clean, lineNum);
         } catch (Exception e) {
-          System.err.println(
+          failLoad(
               "Format error at line "
                   + lineNum
                   + " ["
                   + currentSection
                   + "]: "
                   + e.getMessage());
-          resetState();
           return;
         }
       }
 
+      if (insideBlockComment) {
+        failLoad("Format error: unclosed block comment starting at line "
+            + blockCommentStartLine + ".");
+        return;
+      }
+
       if (!validateSections()) {
-        resetState();
         return;
       }
 
@@ -153,20 +168,15 @@ public class LoadBoard {
       Board board = loadedGame.getBoard();
       board.clearBoard();
 
-      try {
-        applyBufferedBoard(board);
-      } catch (Exception e) {
-        System.err.println("Loading error: " + e.getMessage());
-        resetState();
-        return;
-      }
+
+      applyBufferedBoard(board);
+
 
       loadedGame.setHistory(new History(historyBuffer.toString()));
       loadedGame.checkGameOver();
 
     } catch (IOException e) {
-      System.err.println("Critical I/O error: " + e.getMessage());
-      resetState();
+      failLoad("Critical I/O error: " + e.getMessage());
     }
   }
 
@@ -195,19 +205,50 @@ public class LoadBoard {
     seenHistory = false;
     loadedConfiguration = null;
     loadedGame = null;
-    loadedAiTime = 0;
+    loadedAiTime = null;
     loadedStartingWhite = null;
-    loadedBoardSize = 0;
+    loadedBoardSize = null;
     loadedBlitz = null;
     loadedDebug = null;
     loadedVerbose = null;
-    loadedAiDepth = 0;
+    loadedAiDepth = null;
     loadedWhiteAi = null;
     loadedBlackAi = null;
-    loadedWhiteAiAlgorithm = null;
-    loadedBlackAiAlgorithm = null;
+    loadedAiMode = null;
     historyBuffer = new StringBuilder();
     loadedBoardLines = new ArrayList<>();
+    insideBlockComment = false;
+    blockCommentStartLine = -1;
+    loadedBoardLineNumbers = new ArrayList<>();
+  }
+
+  /**
+   * Exits the program on load error.
+   *
+   * <p>Kept protected so tests can override it.
+   */
+  protected void exitOnLoadError() {
+    System.exit(1);
+  }
+
+  /**
+   * Prints an error, resets state, and stops execution.
+   *
+   * @param message the error message
+   */
+  private void failLoad(String message) {
+    System.err.println(message);
+    resetState();
+    exitOnLoadError();
+  }
+
+  /**
+   * Prints a warning for a missing optional setting.
+   *
+   * @param key the missing setting key
+   */
+  private void warnMissingSetting(String key) {
+    System.err.println("Warning: missing setting '" + key + "'. Default value will be used.");
   }
 
   /**
@@ -216,13 +257,42 @@ public class LoadBoard {
    * @param line the raw input line
    * @return the cleaned line
    */
-  private String stripComments(String line) {
-    line = line.replaceAll("\\{.*?\\}", "");
-    int hashIndex = line.indexOf('#');
-    if (hashIndex != -1) {
-      line = line.substring(0, hashIndex);
+  private String stripComments(String line, int lineNum) throws Exception {
+    StringBuilder clean = new StringBuilder();
+    int i = 0;
+
+    while (i < line.length()) {
+      char c = line.charAt(i);
+
+      if (insideBlockComment) {
+        if (c == '}') {
+          insideBlockComment = false;
+          blockCommentStartLine = -1;
+        }
+        i++;
+        continue;
+      }
+
+      if (c == '#') {
+        break;
+      }
+
+      if (c == '{') {
+        insideBlockComment = true;
+        blockCommentStartLine = lineNum;
+        i++;
+        continue;
+      }
+
+      if (c == '}') {
+        throw new Exception("Unexpected '}' without matching '{'.");
+      }
+
+      clean.append(c);
+      i++;
     }
-    return line.trim();
+
+    return clean.toString().trim();
   }
 
   /**
@@ -232,14 +302,17 @@ public class LoadBoard {
    * @param data the cleaned line content
    * @throws Exception if the data is invalid
    */
-  private void processSectionData(String section, String data) throws Exception {
+  private void processSectionData(String section, String data, int lineNum) throws Exception {
     if (section == null || section.isEmpty()) {
       throw new Exception("Data found outside any section header.");
     }
 
     switch (section) {
       case "[settings]" -> parseSetting(data);
-      case "[game]" -> loadedBoardLines.add(data);
+      case "[game]" -> {
+        loadedBoardLines.add(data);
+        loadedBoardLineNumbers.add(lineNum);
+      }
       case "[history]" -> historyBuffer.append(data).append("\n");
       default -> {
         // Unknown sections are ignored.
@@ -248,29 +321,38 @@ public class LoadBoard {
   }
 
   /**
-   * Checks that all mandatory sections were found.
+   * Checks whether at least one AI player is active.
+   *
+   * @return {@code true} if white or black is controlled by an AI
+   */
+  private boolean hasActiveAi() {
+    return Boolean.TRUE.equals(loadedWhiteAi) || Boolean.TRUE.equals(loadedBlackAi);
+  }
+
+  /**
+   * Checks the validity of the loaded sections and settings.
    *
    * @return {@code true} if the file is valid
    */
   private boolean validateSections() {
     if (!seenGame) {
-      System.err.println("Format error: missing [game] section.");
+      failLoad("Format error: missing [game] section.");
       return false;
     }
     if (!seenSettings) {
-      System.err.println("Format error: missing [settings] section.");
+      failLoad("Format error: missing [settings] section.");
       return false;
     }
     if (!seenHistory) {
-      System.err.println("Format error: missing [history] section.");
+      failLoad("Format error: missing [history] section.");
       return false;
     }
-    if (loadedBoardSize == 0) {
-      System.err.println("Format error: missing or invalid board-size.");
+    if (loadedBoardSize == null) {
+      failLoad("Format error: missing or invalid board-size.");
       return false;
     }
     if (loadedBoardLines.size() != loadedBoardSize) {
-      System.err.println(
+      failLoad(
           "Format error: incomplete board - expected "
               + loadedBoardSize
               + " rows, got "
@@ -278,6 +360,50 @@ public class LoadBoard {
               + ".");
       return false;
     }
+
+    if (hasActiveAi()) {
+      if (loadedAiMode == null || loadedAiMode.equals("none")) {
+        failLoad("Format error: active AI requires a valid ai-mode.");
+        return false;
+      }
+      if (loadedAiDepth == null || loadedAiDepth <= 0) {
+        failLoad("Format error: active AI requires ai-depth > 0.");
+        return false;
+      }
+      if (loadedAiTime == null || loadedAiTime <= 0) {
+        failLoad("Format error: active AI requires ai-time > 0.");
+        return false;
+      }
+    }
+
+    if (loadedStartingWhite == null) {
+      warnMissingSetting("starting-player");
+    }
+
+    if (loadedBlitz == null) {
+      warnMissingSetting("time-mode");
+    }
+
+    if (loadedDebug == null) {
+      warnMissingSetting("debug");
+    }
+
+    if (loadedVerbose == null) {
+      warnMissingSetting("verbose");
+    }
+
+    if (loadedAiMode == null) {
+      warnMissingSetting("ai-mode");
+    }
+
+    if (loadedAiDepth == null) {
+      warnMissingSetting("ai-depth");
+    }
+
+    if (loadedAiTime == null) {
+      warnMissingSetting("ai-time");
+    }
+
     return true;
   }
 
@@ -311,7 +437,7 @@ public class LoadBoard {
         if (size == 8 || size == 10 || size == 12) {
           loadedBoardSize = size;
         } else {
-          throw new Exception("Invalid size");
+          throw new Exception("Invalid size: '" + value + "'.");
         }
       }
       case "time-mode" -> {
@@ -343,98 +469,38 @@ public class LoadBoard {
         if (value.equalsIgnoreCase("none")) {
           loadedWhiteAi = false;
           loadedBlackAi = false;
-          loadedWhiteAiAlgorithm = null;
-          loadedBlackAiAlgorithm = null;
+          loadedAiMode = "minimax";
 
         } else if (value.startsWith("white-")) {
-          String[] tokens = value.split("-", 2);
-          if (tokens.length != 2 || tokens[1].isBlank()) {
-            throw new Exception("Invalid ai-mode format: '" + value + "'.");
-          }
-
+          String algo = normalizeAiAlgorithm(value.substring("white-".length()));
           loadedWhiteAi = true;
           loadedBlackAi = false;
-          loadedBlackAiAlgorithm = null;
-
-          if (tokens[1].equals("MinMax")) {
-            loadedWhiteAiAlgorithm = "minimax";
-          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
-            loadedWhiteAiAlgorithm = "alphabeta";
-          } else if (tokens[1].equals("Mcts")) {
-            loadedWhiteAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown white AI algorithm: '" + tokens[1] + "'.");
-          }
+          loadedAiMode = algo;
 
         } else if (value.startsWith("black-")) {
-          String[] tokens = value.split("-", 2);
-          if (tokens.length != 2 || tokens[1].isBlank()) {
-            throw new Exception("Invalid ai-mode format: '" + value + "'.");
-          }
-
+          String algo = normalizeAiAlgorithm(value.substring("black-".length()));
           loadedWhiteAi = false;
           loadedBlackAi = true;
-          loadedWhiteAiAlgorithm = null;
-
-          if (tokens[1].equals("MinMax")) {
-            loadedBlackAiAlgorithm = "minimax";
-          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
-            loadedBlackAiAlgorithm = "alphabeta";
-          } else if (tokens[1].equals("Mcts")) {
-            loadedBlackAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown black AI algorithm: '" + tokens[1] + "'.");
-          }
-
-        } else if (value.startsWith("both-")) {
-          String[] tokens = value.split("-", 3);
-          if (tokens.length != 3 || tokens[1].isBlank() || tokens[2].isBlank()) {
-            throw new Exception("Invalid ai-mode format: '" + value + "'.");
-          }
-
-          loadedWhiteAi = true;
-          loadedBlackAi = true;
-
-          if (tokens[1].equals("MinMax")) {
-            loadedWhiteAiAlgorithm = "minimax";
-          } else if (tokens[1].equals("MinMaxAlphaBeta")) {
-            loadedWhiteAiAlgorithm = "alphabeta";
-          } else if (tokens[1].equals("Mcts")) {
-            loadedWhiteAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown white AI algorithm: '" + tokens[1] + "'.");
-          }
-
-          if (tokens[2].equals("MinMax")) {
-            loadedBlackAiAlgorithm = "minimax";
-          } else if (tokens[2].equals("MinMaxAlphaBeta")) {
-            loadedBlackAiAlgorithm = "alphabeta";
-          } else if (tokens[2].equals("Mcts")) {
-            loadedBlackAiAlgorithm = "mcts";
-          } else {
-            throw new Exception("Unknown black AI algorithm: '" + tokens[2] + "'.");
-          }
+          loadedAiMode = algo;
 
         } else {
           throw new Exception("Invalid ai-mode value: '" + value + "'.");
         }
       }
-
       case "ai-depth" -> {
         int depth = Integer.parseInt(value);
-        if (depth < 0) {
+        if (depth < 0 || depth >= 15) {
           throw new Exception("Invalid ai-depth: '" + value + "'.");
         }
         loadedAiDepth = depth;
       }
       case "ai-time" -> {
         long aiTime = Long.parseLong(value);
-        if (aiTime < 0) {
+        if (aiTime <= Ai.MIN_TIME_MS ||  aiTime > Ai.MAX_TIME_MS) {
           throw new Exception("Invalid ai-time: '" + value + "'.");
         }
         loadedAiTime = aiTime;
       }
-
       default -> {
         // Unknown keys are ignored.
       }
@@ -442,43 +508,77 @@ public class LoadBoard {
   }
 
   /**
+   * Normalizes supported AI algorithm names.
+   *
+   * @param raw the raw name from the file
+   * @return the normalized algorithm name
+   * @throws Exception if the algorithm is not supported
+   */
+  private String normalizeAiAlgorithm(String raw) throws Exception {
+    String algo = raw.trim().toLowerCase();
+
+    if (algo.equals("minimax") || algo.equals("minmax")) {
+      return "minimax";
+    } else if (algo.equals("alphabeta")
+        || algo.equals("minmaxalphabeta")
+        || algo.equals("alpha-beta")) {
+      return "alphabeta";
+    } else if (algo.equals("mcts")) {
+      return "mcts";
+    } else {
+      throw new Exception("Unknown AI algorithm: '" + raw + "'.");
+    }
+  }
+
+  /**
    * Applies the buffered [game] lines to the given board.
    *
    * @param board the board to fill
-   * @throws Exception if a buffered row is invalid
    */
-  private void applyBufferedBoard(Board board) throws Exception {
+  private void applyBufferedBoard(Board board) {
     int n = loadedBoardSize;
 
     for (int rowIndex = 0; rowIndex < loadedBoardLines.size(); rowIndex++) {
-      String data = loadedBoardLines.get(rowIndex);
-      String cells = data.replace(" ", "");
+      String data = loadedBoardLines.get(rowIndex).trim();
+      int fileLine = loadedBoardLineNumbers.get(rowIndex);
 
-      if (cells.length() != n) {
-        throw new Exception(
-            "Board row must have " + n + " cells, got " + cells.length() + ".");
+      String[] cells = data.split("\\s+");
+
+      if (cells.length != n) {
+        failLoad("Loading error: board row at file line " + fileLine
+            + " must have " + n + " cells, got " + cells.length + ".");
+        return;
       }
 
       int boardRow = n - 1 - rowIndex;
 
       for (int col = 0; col < n; col++) {
-        char c = cells.charAt(col);
+        String token = cells[col];
+        String square = toSquare(boardRow, col);
+
+        if (token.length() != 1) {
+          failLoad("Loading error: invalid board token '" + token
+              + "' at square " + square + " (file line " + fileLine + ").");
+          return;
+        }
+
+        char c = token.charAt(0);
         boolean playable = ((boardRow + col) % 2 == 0);
+
+        if ("xoXO_".indexOf(c) == -1) {
+          failLoad("Loading error: invalid board character '" + c
+              + "' at square " + square + " (file line " + fileLine + ").");
+          return;
+        }
 
         if (!playable) {
           if (c != '_') {
-            throw new Exception(
-                "Piece '" + c + "' on non-playable square at row "
-                    + rowIndex
-                    + ", col "
-                    + col
-                    + ".");
+            failLoad("Loading error: piece '" + c
+                + "' on non-playable square " + square
+                + " (file line " + fileLine + ").");
+            return;
           }
           continue;
-        }
-
-        if ("xoXO_".indexOf(c) == -1) {
-          throw new Exception("Invalid board character: '" + c + "'.");
         }
 
         if (c != '_') {
@@ -496,10 +596,14 @@ public class LoadBoard {
     }
   }
 
+  private String toSquare(int boardRow, int col) {
+    return "" + (char) ('A' + boardRow) + (col + 1);
+  }
+
   /**
    * Builds a configuration from loaded values.
    *
-   * <p>Missing values fall back to defaults.
+   * <p>Missing non-critical values fall back to defaults.
    *
    * @return the reconstructed configuration
    */
@@ -509,18 +613,12 @@ public class LoadBoard {
     boolean blitz = loadedBlitz != null ? loadedBlitz : defaults.isBlitz();
     boolean verbose = loadedVerbose != null ? loadedVerbose : defaults.isVerbose();
     boolean debug = loadedDebug != null ? loadedDebug : defaults.isDebug();
-    int size = loadedBoardSize > 0 ? loadedBoardSize : defaults.getSize();
+    int size = loadedBoardSize != null ? loadedBoardSize : defaults.getSize();
     boolean whiteAi = loadedWhiteAi != null ? loadedWhiteAi : defaults.iswhiteAi();
     boolean blackAi = loadedBlackAi != null ? loadedBlackAi : defaults.isblackAi();
-    int aiDepth = loadedAiDepth != 0 ? loadedAiDepth : defaults.getAiDepth();
-    long aiTime = loadedAiTime != 0 ? loadedAiTime : defaults.getAiTime();
-
-    String aiMode = defaults.getAiMode();
-    if (loadedWhiteAiAlgorithm != null) {
-      aiMode = loadedWhiteAiAlgorithm;
-    } else if (loadedBlackAiAlgorithm != null) {
-      aiMode = loadedBlackAiAlgorithm;
-    }
+    int aiDepth = loadedAiDepth != null ? loadedAiDepth : defaults.getAiDepth();
+    long aiTime = loadedAiTime != null ? loadedAiTime : defaults.getAiTime();
+    String aiMode = loadedAiMode != null ? loadedAiMode : defaults.getAiMode();
 
     return new Configuration(
         blitz,

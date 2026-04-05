@@ -1,8 +1,10 @@
 package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.LogisticRegressionTrainer;
 import fr.ubordeaux.pdp.model.player.ai.Mcts;
 import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
@@ -11,7 +13,6 @@ import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.server.GameControllerFactory;
 import fr.ubordeaux.pdp.server.GameServer;
-import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.HeadlessView;
@@ -46,6 +47,9 @@ public class App {
 
   /** Exit code for GUI. */
   public static final int EXIT_GUI = 3;
+
+  /** Exit code for training. */
+  public static final int EXIT_TRAINING = 4;
 
   /** Flag to enable verbose. */
   private static boolean verbose = Utils.DEFAULT_VERBOSE;
@@ -94,6 +98,9 @@ public class App {
   /** Flag to start server in daemon mode. */
   private static boolean daemonMode = false;
 
+  /** Flag to set the number of games for training. */
+  private static int numGames = LogisticRegressionTrainer.DEFAULT_NUM_GAMES;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -103,10 +110,19 @@ public class App {
   public static void main(String[] args) {
     int status = run(args);
 
-    if (status == EXIT_INFO) {
-      System.exit(0);
-    } else if (status == EXIT_ERROR) {
-      System.exit(1);
+    switch (status) {
+      case EXIT_INFO:
+        System.exit(0);
+        break;
+      case EXIT_ERROR:
+        System.exit(1);
+        break;
+      case EXIT_TRAINING:
+        LogisticRegressionTrainer.lauchTraining(numGames);
+        System.exit(0);
+        break;
+      default:
+        break;
     }
 
     if (serverMode) {
@@ -165,8 +181,10 @@ public class App {
     } else {
       view = new CommandLineInterface(verbose, debug);
     }
-
     GameController controller = new GameController(view);
+
+    ClientSession session = new ClientSession();
+
     session.setController(controller);
     ShellCommandRouter router = new ShellCommandRouter(controller, session);
 
@@ -259,6 +277,7 @@ public class App {
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
+    options.addOption("tr", "train", true, "train a ML selection function");
 
     CommandLineParser parser = new DefaultParser();
     try {
@@ -322,8 +341,17 @@ public class App {
       }
 
       if (cmd.hasOption("t")) {
-        time = Integer.parseInt(cmd.getOptionValue("t"));
-        System.out.println(Internationalization.get("opt.time.status", time));
+        try {
+          time = Integer.parseInt(cmd.getOptionValue("t"));
+          System.out.println(Internationalization.get("opt.time.status", time));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("t")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "time", Utils.DEFAULT_TIME));
+
+          time = Utils.DEFAULT_TIME;
+        }
       }
 
       if (cmd.hasOption("c")) {
@@ -332,8 +360,16 @@ public class App {
       }
 
       if (cmd.hasOption("s")) {
-        size = Integer.parseInt(cmd.getOptionValue("s"));
-        System.out.println(Internationalization.get("opt.size.status") + size + ".");
+        try {
+          size = Integer.parseInt(cmd.getOptionValue("s"));
+          System.out.println(Internationalization.get("opt.size.status") + size + ".");
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("s")));
+          System.out.println(Internationalization.get("app.warn.changed", "size",
+              Utils.DEFAULT_BOARD_SIZE));
+          size = Utils.DEFAULT_BOARD_SIZE;
+        }
       }
 
       if (cmd.hasOption("a")) {
@@ -365,9 +401,16 @@ public class App {
       }
 
       if (cmd.hasOption("at")) {
-        aiTime = Integer.parseInt(cmd.getOptionValue("at"));
-        aiTime *= 1000; // Convert seconds to milliseconds
-        System.out.println(Internationalization.get("opt.ai.time.status", aiTime));
+        try {
+          aiTime = Long.parseLong(cmd.getOptionValue("at")) * 1000;
+          System.out.println(Internationalization.get("opt.ai.time.status", aiTime / 1000));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("at")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "AI time", Ai.DEFAULT_MAX_TIME_MS / 1000));
+          aiTime = Ai.DEFAULT_MAX_TIME_MS;
+        }
       }
 
       if (cmd.hasOption("am")) {
@@ -376,8 +419,16 @@ public class App {
       }
 
       if (cmd.hasOption("ad")) {
-        aiDepth = Integer.parseInt(cmd.getOptionValue("ad"));
-        System.out.println(Internationalization.get("opt.ai.depth.status", aiDepth));
+        try {
+          aiDepth = Integer.parseInt(cmd.getOptionValue("ad"));
+          System.out.println(Internationalization.get("opt.ai.depth.status", aiDepth));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("ad")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "AI depth", Ai.DEFAULT_DEPTH));
+          aiDepth = Ai.DEFAULT_DEPTH;
+        }
       }
 
       if (cmd.hasOption("as")) {
@@ -386,10 +437,24 @@ public class App {
           selectionMode = SelectionMode.valueOf(selection);
           System.out.println(Internationalization.get("opt.ai.selection.status", selectionMode));
         } catch (IllegalArgumentException e) {
-          System.err.println(Internationalization.get("app.warn.invalid_ai_selection")
+          System.out.println(Internationalization.get("app.warn.invalid_ai_selection")
               + selection);
           selectionMode = Mcts.DEFAULT_SELECTION_MODE;
         }
+      }
+
+      if (cmd.hasOption("tr")) {
+        try {
+          numGames = Integer.parseInt(cmd.getOptionValue("tr"));
+          System.out.println(Internationalization.get("opt.train.status", numGames));
+        } catch (NumberFormatException e) {
+          System.out.println(Internationalization.get("app.warn.invalid_number",
+              cmd.getOptionValue("tr")));
+          System.out.println(Internationalization.get("app.warn.changed",
+              "number of games", LogisticRegressionTrainer.DEFAULT_NUM_GAMES));
+          numGames = LogisticRegressionTrainer.DEFAULT_NUM_GAMES;
+        }
+        return EXIT_TRAINING;
       }
 
       System.out.println(Internationalization.get("app.welcome"));
@@ -492,5 +557,50 @@ public class App {
     serverMode = false;
     serverPort = 12345;
     daemonMode = false;
+  }
+
+  /**
+   * Returns the maximum time allowed for AI moves.
+   *
+   * @return AI time limit in milliseconds.
+   */
+  public static long getAiTime() {
+    return aiTime;
+  }
+
+  /**
+   * Returns the configured search depth for AI algorithms.
+   *
+   * @return AI search depth.
+   */
+  public static int getAiDepth() {
+    return aiDepth;
+  }
+
+  /**
+   * Checks whether white is controlled by an AI player.
+   *
+   * @return true if white AI is enabled.
+   */
+  public static boolean isWhiteAi() {
+    return whiteAi;
+  }
+
+  /**
+   * Checks whether black is controlled by an AI player.
+   *
+   * @return true if black AI is enabled.
+   */
+  public static boolean isBlackAi() {
+    return blackAi;
+  }
+
+  /**
+   * Returns the selection strategy used by the MCTS AI.
+   *
+   * @return active MCTS selection mode.
+   */
+  public static SelectionMode getSelectionMode() {
+    return selectionMode;
   }
 }

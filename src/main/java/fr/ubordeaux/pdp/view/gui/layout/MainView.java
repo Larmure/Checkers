@@ -5,11 +5,13 @@ import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
+import java.util.Locale;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -66,10 +68,10 @@ public class MainView extends BorderPane {
   private final ClientSession session;
 
   /** Toolbar button: undo. */
-  private Button undoButton;
+  private Button undoBtn;
 
   /** Toolbar button: redo. */
-  private Button redoButton;
+  private Button redoBtn;
 
   /** Toolbar button: pause. */
   private Button pauseButton;
@@ -137,57 +139,49 @@ public class MainView extends BorderPane {
     HBox toolbar = new HBox(10);
     toolbar.setPadding(new Insets(10, 20, 10, 20));
     toolbar.setAlignment(Pos.CENTER_LEFT);
+    // style.css : .toolbar
     toolbar.getStyleClass().add("toolbar");
 
+    // Spacer pushes the turn label to the right edge.
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
 
     turnLabel = new Label(Internationalization.get("toolbar.turn") + "BLACK");
+    // style.css : .turn-label
     turnLabel.getStyleClass().add("turn-label");
 
-    undoButton = toolbarButton(
-        Internationalization.get("toolbar.undo"),
-        () -> controller.executeCommand("undo", new String[] {"1"}));
+    undoBtn = toolbarButton(Internationalization.get("toolbar.undo"), () -> {
+      int steps = (controller.isWhiteAi() != controller.isBlackAi()) ? 2 : 1;
+      controller.executeCommand("undo", new String[] { String.valueOf(steps) });
+    });
 
-    redoButton = toolbarButton(
-        Internationalization.get("toolbar.redo"),
-        () -> controller.executeCommand("redo", new String[] {"1"}));
+    redoBtn = toolbarButton(Internationalization.get("toolbar.redo"), () -> {
+      int steps = (controller.isWhiteAi() != controller.isBlackAi()) ? 2 : 1;
+      controller.executeCommand("redo", new String[] { String.valueOf(steps) });
+    });
 
-    pauseButton = toolbarButton(
-        Internationalization.get("toolbar.pause"),
-        () -> {
-          if (controller.getGame() != null
-              && controller.getGame().getState() == State.IN_GAME) {
-            controller.executeCommand("pause", new String[0]);
+    Button pauseBtn = toolbarButton(Internationalization.get("toolbar.pause"), () -> {
+      if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+        controller.executeCommand("pause", new String[0]);
 
-            Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
-            pauseAlert.setTitle(Internationalization.get("dialog.pause_title"));
-            pauseAlert.setHeaderText(Internationalization.get("dialog.pause_header"));
+        Alert pauseAlert = new Alert(Alert.AlertType.INFORMATION);
+        pauseAlert.setTitle(Internationalization.get("dialog.pause_title"));
+        pauseAlert.setHeaderText(Internationalization.get("dialog.pause_header"));
 
-            ButtonType resumeButton = new ButtonType(
-                Internationalization.get("dialog.pause_resume"),
-                javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
-            pauseAlert.getButtonTypes().setAll(resumeButton);
-            pauseAlert.showAndWait();
+        ButtonType btnResume = new ButtonType(Internationalization.get("dialog.pause_resume"),
+            javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+        pauseAlert.getButtonTypes().setAll(btnResume);
+        pauseAlert.showAndWait();
 
-            controller.executeCommand("continue", new String[0]);
-          }
-        });
-
-    hintButton = toolbarButton(
-        Internationalization.get("toolbar.hint"),
+        controller.executeCommand("continue", new String[0]);
+      }
+    });
+    Button hintBtn = toolbarButton(Internationalization.get("toolbar.hint"),
         () -> controller.executeCommand("hint", new String[0]));
 
-    toolbar.getChildren().addAll(
-        undoButton,
-        redoButton,
-        pauseButton,
-        hintButton,
-        spacer,
-        turnLabel);
+    toolbar.getChildren().addAll(undoBtn, redoBtn, pauseBtn, hintBtn, spacer, turnLabel);
     return toolbar;
   }
-
 
   /**
    * Creates a styled toolbar button.
@@ -276,7 +270,36 @@ public class MainView extends BorderPane {
       playView.update(game);
 
       String name = game.getCurrentPlayer().getName();
-      turnLabel.setText(Internationalization.get("toolbar.turn") + name.toUpperCase());
+      turnLabel.setText(Internationalization.get("toolbar.turn")
+          + name.toUpperCase(Locale.ROOT));
+
+      boolean isAiTurn = game.getCurrentPlayer() instanceof AiPlayer;
+
+      if (undoBtn != null) {
+        undoBtn.setDisable(isAiTurn);
+      }
+      if (redoBtn != null) {
+        redoBtn.setDisable(isAiTurn);
+      }
+      if (menuView != null) {
+        menuView.setDisableUndoRedo(isAiTurn);
+      }
+    }
+  }
+
+  /**
+   * Displays a hint to the player by highlighting a suggested move on the board.
+   *
+   * <p>Delegates the hint display to {@link PlayView}, which renders the
+   * suggested move from the specified source position to the destination position.
+   * If {@link PlayView} is not yet initialized, this method does nothing.
+   *
+   * @param from the source position of the suggested move (must not be {@code null})
+   * @param to   the destination position of the suggested move (must not be {@code null})
+   */
+  public void showHint(String from, String to) {
+    if (playView != null && !controller.isWhiteAi() || !controller.isBlackAi()) {
+      playView.showHint(from, to);
     }
   }
 

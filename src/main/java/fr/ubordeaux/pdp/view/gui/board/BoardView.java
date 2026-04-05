@@ -3,7 +3,12 @@ package fr.ubordeaux.pdp.view.gui.board;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.view.gui.layout.PlayView;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -72,6 +77,15 @@ public class BoardView extends GridPane {
   /** Fill colour for the crown marker drawn on king pieces. */
   private static final Color CROWN_FILL = Color.web("#FFD700");
 
+  /** Color for hint indicators. */
+  private static final Color HINT_COLOR = Color.web("#90EE90"); // Vert clair
+
+  /** Start square for hint indicators. */
+  private String hintFrom = null;
+
+  /** End square for hint indicators. */
+  private String hintTo = null;
+
   /** Default cell size in pixels, used before any responsive binding is set. */
   private static final double DEFAULT_CELL = 68.0;
 
@@ -114,6 +128,11 @@ public class BoardView extends GridPane {
   private int selCol = -1;
 
   /**
+   * A set of all valid destination squares for the currently selected piece.
+   */
+  private final Set<String> validDestinationSquares = new HashSet<>();
+
+  /**
    * Creates a {@code BoardView} for the given controller.
    *
    * <p>An initial empty 8×8 board is drawn immediately so that the component
@@ -152,8 +171,11 @@ public class BoardView extends GridPane {
    * @param game the current game state
    */
   public void refresh(GameCheckers game) {
+    this.hintFrom = null;
+    this.hintTo = null;
     this.board = game.getBoard();
     this.size = board.getSizeBoard();
+    validDestinationSquares.clear();
     redraw();
   }
 
@@ -165,9 +187,10 @@ public class BoardView extends GridPane {
    *
    * @param size the number of rows/columns (typically 8, 10, or 12)
    */
-  public void drawEmpty(int size) {
+  public final void drawEmpty(int size) {
     this.board = null;
     this.size = size;
+    validDestinationSquares.clear();
     redraw();
   }
 
@@ -240,7 +263,25 @@ public class BoardView extends GridPane {
     bg.setFill(isSelected ? SELECTED_SQ : (isDark ? DARK_SQ : LIGHT_SQ));
     pane.getChildren().add(bg);
 
+    // Hint overlay: light green tint if this cell is part of the current hint.
+    if (isDark && hintFrom != null && hintTo != null) {
+      String currentSquare = toSquare(modelRow, modelCol);
+      if (currentSquare.equals(hintFrom) || currentSquare.equals(hintTo)) {
+        bg.setFill(SELECTED_SQ);
+      }
+    }
+
     if (isDark) {
+      String currentSquare = toSquare(modelRow, modelCol);
+      boolean isHintSquare = (hintFrom != null && hintTo != null
+          && (currentSquare.equals(hintFrom) || currentSquare.equals(hintTo)));
+
+      boolean isValidDest = validDestinationSquares.contains(currentSquare);
+
+      if (isHintSquare || isValidDest) {
+        bg.setFill(SELECTED_SQ);
+      }
+
       // Add a piece if one is present on this square.
       char piece = getPieceChar(modelRow, modelCol);
 
@@ -269,6 +310,10 @@ public class BoardView extends GridPane {
 
       // Drag-and-drop handlers for moving pieces with the mouse
       pane.setOnDragDetected(e -> {
+        if (isAiTurn()) {
+          return; // Disable dragging during AI turns.
+        }
+
         if (getPieceChar(mr, mc) != '_') {
           Dragboard db = pane.startDragAndDrop(TransferMode.MOVE);
           ClipboardContent content = new ClipboardContent();
@@ -321,13 +366,12 @@ public class BoardView extends GridPane {
         Dragboard db = e.getDragboard();
         boolean success = false;
         if (db.hasString()) {
-          String from = db.getString();
-          String to = toSquare(mr, mc);
-
           // Clear selection state after the move.
           selRow = -1;
           selCol = -1;
-
+          String from = db.getString();
+          String to = toSquare(mr, mc);
+          validDestinationSquares.clear();
           controller.executeMove(from, to, false);
           success = true;
         }
@@ -451,6 +495,13 @@ public class BoardView extends GridPane {
    * @param modelCol model column of the clicked cell
    */
   private void handleClick(int row, int col, int modelRow, int modelCol) {
+    if (isAiTurn()) {
+      return; // Ignore clicks during AI turns.
+    }
+
+    this.hintFrom = null;
+    this.hintTo = null;
+
     if (board == null) {
       return;
     }
@@ -460,15 +511,37 @@ public class BoardView extends GridPane {
       if (getPieceChar(modelRow, modelCol) != '_') {
         selRow = row;
         selCol = col;
+
+        validDestinationSquares.clear();
+        GameCheckers game = controller.getGame();
+
+        if (game != null) {
+          int selectedIndex = (modelRow * size + modelCol) / 2;
+          List<Move> possibleMoves = game.getPossibleMoves(game.getCurrentPlayer());
+
+          for (Move m : possibleMoves) {
+            if (m.getFrom() == selectedIndex) {
+              validDestinationSquares.add(board.indexToSquare(m.getTo()));
+
+              if (m.isCapture() && m.getPath() != null) {
+                for (Integer stepIndex : m.getPath()) {
+                  validDestinationSquares.add(board.indexToSquare(stepIndex));
+                }
+              }
+            }
+          }
+        }
+
         redraw();
       }
     } else {
       // A piece is already selected — treat this click as the destination.
       String from = toSquare((size - 1) - selRow, selCol);
       String to = toSquare(modelRow, modelCol);
+      validDestinationSquares.clear();
+      controller.executeMove(from, to, false);
       selRow = -1;
       selCol = -1;
-      controller.executeMove(from, to, false);
     }
   }
 
@@ -521,5 +594,27 @@ public class BoardView extends GridPane {
    */
   private String toSquare(int modelRow, int modelCol) {
     return "" + (char) ('A' + modelRow) + (modelCol + 1);
+  }
+
+  /**
+   * Shows a hint by temporarily highlighting the "from" and "to" squares.
+   *
+   * @param from Start case 
+   * @param to   Finish case
+   */
+  public void showHint(String from, String to) {
+    this.hintFrom = from;
+    this.hintTo = to;
+    redraw();
+  }
+
+  /**
+   * Checks if the current turn belongs to an AI player.
+   *
+   * @return {@code true} if the current player is an AI, {@code false} otherwise
+   */
+  private boolean isAiTurn() {
+    GameCheckers game = controller.getGame();
+    return game != null && game.getCurrentPlayer() instanceof AiPlayer;
   }
 }

@@ -3,9 +3,11 @@ package fr.ubordeaux.pdp.view.gui.dialogs;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.Mcts;
+import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
+import java.util.Locale;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -15,6 +17,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
@@ -46,8 +49,17 @@ import javafx.scene.layout.VBox;
  */
 public class ConfigDialog extends Dialog<Configuration> {
 
+  /** Display label for Minimax AI mode. */
+  private static final String MINIMAX = "Minimax";
+
   /** Board size selector: 8, 10 or 12. */
   private final ComboBox<Integer> sizeCombo = new ComboBox<>();
+
+  /** Ai type selector. */
+  private final ComboBox<String> aiCombo = new ComboBox<>();
+
+  /** MCTS type selector. */
+  private final ComboBox<String> mctsCombo = new ComboBox<>();
 
   /** Enables blitz mode. Enabling it also enables the time spinner. */
   private final CheckBox blitzCheck = new CheckBox("Blitz mode");
@@ -78,6 +90,10 @@ public class ConfigDialog extends Dialog<Configuration> {
   private final Spinner<Integer> aiTimeSpinner = new Spinner<>(
       new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30));
 
+  /** AI thinking depth. range 1–15. */
+  private final Spinner<Integer> aiDepthSpinner = new Spinner<>(
+      new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 15));
+
   /** Manages keyboard shortcuts read from and written to {@code .checkersrc}. */
   private final ShortcutManager shortcutManager;
 
@@ -91,6 +107,8 @@ public class ConfigDialog extends Dialog<Configuration> {
    * @param shortcutManager   the shortcut manager; must not be {@code null}
    * @param onShortcutsChanged callback invoked after shortcuts are saved,
    *                           used to refresh menu accelerators
+   * @param initialConfig    optional initial configuration to populate the fields;
+   *                         if {@code null}, default configuration values are used
    */
   public ConfigDialog(ShortcutManager shortcutManager, Runnable onShortcutsChanged,
       Configuration initialConfig) {
@@ -118,13 +136,21 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     whiteAiCheck.setSelected(defaults.iswhiteAi());
     blackAiCheck.setSelected(defaults.isblackAi());
+    aiCombo.getItems().addAll("Minimax", "Alpha-Beta", "MCTS");
+    aiCombo.setValue(toDisplayAiMode(defaults.getAiMode()));
+    mctsCombo.getItems().addAll("UCT", "ML");
+    mctsCombo.setValue(defaults.getSelectionMode().name());
+
     contestCheck.setSelected(defaults.isContest());
     verboseCheck.setSelected(defaults.isVerbose());
     debugCheck.setSelected(defaults.isDebug());
 
     aiTimeSpinner.getValueFactory().setValue((int) (defaults.getAiTime() / 1000));
     aiTimeSpinner.setPrefWidth(80);
-    aiTimeSpinner.setDisable(!defaults.iswhiteAi() && !defaults.isblackAi());
+
+    aiDepthSpinner.getValueFactory().setValue((int) defaults.getAiDepth());
+    aiDepthSpinner.setPrefWidth(80);
+    updateAiControlsState();
 
     // Enable / disable time spinner based on blitz checkbox.
     blitzCheck.selectedProperty().addListener(
@@ -132,15 +158,25 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     // Enable / disable spinner if at least one or the other au moins is checked.
     whiteAiCheck.selectedProperty()
-        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
-            && !blackAiCheck.isSelected()));
+        .addListener((obs, oldV, newV) -> {
+          updateAiControlsState();
+        });
 
     blackAiCheck.selectedProperty()
-        .addListener((obs, oldV, newV) -> aiTimeSpinner.setDisable(!newV
-            && !whiteAiCheck.isSelected()));
+        .addListener((obs, oldV, newV) -> {
+          updateAiControlsState();
+        });
 
-    getDialogPane().setContent(buildContent());
+    aiCombo.valueProperty().addListener((obs, oldV, newV) -> updateAiControlsState());
+
+    ScrollPane scrollPane = new ScrollPane(buildContent());
+    scrollPane.setFitToWidth(true);
+    scrollPane.setPrefHeight(500);
+    scrollPane.setStyle("-fx-control-inner-background: #f5f5f5;");
+    getDialogPane().setContent(scrollPane);
     getDialogPane().getStyleClass().add("config-dialog");
+    getDialogPane().setPrefHeight(600);
+    getDialogPane().setMaxHeight(600);
 
     setResultConverter(buttonType -> {
       if (buttonType.getButtonData() == ButtonData.OK_DONE) {
@@ -159,7 +195,8 @@ public class ConfigDialog extends Dialog<Configuration> {
   private VBox buildContent() {
     VBox root = new VBox(16);
     root.setPadding(new Insets(20));
-    root.setPrefWidth(360);
+    root.setPrefWidth(380);
+    root.setStyle("-fx-padding: 20px; -fx-spacing: 16px;");
 
     root.getChildren().addAll(
         buildSection("Board"),
@@ -235,11 +272,29 @@ public class ConfigDialog extends Dialog<Configuration> {
     grid.add(whiteAiCheck, 0, 0);
     grid.add(blackAiCheck, 0, 1);
 
+    VBox aiModeBox = new VBox(4,
+        new Label("AI mode:"),
+        aiCombo);
+    aiModeBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(aiModeBox, 0, 2);
+
     VBox aiTimeBox = new VBox(4,
         new Label("AI thinking time (sec):"),
         aiTimeSpinner);
     aiTimeBox.setAlignment(Pos.CENTER_LEFT);
-    grid.add(aiTimeBox, 0, 2);
+    grid.add(aiTimeBox, 0, 3);
+
+    VBox aiDepthBox = new VBox(4,
+        new Label("AI thinking depth:"),
+        aiDepthSpinner);
+    aiDepthBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(aiDepthBox, 0, 4);
+
+    VBox mctsBox = new VBox(4,
+        new Label("MCTS selection mode:"),
+        mctsCombo);
+    mctsBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(mctsBox, 0, 5);
 
     return grid;
   }
@@ -270,6 +325,20 @@ public class ConfigDialog extends Dialog<Configuration> {
     return grid;
   }
 
+  /** Updates enabled state of AI-related controls from player selection and AI mode. */
+  private void updateAiControlsState() {
+    boolean aiEnabled = whiteAiCheck.isSelected() || blackAiCheck.isSelected();
+    aiTimeSpinner.setDisable(!aiEnabled);
+    aiCombo.setDisable(!aiEnabled);
+
+    String mode = aiCombo.getValue();
+    boolean depthSupported = MINIMAX.equals(mode) || "Alpha-Beta".equals(mode);
+    aiDepthSpinner.setDisable(!aiEnabled || !depthSupported);
+
+    boolean mctsSelected = "MCTS".equals(mode);
+    mctsCombo.setDisable(!aiEnabled || !mctsSelected);
+  }
+
   /**
    * Reads all widget values and constructs the resulting {@link Configuration}.
    *
@@ -277,17 +346,66 @@ public class ConfigDialog extends Dialog<Configuration> {
    */
   private Configuration buildConfiguration() {
     boolean blitz = blitzCheck.isSelected();
-    int timeSec = blitz ? timeSpinner.getValue() : 30;
+    Integer timeValue = timeSpinner.getValue();
+    int timeSec = blitz ? (timeValue != null ? timeValue : Utils.DEFAULT_TIME) : Utils.DEFAULT_TIME;
     boolean contest = contestCheck.isSelected();
-    int size = sizeCombo.getValue();
+    Integer sizeValue = sizeCombo.getValue();
+    int size = sizeValue != null ? sizeValue : Utils.DEFAULT_BOARD_SIZE;
     boolean verbose = verboseCheck.isSelected();
     boolean debug = debugCheck.isSelected();
     boolean whiteAi = whiteAiCheck.isSelected();
     boolean blackAi = blackAiCheck.isSelected();
-    long aiTime = aiTimeSpinner.getValue() * 1000L;
+    Integer aiTimeValue = aiTimeSpinner.getValue();
+    int aiTime = aiTimeValue != null ? aiTimeValue * 1000 : (int) (Ai.DEFAULT_MAX_TIME_MS);
+
+    String aiMode = normalizeAiMode(aiCombo.getValue());
+    int aiDepth = normalizeAiDepth(aiDepthSpinner.getValue());
+    SelectionMode mctsMode = normalizeSelectionMode(mctsCombo.getValue());
 
     return new Configuration(blitz, timeSec, contest, size,
         verbose, debug, whiteAi, blackAi, aiTime,
-        Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
+        aiMode, aiDepth, mctsMode);
+  }
+
+  private static String toDisplayAiMode(String aiMode) {
+    if (aiMode == null) {
+      return MINIMAX;
+    }
+    return switch (aiMode.toLowerCase(Locale.ROOT)) {
+      case "alphabeta" -> "Alpha-Beta";
+      case "mcts" -> "MCTS";
+      case "minimax" -> MINIMAX;
+      default -> MINIMAX;
+    };
+  }
+
+  private static String normalizeAiMode(String aiMode) {
+    if (aiMode == null) {
+      return Utils.DEFAULT_AI_MODE;
+    }
+    return switch (aiMode.trim().toLowerCase(Locale.ROOT)) {
+      case "alpha-beta", "alphabeta" -> "alphabeta";
+      case "mcts" -> "mcts";
+      case "minimax" -> "minimax";
+      default -> Utils.DEFAULT_AI_MODE;
+    };
+  }
+
+  private static int normalizeAiDepth(Integer aiDepth) {
+    if (aiDepth == null || aiDepth <= 0) {
+      return Ai.DEFAULT_DEPTH;
+    }
+    return aiDepth;
+  }
+
+  private static SelectionMode normalizeSelectionMode(String mode) {
+    if (mode == null || mode.isBlank()) {
+      return Mcts.DEFAULT_SELECTION_MODE;
+    }
+    try {
+      return SelectionMode.valueOf(mode.trim().toUpperCase(Locale.ROOT));
+    } catch (IllegalArgumentException e) {
+      return Mcts.DEFAULT_SELECTION_MODE;
+    }
   }
 }

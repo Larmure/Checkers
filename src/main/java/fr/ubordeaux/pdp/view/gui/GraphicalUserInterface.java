@@ -4,12 +4,14 @@ import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -146,6 +148,9 @@ public class GraphicalUserInterface extends GameView {
    * Displays a game over alert with the winner.
    * Should be called after the FINISHED state is set in the model.
    *
+   * <p>The alert can show one of three outcomes: time expiration winner,
+   * regular winner, or draw.
+   *
    * @param game the current game state; must not be {@code null}
    * @param timeExpired true if the game ended due to time expiration, false otherwise
    */
@@ -166,12 +171,20 @@ public class GraphicalUserInterface extends GameView {
 
       String headerText;
       if (timeExpired) {
-        headerText = Internationalization.get("gui.gameover.time_expired");
+        Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
+        headerText = String.format(
+            Internationalization.get("gui.gameover.time_expired"),
+            winner.getName());
+      } else if (game.isDraw()) {
+        headerText = Internationalization.get("gui.gameover.draw");
       } else {
-        headerText = Internationalization.get("gui.gameover.winner");
+        Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
+        headerText = String.format(
+            Internationalization.get("gui.gameover.winner"),
+            winner.getName());
       }
 
-      alert.setHeaderText(String.format(headerText, winnerName));
+      alert.setHeaderText(headerText);
       alert.showAndWait();
     });
   }
@@ -201,8 +214,9 @@ public class GraphicalUserInterface extends GameView {
 
   @Override
   public void showHint(String from, String to) {
-    System.out.println(Internationalization.get("hint.execute") + " " + from + " -> "
-        + to + "\n");
+    if (mainView != null) {
+      mainView.showHint(from, to);
+    }
   }
 
   /**
@@ -220,15 +234,18 @@ public class GraphicalUserInterface extends GameView {
   }
 
   /**
-   * Opens the configuration dialog after the primary stage is visible.
+   * Starts a new game with the CLI configuration (if provided) or the default configuration
+   * after the primary stage is visible.
    *
-   * <p>The dialog is scheduled with {@link Platform#runLater} to ensure it is shown
+   * <p>The game is scheduled with {@link Platform#runLater} to ensure it starts
    * once the first JavaFX pulse has completed and the window is fully initialized.
    */
   private void showInitialConfigDialog() {
     Platform.runLater(() -> {
       if (controller.getGame() == null) {
-        mainView.openConfigDialog();
+        Configuration cfg = (cliConfig != null)
+            ? cliConfig : Configuration.getDefaultConfiguration();
+        controller.startNewGame(cfg);
       }
     });
   }
@@ -263,17 +280,20 @@ public class GraphicalUserInterface extends GameView {
     }
 
     if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+    GameCheckers game = controller.getGame();
+    if (game != null && game.getState() == State.IN_GAME) {
+      // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }
-
-    if (controller.getGame() != null && controller.hasUnsavedChanges()) {
+    if (game != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
       confirm.setTitle(Internationalization.get("gui.quit.title"));
       confirm.setHeaderText(Internationalization.get("gui.quit.unsaved_changes"));
       confirm.setContentText(Internationalization.get("gui.quit.save_prompt"));
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
 
-      confirm.showAndWait().ifPresent(response -> {
+      Optional<ButtonType> result = confirm.showAndWait();
+      result.ifPresent(response -> {
         if (response == ButtonType.YES) {
           mainView.openSaveDialog();
           doQuit();
@@ -292,8 +312,7 @@ public class GraphicalUserInterface extends GameView {
    * Performs the actual shutdown: closes the JavaFX platform cleanly then
    * exits the JVM.
    */
-  private void doQuit() {
-    Platform.exit();
-    System.exit(0);
-  }
+    private void doQuit() {
+      Platform.exit();
+    }
 }

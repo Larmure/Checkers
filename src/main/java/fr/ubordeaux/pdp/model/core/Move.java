@@ -176,6 +176,18 @@ public class Move {
    * @throws IllegalArgumentException if the string format is invalid
    */
   public static Move fromSaveString(String text) {
+    return fromSaveString(text, false, null);
+  }
+
+  /**
+   * Creates a move instance from a string representation with captured pieces.
+   *
+   * @param text the string representation of the move
+   * @param capturesString the captured piece indices as a string (e.g., "14;7;")
+   * @return the created move instance
+   * @throws IllegalArgumentException if the string format is invalid
+   */
+  public static Move fromSaveString(String text, boolean promotion, String capturesString) {
     if (text == null) {
       throw new IllegalArgumentException("Move text is null");
     }
@@ -183,14 +195,6 @@ public class Move {
     String s = text.trim();
     if (s.isEmpty()) {
       throw new IllegalArgumentException("Move text is empty");
-    }
-
-    boolean promotion = false;
-    String promoSuffix = "(promotion)";
-
-    if (s.endsWith(promoSuffix)) {
-      promotion = true;
-      s = s.substring(0, s.length() - promoSuffix.length()).trim();
     }
 
     boolean isCapture = s.contains("x");
@@ -222,6 +226,23 @@ public class Move {
     }
 
     move.setPromotion(promotion);
+
+    // Parse captured pieces if provided
+    if (capturesString != null && !capturesString.trim().isEmpty()) {
+      String[] capturedParts = capturesString.trim().split(";");
+      for (String capturedPart : capturedParts) {
+        String token = capturedPart.trim();
+        if (!token.isEmpty()) {
+          try {
+            move.captured.add(Integer.parseInt(token));
+          } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                "Invalid captured square number '" + token + "' in: " + capturesString, e);
+          }
+        }
+      }
+    }
+
     return move;
   }
 }

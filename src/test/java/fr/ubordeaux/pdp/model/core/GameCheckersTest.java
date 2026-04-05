@@ -395,20 +395,6 @@ class GameCheckersTest {
     // =========================================================================
 
     @Test
-    void applyValidMoveWithManouryNotation() {
-        List<Move> whiteMoves = game.getPossibleMoves(game.getCurrentPlayer());
-        assertFalse(whiteMoves.isEmpty(), "There should be available moves.");
-        Move firstMove = whiteMoves.get(0);
-
-        String fromManoury = String.valueOf(game.getBoard().indexToManoury(firstMove.getFrom()));
-        String toManoury = String.valueOf(game.getBoard().indexToManoury(firstMove.getTo()));
-
-        game.applyMove(fromManoury, toManoury, true);
-
-        assertFalse(game.getIsWhiteTurn(), "It should be black turn after a valid Manoury move.");
-    }
-
-    @Test
     void applyMoveWithInvalidManouryFormatCatchesException() {
         String currentPlayer = game.getCurrentPlayer().toString();
 

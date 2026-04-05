@@ -233,9 +233,6 @@ public class GameController {
       if (configuration.isBlitz()) {
         stopBlitzTimer();
       }
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(
-          game.getCurrentPlayer().getName() + " " + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
     }
     handleGameOver();
@@ -305,8 +302,8 @@ public class GameController {
   }
 
   /**
-   * Displays the remaining time for both players if the game is in blitz mode.
-   * */
+   * Displays the remaining time for the current player if the game is in blitz mode.
+   */
   public void displayTime() {
     if (isBlitz()) {
       String template = Internationalization.get("game.time_remaining");
@@ -482,11 +479,15 @@ public class GameController {
   public void undoGame(int n) {
     if (game == null) {
       return;
+    } else if (game.getState() == State.FINISHED) {
+      System.out.println(Internationalization.get("game.cannot_undo_finished"));
+      return;
     }
 
     for (int i = 0; i < n; i++) {
       game.undoManage();
     }
+    triggerAiIfNecessary();
   }
 
   /**
@@ -497,11 +498,15 @@ public class GameController {
   public void redoGame(int n) {
     if (game == null) {
       return;
+    } else if (game.getState() == State.FINISHED) {
+      System.out.println(Internationalization.get("game.cannot_redo_finished"));
+      return;
     }
 
     for (int i = 0; i < n; i++) {
       game.redoManage();
     }
+    triggerAiIfNecessary();
   }
 
   /**
@@ -538,9 +543,6 @@ public class GameController {
       if (configuration.isBlitz()) {
         stopBlitzTimer();
       }
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(game.getCurrentPlayer().getName() + " "
-          + Internationalization.get("game.loses"));
       System.out.println(Internationalization.get("game.start_new_game"));
 
       if (view instanceof GraphicalUserInterface gui) {

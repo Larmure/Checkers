@@ -55,7 +55,7 @@ public class History {
     if (history.size() != 0) {
       history.removeLast();
     } else {
-      throw new IllegalArgumentException("History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.empty"));
     }
   }
 
@@ -69,7 +69,7 @@ public class History {
     if (history.size() != 0) {
       return history.peekLast().getMove();
     } else {
-      throw new IllegalArgumentException("History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.empty"));
     }
   }
 
@@ -93,29 +93,58 @@ public class History {
         continue;
       }
 
-      line = line.replaceAll("\\{.*?\\}", "").trim();
-
-      if (line.isEmpty()) {
-        continue;
-      }
-
       char colorChar = line.charAt(0);
       PlayerColor color;
 
       switch (colorChar) {
         case 'W' -> color = PlayerColor.WHITE;
         case 'B' -> color = PlayerColor.BLACK;
-        default -> 
-          throw new IllegalArgumentException("History line must start with W or B: " + line);
+        default ->
+          throw new IllegalArgumentException(
+              Internationalization.get("history.error.invalid_line_prefix", line));
       }
 
-      String moveText = line.substring(1).trim();
+      String afterColor = line.substring(1).trim();
+
+      // Extract moveText (first token - before first space)
+      int firstSpace = afterColor.indexOf(" ");
+      String moveText;
+      if (firstSpace != -1) {
+        moveText = afterColor.substring(0, firstSpace);
+      } else {
+        moveText = afterColor;
+      }
 
       if (moveText.isEmpty()) {
-        throw new IllegalArgumentException("Missing move after color: " + line);
+        throw new IllegalArgumentException(
+            Internationalization.get("history.error.missing_move_after_color", line));
       }
 
-      Move move = Move.fromSaveString(moveText);
+      // Extract promotion from line
+      boolean promotion = false;
+      String promoSuffix = "(promotion)";
+      if (line.contains(promoSuffix)) {
+        promotion = true;
+      }
+
+      // Extract captures (after last closing brace if exists, or from the end)
+      String capturesString = null;
+      int lastBrace = afterColor.lastIndexOf("}");
+      if (lastBrace != -1) {
+        capturesString = afterColor.substring(lastBrace + 1).trim();
+      } else {
+        // If no brace, capture everything after the move
+        String rest = afterColor.substring(moveText.length()).trim();
+        if (!rest.isEmpty() && rest.contains(";")) {
+          capturesString = rest;
+        }
+      }
+
+      if (capturesString != null && capturesString.isEmpty()) {
+        capturesString = null;
+      }
+
+      Move move = Move.fromSaveString(moveText, promotion, capturesString);
       history.add(new ColorMove(color, move));
     }
   }
@@ -137,19 +166,35 @@ public class History {
       }
 
       if (cm.getMove().getCaptured().size() == 1) {
-        line += " {Prise simple}";
+        line += " {" + Internationalization.get("history.capture.single") + "} "
+            + capturesString(cm.getMove());
       } else if (cm.getMove().getCaptured().size() >= 1) {
-        line += " {Prise multiple}";
+        line += " {" + Internationalization.get("history.capture.multiple") + "} "
+            + capturesString(cm.getMove());
       }
 
       if (cm.getMove().isPromotion()) {
-        line += " {Promotion}";
+        line += " {" + Internationalization.get("history.promotion") + "}";
       }
 
       line += "\n";
       h += line;
     }
     return h;
+  }
+
+  /**
+   * Generates a string representation of the captured pieces in a move.
+   *
+   * @param move the move containing captured pieces.
+   * @return a formatted string of the captured pieces.
+   */
+  private String capturesString(Move move) {
+    StringBuilder sb = new StringBuilder();
+    for (Integer cp : move.getCaptured()) {
+      sb.append(cp).append(";");
+    }
+    return sb.toString();
   }
 
   /**
@@ -172,7 +217,7 @@ public class History {
     if (redoHistory.size() != 0) {
       return redoHistory.peekLast().getMove();
     } else {
-      throw new IllegalArgumentException("Redo History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.redo_empty"));
     }
   }
 
@@ -185,7 +230,7 @@ public class History {
     if (!redoHistory.isEmpty()) {
       redoHistory.removeLast();
     } else {
-      throw new IllegalArgumentException("Redo History is Empty");
+      throw new IllegalArgumentException(Internationalization.get("history.error.redo_empty"));
     }
   }
 

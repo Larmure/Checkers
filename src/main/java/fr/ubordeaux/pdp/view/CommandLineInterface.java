@@ -1,11 +1,11 @@
 package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
-import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import java.io.IOException;
 import java.util.Arrays;
 import org.jline.reader.EndOfFileException;
@@ -85,7 +85,7 @@ public class CommandLineInterface extends GameView {
 
     String currentPlayerName = game.getCurrentPlayer().getName();
     System.out.println(
-          String.format(Internationalization.get("game.turn"), currentPlayerName));
+        String.format(Internationalization.get("game.turn"), currentPlayerName));
 
     if (controller.isBlitz()) {
       controller.displayTime();
@@ -121,28 +121,7 @@ public class CommandLineInterface extends GameView {
       return;
     }
 
-    if (router != null) {
-      router.route(input.trim());
-    } else {
-      String trimmed = input.trim();
-      String[] tokens;
-
-      if (trimmed.matches(Utils.MOVE_REGEX)) {
-        tokens = trimmed.split("\\s+");
-        controller.executeMove(tokens[0], tokens[1], false);
-
-      } else if (trimmed.matches(Utils.MANOURY_REGEX)) {
-        tokens = trimmed.split("-");
-        controller.executeMove(tokens[0], tokens[1], true);
-
-      } else {
-        tokens = trimmed.split("\\s+");
-
-        String commandName = tokens[0];
-        String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-        controller.executeCommand(commandName, args);
-      }
-    }
+    router.route(input.trim());
   }
 
   /**
@@ -155,12 +134,12 @@ public class CommandLineInterface extends GameView {
         terminal = TerminalBuilder.terminal();
       } catch (IOException ex) {
         System.getLogger(CommandLineInterface.class.getName())
-              .log(System.Logger.Level.ERROR, (String) null, ex);
+            .log(System.Logger.Level.ERROR, (String) null, ex);
       }
       lineReader = LineReaderBuilder.builder()
-            .terminal(terminal)
-            .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
-            .build();
+          .terminal(terminal)
+          .completer(new BashStyleCompleter(Utils.COMMANDS_MAP.keySet()))
+          .build();
 
       lineReader.setVariable(LineReader.BELL_STYLE, "visible");
     }
