@@ -8,8 +8,12 @@ import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import fr.ubordeaux.pdp.view.gui.dialogs.ConfigDialog;
 import fr.ubordeaux.pdp.view.gui.dialogs.ShortcutManager;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -26,7 +30,7 @@ import javafx.stage.Stage;
  * </ul>
  *
  * <h2>Load / Save dialogs</h2>
- * Both dialogs use a {@link TextInputDialog} (rather than a native
+ * Both dialogs use a JavaFX dialog (rather than a native
  * {@code FileChooser}) to avoid a WSL2 / Windows path incompatibility where
  * the native Windows file picker cannot list files stored under a
  * {@code /mnt/c/…} WSL path.
@@ -262,7 +266,6 @@ public class MenuView extends MenuBar {
       confirm.showAndWait().ifPresent(response -> {
         if (response == ButtonType.YES) {
           openSaveDialog();
-          ;
           openLoadDialog();
         } else if (response == ButtonType.NO) {
           openLoadDialog();
@@ -274,43 +277,36 @@ public class MenuView extends MenuBar {
   }
 
   /**
-   * Shows a {@link TextInputDialog} listing the saves available in
+   * Shows a {@link ChoiceDialog} listing the saves available in
    * {@link #SAVE_DIR} and forwards the chosen file name to
    * {@code controller.executeCommand("load", …)}.
-   *
-   * <p>Using a text dialog.
    */
   private void openLoadDialog() {
-    // Build the header text: list available save files if any exist.
-    String headerText;
-    if (SAVE_DIR.exists()) {
-      File[] files = SAVE_DIR.listFiles();
-      if (files != null && files.length > 0) {
-        StringBuilder sb = new StringBuilder(Internationalization.get("dialog.available_saves")
-            + "\n");
-        for (File f : files) {
-          sb.append("  - ").append(f.getName()).append("\n");
-        }
-        headerText = sb.toString();
-      } else {
-        headerText = Internationalization.get("dialog.no_saves") + SAVE_DIR.getPath();
+    File[] files = SAVE_DIR.exists() ? SAVE_DIR.listFiles(File::isFile) : new File[0];
+    List<String> saveNames = new ArrayList<>();
+    if (files != null) {
+      for (File file : files) {
+        saveNames.add(file.getName());
       }
-    } else {
-      headerText = Internationalization.get("dialog.load_from") + SAVE_DIR.getPath();
+    }
+    Collections.sort(saveNames);
+
+    if (saveNames.isEmpty()) {
+      Alert alert = new Alert(Alert.AlertType.INFORMATION);
+      alert.setTitle(Internationalization.get("dialog.load_game"));
+      alert.setHeaderText(Internationalization.get("dialog.no_saves") + SAVE_DIR.getPath());
+      alert.setContentText(Internationalization.get("dialog.load_from") + SAVE_DIR.getPath());
+      alert.showAndWait();
+      return;
     }
 
-    TextInputDialog dialog = new TextInputDialog();
+    ChoiceDialog<String> dialog = new ChoiceDialog<>(saveNames.get(0), saveNames);
     dialog.setTitle(Internationalization.get("dialog.load_game"));
-    dialog.setHeaderText(headerText);
-    dialog.setContentText(Internationalization.get("dialog.file_name"));
+    dialog.setHeaderText(Internationalization.get("dialog.available_saves"));
+    dialog.setContentText(Internationalization.get("dialog.load_from") + SAVE_DIR.getPath());
 
-    dialog.showAndWait().ifPresent(name -> {
-      name = name.trim();
-      if (!name.isEmpty()) {
-        // LoadBoard reconstructs the full path from the file name alone.
-        controller.executeCommand("load", new String[] { name });
-      }
-    });
+    dialog.showAndWait().ifPresent(name ->
+        controller.executeCommand("load", new String[] { name }));
   }
 
   /**
