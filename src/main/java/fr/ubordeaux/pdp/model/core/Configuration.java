@@ -86,7 +86,7 @@ public class Configuration {
     }
 
     boolean hasAi = whiteAi || blackAi;
-    if(hasAi) {
+    if (hasAi) {
       if (!Utils.VALID_AI_MODES.contains(aiMode)) {
         System.out.println("Warning: Invalid AI mode, changed to "
             + Utils.DEFAULT_AI_MODE + ".");
