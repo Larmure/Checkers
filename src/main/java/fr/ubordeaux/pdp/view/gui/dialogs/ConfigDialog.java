@@ -17,6 +17,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
@@ -168,8 +169,14 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     aiCombo.valueProperty().addListener((obs, oldV, newV) -> updateAiControlsState());
 
-    getDialogPane().setContent(buildContent());
+    ScrollPane scrollPane = new ScrollPane(buildContent());
+    scrollPane.setFitToWidth(true);
+    scrollPane.setPrefHeight(500);
+    scrollPane.setStyle("-fx-control-inner-background: #f5f5f5;");
+    getDialogPane().setContent(scrollPane);
     getDialogPane().getStyleClass().add("config-dialog");
+    getDialogPane().setPrefHeight(600);
+    getDialogPane().setMaxHeight(600);
 
     setResultConverter(buttonType -> {
       if (buttonType.getButtonData() == ButtonData.OK_DONE) {
@@ -188,7 +195,8 @@ public class ConfigDialog extends Dialog<Configuration> {
   private VBox buildContent() {
     VBox root = new VBox(16);
     root.setPadding(new Insets(20));
-    root.setPrefWidth(360);
+    root.setPrefWidth(380);
+    root.setStyle("-fx-padding: 20px; -fx-spacing: 16px;");
 
     root.getChildren().addAll(
         buildSection("Board"),

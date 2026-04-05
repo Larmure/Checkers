@@ -210,15 +210,18 @@ public class GraphicalUserInterface extends GameView {
   }
 
   /**
-   * Opens the configuration dialog after the primary stage is visible.
+   * Starts a new game with the CLI configuration (if provided) or the default configuration
+   * after the primary stage is visible.
    *
-   * <p>The dialog is scheduled with {@link Platform#runLater} to ensure it is shown
+   * <p>The game is scheduled with {@link Platform#runLater} to ensure it starts
    * once the first JavaFX pulse has completed and the window is fully initialized.
    */
   private void showInitialConfigDialog() {
     Platform.runLater(() -> {
       if (controller.getGame() == null) {
-        mainView.openConfigDialog();
+        Configuration cfg = (cliConfig != null) 
+            ? cliConfig : Configuration.getDefaultConfiguration();
+        controller.startNewGame(cfg);
       }
     });
   }
