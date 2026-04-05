@@ -68,6 +68,8 @@ public class NewCommand implements Command, Helpable {
         aiTime = Ai.DEFAULT_MAX_TIME_MS;
       }
       String aiMode = cmd.getOptionValue("am", Utils.DEFAULT_AI_MODE);
+      String whiteAiMode = cmd.getOptionValue("wam", aiMode);
+      String blackAiMode = cmd.getOptionValue("bam", aiMode);
       int aiDepth = Integer.parseInt(cmd.getOptionValue("ad",
           String.valueOf(Ai.DEFAULT_DEPTH)));
 
@@ -89,7 +91,7 @@ public class NewCommand implements Command, Helpable {
           controller.isVerbose(), controller.isDebug(),
           "a".equals(aiPlayers) || "w".equals(aiPlayers),
           "a".equals(aiPlayers) || "b".equals(aiPlayers),
-          aiTime, aiMode, aiDepth, selectionMode));
+          aiTime, whiteAiMode, blackAiMode, aiDepth, selectionMode));
 
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());
@@ -107,6 +109,8 @@ public class NewCommand implements Command, Helpable {
    * <li>-a, --ai : Set AI players (a=all, b=black, w=white)</li>
    * <li>-at, --ai-time : Set AI time limit in seconds</li>
    * <li>-am, --ai-mode : Set AI mode</li>
+  * <li>-wam, --white-ai-mode : Set white AI mode</li>
+  * <li>-bam, --black-ai-mode : Set black AI mode</li>
    * <li>-ad, --ai-depth : Set AI search depth</li>
    * <li>-as, --ai-selection : Set MCTS selection mode (uct|ml)</li>
    * </ul>
@@ -122,6 +126,8 @@ public class NewCommand implements Command, Helpable {
     opts.addOption("a", "ai", true, "AI players (a=all, b=black, w=white)");
     opts.addOption("at", "ai-time", true, "AI time limit in seconds");
     opts.addOption("am", "ai-mode", true, "AI mode");
+    opts.addOption("wam", "white-ai-mode", true, "White AI mode");
+    opts.addOption("bam", "black-ai-mode", true, "Black AI mode");
     opts.addOption("ad", "ai-depth", true, "AI search depth");
     opts.addOption("as", "ai-mcts-selection", true, "MCTS selection mode (uct|ml)");
     return opts;

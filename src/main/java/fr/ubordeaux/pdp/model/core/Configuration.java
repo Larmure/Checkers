@@ -38,6 +38,10 @@ public class Configuration {
   private final long aiTime;
   /** The mode for the AI. */
   private final String aiMode;
+  /** The mode for the white AI. */
+  private final String whiteAiMode;
+  /** The mode for the black AI. */
+  private final String blackAiMode;
   /** The search depth for the AI. */
   private final int aiDepth;
   /** The selection function used in MCTS. */
@@ -76,6 +80,34 @@ public class Configuration {
       boolean blackAi, long aiTime,
       String aiMode, int aiDepth, SelectionMode selectionMode) {
 
+    this(blitz, time, contest, size, verbose, debug, whiteAi, blackAi,
+        aiTime, aiMode, aiMode, aiDepth, selectionMode);
+  }
+
+  /**
+   * Constructs a Configuration object with dedicated AI modes for white and
+   * black players.
+   *
+   * @param blitz   Indicates whether the game is in blitz mode.
+   * @param time    The time limit for each player in seconds.
+   * @param contest Indicates whether the game is in contest mode.
+   * @param size    The size of the game board.
+   * @param verbose Indicates whether verbose output is enabled.
+   * @param debug   Indicates whether debug mode is enabled.
+   * @param whiteAi Indicates whether the white player is controlled by AI.
+   * @param blackAi Indicates whether the black player is controlled by AI.
+   * @param aiTime  The time limit for AI moves in milliseconds.
+   * @param whiteAiMode The mode for the white AI.
+   * @param blackAiMode The mode for the black AI.
+   * @param aiDepth The search depth for the AI.
+   * @param selectionMode The selection function used in MCTS.
+   */
+  public Configuration(boolean blitz, int time, boolean contest, int size,
+      boolean verbose, boolean debug, boolean whiteAi,
+      boolean blackAi, long aiTime,
+      String whiteAiMode, String blackAiMode,
+      int aiDepth, SelectionMode selectionMode) {
+
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
@@ -88,10 +120,16 @@ public class Configuration {
       size = Utils.DEFAULT_BOARD_SIZE;
     }
 
-    if (!Utils.VALID_AI_MODES.contains(aiMode)) {
+    if (!Utils.VALID_AI_MODES.contains(whiteAiMode)) {
       System.out.println("Warning: Invalid AI mode, changed to "
           + Utils.DEFAULT_AI_MODE + ".");
-      aiMode = Utils.DEFAULT_AI_MODE;
+      whiteAiMode = Utils.DEFAULT_AI_MODE;
+    }
+
+    if (!Utils.VALID_AI_MODES.contains(blackAiMode)) {
+      System.out.println("Warning: Invalid AI mode, changed to "
+          + Utils.DEFAULT_AI_MODE + ".");
+      blackAiMode = Utils.DEFAULT_AI_MODE;
     }
 
     if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
@@ -115,7 +153,17 @@ public class Configuration {
     this.whiteAi = whiteAi;
     this.blackAi = blackAi;
     this.aiTime = aiTime;
-    this.aiMode = aiMode;
+    this.whiteAiMode = whiteAiMode;
+    this.blackAiMode = blackAiMode;
+    if (whiteAiMode.equals(blackAiMode)) {
+      this.aiMode = whiteAiMode;
+    } else if (whiteAi) {
+      this.aiMode = whiteAiMode;
+    } else if (blackAi) {
+      this.aiMode = blackAiMode;
+    } else {
+      this.aiMode = Utils.DEFAULT_AI_MODE;
+    }
     this.aiDepth = aiDepth;
     this.selectionMode = selectionMode;
   }
@@ -141,6 +189,8 @@ public class Configuration {
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
+    this.whiteAiMode = other.whiteAiMode;
+    this.blackAiMode = other.blackAiMode;
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
   }
@@ -164,6 +214,8 @@ public class Configuration {
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
+    this.whiteAiMode = other.whiteAiMode;
+    this.blackAiMode = other.blackAiMode;
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
   }
@@ -279,6 +331,24 @@ public class Configuration {
   }
 
   /**
+   * Returns the mode for the white AI.
+   *
+   * @return the mode for the white AI.
+   */
+  public String getWhiteAiMode() {
+    return whiteAiMode;
+  }
+
+  /**
+   * Returns the mode for the black AI.
+   *
+   * @return the mode for the black AI.
+   */
+  public String getBlackAiMode() {
+    return blackAiMode;
+  }
+
+  /**
   * Returns the search depth for the AI.
   *
   * @return the search depth for the AI.
@@ -308,7 +378,9 @@ public class Configuration {
   public String toString() {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
-        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi + ", aiTime=" + aiTime + ", aiMode="
-        + aiMode + ", aiDepth=" + aiDepth + ", selectionMode=" + selectionMode;
+        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi
+        + ", whiteAiMode=" + whiteAiMode + ", blackAiMode=" + blackAiMode
+        + ", aiTime=" + aiTime + ", aiMode=" + aiMode + ", aiDepth=" + aiDepth
+        + ", selectionMode=" + selectionMode;
   }
 }

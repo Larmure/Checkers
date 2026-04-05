@@ -77,6 +77,12 @@ public class App {
   /** Flag to set the AI mode. */
   public static String aiMode = Utils.DEFAULT_AI_MODE;
 
+  /** Flag to set the white AI mode. */
+  private static String whiteAiMode = Utils.DEFAULT_AI_MODE;
+
+  /** Flag to set the black AI mode. */
+  private static String blackAiMode = Utils.DEFAULT_AI_MODE;
+
   /** Flag to set the AI search depth. */
   private static int aiDepth = Ai.DEFAULT_DEPTH;
 
@@ -117,7 +123,8 @@ public class App {
 
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
-          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+          size, verbose, debug, whiteAi, blackAi, aiTime,
+          whiteAiMode, blackAiMode, aiDepth, selectionMode));
     } else {
       view = new CommandLineInterface(verbose, debug);
     }
@@ -149,7 +156,7 @@ public class App {
     if (status != EXIT_GUI) {
       controller.startNewGame(new Configuration(blitz, time, contest,
           size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
-          aiMode, aiDepth, selectionMode));
+          whiteAiMode, blackAiMode, aiDepth, selectionMode));
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
@@ -201,6 +208,10 @@ public class App {
     options.addOption("s", "size", true, "set board size (8|10|12)");
     options.addOption("at", "ai-time", true, "set AI time limit in seconds");
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
+    options.addOption("wam", "white-ai-mode", true,
+        "set white AI mode (minimax|alphabeta|iterative|mcts)");
+    options.addOption("bam", "black-ai-mode", true,
+        "set black AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
     options.addOption("tr", "train", true, "train a ML selection function");
@@ -320,7 +331,19 @@ public class App {
 
       if (cmd.hasOption("am")) {
         aiMode = cmd.getOptionValue("am");
+        whiteAiMode = aiMode;
+        blackAiMode = aiMode;
         System.out.println(Internationalization.get("opt.ai.mode.status", aiMode));
+      }
+
+      if (cmd.hasOption("wam")) {
+        whiteAiMode = cmd.getOptionValue("wam");
+        System.out.println("White AI mode set to " + whiteAiMode + ".");
+      }
+
+      if (cmd.hasOption("bam")) {
+        blackAiMode = cmd.getOptionValue("bam");
+        System.out.println("Black AI mode set to " + blackAiMode + ".");
       }
 
       if (cmd.hasOption("ad")) {
@@ -454,6 +477,8 @@ public class App {
     blackAi = false;
     aiTime = Ai.DEFAULT_MAX_TIME_MS;
     aiMode = Utils.DEFAULT_AI_MODE;
+    whiteAiMode = Utils.DEFAULT_AI_MODE;
+    blackAiMode = Utils.DEFAULT_AI_MODE;
     aiDepth = Ai.DEFAULT_DEPTH;
     selectionMode = Mcts.DEFAULT_SELECTION_MODE;
   }
@@ -501,5 +526,23 @@ public class App {
    */
   public static SelectionMode getSelectionMode() {
     return selectionMode;
+  }
+
+  /**
+   * Returns the configured AI mode for white player.
+   *
+   * @return white AI mode.
+   */
+  public static String getWhiteAiMode() {
+    return whiteAiMode;
+  }
+
+  /**
+   * Returns the configured AI mode for black player.
+   *
+   * @return black AI mode.
+   */
+  public static String getBlackAiMode() {
+    return blackAiMode;
   }
 }

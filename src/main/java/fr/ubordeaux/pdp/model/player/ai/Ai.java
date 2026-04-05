@@ -279,7 +279,18 @@ public abstract class Ai {
    * @return an instance of Ai corresponding to the specified mode
    */
   public static Ai buildAi(Configuration cfg) {
-    String aiMode = cfg.getAiMode();
+    return buildAi(cfg, true);
+  }
+
+  /**
+   * Factory method to create an AI instance for a specific player color.
+   *
+   * @param cfg the configuration containing AI settings
+   * @param isWhite true for white player AI, false for black player AI
+   * @return an instance of Ai corresponding to the configured mode for that color
+   */
+  public static Ai buildAi(Configuration cfg, boolean isWhite) {
+    String aiMode = isWhite ? cfg.getWhiteAiMode() : cfg.getBlackAiMode();
     int depth = cfg.getAiDepth();
     long timeMs = cfg.getAiTime();
 

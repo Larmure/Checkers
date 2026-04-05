@@ -168,9 +168,7 @@ public class LoadBoard {
       Board board = loadedGame.getBoard();
       board.clearBoard();
 
-
       applyBufferedBoard(board);
-
 
       loadedGame.setHistory(new History(historyBuffer.toString()));
       loadedGame.checkGameOver();
@@ -496,7 +494,7 @@ public class LoadBoard {
       }
       case "ai-time" -> {
         long aiTime = Long.parseLong(value);
-        if (aiTime <= Ai.MIN_TIME_MS ||  aiTime > Ai.MAX_TIME_MS) {
+        if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
           throw new Exception("Invalid ai-time: '" + value + "'.");
         }
         loadedAiTime = aiTime;
@@ -619,6 +617,8 @@ public class LoadBoard {
     int aiDepth = loadedAiDepth != null ? loadedAiDepth : defaults.getAiDepth();
     long aiTime = loadedAiTime != null ? loadedAiTime : defaults.getAiTime();
     String aiMode = loadedAiMode != null ? loadedAiMode : defaults.getAiMode();
+    String whiteAiMode = whiteAi ? aiMode : defaults.getWhiteAiMode();
+    String blackAiMode = blackAi ? aiMode : defaults.getBlackAiMode();
 
     return new Configuration(
         blitz,
@@ -630,7 +630,8 @@ public class LoadBoard {
         whiteAi,
         blackAi,
         aiTime,
-        aiMode,
+        whiteAiMode,
+        blackAiMode,
         aiDepth,
         defaults.getSelectionMode());
   }
