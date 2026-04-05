@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.LogisticRegressionTrainer;
@@ -10,7 +11,6 @@ import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
-import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;

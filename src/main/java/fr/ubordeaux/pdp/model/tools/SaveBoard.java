@@ -95,7 +95,7 @@ public class SaveBoard {
     boolean blackIsAi = game.getBlackPlayer() instanceof AiPlayer;
 
     String aiMode = "none";
-    String aiDepth = "0";
+    String aiDepth = "1";
 
     if (whiteIsAi && blackIsAi) {
       throw new IOException("Saving with two AI players is not supported.");

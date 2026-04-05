@@ -6,12 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
+import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
-import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.junit.jupiter.api.BeforeEach;

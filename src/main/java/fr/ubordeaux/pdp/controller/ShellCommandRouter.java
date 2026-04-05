@@ -1,6 +1,5 @@
-package fr.ubordeaux.pdp.server;
+package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.commands.JoinCommand;
 import fr.ubordeaux.pdp.controller.commands.PingCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
@@ -9,6 +8,8 @@ import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import java.util.Arrays;
 
 /**

@@ -4,6 +4,7 @@ import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.Piece;
+import fr.ubordeaux.pdp.model.player.ai.Ai;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -468,7 +469,7 @@ public class LoadBoard {
         if (value.equalsIgnoreCase("none")) {
           loadedWhiteAi = false;
           loadedBlackAi = false;
-          loadedAiMode = "none";
+          loadedAiMode = "minimax";
 
         } else if (value.startsWith("white-")) {
           String algo = normalizeAiAlgorithm(value.substring("white-".length()));
@@ -495,7 +496,7 @@ public class LoadBoard {
       }
       case "ai-time" -> {
         long aiTime = Long.parseLong(value);
-        if (aiTime < 0) {
+        if (aiTime <= Ai.MIN_TIME_MS ||  aiTime > Ai.MAX_TIME_MS) {
           throw new Exception("Invalid ai-time: '" + value + "'.");
         }
         loadedAiTime = aiTime;

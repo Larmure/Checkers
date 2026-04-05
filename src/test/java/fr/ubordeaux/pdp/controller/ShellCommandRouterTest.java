@@ -1,5 +1,7 @@
-package fr.ubordeaux.pdp.server;
+package fr.ubordeaux.pdp.controller;
 
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -7,8 +9,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import fr.ubordeaux.pdp.controller.GameController;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;

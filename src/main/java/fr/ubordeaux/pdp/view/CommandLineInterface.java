@@ -1,11 +1,11 @@
 package fr.ubordeaux.pdp.view;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
-import fr.ubordeaux.pdp.server.ShellCommandRouter;
 import java.io.IOException;
 import java.util.Arrays;
 import org.jline.reader.EndOfFileException;
