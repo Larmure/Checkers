@@ -74,6 +74,7 @@ public class LoadBoard {
   private StringBuilder historyBuffer = new StringBuilder();
   /** Buffered board lines from the [game] section. */
   private List<String> loadedBoardLines = new ArrayList<>();
+  private List<Integer> loadedBoardLineNumbers = new ArrayList<>();
   /** Whether the parser is currently inside a block comment. */
   private boolean insideBlockComment = false;
   /** Line where the current block comment started. */
@@ -133,7 +134,7 @@ public class LoadBoard {
         }
 
         try {
-          processSectionData(currentSection, clean);
+          processSectionData(currentSection, clean, lineNum);
         } catch (Exception e) {
           failLoad(
               "Format error at line "
@@ -166,12 +167,9 @@ public class LoadBoard {
       Board board = loadedGame.getBoard();
       board.clearBoard();
 
-      try {
-        applyBufferedBoard(board);
-      } catch (Exception e) {
-        failLoad("Loading error: " + e.getMessage());
-        return;
-      }
+
+      applyBufferedBoard(board);
+
 
       loadedGame.setHistory(new History(historyBuffer.toString()));
       loadedGame.checkGameOver();
@@ -220,6 +218,7 @@ public class LoadBoard {
     loadedBoardLines = new ArrayList<>();
     insideBlockComment = false;
     blockCommentStartLine = -1;
+    loadedBoardLineNumbers = new ArrayList<>();
   }
 
   /**
@@ -302,14 +301,17 @@ public class LoadBoard {
    * @param data the cleaned line content
    * @throws Exception if the data is invalid
    */
-  private void processSectionData(String section, String data) throws Exception {
+  private void processSectionData(String section, String data, int lineNum) throws Exception {
     if (section == null || section.isEmpty()) {
       throw new Exception("Data found outside any section header.");
     }
 
     switch (section) {
       case "[settings]" -> parseSetting(data);
-      case "[game]" -> loadedBoardLines.add(data);
+      case "[game]" -> {
+        loadedBoardLines.add(data);
+        loadedBoardLineNumbers.add(lineNum);
+      }
       case "[history]" -> historyBuffer.append(data).append("\n");
       default -> {
         // Unknown sections are ignored.
@@ -531,40 +533,51 @@ public class LoadBoard {
    * Applies the buffered [game] lines to the given board.
    *
    * @param board the board to fill
-   * @throws Exception if a buffered row is invalid
    */
-  private void applyBufferedBoard(Board board) throws Exception {
+  private void applyBufferedBoard(Board board) {
     int n = loadedBoardSize;
 
     for (int rowIndex = 0; rowIndex < loadedBoardLines.size(); rowIndex++) {
-      String data = loadedBoardLines.get(rowIndex);
-      String cells = data.replace(" ", "");
+      String data = loadedBoardLines.get(rowIndex).trim();
+      int fileLine = loadedBoardLineNumbers.get(rowIndex);
 
-      if (cells.length() != n) {
-        throw new Exception(
-            "Board row must have " + n + " cells, got " + cells.length() + ".");
+      String[] cells = data.split("\\s+");
+
+      if (cells.length != n) {
+        failLoad("Loading error: board row at file line " + fileLine
+            + " must have " + n + " cells, got " + cells.length + ".");
+        return;
       }
 
       int boardRow = n - 1 - rowIndex;
 
       for (int col = 0; col < n; col++) {
-        char c = cells.charAt(col);
+        String token = cells[col];
+        String square = toSquare(boardRow, col);
+
+        if (token.length() != 1) {
+          failLoad("Loading error: invalid board token '" + token
+              + "' at square " + square + " (file line " + fileLine + ").");
+          return;
+        }
+
+        char c = token.charAt(0);
         boolean playable = ((boardRow + col) % 2 == 0);
+
+        if ("xoXO_".indexOf(c) == -1) {
+          failLoad("Loading error: invalid board character '" + c
+              + "' at square " + square + " (file line " + fileLine + ").");
+          return;
+        }
 
         if (!playable) {
           if (c != '_') {
-            throw new Exception(
-                "Piece '" + c + "' on non-playable square at row "
-                    + rowIndex
-                    + ", col "
-                    + col
-                    + ".");
+            failLoad("Loading error: piece '" + c
+                + "' on non-playable square " + square
+                + " (file line " + fileLine + ").");
+            return;
           }
           continue;
-        }
-
-        if ("xoXO_".indexOf(c) == -1) {
-          throw new Exception("Invalid board character: '" + c + "'.");
         }
 
         if (c != '_') {
@@ -580,6 +593,10 @@ public class LoadBoard {
         }
       }
     }
+  }
+
+  private String toSquare(int boardRow, int col) {
+    return "" + (char) ('A' + boardRow) + (col + 1);
   }
 
   /**

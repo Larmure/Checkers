@@ -1,5 +1,6 @@
 package fr.ubordeaux.pdp.model.tools;
 
+
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
@@ -9,11 +10,14 @@ import fr.ubordeaux.pdp.controller.commands.LoadCommand;
 import fr.ubordeaux.pdp.controller.commands.NewCommand;
 import fr.ubordeaux.pdp.controller.commands.PauseCommand;
 import fr.ubordeaux.pdp.controller.commands.PingCommand;
+import fr.ubordeaux.pdp.controller.commands.PlayersCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitCommand;
 import fr.ubordeaux.pdp.controller.commands.RedoCommand;
 import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.ScoreboardCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStatusCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.controller.commands.SetCommand;
 import fr.ubordeaux.pdp.controller.commands.ShowCommand;
@@ -109,11 +113,15 @@ public class Utils {
       Map.entry("show", new ShowCommand(null, null)),
       Map.entry("set", new SetCommand(null, null)),
       Map.entry("server list", new ServerListCommand()),
-      Map.entry("server start", new ServerStartCommand(null, null, null)),
+      Map.entry("server start", new ServerStartCommand(null, null,  null)),
+      Map.entry("server status", new ServerStatusCommand()),
       Map.entry("ping", new PingCommand(null)),
       Map.entry("server stop", new ServerStopCommand(null)),
       Map.entry("continue", new ContinueCommand(null)),
+      Map.entry("score", new ScoreboardCommand(null)),
+      Map.entry("players", new PlayersCommand(null)),
       Map.entry("join", new JoinCommand(null, null)));
+
   
   /**
    * A formatted list of all available commands and their expected syntax.
@@ -131,9 +139,14 @@ public class Utils {
       "redo [N]",
       "show board|history|time|configuration",
       "set PARAM=VALUE",
+      "online mode",
       "server list",
       "server start [PORT]",
-      "server stop"
+      "server stop",
+      "server status",
+      "players",
+      "score",
+      "join [IP[:PORT]]"
   };
 
   /** Set of valid AI modes for the game. */
