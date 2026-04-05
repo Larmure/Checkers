@@ -279,12 +279,12 @@ public class GraphicalUserInterface extends GameView {
       return;
     }
 
-    if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
     GameCheckers game = controller.getGame();
+
     if (game != null && game.getState() == State.IN_GAME) {
-      // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }
+
     if (game != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
       confirm.setTitle(Internationalization.get("gui.quit.title"));
@@ -299,7 +299,7 @@ public class GraphicalUserInterface extends GameView {
           doQuit();
         } else if (response == ButtonType.NO) {
           doQuit();
-        } else {
+        } else if (game.getState() == State.IN_GAME) {
           controller.executeCommand("continue", new String[0]);
         }
       });
@@ -312,7 +312,7 @@ public class GraphicalUserInterface extends GameView {
    * Performs the actual shutdown: closes the JavaFX platform cleanly then
    * exits the JVM.
    */
-    private void doQuit() {
-      Platform.exit();
-    }
+  private void doQuit() {
+    Platform.exit();
+  }
 }

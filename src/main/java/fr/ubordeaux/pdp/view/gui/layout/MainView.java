@@ -318,11 +318,11 @@ public class MainView extends BorderPane {
   private void refreshToolbarState() {
     boolean localMode = session == null || session.getMode() == ClientMode.LOCAL;
 
-    if (undoButton != null) {
-      undoButton.setDisable(!localMode);
+    if (undoBtn != null) {
+      undoBtn.setDisable(!localMode);
     }
-    if (redoButton != null) {
-      redoButton.setDisable(!localMode);
+    if (redoBtn != null) {
+      redoBtn.setDisable(!localMode);
     }
     if (pauseButton != null) {
       pauseButton.setDisable(!localMode);

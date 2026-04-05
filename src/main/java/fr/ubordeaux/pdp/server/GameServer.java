@@ -313,7 +313,7 @@ public class GameServer {
             if (target == null) {
               out.println("ERROR: Player '" + rest.trim() + "' not found.");
             } else {
-              out.println("PLAYER_INFO\n" + target.toDetailedString());
+              out.println("PLAYER_INFO\n" + target.toString());
             }
           }
         }

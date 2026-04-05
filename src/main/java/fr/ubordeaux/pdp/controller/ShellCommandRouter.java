@@ -1,7 +1,5 @@
 package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.controller.commands.HelpClientCommand;
 import fr.ubordeaux.pdp.controller.commands.JoinCommand;
 import fr.ubordeaux.pdp.controller.commands.PingCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
@@ -147,10 +145,6 @@ public class ShellCommandRouter {
       case "join" -> handleJoin(tokens);
       case "ping" -> handlePing();
       case "quit" -> handleQuit();
-      case "server"  -> handleServerCommand(tokens);
-      case "join"    -> handleJoin(tokens);
-      case "ping"    -> handlePing();
-      case "quit"    -> handleQuit();
 
       // ---- Invitation commands (forwarded to server when CONNECTED) -------
       case "accept", "decline", "cancel" -> {

@@ -183,7 +183,6 @@ public class App {
     }
     GameController controller = new GameController(view);
 
-    ClientSession session = new ClientSession();
 
     session.setController(controller);
     ShellCommandRouter router = new ShellCommandRouter(controller, session);
