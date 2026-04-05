@@ -7,7 +7,6 @@ import fr.ubordeaux.pdp.model.tools.BashStyleCompleter;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import java.io.IOException;
-import java.util.Arrays;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
