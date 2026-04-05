@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.Mcts;
+import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Utils;
 
 class ConfigurationTest {
@@ -61,26 +62,43 @@ class ConfigurationTest {
 
     @Test
     void testCopyConstructor() {
-        Configuration original = new Configuration(true, 30, true, 8, true, true, false, false, 100,
-                Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
+        Configuration original = new Configuration(true, 30, true, 10, true, true, true, false, 2500,
+                "Minimax", 5, SelectionMode.ML); // Utilise des valeurs non-défaut pour être sûr
+
         Configuration copy = new Configuration(original);
 
         assertEquals(original.isBlitz(), copy.isBlitz());
+        assertEquals(original.getTime(), copy.getTime());
+        assertEquals(original.isContest(), copy.isContest());
         assertEquals(original.getSize(), copy.getSize());
+        assertEquals(original.isVerbose(), copy.isVerbose());
         assertEquals(original.isDebug(), copy.isDebug());
+        assertEquals(original.iswhiteAi(), copy.iswhiteAi());
+        assertEquals(original.isblackAi(), copy.isblackAi());
+        assertEquals(original.getAiTime(), copy.getAiTime());
+        assertEquals(original.getAiMode(), copy.getAiMode());
+        assertEquals(original.getAiDepth(), copy.getAiDepth());
+        assertEquals(original.getSelectionMode(), copy.getSelectionMode());
     }
 
     @Test
     void testModifiedCopyConstructor() {
-        // Tests the constructor that allows changing verbose and debug while copying
-        // the rest
-        Configuration original = new Configuration(true, 30, true, 8, false, false, false, false, 100,
-                Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
+        Configuration original = new Configuration(true, 30, true, 10, false, false, true, false, 2500,
+                "Minimax", 5, SelectionMode.ML);
+
+        // On copie mais on force verbose et debug à TRUE
         Configuration modified = new Configuration(original, true, true);
 
-        assertEquals(original.isBlitz(), modified.isBlitz());
+        // Vérification des champs modifiés
         assertTrue(modified.isVerbose());
         assertTrue(modified.isDebug());
+
+        // Vérification que le reste n'a pas bougé
+        assertEquals(original.isBlitz(), modified.isBlitz());
+        assertEquals(original.getTime(), modified.getTime());
+        assertEquals(original.getSize(), modified.getSize());
+        assertEquals(original.getAiMode(), modified.getAiMode());
+        assertEquals(original.getSelectionMode(), modified.getSelectionMode());
     }
 
     @Test
@@ -111,5 +129,50 @@ class ConfigurationTest {
                 + Mcts.DEFAULT_SELECTION_MODE;
 
         assertEquals(expected, config.toString(), "The toString method must reflect the object's actual state.");
+    }
+
+    @Test
+    void testConstructorValidationInvalidAiMode() {
+        // Teste un mode IA non reconnu
+        Configuration config = new Configuration(false, Utils.DEFAULT_TIME, false, 8,
+                false, false, true, true, 1000,
+                "MODE_INEXISTANT", Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
+
+        assertEquals(Utils.DEFAULT_AI_MODE, config.getAiMode(),
+                "Un mode IA invalide doit être remplacé par le mode par défaut.");
+    }
+
+    @Test
+    void testConstructorValidationInvalidAiTime() {
+        // Teste un temps IA trop bas (ex: 0)
+        Configuration configLow = new Configuration(false, Utils.DEFAULT_TIME, false, 8,
+                false, false, true, true, 0,
+                Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
+        assertEquals(Ai.DEFAULT_MAX_TIME_MS, configLow.getAiTime(),
+                "Un temps trop bas doit être remplacé par le temps par défaut.");
+
+        // Teste un temps IA trop haut
+        Configuration configHigh = new Configuration(false, Utils.DEFAULT_TIME, false, 8,
+                false, false, true, true, Ai.MAX_TIME_MS + 1000,
+                Utils.DEFAULT_AI_MODE, Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE);
+        assertEquals(Ai.DEFAULT_MAX_TIME_MS, configHigh.getAiTime(),
+                "Un temps trop haut doit être remplacé par le temps par défaut.");
+    }
+
+    @Test
+    void testConstructorValidationInvalidAiDepth() {
+        // Teste une profondeur trop basse
+        Configuration configLow = new Configuration(false, Utils.DEFAULT_TIME, false, 8,
+                false, false, true, true, 1000,
+                Utils.DEFAULT_AI_MODE, 0, Mcts.DEFAULT_SELECTION_MODE);
+        assertEquals(Ai.DEFAULT_DEPTH, configLow.getAiDepth(),
+                "Une profondeur <= 0 doit être remplacée par celle par défaut.");
+
+        // Teste une profondeur trop haute
+        Configuration configHigh = new Configuration(false, Utils.DEFAULT_TIME, false, 8,
+                false, false, true, true, 1000,
+                Utils.DEFAULT_AI_MODE, Ai.MAX_SAFE_DEPTH + 1, Mcts.DEFAULT_SELECTION_MODE);
+        assertEquals(Ai.DEFAULT_DEPTH, configHigh.getAiDepth(),
+                "Une profondeur dangereuse doit être remplacée par celle par défaut.");
     }
 }

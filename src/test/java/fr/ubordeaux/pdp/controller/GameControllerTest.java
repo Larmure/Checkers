@@ -740,4 +740,30 @@ class GameControllerTest {
     assertFalse(out.toString().trim().isEmpty(),
         "An error message must be displayed when the game is finished.");
   }
+
+  // test buildCommand
+
+  @Test
+  void testBuildCommand_allValidCommands() throws Exception {
+    // 1. Accéder à la méthode privée
+    java.lang.reflect.Method method = GameController.class.getDeclaredMethod("buildCommand", String.class,
+        String[].class);
+    method.setAccessible(true);
+
+    String[] dummyArgs = new String[] { "dummy" };
+
+    // 2. Tester chaque branche du switch en vérifiant le nom de la classe retournée
+    assertEquals("NewCommand", method.invoke(controller, "new", dummyArgs).getClass().getSimpleName());
+    assertEquals("HelpCommand", method.invoke(controller, "help", dummyArgs).getClass().getSimpleName());
+    assertEquals("QuitCommand", method.invoke(controller, "quit", dummyArgs).getClass().getSimpleName());
+    assertEquals("PauseCommand", method.invoke(controller, "pause", dummyArgs).getClass().getSimpleName());
+    assertEquals("LoadCommand", method.invoke(controller, "load", dummyArgs).getClass().getSimpleName());
+    assertEquals("SaveCommand", method.invoke(controller, "save", dummyArgs).getClass().getSimpleName());
+    assertEquals("HintCommand", method.invoke(controller, "hint", dummyArgs).getClass().getSimpleName());
+    assertEquals("UndoCommand", method.invoke(controller, "undo", dummyArgs).getClass().getSimpleName());
+    assertEquals("RedoCommand", method.invoke(controller, "redo", dummyArgs).getClass().getSimpleName());
+    assertEquals("ShowCommand", method.invoke(controller, "show", dummyArgs).getClass().getSimpleName());
+    assertEquals("SetCommand", method.invoke(controller, "set", dummyArgs).getClass().getSimpleName());
+    assertEquals("ContinueCommand", method.invoke(controller, "continue", dummyArgs).getClass().getSimpleName());
+  }
 }
