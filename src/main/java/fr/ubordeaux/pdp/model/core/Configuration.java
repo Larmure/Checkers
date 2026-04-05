@@ -85,8 +85,7 @@ public class Configuration {
       size = Utils.DEFAULT_BOARD_SIZE;
     }
 
-    boolean hasAi = whiteAi || blackAi;
-    if (hasAi) {
+    
       if (!Utils.VALID_AI_MODES.contains(aiMode)) {
         System.out.println("Warning: Invalid AI mode, changed to "
             + Utils.DEFAULT_AI_MODE + ".");
@@ -97,12 +96,11 @@ public class Configuration {
             + Ai.DEFAULT_MAX_TIME_MS + " ms.");
         aiTime = Ai.DEFAULT_MAX_TIME_MS;
       }
-      if (aiDepth <= 0) {
+      if (aiDepth <= 0 || aiDepth > Ai.MAX_SAFE_DEPTH) {
         System.out.println("Warning: Invalid AI depth, changed to "
             + Ai.DEFAULT_DEPTH + ".");
         aiDepth = Ai.DEFAULT_DEPTH;
       }
-    }
 
     this.blitz = blitz;
     this.time = time;
