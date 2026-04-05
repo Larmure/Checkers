@@ -43,6 +43,8 @@ public class GameCheckers implements Subject {
   private int endGameCount = 0;
   /** Stores the history of board positions. */
   private List<String> positionHistory = new ArrayList<>();
+  /** Indicates whether the game ended in a draw. */
+  private boolean draw = false;
 
   /**
    * Initializes a new game instance with the specified configuration.
@@ -272,28 +274,32 @@ public class GameCheckers implements Subject {
   /**
    * Evaluates if the game has reached an end condition.
    *
-   * 
-   * <p>Currently checks if the active player has any legal moves remaining.
-   * If not, the game transitions to FinishedState.
+   * <p>If a terminal condition is reached, the game transitions to
+   * {@link State#FINISHED} and the draw flag is updated accordingly.
    *
    * @return The new state if the game is over, otherwise the current state.
    */
   public State checkGameOver() {
     Player currentPlayer = isWhiteTurn ? whitePlayer : blackPlayer;
 
+    boolean whiteHasMoves = !getPossibleMoves(whitePlayer).isEmpty();
+    boolean blackHasMoves = !getPossibleMoves(blackPlayer).isEmpty();
+
+    // If both players have no moves, the game is finished as a draw.
+    if (!whiteHasMoves && !blackHasMoves) {
+      System.out.println(Internationalization.get("game.game_over"));
+      System.out.println(Internationalization.get("game.game_draw"));
+      draw = true;
+      setState(State.FINISHED);
+      return this.state;
+    }
+
     // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(Internationalization.get("game.game_winner") + " "
           + (isWhiteTurn ? blackPlayer.getName() : whitePlayer.getName()));
-      setState(State.FINISHED);
-      return this.state;
-    }
-
-    // If both players have no moves, the game is also finished (draw).
-    if (getPossibleMoves(whitePlayer).isEmpty() && getPossibleMoves(blackPlayer).isEmpty()) {
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(Internationalization.get("game.game_draw"));
+      draw = false;
       setState(State.FINISHED);
       return this.state;
     }
@@ -304,6 +310,7 @@ public class GameCheckers implements Subject {
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(Internationalization.get("game.game_draw"));
       System.out.println(Internationalization.get("game.game_over_no_progress"));
+      draw = true;
       setState(State.FINISHED);
       return this.state;
     }
@@ -314,6 +321,7 @@ public class GameCheckers implements Subject {
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(Internationalization.get("game.game_draw"));
       System.out.println(Internationalization.get("game.game_over_endgame"));
+      draw = true;
       setState(State.FINISHED);
       return this.state;
     }
@@ -328,12 +336,26 @@ public class GameCheckers implements Subject {
         System.out.println(Internationalization.get("game.game_over"));
         System.out.println(Internationalization.get("game.game_draw"));
         System.out.println(Internationalization.get("game.game_over_repetition"));
+        draw = true;
         setState(State.FINISHED);
         return this.state;
       }
     }
 
+    draw = false;
     return this.state;
+  }
+
+  /**
+   * Returns whether the current game result is a draw.
+   *
+   * <p>This flag is updated by {@link #checkGameOver()} whenever a terminal
+   * condition is evaluated.
+   *
+   * @return {@code true} if the game ended in a draw; {@code false} otherwise.
+   */
+  public boolean isDraw() {
+    return draw;
   }
 
   /**

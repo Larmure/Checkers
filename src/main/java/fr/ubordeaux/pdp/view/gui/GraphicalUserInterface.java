@@ -133,8 +133,11 @@ public class GraphicalUserInterface extends GameView {
   }
 
   /**
-   * Displays a game over alert with the winner.
+   * Displays a game over alert based on the terminal game outcome.
    * Should be called after the FINISHED state is set in the model.
+   *
+   * <p>The alert can show one of three outcomes: time expiration winner,
+   * regular winner, or draw.
    *
    * @param game the current game state; must not be {@code null}
    * @param timeExpired true if the game ended due to time expiration, false otherwise
@@ -145,9 +148,6 @@ public class GraphicalUserInterface extends GameView {
     }
     gameOverAlert = true;
 
-    Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
-    String winnerName = winner.getName();
-
     Platform.runLater(() -> {
       Alert alert = new Alert(Alert.AlertType.INFORMATION);
       alert.initOwner(stage);
@@ -155,12 +155,20 @@ public class GraphicalUserInterface extends GameView {
 
       String headerText;
       if (timeExpired) {
-        headerText = Internationalization.get("gui.gameover.time_expired");
+        Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
+        headerText = String.format(
+            Internationalization.get("gui.gameover.time_expired"),
+            winner.getName());
+      } else if (game.isDraw()) {
+        headerText = Internationalization.get("gui.gameover.draw");
       } else {
-        headerText = Internationalization.get("gui.gameover.winner");
+        Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
+        headerText = String.format(
+            Internationalization.get("gui.gameover.winner"),
+            winner.getName());
       }
 
-      alert.setHeaderText(String.format(headerText, winnerName));
+      alert.setHeaderText(headerText);
       alert.showAndWait();
     });
   }
