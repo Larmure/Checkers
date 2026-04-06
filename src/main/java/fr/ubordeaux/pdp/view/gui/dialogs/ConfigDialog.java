@@ -64,6 +64,9 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** MCTS type selector. */
   private final ComboBox<String> mctsCombo = new ComboBox<>();
 
+  /** Minimax-family scoring selector. */
+  private final ComboBox<String> minimaxScoringCombo = new ComboBox<>();
+
   /** Enables blitz mode. Enabling it also enables the time spinner. */
   private final CheckBox blitzCheck = new CheckBox("Blitz mode");
 
@@ -145,6 +148,8 @@ public class ConfigDialog extends Dialog<Configuration> {
     blackAiModeCombo.setValue(toDisplayAiMode(defaults.getBlackAiMode()));
     mctsCombo.getItems().addAll("UCT", "ML");
     mctsCombo.setValue(defaults.getSelectionMode().name());
+    minimaxScoringCombo.getItems().addAll("Max", "Advanced", "Simple");
+    minimaxScoringCombo.setValue(toDisplayMinimaxScoring(defaults.getMinimaxScoring()));
 
     contestCheck.setSelected(defaults.isContest());
     verboseCheck.setSelected(defaults.isVerbose());
@@ -308,6 +313,12 @@ public class ConfigDialog extends Dialog<Configuration> {
     mctsBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(mctsBox, 0, 6);
 
+    VBox minimaxScoringBox = new VBox(4,
+        new Label("Minimax scoring:"),
+        minimaxScoringCombo);
+    minimaxScoringBox.setAlignment(Pos.CENTER_LEFT);
+    grid.add(minimaxScoringBox, 0, 7);
+
     return grid;
   }
 
@@ -357,6 +368,10 @@ public class ConfigDialog extends Dialog<Configuration> {
     boolean whiteMctsSelected = "MCTS".equals(whiteMode);
     boolean blackMctsSelected = "MCTS".equals(blackMode);
     mctsCombo.setDisable(!aiEnabled || (!whiteMctsSelected && !blackMctsSelected));
+
+    boolean whiteMinimaxSelected = MINIMAX.equals(whiteMode) || "Alpha-Beta".equals(whiteMode);
+    boolean blackMinimaxSelected = MINIMAX.equals(blackMode) || "Alpha-Beta".equals(blackMode);
+    minimaxScoringCombo.setDisable(!aiEnabled || (!whiteMinimaxSelected && !blackMinimaxSelected));
   }
 
   /**
@@ -382,10 +397,11 @@ public class ConfigDialog extends Dialog<Configuration> {
     String blackAiMode = normalizeAiMode(blackAiModeCombo.getValue());
     int aiDepth = normalizeAiDepth(aiDepthSpinner.getValue());
     SelectionMode mctsMode = normalizeSelectionMode(mctsCombo.getValue());
+    String minimaxScoring = normalizeMinimaxScoring(minimaxScoringCombo.getValue());
 
     return new Configuration(blitz, timeSec, contest, size,
         verbose, debug, whiteAi, blackAi, aiTime,
-        whiteAiMode, blackAiMode, aiDepth, mctsMode);
+        whiteAiMode, blackAiMode, aiDepth, mctsMode, minimaxScoring);
   }
 
   private static String toDisplayAiMode(String aiMode) {
@@ -409,6 +425,29 @@ public class ConfigDialog extends Dialog<Configuration> {
       case "mcts" -> "mcts";
       case "minimax" -> "minimax";
       default -> Utils.DEFAULT_AI_MODE;
+    };
+  }
+
+  private static String toDisplayMinimaxScoring(String scoring) {
+    if (scoring == null) {
+      return "Max";
+    }
+    return switch (scoring.toLowerCase(Locale.ROOT)) {
+      case "simple" -> "Simple";
+      case "advanced" -> "Advanced";
+      case "max" -> "Max";
+      default -> "Max";
+    };
+  }
+
+  private static String normalizeMinimaxScoring(String scoring) {
+    if (scoring == null) {
+      return Utils.DEFAULT_MINIMAX_SCORING;
+    }
+    String normalized = scoring.trim().toLowerCase(Locale.ROOT);
+    return switch (normalized) {
+      case "simple", "advanced", "max" -> normalized;
+      default -> Utils.DEFAULT_MINIMAX_SCORING;
     };
   }
 

@@ -194,6 +194,11 @@ class ConfigDialogTest {
     @SuppressWarnings("unchecked")
     Spinner<Integer> aiTimeSpinner = (Spinner<Integer>) aiTimeSpinnerField.get(dialog);
 
+    Field minimaxScoringComboField = ConfigDialog.class.getDeclaredField("minimaxScoringCombo");
+    minimaxScoringComboField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    ComboBox<String> minimaxScoringCombo = (ComboBox<String>) minimaxScoringComboField.get(dialog);
+
     Field whiteAiCheckField = ConfigDialog.class.getDeclaredField("whiteAiCheck");
     whiteAiCheckField.setAccessible(true);
     CheckBox whiteAiCheck = (CheckBox) whiteAiCheckField.get(dialog);
@@ -210,6 +215,7 @@ class ConfigDialogTest {
       blackAiCheck.setSelected(true);
       whiteAiModeCombo.setValue("MCTS");
       blackAiModeCombo.setValue("Alpha-Beta");
+      minimaxScoringCombo.setValue("Advanced");
       aiTimeSpinner.getValueFactory().setValue(15); // 15 secondes
     });
 
@@ -231,6 +237,7 @@ class ConfigDialogTest {
     assertEquals("mcts", config.getWhiteAiMode());
     assertEquals("alphabeta", config.getBlackAiMode());
     assertEquals("mcts", config.getAiMode());
+    assertEquals("advanced", config.getMinimaxScoring());
     assertEquals(15000, config.getAiTime()); // L'IA time (15) a bien été multiplié par 1000 pour les millisecondes
   }
 }
