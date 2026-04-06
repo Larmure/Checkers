@@ -18,6 +18,7 @@ class ConfigurationTest {
                 assertNotNull(config);
                 assertEquals(Utils.DEFAULT_BOARD_SIZE, config.getSize());
                 assertEquals(Utils.DEFAULT_VERBOSE, config.isVerbose());
+                assertEquals(Utils.DEFAULT_MINIMAX_SCORING, config.getMinimaxScoring());
         }
 
         @Test
@@ -37,6 +38,7 @@ class ConfigurationTest {
                 assertEquals(5000, config.getAiTime());
                 assertEquals(Utils.DEFAULT_AI_MODE, config.getAiMode());
                 assertEquals(Ai.DEFAULT_DEPTH, config.getAiDepth());
+                assertEquals(Utils.DEFAULT_MINIMAX_SCORING, config.getMinimaxScoring());
         }
 
         @Test
@@ -130,7 +132,8 @@ class ConfigurationTest {
                                 + ", aiTime=" + Ai.DEFAULT_MAX_TIME_MS
                                 + ", aiMode=" + Utils.DEFAULT_AI_MODE + ", aiDepth=" + Ai.DEFAULT_DEPTH
                                 + ", selectionMode="
-                                + Mcts.DEFAULT_SELECTION_MODE;
+                                + Mcts.DEFAULT_SELECTION_MODE
+                                + ", minimaxScoring=" + Utils.DEFAULT_MINIMAX_SCORING;
 
                 assertEquals(expected, config.toString(),
                                 "The toString method must reflect the object's actual state.");
@@ -179,5 +182,17 @@ class ConfigurationTest {
                                 Utils.DEFAULT_AI_MODE, Ai.MAX_SAFE_DEPTH + 1, Mcts.DEFAULT_SELECTION_MODE);
                 assertEquals(Ai.DEFAULT_DEPTH, configHigh.getAiDepth(),
                                 "Une profondeur dangereuse doit être remplacée par celle par défaut.");
+        }
+
+        @Test
+        void testConstructorValidationInvalidMinimaxScoring() {
+                Configuration config = new Configuration(false, Utils.DEFAULT_TIME, false, 8,
+                                false, false, true, true, 1000,
+                                Utils.DEFAULT_AI_MODE, Utils.DEFAULT_AI_MODE,
+                                Ai.DEFAULT_DEPTH, Mcts.DEFAULT_SELECTION_MODE,
+                                "invalide");
+
+                assertEquals(Utils.DEFAULT_MINIMAX_SCORING, config.getMinimaxScoring(),
+                                "Un scoring Minimax invalide doit être remplacé par celui par défaut.");
         }
 }

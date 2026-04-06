@@ -80,6 +80,7 @@ public class AppTest {
 
     assertEquals(App.EXIT_GUI, status);
   }
+
   @Test
   public void testBlitzAndTimeOptions() {
     String[] args = { "-b", "-t", "5" };
@@ -238,6 +239,20 @@ public class AppTest {
   public void testValidTrainingNumber() {
     int status = App.run(new String[] { "-tr", "10" });
     assertEquals(App.EXIT_TRAINING, status);
+  }
+
+  @Test
+  public void testMinimaxScoringOption() {
+    int status = App.run(new String[] { "--ai-minimax-scoring", "advanced" });
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertEquals("advanced", App.getMinimaxScoring());
+  }
+
+  @Test
+  public void testInvalidMinimaxScoringOptionFallsBackToDefault() {
+    int status = App.run(new String[] { "--ai-minimax-scoring", "invalid" });
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertEquals(Utils.DEFAULT_MINIMAX_SCORING, App.getMinimaxScoring());
   }
 
   @Test

@@ -1,6 +1,5 @@
 package fr.ubordeaux.pdp.model.tools;
 
-
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.commands.ContinueCommand;
 import fr.ubordeaux.pdp.controller.commands.HelpCommand;
@@ -24,7 +23,6 @@ import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * Global utility class containing game constants and the command registry.
@@ -63,7 +61,8 @@ public class Utils {
   public static final boolean DEFAULT_BLACK_AI = false;
   /** The default AI mode. */
   public static final String DEFAULT_AI_MODE = "minimax";
-
+  /** The default Minimax scoring function. */
+  public static final String DEFAULT_MINIMAX_SCORING = "max";
   /** The default keyboard shortcut for starting a new game. */
   public static final String DEFAULT_SHORTCUT_NEW_GAME = "Ctrl+N";
   /** The default keyboard shortcut for loading a saved game. */
@@ -113,7 +112,7 @@ public class Utils {
       Map.entry("show", new ShowCommand(null, null)),
       Map.entry("set", new SetCommand(null, null)),
       Map.entry("server list", new ServerListCommand()),
-      Map.entry("server start", new ServerStartCommand(null, null,  null)),
+      Map.entry("server start", new ServerStartCommand(null, null, null)),
       Map.entry("server status", new ServerStatusCommand()),
       Map.entry("ping", new PingCommand(null)),
       Map.entry("server stop", new ServerStopCommand(null)),
@@ -122,7 +121,6 @@ public class Utils {
       Map.entry("players", new PlayersCommand(null)),
       Map.entry("join", new JoinCommand(null, null)));
 
-  
   /**
    * A formatted list of all available commands and their expected syntax.
    * This array is used to display the global help menu to the user.
@@ -152,5 +150,8 @@ public class Utils {
   /** Set of valid AI modes for the game. */
   public static final Set<String> VALID_AI_MODES = Set.of(
       "minimax", "alphabeta", "mcts", "iterative");
-}
 
+  /** Set of valid Minimax scoring functions. */
+  public static final Set<String> VALID_MINIMAX_SCORINGS = Set.of(
+      "simple", "advanced", "max");
+}

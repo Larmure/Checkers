@@ -3,7 +3,10 @@ package fr.ubordeaux.pdp.model.player.ai;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.evaluation.AdvancedEvaluator;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
+import fr.ubordeaux.pdp.model.evaluation.MaxEvaluator;
+import fr.ubordeaux.pdp.model.evaluation.SimpleEvaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import java.util.List;
@@ -307,6 +310,25 @@ public abstract class Ai {
         return new IterativeDeepening(depth, timeMs);
       default:
         throw new IllegalArgumentException("Invalid AI mode: " + aiMode);
+    }
+  }
+
+  /**
+   * Factory method to create an evaluator instance based on Minimax scoring configuration.
+   *
+   * @param cfg the configuration containing scoring settings
+   * @return evaluator used by Minimax-family algorithms
+   */
+  public static Evaluator buildEvaluator(Configuration cfg) {
+    String scoring = cfg.getMinimaxScoring();
+    switch (scoring.toLowerCase()) {
+      case "simple":
+        return new SimpleEvaluator();
+      case "advanced":
+        return new AdvancedEvaluator();
+      case "max":
+      default:
+        return new MaxEvaluator();
     }
   }
 

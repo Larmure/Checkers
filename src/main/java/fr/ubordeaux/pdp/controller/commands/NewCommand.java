@@ -72,6 +72,11 @@ public class NewCommand implements Command, Helpable {
       String blackAiMode = cmd.getOptionValue("bam", aiMode);
       int aiDepth = Integer.parseInt(cmd.getOptionValue("ad",
           String.valueOf(Ai.DEFAULT_DEPTH)));
+      String minimaxScoring = cmd.getOptionValue("ai-minimax-scoring",
+          Utils.DEFAULT_MINIMAX_SCORING).toLowerCase();
+      if (!Utils.VALID_MINIMAX_SCORINGS.contains(minimaxScoring)) {
+        minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
+      }
 
       SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
       if (cmd.hasOption("as")) {
@@ -91,7 +96,7 @@ public class NewCommand implements Command, Helpable {
           controller.isVerbose(), controller.isDebug(),
           "a".equals(aiPlayers) || "w".equals(aiPlayers),
           "a".equals(aiPlayers) || "b".equals(aiPlayers),
-          aiTime, whiteAiMode, blackAiMode, aiDepth, selectionMode));
+          aiTime, whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring));
 
     } catch (ParseException | NumberFormatException e) {
       System.out.println(Internationalization.get("new.invalid") + e.getMessage());
@@ -113,6 +118,7 @@ public class NewCommand implements Command, Helpable {
   * <li>-bam, --black-ai-mode : Set black AI mode</li>
    * <li>-ad, --ai-depth : Set AI search depth</li>
    * <li>-as, --ai-selection : Set MCTS selection mode (uct|ml)</li>
+  * <li>--ai-minimax-scoring : Set Minimax scoring function (simple|advanced|max)</li>
    * </ul>
    *
    * @return An {@link Options} object containing the CLI schema.
@@ -130,6 +136,8 @@ public class NewCommand implements Command, Helpable {
     opts.addOption("bam", "black-ai-mode", true, "Black AI mode");
     opts.addOption("ad", "ai-depth", true, "AI search depth");
     opts.addOption("as", "ai-mcts-selection", true, "MCTS selection mode (uct|ml)");
+    opts.addOption("ams", "ai-minimax-scoring", true,
+        "Minimax scoring function (simple|advanced|max)");
     return opts;
   }
 

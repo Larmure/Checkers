@@ -46,6 +46,8 @@ public class Configuration {
   private final int aiDepth;
   /** The selection function used in MCTS. */
   private final SelectionMode selectionMode;
+  /** The evaluation function used by Minimax-family AIs. */
+  private final String minimaxScoring;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -81,7 +83,8 @@ public class Configuration {
       String aiMode, int aiDepth, SelectionMode selectionMode) {
 
     this(blitz, time, contest, size, verbose, debug, whiteAi, blackAi,
-        aiTime, aiMode, aiMode, aiDepth, selectionMode);
+        aiTime, aiMode, aiMode, aiDepth, selectionMode,
+        Utils.DEFAULT_MINIMAX_SCORING);
   }
 
   /**
@@ -107,6 +110,36 @@ public class Configuration {
       boolean blackAi, long aiTime,
       String whiteAiMode, String blackAiMode,
       int aiDepth, SelectionMode selectionMode) {
+
+    this(blitz, time, contest, size, verbose, debug, whiteAi, blackAi,
+        aiTime, whiteAiMode, blackAiMode, aiDepth, selectionMode,
+        Utils.DEFAULT_MINIMAX_SCORING);
+  }
+
+  /**
+   * Constructs a Configuration object with dedicated AI modes and Minimax scoring.
+   *
+   * @param blitz   Indicates whether the game is in blitz mode.
+   * @param time    The time limit for each player in seconds.
+   * @param contest Indicates whether the game is in contest mode.
+   * @param size    The size of the game board.
+   * @param verbose Indicates whether verbose output is enabled.
+   * @param debug   Indicates whether debug mode is enabled.
+   * @param whiteAi Indicates whether the white player is controlled by AI.
+   * @param blackAi Indicates whether the black player is controlled by AI.
+   * @param aiTime  The time limit for AI moves in milliseconds.
+   * @param whiteAiMode The mode for the white AI.
+   * @param blackAiMode The mode for the black AI.
+   * @param aiDepth The search depth for the AI.
+   * @param selectionMode The selection function used in MCTS.
+   * @param minimaxScoring The evaluation function used for Minimax-family AIs.
+   */
+  public Configuration(boolean blitz, int time, boolean contest, int size,
+      boolean verbose, boolean debug, boolean whiteAi,
+      boolean blackAi, long aiTime,
+      String whiteAiMode, String blackAiMode,
+      int aiDepth, SelectionMode selectionMode,
+      String minimaxScoring) {
 
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
@@ -144,6 +177,13 @@ public class Configuration {
       aiDepth = Ai.DEFAULT_DEPTH;
     }
 
+    if (minimaxScoring == null
+        || !Utils.VALID_MINIMAX_SCORINGS.contains(minimaxScoring.toLowerCase())) {
+      System.out.println("Warning: Invalid Minimax scoring, changed to "
+          + Utils.DEFAULT_MINIMAX_SCORING + ".");
+      minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
+    }
+
     this.blitz = blitz;
     this.time = time;
     this.contest = contest;
@@ -166,6 +206,7 @@ public class Configuration {
     }
     this.aiDepth = aiDepth;
     this.selectionMode = selectionMode;
+    this.minimaxScoring = minimaxScoring.toLowerCase();
   }
 
   /**
@@ -193,6 +234,7 @@ public class Configuration {
     this.blackAiMode = other.blackAiMode;
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
+    this.minimaxScoring = other.minimaxScoring;
   }
 
   /**
@@ -218,6 +260,7 @@ public class Configuration {
     this.blackAiMode = other.blackAiMode;
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
+    this.minimaxScoring = other.minimaxScoring;
   }
 
   /**
@@ -367,6 +410,15 @@ public class Configuration {
   }
 
   /**
+   * Returns the evaluation function used by Minimax-family AIs.
+   *
+   * @return the minimax scoring function name.
+   */
+  public String getMinimaxScoring() {
+    return minimaxScoring;
+  }
+
+  /**
    * Returns a string representation of the Configuration object, including all
    * the settings and their current values. This method is useful for debugging
    * and logging purposes, allowing developers to easily see the configuration
@@ -381,6 +433,6 @@ public class Configuration {
         + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi
         + ", whiteAiMode=" + whiteAiMode + ", blackAiMode=" + blackAiMode
         + ", aiTime=" + aiTime + ", aiMode=" + aiMode + ", aiDepth=" + aiDepth
-        + ", selectionMode=" + selectionMode;
+        + ", selectionMode=" + selectionMode + ", minimaxScoring=" + minimaxScoring;
   }
 }

@@ -89,6 +89,9 @@ public class App {
   /** Flag to set the selection mode for MCTS. */
   private static SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
 
+  /** Flag to set the evaluation function for Minimax-family AI. */
+  private static String minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
+
   /** Flag indicating whether GUI mode was requested on the CLI. */
   private static boolean guiMode = false;
 
@@ -124,7 +127,7 @@ public class App {
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
           size, verbose, debug, whiteAi, blackAi, aiTime,
-          whiteAiMode, blackAiMode, aiDepth, selectionMode));
+          whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring));
     } else {
       view = new CommandLineInterface(verbose, debug);
     }
@@ -156,7 +159,7 @@ public class App {
     if (status != EXIT_GUI) {
       controller.startNewGame(new Configuration(blitz, time, contest,
           size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
-          whiteAiMode, blackAiMode, aiDepth, selectionMode));
+          whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring));
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
@@ -214,6 +217,8 @@ public class App {
         "set black AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("ad", "ai-depth", true, "set AI search depth");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
+    options.addOption("ams", "ai-minimax-scoring", true,
+        "set Minimax scoring (simple|advanced|max)");
     options.addOption("tr", "train", true, "train a ML selection function");
 
     CommandLineParser parser = new DefaultParser();
@@ -359,6 +364,19 @@ public class App {
         }
       }
 
+      if (cmd.hasOption("ai-minimax-scoring")) {
+        String scoring = cmd.getOptionValue("ai-minimax-scoring").toLowerCase();
+        if (Utils.VALID_MINIMAX_SCORINGS.contains(scoring)) {
+          minimaxScoring = scoring;
+          System.out.println("Minimax scoring set to " + minimaxScoring + ".");
+        } else {
+          System.out.println("Warning: Invalid Minimax scoring: " + scoring);
+          System.out.println("Value of minimax scoring changed to: "
+              + Utils.DEFAULT_MINIMAX_SCORING);
+          minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
+        }
+      }
+
       if (cmd.hasOption("as")) {
         String selection = cmd.getOptionValue("as").toUpperCase();
         try {
@@ -481,6 +499,7 @@ public class App {
     blackAiMode = Utils.DEFAULT_AI_MODE;
     aiDepth = Ai.DEFAULT_DEPTH;
     selectionMode = Mcts.DEFAULT_SELECTION_MODE;
+    minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
   }
 
   /**
@@ -517,6 +536,15 @@ public class App {
    */
   public static boolean isBlackAi() {
     return blackAi;
+  }
+
+  /**
+   * Returns the configured Minimax scoring function.
+   *
+   * @return Minimax scoring function name.
+   */
+  public static String getMinimaxScoring() {
+    return minimaxScoring;
   }
 
   /**
