@@ -6,6 +6,11 @@
 \usepackage{amsmath}
 \usepackage{caption}
 \usepackage{placeins}
+
+\usetikzlibrary{positioning,fit,backgrounds,arrows.meta,babel}
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
 \captionsetup[figure]{justification=centering, singlelinecheck=false}
 
 %------------------------------------------------------------------------------
@@ -628,6 +633,182 @@ Les dépendances sont orientées de la Vue vers le contrôleur, jamais l'inverse
     \item de conserver une cohérence fonctionnelle entre mode local, IA et réseau.
 \end{itemize}
 
+\subsection{Architecture réseau}
+ 
+La couche réseau de l'application s'appuie sur une architecture client-serveur
+TCP, répartie entre deux packages distincts :
+\texttt{fr.ubordeaux.pdp.server} côté serveur et
+\texttt{fr.ubordeaux.pdp.controller} côté client.
+La figure~\ref{fig:architecture-serveur} en présente les composants principaux
+ainsi que leurs interactions.
+ 
+% ----------------------------------------------------------------
+%  Couleurs (nommer avec pdp- pour éviter les conflits)
+% ----------------------------------------------------------------
+\definecolor{pdp-teal50}  {HTML}{E1F5EE}
+\definecolor{pdp-teal600} {HTML}{0F6E56}
+\definecolor{pdp-teal800} {HTML}{085041}
+\definecolor{pdp-purple50} {HTML}{EEEDFE}
+\definecolor{pdp-purple600}{HTML}{534AB7}
+\definecolor{pdp-purple800}{HTML}{3C3489}
+\definecolor{pdp-gray50}  {HTML}{F1EFE8}
+\definecolor{pdp-gray600} {HTML}{5F5E5A}
+\definecolor{pdp-blue50}  {HTML}{E6F1FB}
+\definecolor{pdp-blue600} {HTML}{185FA5}
+\definecolor{pdp-blue800} {HTML}{0C447C}
+\definecolor{pdp-border}  {HTML}{C4C2B8}
+ 
+\tikzset{
+  pdp base/.style={
+    draw, rounded corners=5pt,
+    minimum width=3.6cm, minimum height=1.0cm,
+    align=center, font=\small\bfseries,
+    inner sep=5pt, line width=0.4pt
+  },
+  pdp teal/.style={pdp base,
+    fill=pdp-teal50, draw=pdp-teal600, text=pdp-teal800},
+  pdp purple/.style={pdp base,
+    fill=pdp-purple50, draw=pdp-purple600, text=pdp-purple800},
+  pdp gray/.style={pdp base,
+    fill=pdp-gray50, draw=pdp-gray600, text=pdp-gray600},
+  pdp blue/.style={pdp base,
+    fill=pdp-blue50, draw=pdp-blue600, text=pdp-blue800},
+  pdp zone/.style={
+    draw=pdp-border, dashed, rounded corners=8pt,
+    line width=0.5pt, inner sep=10pt
+  },
+  pdp rel/.style={
+    -{Stealth[length=4.5pt]}, line width=0.6pt, color=pdp-gray600
+  },
+  pdp lbl/.style={font=\scriptsize\itshape, color=pdp-gray600},
+}
+ 
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm]
+ 
+  % ---- Zone CLIENT ------------------------------------------
+  \node[pdp blue] (SCR)
+    {ShellCommandRouter\\[-2pt]{\footnotesize\normalfont Routage des commandes}};
+ 
+  \node[pdp blue, below=of SCR] (CS)
+    {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
+ 
+  \node[pdp gray, below=of CS] (CM)
+    {ClientMode\\[-2pt]{\footnotesize\normalfont\textit{«enum»}}};
+ 
+  \node[pdp gray, below=of CM] (SLS)
+    {ServerListService\\[-2pt]{\footnotesize\normalfont Découverte UDP}};
+ 
+  \begin{pgfonlayer}{background}
+    \node[pdp zone,
+          label={[font=\small\bfseries, text=pdp-gray600]above:Client},
+          fit=(SCR)(CS)(CM)(SLS)] (clientZone) {};
+  \end{pgfonlayer}
+ 
+  % ---- Zone SERVEUR -----------------------------------------
+  \node[pdp teal,   right=2.0cm of SCR]  (GR)
+    {GameRegistry\\[-2pt]{\footnotesize\normalfont Registre thread-safe}};
+ 
+  \node[pdp purple, right=0.9cm of GR]   (IM)
+    {InvitationManager\\[-2pt]{\footnotesize\normalfont Cycle de vie des invitations}};
+ 
+  \node[pdp teal,   below=of GR]         (PS)  {PlayerSession};
+  \node[pdp teal,   below=of PS]         (GS)  {GameSession};
+  \node[pdp purple, below=of IM]         (INV) {Invitation};
+ 
+  \node[pdp gray, below=0.85cm of GS]   (DS)
+    {DiscoveryService\\[-2pt]{\footnotesize\normalfont Broadcast UDP}};
+ 
+  \node[pdp gray, below=0.85cm of INV]   (GCF)
+    {GameControllerFactory\\[-2pt]{\footnotesize\normalfont\textit{«interface fonctionnelle»}}};
+ 
+  \begin{pgfonlayer}{background}
+    \node[pdp zone,
+          label={[font=\small\bfseries, text=pdp-gray600]above:%
+            Serveur (\texttt{fr.ubordeaux.pdp.server})},
+          fit=(GR)(IM)(PS)(GS)(INV)(DS)(GCF)] (serverZone) {};
+  \end{pgfonlayer}
+ 
+  % Séparateur infrastructure
+  \draw[dashed, color=pdp-border, line width=0.4pt]
+    ([yshift=-0.30cm] GS.south -| serverZone.west)
+    -- ([yshift=-0.30cm] GS.south -| serverZone.east)
+    node[midway, above, font=\scriptsize\itshape, color=pdp-gray600]
+      {infrastructure};
+ 
+  % ---- Relations --------------------------------------------
+  % ClientSession → GameRegistry (TCP)
+  \draw[pdp rel] (CS.east)
+    -| node[pdp lbl, above, pos=0.25] {TCP}
+    (GR.west);
+ 
+  % GameRegistry → PlayerSession
+  \draw[pdp rel] (GR.south) -- (PS.north);
+ 
+  % GameRegistry → GameSession (contournement)
+  \draw[pdp rel] (GR.south east) -- ++(0.35,0)
+    |- node[pdp lbl, right] {gère} (GS.east);
+ 
+  % InvitationManager → Invitation
+  \draw[pdp rel] (IM.south)
+    -- node[pdp lbl, right] {crée} (INV.north);
+ 
+  % DiscoveryService → ServerListService (UDP)
+  \draw[pdp rel] (DS.west) -|
+    node[pdp lbl, above, pos=0.25] {UDP}
+    (SLS.east);
+ 
+  % GameSession → GameControllerFactory
+  \draw[pdp rel] (GS.east) -- ++(0.35,0)
+    |- node[pdp lbl, right] {utilise} (GCF.west);
+ 
+  % ---- Légende ----------------------------------------------
+  \matrix [below=0.5cm of serverZone.south,
+           column sep=1.0cm,
+           nodes={anchor=west, font=\small}] {
+    \node[pdp teal,   minimum width=0.8cm,
+          minimum height=0.35cm, inner sep=2pt] {};
+      & \node {Registre \& sessions (données de jeu)}; \\
+    \node[pdp purple, minimum width=0.8cm,
+          minimum height=0.35cm, inner sep=2pt] {};
+      & \node {Système d'invitations}; \\
+    \node[pdp gray,   minimum width=0.8cm,
+          minimum height=0.35cm, inner sep=2pt] {};
+      & \node {Infrastructure \& client}; \\
+  };
+ 
+\end{tikzpicture}
+\caption{Architecture structurelle de la couche réseau}
+\label{fig:architecture-serveur}
+\end{figure}
+\FloatBarrier
+ 
+% ---- Description textuelle des composants ------------------
+ 
+\paragraph{Côté client.}
+Le \texttt{ShellCommandRouter} constitue le point d'entrée unique pour toute
+saisie utilisateur. Il consulte l'énumération \texttt{ClientMode}
+(\texttt{LOCAL}, \texttt{CONNECTED}, \texttt{SERVER}) pour aiguiller chaque
+commande vers le bon gestionnaire, évitant ainsi les états incohérents
+(par exemple, démarrer un serveur alors qu'une connexion est déjà ouverte).
+La \texttt{ClientSession} encapsule la socket TCP, le fil d'écoute
+(\textit{listener thread}) et le protocole de \textit{handshake}
+(\texttt{REGISTER} / \texttt{WELCOME}). Le \texttt{ServerListService} écoute
+les annonces UDP diffusées par \texttt{DiscoveryService} afin de présenter
+la liste des serveurs disponibles sur le réseau local.
+ 
+\paragraph{Côté serveur.}
+Le \texttt{GameRegistry} centralise, de façon thread-safe, l'ensemble des
+\texttt{PlayerSession} et des \texttt{GameSession} actives. Il constitue
+la source de vérité pour l'état de chaque joueur connecté. L'\texttt{InvitationManager}
+orchestre le cycle de vie complet des invitations — de leur création jusqu'à
+l'acceptation, au refus ou à l'expiration automatique par un fil démon
+(\textit{sweeper}) — en s'appuyant sur les objets \texttt{Invitation}
+immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
+permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
+l'indépendance des états de parties concurrentes.
+
 \section{Explication approfondie : Monte Carlo Tree Search (MCTS)}
 
 \subsection{Logique théorique de l'algorithme}
@@ -1053,7 +1234,6 @@ F38 & Découverte de serveurs et connexion client-serveur basique & \\ \hline
 F39 & Serveur multi-clients et gestion de parties & \\ \hline
 F40 & Système d’invitations et gestion avancée des joueurs & \\ \hline
 \end{longtable} 
-
 
 
 
