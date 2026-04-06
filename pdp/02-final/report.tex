@@ -535,6 +535,77 @@ Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vé
 
 \subsubsection{Indépendance du moteur}
 
+% IDEE
+% Le moteur reste volontairement découplé de toute technologie d'interface. Cette séparation permet de faire évoluer l'affichage
+%  (console, JavaFX ou client distant) sans modifier les règles de jeu, et facilite les tests unitaires de la logique métier. 
+%  En pratique, toute interaction passe par des commandes métier exposées par le contrôleur, ce qui garantit une frontière claire entre 
+%  logique de domaine et présentation.
+
+\subsection{Module affichage}
+
+Le module d'affichage constitue la couche Vue de notre architecture. Son objectif est de transformer l'état métier fourni par le 
+moteur en informations compréhensibles par l'utilisateur, puis de remonter les intentions de jeu vers le contrôleur.
+
+\subsubsection{Responsabilités du module}
+
+Ce module ne contient aucune règle de dames. Il se limite à trois responsabilités :
+\begin{itemize}
+    \item \textbf{Rendu de l'état courant} : représentation du plateau, des pièces, du joueur actif et des messages de statut.
+    \item \textbf{Capture des actions utilisateur} : sélection d'une case, validation d'un coup, demandes de pause / sauvegarde / chargement.
+    \item \textbf{Retour d'information} : affichage des coups illégaux, de la fin de partie et des événements de synchronisation réseau.
+\end{itemize}
+
+\subsubsection{Affichage en mode CLI}
+
+Le mode CLI (Command Line Interface) fournit une interface textuelle légère, utile pour les tests rapides, le débogage 
+et l'exécution sur des environnements sans interface graphique. Dans ce mode, la Vue sérialise l'état du damier en texte
+ (coordonnées, pièces, tour courant), puis lit des commandes utilisateur de type \texttt{MOVE}, \texttt{UNDO}, \texttt{SAVE} ou \texttt{LOAD}.
+
+D'un point de vue architectural, la CLI reste alignée sur MVC : elle ne touche jamais au \texttt{Board} directement. 
+Chaque commande est traduite en intention métier et transmise au \texttt{GameController}, qui valide le coup et orchestre 
+l'appel au moteur. Ce fonctionnement garantit que les mêmes règles sont appliquées, quel que soit le canal d'entrée (texte ou interface graphique).
+
+Le mode CLI joue également un rôle important pour les tests automatisés du projet : son comportement déterministe facilite 
+l'écriture de scénarios reproductibles (entrées textuelles connues, sorties attendues), notamment pour vérifier les cas 
+limites des règles, le routage des commandes et la robustesse des opérations de sauvegarde/chargement.
+
+\subsubsection{Affichage en mode GUI}
+
+Le mode GUI (Graphical User Interface) vise une expérience utilisateur interactive et visuelle. Il représente le plateau, les pièces
+ et les états de partie sous forme de composants graphiques, et gère des événements riches (clic sur case, sélection d'une pièce, 
+ surbrillance des coups possibles, messages contextuels).
+
+Comme pour la CLI, la GUI n'intègre pas la logique des règles : elle agit comme un adaptateur événementiel. Lorsqu'un utilisateur 
+clique sur une case de départ puis une case d'arrivée, l'action est convertie en requête métier vers le \texttt{GameController}. 
+Après traitement par \texttt{GameCheckers}, la mise à jour de l'affichage est déclenchée par le mécanisme d'observation (\texttt{notifyObservers()}).
+
+Cette séparation permet de conserver une GUI réactive tout en évitant les incohérences fonctionnelles. Elle facilite aussi
+ l'évolution de l'interface (thèmes, animations, ergonomie) sans impact sur le moteur, puisque le contrat entre Vue et contrôleur 
+ reste inchangé.
+
+\subsubsection{Interaction avec le moteur MVC}
+
+Le flux d'interaction suit une chaîne stricte :
+\begin{enumerate}
+    \item L'utilisateur agit via l'affichage (clic, commande, sélection).
+    \item Le module Vue transmet l'intention au \texttt{GameController}.
+    \item Le \texttt{GameController} valide et délègue l'opération au moteur (\texttt{GameCheckers}/\texttt{Board}).
+    \item Après mise à jour, le moteur notifie ses observateurs.
+    \item Le module d'affichage reçoit la notification et rafraîchit l'interface.
+\end{enumerate}
+
+Ce schéma garantit que la Vue ne modifie jamais directement l'état du jeu : elle reste consommatrice de l'état produit par le modèle.
+
+\subsubsection{Dépendances et extensibilité}
+
+Les dépendances sont orientées de la Vue vers le contrôleur, jamais l'inverse. Le module d'affichage dépend d'interfaces publiques stables 
+(état de partie, coups légaux, notifications), ce qui permet :
+\begin{itemize}
+    \item d'ajouter un nouveau type d'interface sans toucher au moteur ;
+    \item d'exécuter des tests du moteur sans initialiser d'interface graphique ;
+    \item de conserver une cohérence fonctionnelle entre mode local, IA et réseau.
+\end{itemize}
+
 \section{Explication approfondie : Monte Carlo Tree Search (MCTS)}
 
 \subsection{Logique théorique de l'algorithme}
