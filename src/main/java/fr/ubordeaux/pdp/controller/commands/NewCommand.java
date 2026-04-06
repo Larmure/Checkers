@@ -70,8 +70,16 @@ public class NewCommand implements Command, Helpable {
       String aiMode = cmd.getOptionValue("am", Utils.DEFAULT_AI_MODE);
       String whiteAiMode = cmd.getOptionValue("wam", aiMode);
       String blackAiMode = cmd.getOptionValue("bam", aiMode);
-      int aiDepth = Integer.parseInt(cmd.getOptionValue("ad",
-          String.valueOf(Ai.DEFAULT_DEPTH)));
+      int aiDepth;
+      if (cmd.hasOption("ad") || cmd.hasOption("ai-minimax-depth")) {
+        String depthArg = cmd.getOptionValue("ad");
+        if (depthArg == null) {
+          depthArg = cmd.getOptionValue("ai-minimax-depth");
+        }
+        aiDepth = Integer.parseInt(depthArg);
+      } else {
+        aiDepth = Ai.suggestDepthFromTime(aiTime);
+      }
       String minimaxScoring = cmd.getOptionValue("ai-minimax-scoring",
           Utils.DEFAULT_MINIMAX_SCORING).toLowerCase();
       if (!Utils.VALID_MINIMAX_SCORINGS.contains(minimaxScoring)) {
@@ -116,7 +124,7 @@ public class NewCommand implements Command, Helpable {
    * <li>-am, --ai-mode : Set AI mode</li>
   * <li>-wam, --white-ai-mode : Set white AI mode</li>
   * <li>-bam, --black-ai-mode : Set black AI mode</li>
-   * <li>-ad, --ai-depth : Set AI search depth</li>
+  * <li>-ad, --ai-minimax-depth : Set Minimax search depth</li>
    * <li>-as, --ai-selection : Set MCTS selection mode (uct|ml)</li>
   * <li>--ai-minimax-scoring : Set Minimax scoring function (simple|advanced|max)</li>
    * </ul>
@@ -134,7 +142,8 @@ public class NewCommand implements Command, Helpable {
     opts.addOption("am", "ai-mode", true, "AI mode");
     opts.addOption("wam", "white-ai-mode", true, "White AI mode");
     opts.addOption("bam", "black-ai-mode", true, "Black AI mode");
-    opts.addOption("ad", "ai-depth", true, "AI search depth");
+    opts.addOption("ad", "ai-minimax-depth", true,
+        "Minimax search depth (if omitted, depth is auto-selected from ai-time)");
     opts.addOption("as", "ai-mcts-selection", true, "MCTS selection mode (uct|ml)");
     opts.addOption("ams", "ai-minimax-scoring", true,
         "Minimax scoring function (simple|advanced|max)");

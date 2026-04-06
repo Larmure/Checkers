@@ -1,6 +1,16 @@
 @Daniel
 Le load ne marche plus: erreur au niveau du chargement la profondeur 5-5
 Load de l'historique des coup ne marche pas, surtout au niveau des captures, multiple ou pas
+écrire ces commandes dans le cli pas en mode réseau provoque commande inconnue alors qu'elles sont dans le help :
+- online mode
+- server list
+- server start [PORT]
+- server stop
+- server status
+- players
+- score
+- join [IP[:PORT]]
+
 
 @Linda
 Fenêtre de reprise après pause
@@ -8,7 +18,7 @@ Il faudrait que quand on clique sur sur sauvegarde le jeu se met automatiquement
 en pause en ia vs ia, non?
 
 @
-Chargement avec deux ia non fonctionnelle, les deux ia ne joue plus après chargement
+les deux ia ne joue plus après chargement
 On dervrait peut être rajouter un paramètre pour enregistrer la langue du jeu et pour pouvoir la modifier
 
 
@@ -34,7 +44,7 @@ F11: nickel avec un point d'interrogation
 F12: undo 3 contre une ia alors on peut tomber sur le tour de l'ia
 F13: nickel
 F14: nickel
-F15: help serveur affiché au lieu du vrai Daaaaaaaanieeeeeel
+F15: ok MAIS attention, certaines commandes sont dans le help mais non reconnues en mode LOCAL
 F16: non fonctionnel Daniel?
 F17: nickel
 F18: nickel
@@ -52,9 +62,9 @@ F29: nickel
 F30: nickel
 F31: nickel
 F32: nickel
-F33: evaluation implémenter mais non branché et rajouter --ai-minimax-scoring [SCORING]’ 
+F33: nickel
 F34: pas par rapport au temps dispo si on est en mode blitz
-F35: rajouter --ai-minimax-depth +gerer no arg
+F35: nickel
 F36: fonctionnel
 F37: nickel
 F38: exeption dans dicovery service + indiquer port 

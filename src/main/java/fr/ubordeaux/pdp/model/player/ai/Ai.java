@@ -45,6 +45,9 @@ public abstract class Ai {
   /** Maximum reasonable thinking time in milliseconds (30 seconds). */
   public static final long MAX_TIME_MS = 30000L;
 
+  /** Maximum depth automatically suggested from time budget. */
+  private static final int AUTO_MAX_DEPTH = 8;
+
   /** Maximum search depth for this specific AI instance. */
   protected int maxDepth;
 
@@ -234,6 +237,30 @@ public abstract class Ai {
   protected final long getRemainingTime(long startTime) {
     long elapsed = System.currentTimeMillis() - startTime;
     return Math.max(0, maxTimeMs - elapsed);
+  }
+
+  /**
+   * Suggests a search depth from a given time budget.
+   *
+   * <p>Used when no explicit depth option is provided.
+   *
+   * @param timeMs available thinking time in milliseconds
+   * @return suggested depth, clamped to safe bounds
+   */
+  public static int suggestDepthFromTime(long timeMs) {
+    int depth;
+    if (timeMs <= 1000) {
+      depth = 4;
+    } else if (timeMs <= 3000) {
+      depth = 5;
+    } else if (timeMs <= 7000) {
+      depth = 6;
+    } else if (timeMs <= 15000) {
+      depth = 7;
+    } else {
+      depth = AUTO_MAX_DEPTH;
+    }
+    return Math.max(1, Math.min(depth, MAX_SAFE_DEPTH));
   }
 
   // Getters et setters

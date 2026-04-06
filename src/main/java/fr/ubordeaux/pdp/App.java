@@ -215,7 +215,8 @@ public class App {
         "set white AI mode (minimax|alphabeta|iterative|mcts)");
     options.addOption("bam", "black-ai-mode", true,
         "set black AI mode (minimax|alphabeta|iterative|mcts)");
-    options.addOption("ad", "ai-depth", true, "set AI search depth");
+    options.addOption("ad", "ai-minimax-depth", true,
+        "set Minimax search depth (if omitted, depth is auto-selected from ai-time)");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
     options.addOption("ams", "ai-minimax-scoring", true,
         "set Minimax scoring (simple|advanced|max)");
@@ -351,17 +352,23 @@ public class App {
         System.out.println("Black AI mode set to " + blackAiMode + ".");
       }
 
-      if (cmd.hasOption("ad")) {
+      if (cmd.hasOption("ad") || cmd.hasOption("ai-minimax-depth")) {
+        String depthArg = cmd.getOptionValue("ad");
+        if (depthArg == null) {
+          depthArg = cmd.getOptionValue("ai-minimax-depth");
+        }
         try {
-          aiDepth = Integer.parseInt(cmd.getOptionValue("ad"));
+          aiDepth = Integer.parseInt(depthArg);
           System.out.println(Internationalization.get("opt.ai.depth.status", aiDepth));
         } catch (NumberFormatException e) {
           System.out.println(Internationalization.get("app.warn.invalid_number",
-              cmd.getOptionValue("ad")));
+              depthArg));
           System.out.println(Internationalization.get("app.warn.changed",
               "AI depth", Ai.DEFAULT_DEPTH));
           aiDepth = Ai.DEFAULT_DEPTH;
         }
+      } else {
+        aiDepth = Ai.suggestDepthFromTime(aiTime);
       }
 
       if (cmd.hasOption("ai-minimax-scoring")) {

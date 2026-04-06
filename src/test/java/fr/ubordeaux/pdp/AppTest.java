@@ -173,6 +173,13 @@ public class AppTest {
   }
 
   @Test
+  public void testAiDepthAutoFromTimeWhenNotProvided() {
+    App.run(new String[] { "-at", "2" });
+
+    assertEquals(Ai.suggestDepthFromTime(2000), App.getAiDepth());
+  }
+
+  @Test
   public void testAiWhiteFlag() {
     String[] args = { "-a", "W" };
     App.run(args);
