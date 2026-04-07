@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.ShellCommandRouter;
+import fr.ubordeaux.pdp.controller.bridge.ContestAnalysisBridge;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.LogisticRegressionTrainer;
@@ -126,6 +127,10 @@ public class App {
         break;
     }
 
+    if (status == EXIT_SUCCESS && ContestAnalysisBridge.runIfRequested(contest, startupSaveFile)) {
+      return;
+    }
+
     GameView view;
 
     if (status == EXIT_GUI) {
@@ -220,7 +225,13 @@ public class App {
         .optionalArg(true)
         .build();
     options.addOption(aiOption);
-    options.addOption("c", "contest", true, "enable contest mode");
+    Option contestOption = Option.builder("c")
+        .longOpt("contest")
+        .desc("enable contest mode")
+        .hasArg()
+        .optionalArg(true)
+        .build();
+    options.addOption(contestOption);
     options.addOption("s", "size", true, "set board size (8|10|12)");
     options.addOption("at", "ai-time", true, "set AI time limit in seconds");
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
@@ -237,7 +248,7 @@ public class App {
 
     CommandLineParser parser = new DefaultParser();
     try {
-      CommandLine cmd = parser.parse(options, args);
+      CommandLine cmd = parser.parse(options, normalizeArgs(args));
 
       List<String> positionalArgs = cmd.getArgList();
       if (positionalArgs.size() > 1) {
@@ -296,6 +307,14 @@ public class App {
       if (cmd.hasOption("c")) {
         System.out.println(Internationalization.get("opt.contest.status"));
         contest = true;
+
+        String contestArg = cmd.getOptionValue("c");
+        if (contestArg != null && !contestArg.isBlank()) {
+          String value = contestArg.trim();
+          if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
+            startupSaveFile = value;
+          }
+        }
       }
 
       if (cmd.hasOption("s")) {
@@ -588,6 +607,22 @@ public class App {
    */
   public static SelectionMode getSelectionMode() {
     return selectionMode;
+  }
+
+  /**
+   * Normalizes legacy CLI aliases before parsing options.
+   *
+   * @param args original command line arguments
+   * @return normalized arguments compatible with Commons CLI
+   */
+  private static String[] normalizeArgs(String[] args) {
+    String[] normalized = args.clone();
+    for (int i = 0; i < normalized.length; i++) {
+      if ("-contest".equals(normalized[i])) {
+        normalized[i] = "--contest";
+      }
+    }
+    return normalized;
   }
 
   /**
