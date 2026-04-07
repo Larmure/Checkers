@@ -35,15 +35,14 @@ public class GameRegistry {
    * @param id unique identifier chosen by the client.
    * @param name display name.
    * @param out output stream bound to the player's TCP socket.
-   * @param interfaceMode client interface mode ({@code GUI} or {@code CLI}).
    * @return the created {@link PlayerSession}, or {@code null} if the ID is in use.
    */
   public synchronized PlayerSession registerPlayer(
-      String id, String name, PrintWriter out, String interfaceMode) {
+      String id, String name, PrintWriter out) {
     if (players.containsKey(id)) {
       return null;
     }
-    PlayerSession player = new PlayerSession(id, name, out, interfaceMode);
+    PlayerSession player = new PlayerSession(id, name, out);
     players.put(id, player);
     return player;
   }

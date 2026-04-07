@@ -98,26 +98,8 @@ public class JoinCommand implements ClientCommand, Helpable {
       return;
     }
 
-    String defaultMode = session.isGuiMode() ? "GUI" : "CLI";
-    System.out.print("Network mode [GUI/CLI] (default: " + defaultMode + "): ");
-    String modeInput = scanner.nextLine().trim().toUpperCase();
-
-    String interfaceMode;
-    if (modeInput.isEmpty()) {
-      interfaceMode = defaultMode;
-    } else if ("GUI".equals(modeInput) || "CLI".equals(modeInput)) {
-      interfaceMode = modeInput;
-    } else {
-      System.out.println("Invalid network mode. Expected GUI or CLI. Disconnecting.");
-      session.disconnect();
-      return;
-    }
-
-    session.setGuiMode("GUI".equals(interfaceMode));
-    session.send("REGISTER " + id + " " + id + " " + interfaceMode);
-
-    System.out.println("Registration sent as [" + interfaceMode + "]. "
-        + "Waiting for server response...");
+    session.send("REGISTER " + id + " " + id);
+    System.out.println("Registration sent. Waiting for server response...");
   }
 
   @Override

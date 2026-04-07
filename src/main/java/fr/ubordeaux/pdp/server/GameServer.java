@@ -225,34 +225,27 @@ public class GameServer {
 
       String handshake = in.readLine();
       if (handshake == null || !handshake.startsWith("REGISTER ")) {
-        out.println("ERROR: First message must be REGISTER <id> <name> <GUI|CLI>");
+        out.println("ERROR: First message must be REGISTER <id> <name>");
         return;
       }
 
-      String[] parts = handshake.split("\\s+", 4);
-      if (parts.length < 4) {
-        out.println("ERROR: Usage: REGISTER <id> <name> <GUI|CLI>");
+      String[] parts = handshake.split("\\s+", 3);
+      if (parts.length < 3) {
+        out.println("ERROR: Usage: REGISTER <id> <name>");
         return;
       }
 
       String playerId = parts[1];
-      String playerName = parts[2];
-      String interfaceMode = parts[3].trim().toUpperCase();
+      String playerName = parts[2].trim();
 
-      if (!interfaceMode.equals("GUI") && !interfaceMode.equals("CLI")) {
-        out.println("ERROR: Invalid interface mode. Expected GUI or CLI.");
-        return;
-      }
-
-      PlayerSession player = registry.registerPlayer(playerId, playerName, out, interfaceMode);
+      PlayerSession player = registry.registerPlayer(playerId, playerName, out);
       if (player == null) {
         out.println("ERROR: Player ID '" + playerId + "' is already taken.");
         return;
       }
 
       out.println("WELCOME " + playerId + (guiOnly ? " mode=GUI" : " mode=ANY"));
-      System.out.println("[server] Registered: " + playerId
-          + " (" + playerName + ") [" + interfaceMode + "]");
+      System.out.println("[server] Registered: " + playerId + " (" + playerName + ")");
 
       tryAutoStart();
       processMessages(in, out, player);
@@ -395,13 +388,6 @@ public class GameServer {
       return;
     }
 
-    if (!sender.getInterfaceMode().equals(invitee.getInterfaceMode())) {
-      out.println("ERROR: Interface mode mismatch — you are ["
-          + sender.getInterfaceMode() + "] and '" + toId + "' is ["
-          + invitee.getInterfaceMode() + "]. Both players must use the same "
-          + "client type (both GUI or both CLI).");
-      return;
-    }
 
     InvitationManager.CreateResult result =
         invitationManager.createInvitation(sender, toId, registry);

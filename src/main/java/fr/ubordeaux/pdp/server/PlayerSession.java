@@ -32,7 +32,6 @@ public class PlayerSession {
   private final String id;
   private final String name;
   private final PrintWriter out;
-  private final String interfaceMode;
 
   private volatile Status status = Status.IDLE;
 
@@ -47,13 +46,11 @@ public class PlayerSession {
    * @param id unique player identifier chosen during registration.
    * @param name display name.
    * @param out output stream bound to the player's TCP socket.
-   * @param interfaceMode client interface mode ({@code GUI} or {@code CLI}).
    */
-  public PlayerSession(String id, String name, PrintWriter out, String interfaceMode) {
+  public PlayerSession(String id, String name, PrintWriter out) {
     this.id = id;
     this.name = name;
     this.out = out;
-    this.interfaceMode = interfaceMode;
   }
 
   /**
@@ -189,15 +186,6 @@ public class PlayerSession {
 
   public int getGamesPlayed() {
     return gamesPlayed;
-  }
-
-  /**
-   * Returns the player's client interface mode.
-   *
-   * @return the player's client interface mode ({@code GUI} or {@code CLI})
-   */
-  public String getInterfaceMode() {
-    return interfaceMode;
   }
 
   @Override

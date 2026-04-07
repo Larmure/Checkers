@@ -247,13 +247,6 @@ public class ClientSession {
 
     if (message.startsWith("WELCOME")) {
       serverRequiresGui = message.contains("mode=GUI");
-      if (serverRequiresGui && !guiMode) {
-        System.out.println(
-            "\n[!] Warning: this server is in GUI-only mode "
-                + "but you are using a CLI client.\n"
-                + "    Games will not render graphically. "
-                + "Reconnect with --gui to play properly.");
-      }
       System.out.println("\nServer: " + message);
 
     } else if (message.startsWith("GAME_START")) {
@@ -261,11 +254,11 @@ public class ClientSession {
 
 
 
-      if (requiresGui && guiMode) {
+      if (requiresGui ) {
         openGuiWindow();
       }
 
-      if (controller != null) {
+      if (controller != null && ! serverRequiresGui) {
         controller.stopBlitzTimer();
         controller.startNewGame(Configuration.getDefaultConfiguration());
       }

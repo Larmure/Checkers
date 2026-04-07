@@ -1,5 +1,6 @@
 package fr.ubordeaux.pdp;
 
+import fr.ubordeaux.pdp.controller.commands.JoinCommand;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.model.core.Configuration;
@@ -100,6 +101,14 @@ public class App {
 
   /** Flag to set the number of games for training. */
   private static int numGames = LogisticRegressionTrainer.DEFAULT_NUM_GAMES;
+  /** Flag to auto-connect to a remote server at startup. */
+  private static boolean joinMode = false;
+
+  /**
+   * Optional join target as {@code host[:port]}.
+   * If {@code null}, {@link JoinCommand} falls back to localhost:12345.
+   */
+  private static String joinAddress = null;
 
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
@@ -191,6 +200,10 @@ public class App {
       ((CommandLineInterface) view).setRouter(router);
     }
 
+    if (joinMode) {
+      new JoinCommand(session, joinAddress).execute();
+    }
+
     ClientMode mode = session.getMode();
     boolean effectiveWhiteAi;
     boolean effectiveBlackAi;
@@ -206,9 +219,22 @@ public class App {
     controller.start();
 
     if (status != EXIT_GUI) {
-      controller.startNewGame(new Configuration(blitz, time, contest,
-          size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
-          aiMode, aiDepth, selectionMode));
+      if (!joinMode) {
+        controller.startNewGame(new Configuration(
+            blitz,
+            time,
+            contest,
+            size,
+            verbose,
+            debug,
+            effectiveWhiteAi,
+            effectiveBlackAi,
+            aiTime,
+            aiMode,
+            aiDepth,
+            selectionMode));
+      }
+
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
@@ -261,6 +287,13 @@ public class App {
         .desc("start server in headless mode")
         .build();
 
+    Option joinOption = Option.builder()
+        .longOpt("join")
+        .hasArg()
+        .optionalArg(true)
+        .desc("connect to a server at startup on optional host[:port]")
+        .build();
+    options.addOption(joinOption);
     options.addOption(serverOption);
     options.addOption(daemonOption);
     Option aiOption = Option.builder("a")
@@ -300,6 +333,16 @@ public class App {
         }
       }
 
+      if (cmd.hasOption("join")) {
+        joinMode = true;
+        joinAddress = cmd.getOptionValue("join");
+
+        if (serverMode) {
+          System.err.println("Options --server and --join cannot be used together.");
+          return EXIT_ERROR;
+        }
+      }
+
       if (cmd.hasOption("daemon")) {
         daemonMode = true;
         serverMode = true;
@@ -332,6 +375,13 @@ public class App {
         } else {
           System.out.println("Server will host GUI-only games.");
         }
+      }
+      if (joinMode && guiMode && !serverMode) {
+        System.err.println(
+            "Option --join cannot be combined with client-side --gui.\n"
+                + "Start the client in CLI mode and let the online game open the GUI "
+                + "automatically when the server sends GAME_START mode=GUI.");
+        return EXIT_ERROR;
       }
 
       if (cmd.hasOption("b")) {
@@ -556,6 +606,8 @@ public class App {
     serverMode = false;
     serverPort = 12345;
     daemonMode = false;
+    joinMode = false;
+    joinAddress = null;
   }
 
   /**

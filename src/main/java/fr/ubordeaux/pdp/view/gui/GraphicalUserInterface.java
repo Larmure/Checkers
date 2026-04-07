@@ -135,7 +135,11 @@ public class GraphicalUserInterface extends GameView {
       mainView.passStageToMenu(stage);
       mainView.passGuiToMenu(this);
 
-      showInitialConfigDialog();
+      if (session == null
+          || session.getMode() != ClientMode.CONNECTED
+          || !session.isServerRequiresGui()) {
+        showInitialConfigDialog();
+      }
       // Intercept the window close button (X) — same logic as the Quit menu item.
       stage.setOnCloseRequest(e -> {
         e.consume(); // prevent immediate close
