@@ -169,23 +169,52 @@ public class Move {
   }
 
   /**
-   * Creates a move instance from a string representation.
+   * Creates a move instance from its persisted textual representation.
    *
-   * @param text the string representation of the move
-   * @return the created move instance
-   * @throws IllegalArgumentException if the string format is invalid
+   * <p>This convenience overload parses only the path string and assumes:
+   *
+   * <ul>
+   *   <li>no promotion</li>
+   *   <li>no explicit captured list</li>
+   * </ul>
+   *
+   * <p>Supported formats are:
+   *
+   * <ul>
+   *   <li>simple move: {@code "12-16"}</li>
+   *   <li>capture sequence: {@code "21x14x7"}</li>
+   * </ul>
+   *
+   * @param text the serialized move path
+   * @return a {@link Move} built from {@code text}
+   * @throws IllegalArgumentException if {@code text} is null, empty, malformed,
+   *     or contains non-numeric squares
    */
   public static Move fromSaveString(String text) {
     return fromSaveString(text, false, null);
   }
 
   /**
-   * Creates a move instance from a string representation with captured pieces.
+   * Creates a move instance from its persisted textual representation, with
+   * explicit promotion and captured-piece metadata.
    *
-   * @param text the string representation of the move
-   * @param capturesString the captured piece indices as a string (e.g., "14;7;")
-   * @return the created move instance
-   * @throws IllegalArgumentException if the string format is invalid
+   * <p>The {@code text} parameter defines the traversed squares:
+   *
+   * <ul>
+   *   <li>simple move uses {@code -}, e.g. {@code "12-16"}</li>
+   *   <li>capture move uses {@code x}, e.g. {@code "21x14x7"}</li>
+   * </ul>
+   *
+   * <p>When provided, {@code capturesString} must be a semicolon-separated
+   * list of captured square indices (e.g. {@code "17;10"}).
+   *
+   * @param text serialized move path (using {@code -} or {@code x})
+   * @param promotion whether this move should be marked as a promotion
+   * @param capturesString optional semicolon-separated captured indices,
+   *     or {@code null}/empty when not available
+   * @return a fully initialized {@link Move}
+   * @throws IllegalArgumentException if {@code text} or {@code capturesString}
+   *     contains invalid tokens or non-numeric indices
    */
   public static Move fromSaveString(String text, boolean promotion, String capturesString) {
     if (text == null) {
