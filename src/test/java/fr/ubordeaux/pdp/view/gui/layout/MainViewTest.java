@@ -2,20 +2,20 @@ package fr.ubordeaux.pdp.view.gui.layout;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
-import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +55,16 @@ class MainViewTest extends ApplicationTest {
 
   @Mock
   private GraphicalUserInterface mockGui;
+
+  @BeforeAll
+  static void initJavaFxToolkit() {
+    try {
+      Platform.startup(() -> {
+      });
+    } catch (IllegalStateException ignored) {
+      // Toolkit already initialized by another test class.
+    }
+  }
 
   /**
    * Initializes the JavaFX Stage for testing. Required by TestFX.
