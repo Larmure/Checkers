@@ -416,6 +416,34 @@ public class LoadBoardTest {
   }
 
   @Test
+  void testLoadSupportsMultiLineBlockCommentsInsideSettingValue() throws IOException {
+    int n = 10;
+
+    String content = "[settings]\n"
+        + "starting-player=white\n"
+        + "board-size={ this comment spans\n"
+        + "multiple lines }10\n"
+        + "time-mode=classic\n"
+        + "verbose=false\n"
+        + "debug=false\n"
+        + "ai-mode=none\n"
+        + "\n"
+        + "[game]\n"
+        + initialBoardAscii(n)
+        + "\n"
+        + "[history]\n";
+
+    writeSaveFile("load_multiline_comments_ok.txt", content);
+
+    LoadBoard loader = new TestableLoadBoard();
+    loader.loadGameData("load_multiline_comments_ok.txt");
+
+    assertNotNull(loader.getLoadedGame());
+    assertNotNull(loader.getLoadedConfiguration());
+    assertEquals(n, loader.getLoadedConfiguration().getSize());
+  }
+
+  @Test
   void testLoadFailsIfStartingPlayerInvalid() throws IOException {
     int n = 10;
 

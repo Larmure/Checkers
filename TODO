@@ -51,7 +51,7 @@ F18: nickel
 F19: nickel
 F20: nickel
 F21: signaler les erreurs + lignes manquantes 
-F22: {} noin fonctionnel en cas de saut de ligne
+F22: {} non fonctionnel en cas de saut de ligne
 F23: nickel
 F24: préciser la ligne d'erreur et le programme doit s'arrêter
 F25: {} pour promotion

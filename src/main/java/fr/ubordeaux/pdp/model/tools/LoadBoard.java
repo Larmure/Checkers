@@ -7,8 +7,9 @@ import fr.ubordeaux.pdp.model.core.Piece;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -76,10 +77,6 @@ public class LoadBoard {
   /** Buffered board lines from the [game] section. */
   private List<String> loadedBoardLines = new ArrayList<>();
   private List<Integer> loadedBoardLineNumbers = new ArrayList<>();
-  /** Whether the parser is currently inside a block comment. */
-  private boolean insideBlockComment = false;
-  /** Line where the current block comment started. */
-  private int blockCommentStartLine = -1;
 
   /** Creates a loader. */
   public LoadBoard() {
@@ -101,7 +98,11 @@ public class LoadBoard {
       return;
     }
 
-    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+    try {
+      String rawContent = Files.readString(path);
+      String cleanedContent = stripCommentsFromContent(rawContent);
+
+      BufferedReader reader = new BufferedReader(new StringReader(cleanedContent));
       String currentSection = "";
       String line;
       int lineNum = 0;
@@ -109,13 +110,7 @@ public class LoadBoard {
       while ((line = reader.readLine()) != null) {
         lineNum++;
 
-        String clean;
-        try {
-          clean = stripComments(line, lineNum);
-        } catch (Exception e) {
-          failLoad("Format error at line " + lineNum + ": " + e.getMessage());
-          return;
-        }
+        String clean = line.trim();
 
         if (clean.isEmpty()) {
           continue;
@@ -148,12 +143,6 @@ public class LoadBoard {
         }
       }
 
-      if (insideBlockComment) {
-        failLoad("Format error: unclosed block comment starting at line "
-            + blockCommentStartLine + ".");
-        return;
-      }
-
       if (!validateSections()) {
         return;
       }
@@ -173,7 +162,7 @@ public class LoadBoard {
       loadedGame.setHistory(new History(historyBuffer.toString()));
       loadedGame.checkGameOver();
 
-    } catch (IOException e) {
+    } catch (Exception e) {
       failLoad("Critical I/O error: " + e.getMessage());
     }
   }
@@ -215,8 +204,6 @@ public class LoadBoard {
     loadedAiMode = null;
     historyBuffer = new StringBuilder();
     loadedBoardLines = new ArrayList<>();
-    insideBlockComment = false;
-    blockCommentStartLine = -1;
     loadedBoardLineNumbers = new ArrayList<>();
   }
 
@@ -250,35 +237,55 @@ public class LoadBoard {
   }
 
   /**
-   * Removes inline and block comments from a line.
+   * Removes inline and block comments from the whole file content.
    *
-   * @param line the raw input line
-   * @return the cleaned line
+   * <p>Block comments delimited by '{' and '}' may span multiple lines.
+   * Newlines inside such comments are removed as part of the comment block,
+   * allowing values split by a comment to be reconstructed.
+   *
+   * @param content raw file content
+   * @return content without comments
+   * @throws Exception if comment delimiters are invalid
    */
-  private String stripComments(String line, int lineNum) throws Exception {
+  private String stripCommentsFromContent(String content) throws Exception {
     StringBuilder clean = new StringBuilder();
-    int i = 0;
+    boolean inBlockComment = false;
+    int blockStartLine = -1;
+    int lineNum = 1;
 
-    while (i < line.length()) {
-      char c = line.charAt(i);
+    for (int i = 0; i < content.length(); i++) {
+      char c = content.charAt(i);
 
-      if (insideBlockComment) {
-        if (c == '}') {
-          insideBlockComment = false;
-          blockCommentStartLine = -1;
+      if (c == '\n') {
+        if (!inBlockComment) {
+          clean.append(c);
         }
-        i++;
+        lineNum++;
+        continue;
+      }
+
+      if (inBlockComment) {
+        if (c == '}') {
+          inBlockComment = false;
+          blockStartLine = -1;
+        }
         continue;
       }
 
       if (c == '#') {
-        break;
+        while (i < content.length() && content.charAt(i) != '\n') {
+          i++;
+        }
+        if (i < content.length() && content.charAt(i) == '\n') {
+          clean.append('\n');
+          lineNum++;
+        }
+        continue;
       }
 
       if (c == '{') {
-        insideBlockComment = true;
-        blockCommentStartLine = lineNum;
-        i++;
+        inBlockComment = true;
+        blockStartLine = lineNum;
         continue;
       }
 
@@ -287,10 +294,14 @@ public class LoadBoard {
       }
 
       clean.append(c);
-      i++;
     }
 
-    return clean.toString().trim();
+    if (inBlockComment) {
+      throw new Exception("Format error: unclosed block comment starting at line "
+          + blockStartLine + ".");
+    }
+
+    return clean.toString();
   }
 
   /**
