@@ -84,7 +84,7 @@ class ConfigDialogTest {
 
   @Test
   @DisplayName("Cocher Blitz active le spinner de temps")
-  void testBlitzTogglesTimeSpinner(FxRobot robot) throws InterruptedException {
+  void testBlitzTogglesTimeSpinner(FxRobot robot) throws InterruptedException, Exception {
     AtomicReference<ConfigDialog> dialogRef = new AtomicReference<>();
     CountDownLatch latch = new CountDownLatch(1);
 
@@ -95,14 +95,17 @@ class ConfigDialogTest {
     });
     latch.await();
 
-    CheckBox blitzCheck = robot.lookup("Blitz mode").queryAs(CheckBox.class);
+    ConfigDialog dialog = dialogRef.get();
 
-    // On récupère le Spinner (adaptez cette ligne si vous avez utilisé les IDs #timeSpinner)
+    // Récupération des champs via réflexion
+    Field blitzCheckField = ConfigDialog.class.getDeclaredField("blitzCheck");
+    blitzCheckField.setAccessible(true);
+    CheckBox blitzCheck = (CheckBox) blitzCheckField.get(dialog);
+
+    Field timeSpinnerField = ConfigDialog.class.getDeclaredField("timeSpinner");
+    timeSpinnerField.setAccessible(true);
     @SuppressWarnings("unchecked")
-    Spinner<Integer> timeSpinner = (Spinner<Integer>) robot.lookup(".spinner")
-        .queryAllAs(Spinner.class)
-        .iterator()
-        .next();
+    Spinner<Integer> timeSpinner = (Spinner<Integer>) timeSpinnerField.get(dialog);
 
     // 1. On utilise interact() pour forcer le décochage de manière 100% fiable
     robot.interact(() -> blitzCheck.setSelected(false));
@@ -128,18 +131,26 @@ class ConfigDialogTest {
     });
     latch.await();
 
-    CheckBox whiteAiCheck = robot.lookup("White player (AI)").queryAs(CheckBox.class);
-    CheckBox blackAiCheck = robot.lookup("Black player (AI)").queryAs(CheckBox.class);
+    ConfigDialog dialog = dialogRef.get();
+
+    // Récupération des champs via réflexion
+    Field whiteAiCheckField = ConfigDialog.class.getDeclaredField("whiteAiCheck");
+    whiteAiCheckField.setAccessible(true);
+    CheckBox whiteAiCheck = (CheckBox) whiteAiCheckField.get(dialog);
+
+    Field blackAiCheckField = ConfigDialog.class.getDeclaredField("blackAiCheck");
+    blackAiCheckField.setAccessible(true);
+    CheckBox blackAiCheck = (CheckBox) blackAiCheckField.get(dialog);
 
     Field whiteAiModeComboField = ConfigDialog.class.getDeclaredField("whiteAiModeCombo");
     whiteAiModeComboField.setAccessible(true);
     @SuppressWarnings("unchecked")
-    ComboBox<String> whiteAiModeCombo = (ComboBox<String>) whiteAiModeComboField.get(dialogRef.get());
+    ComboBox<String> whiteAiModeCombo = (ComboBox<String>) whiteAiModeComboField.get(dialog);
 
     Field blackAiModeComboField = ConfigDialog.class.getDeclaredField("blackAiModeCombo");
     blackAiModeComboField.setAccessible(true);
     @SuppressWarnings("unchecked")
-    ComboBox<String> blackAiModeCombo = (ComboBox<String>) blackAiModeComboField.get(dialogRef.get());
+    ComboBox<String> blackAiModeCombo = (ComboBox<String>) blackAiModeComboField.get(dialog);
 
     // 1. On désactive les deux IA
     robot.interact(() -> {
