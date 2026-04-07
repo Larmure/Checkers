@@ -39,8 +39,8 @@ class ConfigDialogTest {
   private final ShortcutManager mockShortcutManager = new ShortcutManager(mockConfig);
 
   /**
-   * Nécessaire pour initialiser le Toolkit JavaFX en mode "headless" (sans fenêtre visible)
-   * Très utile si vous faites tourner les tests sur un serveur d'intégration (CI/CD).
+   * Configure JavaFX en mode "headless" (sans fenêtre visible) si nécessaire.
+   * TestFX avec @ExtendWith(ApplicationExtension.class) gère l'initialisation du toolkit.
    */
   @BeforeAll
   static void setupSpec() {
@@ -50,9 +50,6 @@ class ConfigDialogTest {
       System.setProperty("prism.order", "sw");
       System.setProperty("prism.text", "t2k");
     }
-    // Force l'initialisation du toolkit
-    Platform.startup(() -> {
-    });
   }
 
   @Test
