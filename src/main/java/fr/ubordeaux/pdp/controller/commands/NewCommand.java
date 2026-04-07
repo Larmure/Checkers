@@ -67,9 +67,6 @@ public class NewCommand implements Command, Helpable {
       if (aiTime < Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
         aiTime = Ai.DEFAULT_MAX_TIME_MS;
       }
-      String aiMode = cmd.getOptionValue("am", Utils.DEFAULT_AI_MODE);
-      String whiteAiMode = cmd.getOptionValue("wam", aiMode);
-      String blackAiMode = cmd.getOptionValue("bam", aiMode);
       int aiDepth;
       if (cmd.hasOption("ad") || cmd.hasOption("ai-minimax-depth")) {
         String depthArg = cmd.getOptionValue("ad");
@@ -99,6 +96,9 @@ public class NewCommand implements Command, Helpable {
         }
       }
 
+      String aiMode = cmd.getOptionValue("am", Utils.DEFAULT_AI_MODE);
+      String whiteAiMode = cmd.getOptionValue("wam", aiMode);
+      String blackAiMode = cmd.getOptionValue("bam", aiMode);
       controller.startNewGame(new Configuration(
           hasBlitz, blitzTime, hasContest, size,
           controller.isVerbose(), controller.isDebug(),
