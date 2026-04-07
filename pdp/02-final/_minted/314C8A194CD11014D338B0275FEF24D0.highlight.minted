@@ -1,0 +1,12 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{// Ai.java — sélection de l\PYGZsq{}algorithme via la configuration}
+\PYG{k}{switch}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{aiMode}\PYG{p}{.}\PYG{n+na}{toLowerCase}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{case}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{minimax}\PYG{l+s}{\PYGZdq{}}\PYG{+w}{   }\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{k}{return}\PYG{+w}{ }\PYG{k}{new}\PYG{+w}{ }\PYG{n}{MinMax}\PYG{p}{(}\PYG{n}{depth}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{timeMs}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k}{case}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{alphabeta}\PYG{l+s}{\PYGZdq{}}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{k}{return}\PYG{+w}{ }\PYG{k}{new}\PYG{+w}{ }\PYG{n}{MinMaxAlphaBeta}\PYG{p}{(}\PYG{n}{depth}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{timeMs}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k}{case}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{mcts}\PYG{l+s}{\PYGZdq{}}\PYG{+w}{      }\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{n}{Mcts}\PYG{+w}{ }\PYG{n}{mcts}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{new}\PYG{+w}{ }\PYG{n}{Mcts}\PYG{p}{(}\PYG{n}{depth}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{timeMs}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{        }\PYG{n}{mcts}\PYG{p}{.}\PYG{n+na}{setSelectionMode}\PYG{p}{(}\PYG{n}{cfg}\PYG{p}{.}\PYG{n+na}{getSelectionMode}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{        }\PYG{k}{return}\PYG{+w}{ }\PYG{n}{mcts}\PYG{p}{;}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}

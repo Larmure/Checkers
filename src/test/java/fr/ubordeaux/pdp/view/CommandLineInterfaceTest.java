@@ -35,10 +35,19 @@ class CommandLineInterfaceTest {
   }
 
   @Test
-  void testDisplayCalls() {
+  void testDisplayAndUpdate() {
     GameCheckers game = new GameCheckers(Configuration.getDefaultConfiguration());
-    /* assertDoesNotThrow(() -> cli.display(game)); */
-    /* assertDoesNotThrow(() -> cli.update(game)); */
+
+    // 1. Test classique (Sans Blitz)
+    spyController.isBlitzMode = false;
+    assertDoesNotThrow(() -> cli.display(game));
+    assertDoesNotThrow(() -> cli.update(game)); // update() appelle display()
+    assertFalse(spyController.displayTimeCalled, "displayTime ne doit pas être appelé hors Blitz.");
+
+    // 2. Test avec Blitz (couvre le bloc 'if (controller.isBlitz())')
+    spyController.isBlitzMode = true;
+    assertDoesNotThrow(() -> cli.display(game));
+    assertTrue(spyController.displayTimeCalled, "displayTime doit être appelé en mode Blitz.");
   }
 
   @Test
@@ -80,12 +89,44 @@ class CommandLineInterfaceTest {
     assertNull(cli.readInput(), "End of input must return null.");
   }
 
+  @Test
+  void testShowHint() {
+    assertDoesNotThrow(() -> cli.showHint("A1", "B2"));
+  }
+
+  @Test
+  void testStart() {
+    // pour couvrir la condition if (lineReader == null) évaluée à true
+    assertDoesNotThrow(() -> cli.start());
+
+    // ça couvre la condition if (lineReader == null) évaluée à false
+    assertDoesNotThrow(() -> cli.start());
+  }
+
+  @Test
+  void testJoin() throws Exception {
+    assertDoesNotThrow(() -> cli.join());
+
+    Thread dummyThread = new Thread(() -> {
+    });
+    dummyThread.start();
+
+    java.lang.reflect.Field threadField = CommandLineInterface.class.getDeclaredField("inputThread");
+    threadField.setAccessible(true);
+    threadField.set(cli, dummyThread);
+
+    assertDoesNotThrow(() -> cli.join());
+  }
+
   /**
    * Spy controller used to observe local command execution.
    */
   private static class SpyController extends fr.ubordeaux.pdp.controller.GameController {
     boolean executeCommandCalled = false;
     boolean executeMoveCalled = false;
+
+    boolean displayTimeCalled = false;
+    boolean isBlitzMode = false;
 
     SpyController(GameView view) {
       super(view);
@@ -99,6 +140,16 @@ class CommandLineInterfaceTest {
     @Override
     public void executeMove(String from, String to, boolean isManoury) {
       this.executeMoveCalled = true;
+    }
+
+    @Override
+    public boolean isBlitz() {
+      return isBlitzMode;
+    }
+
+    @Override
+    public void displayTime() {
+      this.displayTimeCalled = true;
     }
   }
 }

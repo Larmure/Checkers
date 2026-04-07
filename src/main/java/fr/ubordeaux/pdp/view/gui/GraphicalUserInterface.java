@@ -164,10 +164,6 @@ public class GraphicalUserInterface extends GameView {
     }
     gameOverAlert = true;
 
-    String winnerName = game.isWhiteTurn()
-        ? game.getBlackPlayer().getName()
-        : game.getWhitePlayer().getName();
-
     Platform.runLater(() -> {
       Alert alert = new Alert(Alert.AlertType.INFORMATION);
       alert.initOwner(stage);
@@ -189,6 +185,15 @@ public class GraphicalUserInterface extends GameView {
       }
 
       alert.setHeaderText(headerText);
+
+      // -----DISPLAY SCORES IN GAME OVER ALERT-----
+      String scoreText = String.format(Internationalization.get("game.white_score") + " : %d\n"
+          + Internationalization.get("game.black_score") + " : %d",
+          game.getWhiteScore(),
+          game.getBlackScore());
+      alert.setContentText(scoreText);
+      // ------------------------------------------
+
       alert.showAndWait();
     });
   }
@@ -248,7 +253,8 @@ public class GraphicalUserInterface extends GameView {
     Platform.runLater(() -> {
       if (controller.getGame() == null) {
         Configuration cfg = (cliConfig != null)
-            ? cliConfig : Configuration.getDefaultConfiguration();
+            ? cliConfig
+            : Configuration.getDefaultConfiguration();
         controller.startNewGame(cfg);
       }
     });
@@ -284,11 +290,10 @@ public class GraphicalUserInterface extends GameView {
     }
 
     GameCheckers game = controller.getGame();
-
     if (game != null && game.getState() == State.IN_GAME) {
+      // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }
-
     if (game != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
       confirm.setTitle(Internationalization.get("gui.quit.title"));
@@ -299,11 +304,11 @@ public class GraphicalUserInterface extends GameView {
       Optional<ButtonType> result = confirm.showAndWait();
       result.ifPresent(response -> {
         if (response == ButtonType.YES) {
-          mainView.openSaveDialog();
+          mainView.openSaveDialog(); // delegate to MenuView's save dialog
           doQuit();
         } else if (response == ButtonType.NO) {
           doQuit();
-        } else if (game.getState() == State.IN_GAME) {
+        } else {
           controller.executeCommand("continue", new String[0]);
         }
       });

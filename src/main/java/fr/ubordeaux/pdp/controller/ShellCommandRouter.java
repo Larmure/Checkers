@@ -55,23 +55,30 @@ public class ShellCommandRouter {
     }
 
     String trimmed = input.trim();
+    ClientMode mode = session.getMode();
 
-    if (session.getMode() == ClientMode.LOCAL && isMove(trimmed)) {
-      handleLocalMove(trimmed);
-      return;
+    switch (mode) {
+      case LOCAL -> {
+        if (isMove(trimmed)) {
+          handleLocalMove(trimmed);
+          return;
+        }
+        if (isManouryMove(trimmed)) {
+          handleLocalManouryMove(trimmed);
+          return;
+        }
+        dispatchInput(trimmed);
+      }
+      case CONNECTED -> {
+        if (isMove(trimmed)) {
+          handleMove(trimmed);
+          return;
+        }
+        session.send(trimmed);
+      }
+      case SERVER -> dispatchInput(trimmed);
+      default -> throw new IllegalStateException("Unexpected mode: " + mode);
     }
-
-    if (session.getMode() == ClientMode.LOCAL && isManouryMove(trimmed)) {
-      handleLocalManouryMove(trimmed);
-      return;
-    }
-
-    if (session.getMode() == ClientMode.CONNECTED && isMove(trimmed)) {
-      handleMove(trimmed);
-      return;
-    }
-
-    dispatchCommand(trimmed);
   }
 
   /**
@@ -136,7 +143,7 @@ public class ShellCommandRouter {
    *
    * @param input trimmed input line.
    */
-  private void dispatchCommand(String input) {
+  private void dispatchInput(String input) {
     String[] tokens = input.split("\\s+", 3);
     String command = tokens[0].toLowerCase();
 

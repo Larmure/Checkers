@@ -62,14 +62,16 @@ public class GameCheckers implements Subject {
 
     if (cfg.iswhiteAi()) {
       this.whitePlayer = new AiPlayer(Internationalization.get("game.white_ai_player"));
-      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg));
+      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg, true));
+      ((AiPlayer) this.whitePlayer).setEvaluator(Ai.buildEvaluator(cfg));
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
 
     if (cfg.isblackAi()) {
       this.blackPlayer = new AiPlayer(Internationalization.get("game.black_ai_player"));
-      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg));
+      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg, false));
+      ((AiPlayer) this.blackPlayer).setEvaluator(Ai.buildEvaluator(cfg));
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }
@@ -537,6 +539,32 @@ public class GameCheckers implements Subject {
         && whitePawns == 0);
 
     return whiteAdvantage || blackAdvantage;
+  }
+
+  /**
+   * Calculates the current score for the white player based on the number of pawns and checkers 
+   * they have on the board.
+   *
+   * @return The total score for the white player, where pawns are worth 1 point and checkers 
+    *     are worth 3 points.
+   */
+  public int getWhiteScore() {
+    int pawnValue = 1;
+    int checkerValue = 3;
+    return (board.whitePawnsCount() * pawnValue) + (board.whiteCheckersCount() * checkerValue);
+  }
+
+  /**
+   * Calculates the current score for the black player based on the number of pawns and checkers 
+   * they have on the board.
+   *
+   * @return The total score for the black player, where pawns are worth 1 point and checkers 
+    *     are worth 3 points.
+   */
+  public int getBlackScore() {
+    int pawnValue = 1;
+    int checkerValue = 3;
+    return (board.blackPawnsCount() * pawnValue) + (board.blackCheckersCount() * checkerValue);
   }
 
 }

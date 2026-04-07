@@ -6,6 +6,11 @@
 \usepackage{amsmath}
 \usepackage{caption}
 \usepackage{placeins}
+
+\usetikzlibrary{positioning,fit,backgrounds,arrows.meta,babel}
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
 \captionsetup[figure]{justification=centering, singlelinecheck=false}
 
 %------------------------------------------------------------------------------
@@ -500,6 +505,16 @@ Le moteur de jeu, regroupé dans le package \texttt{model}, a pour unique missio
 
 Ses responsabilités sont réparties entre deux classes majeures. D'un côté, la classe \texttt{Board} agit comme le moteur physique du damier : elle manipule les pièces, valide si un coup respecte la géométrie du plateau et applique les règles de prises obligatoires. De l'autre, la classe \texttt{GameCheckers} incarne l'arbitre de la partie. C'est elle qui maintient l'état global du système. Elle garde la trace du joueur actif, stocke l'historique des mouvements pour permettre les retours en arrière (undo/redo), et détecte les conditions de fin de partie (victoire, blocage, ou match nul par répétition).
 
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/modele.png}
+        \caption{Architecture du Modèle}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
+
 \subsubsection{Interface de communication (API)}
 
 Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{GameCheckers} expose une interface de communication claire basée sur des actions d'entrée et des notifications de sortie.
@@ -507,6 +522,16 @@ Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{Game
 En entrée, l'interface graphique ou textuelle ne modifie jamais le plateau directement. Elle passe par le \texttt{GameController} qui interroge d'abord le moteur via \texttt{getPossibleMoves(player)} pour s'assurer qu'une action est légale, puis lui demande de l'exécuter avec la méthode \texttt{applyMove(from, to)}.
 
 En sortie, le moteur dicte le rythme grâce au patron de conception Observateur. Au lieu de forcer l'interface graphique à vérifier constamment si quelque chose a changé, le moteur travaille en silence et émet un signal de mise à jour via \texttt{notifyObservers()} uniquement lorsqu'un mouvement valide vient de modifier l'état du jeu.
+
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/MVC.png}
+        \caption{Interaction entre le moteur et la vue via le contrôleur}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsubsection{Choix techniques et boucle de contrôle}
 
@@ -533,7 +558,256 @@ public void applyMove(String from, String to, boolean isManoury) {
 
 Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vérifie si la partie est terminée. Si le jeu continue, il oriente le flux vers une attente de saisie utilisateur, ou lance immédiatement la réflexion de l'algorithme si le joueur suivant est une intelligence artificielle.
 
-\subsubsection{Indépendance du moteur}
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/controller.png}
+        \caption{Boucle de contrôle du jeu}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
+
+\subsection{Module affichage}
+
+Le module d'affichage constitue la couche Vue de notre architecture. Son objectif est de transformer l'état métier fourni par le 
+moteur en informations compréhensibles par l'utilisateur, puis de remonter les intentions de jeu vers le contrôleur.
+
+\subsubsection{Responsabilités du module}
+
+Ce module ne contient aucune règle de dames. Il se limite à trois responsabilités :
+\begin{itemize}
+    \item \textbf{Rendu de l'état courant} : représentation du plateau, des pièces, du joueur actif et des messages de statut.
+    \item \textbf{Capture des actions utilisateur} : sélection d'une case, validation d'un coup, demandes de pause / sauvegarde / chargement.
+    \item \textbf{Retour d'information} : affichage des coups illégaux, de la fin de partie et des événements de synchronisation réseau.
+\end{itemize}
+
+\subsubsection{Affichage en mode CLI}
+
+Le mode CLI (Command Line Interface) fournit une interface textuelle légère, utile pour les tests rapides, le débogage 
+et l'exécution sur des environnements sans interface graphique. Dans ce mode, la Vue sérialise l'état du damier en texte
+ (coordonnées, pièces, tour courant), puis lit des commandes utilisateur de type \texttt{MOVE}, \texttt{UNDO}, \texttt{SAVE} ou \texttt{LOAD}.
+
+D'un point de vue architectural, la CLI reste alignée sur MVC : elle ne touche jamais au \texttt{Board} directement. 
+Chaque commande est traduite en intention métier et transmise au \texttt{GameController}, qui valide le coup et orchestre 
+l'appel au moteur. Ce fonctionnement garantit que les mêmes règles sont appliquées, quel que soit le canal d'entrée (texte ou interface graphique).
+
+Le mode CLI joue également un rôle important pour les tests automatisés du projet : son comportement déterministe facilite 
+l'écriture de scénarios reproductibles (entrées textuelles connues, sorties attendues), notamment pour vérifier les cas 
+limites des règles, le routage des commandes et la robustesse des opérations de sauvegarde/chargement.
+
+\subsubsection{Affichage en mode GUI}
+
+Le mode GUI (Graphical User Interface) vise une expérience utilisateur interactive et visuelle. Il représente le plateau, les pièces
+ et les états de partie sous forme de composants graphiques, et gère des événements riches (clic sur case, sélection d'une pièce, 
+ surbrillance des coups possibles, messages contextuels).
+
+Comme pour la CLI, la GUI n'intègre pas la logique des règles : elle agit comme un adaptateur événementiel. Lorsqu'un utilisateur 
+clique sur une case de départ puis une case d'arrivée, l'action est convertie en requête métier vers le \texttt{GameController}. 
+Après traitement par \texttt{GameCheckers}, la mise à jour de l'affichage est déclenchée par le mécanisme d'observation (\texttt{notifyObservers()}).
+
+Cette séparation permet de conserver une GUI réactive tout en évitant les incohérences fonctionnelles. Elle facilite aussi
+ l'évolution de l'interface (thèmes, animations, ergonomie) sans impact sur le moteur, puisque le contrat entre Vue et contrôleur 
+ reste inchangé.
+
+\subsubsection{Interaction avec le moteur MVC}
+
+Le flux d'interaction suit une chaîne stricte :
+\begin{enumerate}
+    \item L'utilisateur agit via l'affichage (clic, commande, sélection).
+    \item Le module Vue transmet l'intention au \texttt{GameController}.
+    \item Le \texttt{GameController} valide et délègue l'opération au moteur (\texttt{GameCheckers}/\texttt{Board}).
+    \item Après mise à jour, le moteur notifie ses observateurs.
+    \item Le module d'affichage reçoit la notification et rafraîchit l'interface.
+\end{enumerate}
+
+Ce schéma garantit que la Vue ne modifie jamais directement l'état du jeu : elle reste consommatrice de l'état produit par le modèle.
+
+\subsubsection{Dépendances et extensibilité}
+
+Les dépendances sont orientées de la Vue vers le contrôleur, jamais l'inverse. Le module d'affichage dépend d'interfaces publiques stables 
+(état de partie, coups légaux, notifications), ce qui permet :
+\begin{itemize}
+    \item d'ajouter un nouveau type d'interface sans toucher au moteur ;
+    \item d'exécuter des tests du moteur sans initialiser d'interface graphique ;
+    \item de conserver une cohérence fonctionnelle entre mode local, IA et réseau.
+\end{itemize}
+
+\subsection{Architecture réseau}
+ 
+La couche réseau de l'application s'appuie sur une architecture client-serveur
+TCP, répartie entre deux packages distincts :
+\texttt{fr.ubordeaux.pdp.server} côté serveur et
+\texttt{fr.ubordeaux.pdp.controller} côté client.
+La figure~\ref{fig:architecture-serveur} en présente les composants principaux
+ainsi que leurs interactions.
+ 
+% ----------------------------------------------------------------
+%  Couleurs (nommer avec pdp- pour éviter les conflits)
+% ----------------------------------------------------------------
+\definecolor{pdp-teal50}  {HTML}{E1F5EE}
+\definecolor{pdp-teal600} {HTML}{0F6E56}
+\definecolor{pdp-teal800} {HTML}{085041}
+\definecolor{pdp-purple50} {HTML}{EEEDFE}
+\definecolor{pdp-purple600}{HTML}{534AB7}
+\definecolor{pdp-purple800}{HTML}{3C3489}
+\definecolor{pdp-gray50}  {HTML}{F1EFE8}
+\definecolor{pdp-gray600} {HTML}{5F5E5A}
+\definecolor{pdp-blue50}  {HTML}{E6F1FB}
+\definecolor{pdp-blue600} {HTML}{185FA5}
+\definecolor{pdp-blue800} {HTML}{0C447C}
+\definecolor{pdp-border}  {HTML}{C4C2B8}
+ 
+\tikzset{
+  pdp base/.style={
+    draw, rounded corners=5pt,
+    minimum width=3.6cm, minimum height=1.0cm,
+    align=center, font=\small\bfseries,
+    inner sep=5pt, line width=0.4pt
+  },
+  pdp teal/.style={pdp base,
+    fill=pdp-teal50, draw=pdp-teal600, text=pdp-teal800},
+  pdp purple/.style={pdp base,
+    fill=pdp-purple50, draw=pdp-purple600, text=pdp-purple800},
+  pdp gray/.style={pdp base,
+    fill=pdp-gray50, draw=pdp-gray600, text=pdp-gray600},
+  pdp blue/.style={pdp base,
+    fill=pdp-blue50, draw=pdp-blue600, text=pdp-blue800},
+  pdp zone/.style={
+    draw=pdp-border, dashed, rounded corners=8pt,
+    line width=0.5pt, inner sep=10pt
+  },
+  pdp rel/.style={
+    -{Stealth[length=4.5pt]}, line width=0.6pt, color=pdp-gray600
+  },
+  pdp lbl/.style={font=\scriptsize\itshape, color=pdp-gray600},
+}
+ 
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm]
+ 
+  % ---- Zone CLIENT ------------------------------------------
+  \node[pdp blue] (SCR)
+    {ShellCommandRouter\\[-2pt]{\footnotesize\normalfont Routage des commandes}};
+ 
+  \node[pdp blue, below=of SCR] (CS)
+    {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
+ 
+  \node[pdp gray, below=of CS] (CM)
+    {ClientMode\\[-2pt]{\footnotesize\normalfont\textit{«enum»}}};
+ 
+  \node[pdp gray, below=of CM] (SLS)
+    {ServerListService\\[-2pt]{\footnotesize\normalfont Découverte UDP}};
+ 
+  \begin{pgfonlayer}{background}
+    \node[pdp zone,
+          label={[font=\small\bfseries, text=pdp-gray600]above:Client},
+          fit=(SCR)(CS)(CM)(SLS)] (clientZone) {};
+  \end{pgfonlayer}
+ 
+  % ---- Zone SERVEUR -----------------------------------------
+  \node[pdp teal,   right=2.0cm of SCR]  (GR)
+    {GameRegistry\\[-2pt]{\footnotesize\normalfont Registre thread-safe}};
+ 
+  \node[pdp purple, right=0.9cm of GR]   (IM)
+    {InvitationManager\\[-2pt]{\footnotesize\normalfont Cycle de vie des invitations}};
+ 
+  \node[pdp teal,   below=of GR]         (PS)  {PlayerSession};
+  \node[pdp teal,   below=of PS]         (GS)  {GameSession};
+  \node[pdp purple, below=of IM]         (INV) {Invitation};
+ 
+  \node[pdp gray, below=0.85cm of GS]   (DS)
+    {DiscoveryService\\[-2pt]{\footnotesize\normalfont Broadcast UDP}};
+ 
+  \node[pdp gray, below=0.85cm of INV]   (GCF)
+    {GameControllerFactory\\[-2pt]{\footnotesize\normalfont\textit{«interface fonctionnelle»}}};
+ 
+  \begin{pgfonlayer}{background}
+    \node[pdp zone,
+          label={[font=\small\bfseries, text=pdp-gray600]above:%
+            Serveur (\texttt{fr.ubordeaux.pdp.server})},
+          fit=(GR)(IM)(PS)(GS)(INV)(DS)(GCF)] (serverZone) {};
+  \end{pgfonlayer}
+ 
+  % Séparateur infrastructure
+  \draw[dashed, color=pdp-border, line width=0.4pt]
+    ([yshift=-0.30cm] GS.south -| serverZone.west)
+    -- ([yshift=-0.30cm] GS.south -| serverZone.east)
+    node[midway, above, font=\scriptsize\itshape, color=pdp-gray600]
+      {infrastructure};
+ 
+  % ---- Relations --------------------------------------------
+  % ClientSession → GameRegistry (TCP)
+  \draw[pdp rel] (CS.east)
+    -| node[pdp lbl, above, pos=0.25] {TCP}
+    (GR.west);
+ 
+  % GameRegistry → PlayerSession
+  \draw[pdp rel] (GR.south) -- (PS.north);
+ 
+  % GameRegistry → GameSession (contournement)
+  \draw[pdp rel] (GR.south east) -- ++(0.35,0)
+    |- node[pdp lbl, right] {gère} (GS.east);
+ 
+  % InvitationManager → Invitation
+  \draw[pdp rel] (IM.south)
+    -- node[pdp lbl, right] {crée} (INV.north);
+ 
+  % DiscoveryService → ServerListService (UDP)
+  \draw[pdp rel] (DS.west) -|
+    node[pdp lbl, above, pos=0.25] {UDP}
+    (SLS.east);
+ 
+  % GameSession → GameControllerFactory
+  \draw[pdp rel] (GS.east) -- ++(0.35,0)
+    |- node[pdp lbl, right] {utilise} (GCF.west);
+ 
+  % ---- Légende ----------------------------------------------
+  \matrix [below=0.5cm of serverZone.south,
+           column sep=1.0cm,
+           nodes={anchor=west, font=\small}] {
+    \node[pdp teal,   minimum width=0.8cm,
+          minimum height=0.35cm, inner sep=2pt] {};
+      & \node {Registre \& sessions (données de jeu)}; \\
+    \node[pdp purple, minimum width=0.8cm,
+          minimum height=0.35cm, inner sep=2pt] {};
+      & \node {Système d'invitations}; \\
+    \node[pdp gray,   minimum width=0.8cm,
+          minimum height=0.35cm, inner sep=2pt] {};
+      & \node {Infrastructure \& client}; \\
+  };
+ 
+\end{tikzpicture}
+\caption{Architecture structurelle de la couche réseau}
+\label{fig:architecture-serveur}
+\end{figure}
+\FloatBarrier
+ 
+% ---- Description textuelle des composants ------------------
+ 
+\paragraph{Côté client.}
+Le \texttt{ShellCommandRouter} constitue le point d'entrée unique pour toute
+saisie utilisateur. Il consulte l'énumération \texttt{ClientMode}
+(\texttt{LOCAL}, \texttt{CONNECTED}, \texttt{SERVER}) pour aiguiller chaque
+commande vers le bon gestionnaire, évitant ainsi les états incohérents
+(par exemple, démarrer un serveur alors qu'une connexion est déjà ouverte).
+La \texttt{ClientSession} encapsule la socket TCP, le fil d'écoute
+(\textit{listener thread}) et le protocole de \textit{handshake}
+(\texttt{REGISTER} / \texttt{WELCOME}). Le \texttt{ServerListService} écoute
+les annonces UDP diffusées par \texttt{DiscoveryService} afin de présenter
+la liste des serveurs disponibles sur le réseau local.
+ 
+\paragraph{Côté serveur.}
+Le \texttt{GameRegistry} centralise, de façon thread-safe, l'ensemble des
+\texttt{PlayerSession} et des \texttt{GameSession} actives. Il constitue
+la source de vérité pour l'état de chaque joueur connecté. L'\texttt{InvitationManager}
+orchestre le cycle de vie complet des invitations — de leur création jusqu'à
+l'acceptation, au refus ou à l'expiration automatique par un fil démon
+(\textit{sweeper}) — en s'appuyant sur les objets \texttt{Invitation}
+immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
+permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
+l'indépendance des états de parties concurrentes.
 
 \section{Explication approfondie : Monte Carlo Tree Search (MCTS)}
 
@@ -672,6 +946,211 @@ signifie qu'elle a continuellement été considérée comme la plus prometteuse 
 Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
 
 Ce choix de conception a été décisif pour notre flux de travail. Il nous a permis de développer, de faire tourner et de tester massivement l'intégralité du moteur de jeu et de l'IA via une interface textuelle simple, avant même de commencer à coder l'interface graphique. Remplacer le terminal par la vue JavaFX n'a nécessité aucune modification des classes du moteur.
+
+\section{IA et Complexité}
+
+\subsection{Hypothèses et notations}
+
+Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA fournies.
+La variable $n$ désigne le nombre de cases actives du plateau (typiquement \(32\), \(50\) ou \(72\)), $b$ représente
+le facteur de branchement moyen (nombre de coups légaux par position), et $d$ la profondeur maximale de recherche.
+Nous distinguons la complexité \textit{propre} d'une méthode de recherche (nombre de n\oe{}uds explorés) du coût réel,
+qui inclut aussi la génération des coups par le moteur via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
+
+\subsection{Lecture intuitive des classes}
+
+La classe \texttt{SimpleEvaluator} peut être vue comme une balance très basique : elle compte simplement
+le "matériel" sur le plateau, c'est-à-dire combien de pions et de dames possède chaque joueur.
+Si les blancs ont plus de pièces fortes, le score monte ; si les noirs sont avantagés, le score baisse.
+Cette approche est facile à comprendre, rapide, mais elle ne tient pas compte de la position stratégique des pièces.
+
+La classe \texttt{AdvancedEvaluator} reprend cette idée de balance, mais ajoute une intuition naturelle du jeu
+de dames : un pion qui avance vers la promotion devient plus dangereux. En pratique, cette classe récompense
+les pions qui progressent vers la dernière rangée. Elle reste simple, mais elle joue déjà plus "intelligemment"
+qu'un simple comptage de pièces.
+
+La classe \texttt{MaxEvaluator} va encore plus loin. En plus du matériel et de l'avancement, elle valorise
+le contrôle du centre du damier et la mobilité (le nombre de coups légaux disponibles). Intuitivement,
+un joueur qui contrôle le centre et qui garde beaucoup d'options est souvent en meilleure posture.
+Cette évaluation est plus riche et souvent plus précise, mais elle demande davantage de calcul.
+
+La classe \texttt{MinMax} représente la logique "je joue un coup, puis j'anticipe la meilleure réponse adverse".
+L'algorithme explore un arbre de possibilités en alternant les deux joueurs : il suppose que l'adversaire joue bien,
+et il cherche le coup qui reste le plus favorable malgré cela. Cette méthode donne des décisions solides,
+mais son coût augmente rapidement quand on approfondit la recherche.
+
+La classe \texttt{MinMaxAlphaBeta} suit exactement la même philosophie que MinMax, mais elle évite de calculer
+des branches qui ne pourront de toute façon pas changer la décision finale. On peut l'imaginer comme une lecture
+intelligente d'un arbre où l'on saute les chapitres déjà "perdus d'avance". Le résultat reste de même qualité,
+mais le temps de calcul peut être fortement réduit.
+
+La classe \texttt{IterativeDeepening} applique une stratégie très pratique en contexte réel : elle commence
+par une recherche peu profonde (rapide), puis recommence avec une profondeur plus grande, et ainsi de suite,
+jusqu'à épuisement du temps autorisé. L'avantage est qu'on dispose toujours d'un coup jouable, même si la recherche
+complète la plus profonde n'a pas le temps de se terminer.
+
+\subsection{Complexité des fonctions d'évaluation}
+
+\paragraph{SimpleEvaluator}
+La méthode \texttt{evaluate(Board)} réalise un parcours linéaire de l'ensemble des cases actives,
+avec uniquement des tests bit-à-bit en temps constant à chaque itération. Sa complexité est donc $O(n)$.
+
+\paragraph{AdvancedEvaluator}
+La méthode \texttt{evaluate(Board)} suit le même schéma que \texttt{SimpleEvaluator} : un balayage linéaire des cases
+et un calcul de bonus d'avancement en temps constant par case. La complexité reste donc $O(n)$.
+
+\paragraph{MaxEvaluator}
+La méthode \texttt{evaluate(Board)} combine trois contributions : un parcours principal en $O(n)$,
+un test de centralité \texttt{isInCenter(...)} en $O(1)$ par case, puis une évaluation de mobilité
+dont le coût dépend des appels \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
+Sa complexité globale s'écrit donc $O(n + M_{w} + M_{b})$, où $M_{w}$ et $M_{b}$ représentent les coûts
+de génération des coups blancs et noirs. La méthode \texttt{isInCenter(int, int, int)} elle-même ne fait
+que des comparaisons arithmétiques constantes et s'exécute en $O(1)$.
+
+\subsection{Complexité des algorithmes de recherche adversariale}
+
+\paragraph{MinMax}
+La méthode \texttt{calculateBestMove(...)} lance une recherche complète jusqu'à \texttt{maxDepth} et hérite donc
+d'une complexité asymptotique en $O(b^d)$, hors coût exact de génération des coups.
+La méthode \texttt{findBestMoveAtDepth(...)} itère d'abord sur les coups racines puis délègue à l'exploration
+récursive \texttt{minMax} / \texttt{maxMin}, ce qui conduit au même ordre de grandeur. Plus finement,
+\texttt{minMax(...)} et \texttt{maxMin(...)} coûtent $O(b^k)$ à profondeur restante $k$, soit $O(b^d)$ au pire
+depuis la racine. Enfin, \texttt{checkTime(long)} effectue un test booléen constant en $O(1)$.
+
+\paragraph{MinMaxAlphaBeta}
+Les méthodes \texttt{calculateBestMove(...)} et \texttt{findBestMoveAtDepth(...)} suivent la même logique
+que MinMax, mais ajoutent les bornes $\alpha$ et $\beta$ pour couper des sous-arbres.
+Ainsi, \texttt{maxValue(...)} et \texttt{minValue(...)} restent en $O(b^d)$ dans le pire cas (ordre des coups défavorable),
+mais peuvent atteindre $O(b^{d/2})$ dans le meilleur cas théorique avec un ordre des coups optimal.
+La méthode \texttt{checkTime(long)} reste en $O(1)$.
+
+\paragraph{IterativeDeepening}
+La méthode \texttt{calculateBestMove(...)} enchaîne des recherches successives de profondeur
+$1,2,\dots,d$ tant que le budget temps n'est pas épuisé. Son coût total théorique est
+$$\sum_{k=1}^{d} O(b^k) = O(b^d).$$
+En pratique, le surcoût par rapport à une unique recherche à profondeur $d$ est modéré,
+et il est compensé par la robustesse de la stratégie : en cas d'interruption temporelle,
+le meilleur coup d'une profondeur entièrement terminée est déjà disponible.
+
+\subsection{Synthèse}
+
+{\footnotesize
+\begin{longtable}{|p{3.4cm}|p{4.9cm}|p{2.2cm}|p{4.8cm}|}
+\caption{Complexité détaillée, méthode par méthode, des classes IA}\label{tab:ai-complexite-detaillee} \\
+\hline
+\textbf{Classe} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Indice dans le code} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Classe} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Indice dans le code} \\
+\hline
+\endhead
+
+\hline
+\multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
+\endfoot
+
+\hline
+\endlastfoot
+
+\texttt{SimpleEvaluator}
+& \texttt{evaluate(Board)}
+& $O(n)$
+& Une boucle unique parcourt les cases actives de \texttt{0} à \texttt{board.getIndexMax()-1}, avec tests de bits en temps constant. \\
+\hline
+
+\texttt{AdvancedEvaluator}
+& \texttt{evaluate(Board)}
+& $O(n)$
+& Même schéma que \texttt{SimpleEvaluator} : boucle linéaire + calcul arithmétique constant du bonus d'avancement. \\
+\hline
+
+\texttt{MaxEvaluator}
+& \texttt{evaluate(Board)}
+& $O(n + M_w + M_b)$
+& Boucle principale en \(n\), appel de \texttt{isInCenter(...)} en temps constant, puis coût de mobilité via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}. \\
+\hline
+
+\texttt{MaxEvaluator}
+& \texttt{isInCenter(int,int,int)}
+& $O(1)$
+& Seulement des bornes calculées et des comparaisons. \\
+\hline
+
+
+\texttt{IterativeDeepening}
+& \texttt{calculateBestMove(...)}
+& $\sum_{k=1}^{d} O(b^k)=O(b^d)$
+& Boucle sur les profondeurs \(1\) à \(d\), chaque itération appelant \texttt{MinMax} avec profondeur courante. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{calculateBestMove(...)}
+& $O(b^d)$
+& Un appel principal à \texttt{findBestMoveAtDepth(...)} à profondeur \texttt{maxDepth}. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{findBestMoveAtDepth(...)}
+& $O(b^d)$
+& Boucle sur les coups racines puis descente récursive dans l'arbre de jeu sans élagage. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{minMax(...)}
+& $O(b^k)$
+& Pour profondeur restante \(k\), exploration de tous les coups noirs puis appel récursif \texttt{maxMin(...)}. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{maxMin(...)}
+& $O(b^k)$
+& Symétrique de \texttt{minMax(...)} pour les coups blancs, sans coupure. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{checkTime(long)}
+& $O(1)$
+& Un seul test booléen via \texttt{isTimeExceeded(startTime)}. \\
+\hline
+
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{calculateBestMove(...)}
+& Pire : $O(b^d)$
+& Lance \texttt{findBestMoveAtDepth(...)} ; l'élagage dépend de l'ordre des coups. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{findBestMoveAtDepth(...)}
+& Meilleur : $O(b^{d/2})$\newline
+Pire : $O(b^d)$
+& Mise à jour de $\alpha$ et $\beta$ à chaque enfant ; coupures quand $\beta \leq \alpha$. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{maxValue(...)}
+& Meilleur : $O(b^{d/2})$\newline
+Pire : $O(b^d)$
+& Exploration récursive avec arrêt anticipé dès qu'une coupure $\beta \leq \alpha$ est détectée. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{minValue(...)}
+& Meilleur : $O(b^{d/2})$\newline
+Pire : $O(b^d)$
+& Symétrique de \texttt{maxValue(...)} avec bornes inversées et mêmes règles de coupure. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{checkTime(long)}
+& $O(1)$
+& Test constant, puis levée d'exception interne si le temps est dépassé. \\
+\hline
+\end{longtable}
+}
+
 \section{Explication approfondie}
 
 \section{Revue critique de projet}
@@ -755,7 +1234,6 @@ F38 & Découverte de serveurs et connexion client-serveur basique & \\ \hline
 F39 & Serveur multi-clients et gestion de parties & \\ \hline
 F40 & Système d’invitations et gestion avancée des joueurs & \\ \hline
 \end{longtable} 
-
 
 
 

@@ -80,6 +80,7 @@ public class AppTest {
 
     assertEquals(App.EXIT_GUI, status);
   }
+
   @Test
   public void testBlitzAndTimeOptions() {
     String[] args = { "-b", "-t", "5" };
@@ -125,10 +126,28 @@ public class AppTest {
 
   @Test
   public void testUnrecognizedArguments() {
-    String[] args = { "-v", "hello" };
+    String[] args = { "-v", "hello", "extra" };
     int status = App.run(args);
 
     assertEquals(App.EXIT_ERROR, status, "Extra arguments should trigger an error status");
+  }
+
+  @Test
+  public void testPositionalSaveFileArgumentInCliMode() {
+    String[] args = { "Sauvegarde/fandu.txt" };
+    int status = App.run(args);
+
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertEquals("Sauvegarde/fandu.txt", App.getStartupSaveFile());
+  }
+
+  @Test
+  public void testPositionalSaveFileArgumentInGuiMode() {
+    String[] args = { "-g", "Sauvegarde/fandu.txt" };
+    int status = App.run(args);
+
+    assertEquals(App.EXIT_GUI, status);
+    assertEquals("Sauvegarde/fandu.txt", App.getStartupSaveFile());
   }
 
   @Test
@@ -169,6 +188,13 @@ public class AppTest {
     App.run(new String[] { "-ad", "abc" });
 
     assertEquals(Ai.DEFAULT_DEPTH, App.getAiDepth());
+  }
+
+  @Test
+  public void testAiDepthAutoFromTimeWhenNotProvided() {
+    App.run(new String[] { "-at", "2" });
+
+    assertEquals(Ai.suggestDepthFromTime(2000), App.getAiDepth());
   }
 
   @Test
@@ -238,6 +264,20 @@ public class AppTest {
   public void testValidTrainingNumber() {
     int status = App.run(new String[] { "-tr", "10" });
     assertEquals(App.EXIT_TRAINING, status);
+  }
+
+  @Test
+  public void testMinimaxScoringOption() {
+    int status = App.run(new String[] { "--ai-minimax-scoring", "advanced" });
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertEquals("advanced", App.getMinimaxScoring());
+  }
+
+  @Test
+  public void testInvalidMinimaxScoringOptionFallsBackToDefault() {
+    int status = App.run(new String[] { "--ai-minimax-scoring", "invalid" });
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertEquals(Utils.DEFAULT_MINIMAX_SCORING, App.getMinimaxScoring());
   }
 
   @Test

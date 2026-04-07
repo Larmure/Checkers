@@ -1,0 +1,5 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kt}{double}\PYG{+w}{ }\PYG{n}{score}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{child}\PYG{p}{.}\PYG{n+na}{visits}\PYG{+w}{ }\PYG{o}{=}\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}
+\PYG{+w}{    }\PYG{o}{?}\PYG{+w}{ }\PYG{n}{Double}\PYG{p}{.}\PYG{n+na}{MAX\PYGZus{}VALUE}
+\PYG{+w}{    }\PYG{p}{:}\PYG{+w}{ }\PYG{n}{child}\PYG{p}{.}\PYG{n+na}{winRate}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{explorationConstant}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{Math}\PYG{p}{.}\PYG{n+na}{sqrt}\PYG{p}{(}\PYG{n}{logVisits}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{child}\PYG{p}{.}\PYG{n+na}{visits}\PYG{p}{)}\PYG{p}{;}
+\end{MintedVerbatim}
