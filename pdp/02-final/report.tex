@@ -500,6 +500,16 @@ Le moteur de jeu, regroupé dans le package \texttt{model}, a pour unique missio
 
 Ses responsabilités sont réparties entre deux classes majeures. D'un côté, la classe \texttt{Board} agit comme le moteur physique du damier : elle manipule les pièces, valide si un coup respecte la géométrie du plateau et applique les règles de prises obligatoires. De l'autre, la classe \texttt{GameCheckers} incarne l'arbitre de la partie. C'est elle qui maintient l'état global du système. Elle garde la trace du joueur actif, stocke l'historique des mouvements pour permettre les retours en arrière (undo/redo), et détecte les conditions de fin de partie (victoire, blocage, ou match nul par répétition).
 
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/modele.png}
+        \caption{Architecture du Modèle}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
+
 \subsubsection{Interface de communication (API)}
 
 Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{GameCheckers} expose une interface de communication claire basée sur des actions d'entrée et des notifications de sortie.
@@ -507,6 +517,16 @@ Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{Game
 En entrée, l'interface graphique ou textuelle ne modifie jamais le plateau directement. Elle passe par le \texttt{GameController} qui interroge d'abord le moteur via \texttt{getPossibleMoves(player)} pour s'assurer qu'une action est légale, puis lui demande de l'exécuter avec la méthode \texttt{applyMove(from, to)}.
 
 En sortie, le moteur dicte le rythme grâce au patron de conception Observateur. Au lieu de forcer l'interface graphique à vérifier constamment si quelque chose a changé, le moteur travaille en silence et émet un signal de mise à jour via \texttt{notifyObservers()} uniquement lorsqu'un mouvement valide vient de modifier l'état du jeu.
+
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/MVC.png}
+        \caption{Interaction entre le moteur et la vue via le contrôleur}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsubsection{Choix techniques et boucle de contrôle}
 
@@ -533,13 +553,15 @@ public void applyMove(String from, String to, boolean isManoury) {
 
 Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vérifie si la partie est terminée. Si le jeu continue, il oriente le flux vers une attente de saisie utilisateur, ou lance immédiatement la réflexion de l'algorithme si le joueur suivant est une intelligence artificielle.
 
-\subsubsection{Indépendance du moteur}
-
-% IDEE
-% Le moteur reste volontairement découplé de toute technologie d'interface. Cette séparation permet de faire évoluer l'affichage
-%  (console, JavaFX ou client distant) sans modifier les règles de jeu, et facilite les tests unitaires de la logique métier. 
-%  En pratique, toute interaction passe par des commandes métier exposées par le contrôleur, ce qui garantit une frontière claire entre 
-%  logique de domaine et présentation.
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/controller.png}
+        \caption{Boucle de contrôle du jeu}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
 
 \subsection{Module affichage}
 
