@@ -23,6 +23,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
+import java.util.List;
 
 /**
  * Main class for the Checkers game. Handles command line arguments and
@@ -98,6 +99,9 @@ public class App {
   /** Flag to set the number of games for training. */
   private static int numGames = LogisticRegressionTrainer.DEFAULT_NUM_GAMES;
 
+  /** Optional save file path provided as positional CLI argument. */
+  private static String startupSaveFile = null;
+
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
    * codes.
@@ -156,10 +160,18 @@ public class App {
 
     controller.start();
 
+    boolean loadedFromCliArg = false;
+    if (startupSaveFile != null && !startupSaveFile.isBlank()) {
+      controller.executeCommand("load", new String[] { startupSaveFile });
+      loadedFromCliArg = controller.getGame() != null;
+    }
+
     if (status != EXIT_GUI) {
-      controller.startNewGame(new Configuration(blitz, time, contest,
-          size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
-          whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring));
+      if (!loadedFromCliArg) {
+        controller.startNewGame(new Configuration(blitz, time, contest,
+            size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
+            whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring));
+      }
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
@@ -189,6 +201,7 @@ public class App {
     contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();
+    startupSaveFile = null;
 
     // Options definition
     Options options = new Options();
@@ -226,9 +239,13 @@ public class App {
     try {
       CommandLine cmd = parser.parse(options, args);
 
-      if (!cmd.getArgList().isEmpty()) {
+      List<String> positionalArgs = cmd.getArgList();
+      if (positionalArgs.size() > 1) {
         throw new ParseException(Internationalization.get("app.error.unrecognized_arg")
-            + cmd.getArgList());
+            + positionalArgs);
+      }
+      if (positionalArgs.size() == 1) {
+        startupSaveFile = positionalArgs.get(0).trim();
       }
 
       if (cmd.hasOption("h")) {
@@ -507,6 +524,16 @@ public class App {
     aiDepth = Ai.DEFAULT_DEPTH;
     selectionMode = Mcts.DEFAULT_SELECTION_MODE;
     minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
+    startupSaveFile = null;
+  }
+
+  /**
+   * Returns the save file provided as positional startup argument, if any.
+   *
+   * @return startup save file path or null
+   */
+  public static String getStartupSaveFile() {
+    return startupSaveFile;
   }
 
   /**
