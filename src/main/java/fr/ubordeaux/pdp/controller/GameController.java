@@ -485,7 +485,22 @@ public class GameController {
     }
 
     for (int i = 0; i < n; i++) {
+      int historySizeBefore = game.getHistory().getSize();
+
       game.undoManage();
+
+      if (game.getHistory().getSize() == historySizeBefore) {
+        break;
+      }
+
+      while (game.getCurrentPlayer() instanceof AiPlayer) {
+        historySizeBefore = game.getHistory().getSize();
+        game.undoManage();
+
+        if (game.getHistory().getSize() == historySizeBefore) {
+          break;
+        }
+      }
     }
     triggerAiIfNecessary();
   }
@@ -504,7 +519,22 @@ public class GameController {
     }
 
     for (int i = 0; i < n; i++) {
+      int historySizeBefore = game.getHistory().getSize();
+
       game.redoManage();
+
+      if (game.getHistory().getSize() == historySizeBefore) {
+        break;
+      }
+
+      while (game.getCurrentPlayer() instanceof AiPlayer) {
+        historySizeBefore = game.getHistory().getSize();
+        game.redoManage();
+
+        if (game.getHistory().getSize() == historySizeBefore) {
+          break;
+        }
+      }
     }
     triggerAiIfNecessary();
   }
