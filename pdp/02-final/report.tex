@@ -583,6 +583,100 @@ En GUI, la même logique a été conservée, avec une organisation en sous-vues 
 
 Avec le recul, ce module fonctionne surtout parce qu'il reste discipliné : l'affichage reste un adaptateur, pas un second moteur de jeu. C'est ce qui nous permet d'ajouter des fonctionnalités d'interface sans toucher aux règles, et d'exécuter les mêmes scénarios de jeu dans des environnements très différents.
 
+\subsubsection{Architecture interne de la GUI}
+
+L'implémentation de la GUI repose sur javafx et une décomposition en plusieurs composants spécialisés :
+
+\paragraph{GraphicalUserInterface et le pattern Observer}
+
+La classe \texttt{GraphicalUserInterface} étend \texttt{GameView}, ce qui lui permet de s'intégrer directement au pattern Observer 
+déjà utilisé par le projet. Quand le modèle change, la GUI reçoit l'information via la méthode \texttt{update(GameCheckers)} 
+et redirige la mise à jour vers les composants visuels.
+
+Le point central ici est la gestion du thread JavaFX. Comme JavaFX impose que toute modification de l'interface passe par son 
+thread dédié (Application Thread), les mises à jour sont dispatchées via \texttt{Platform.runLater(...)} :
+
+\begin{minted}{java}
+@Override
+public void update(GameCheckers game) {
+  Platform.runLater(() -> {
+    if (mainView != null) {
+      mainView.update(game);
+    }
+  });
+}
+\end{minted}
+
+Ce pattern de thread est \textbf{central} : sans lui, toute mise à jour du modèle provenant d'un autre thread provoque une exception \texttt{IllegalStateException}. La classe gère aussi 
+l'initialisation de la fenêtre principale, l'application de la feuille de style CSS 
+et la fermeture contrôlée avec vérification des sauvegardes avant quitter.
+
+\paragraph{MainView et organisation visuelle}
+
+La fenêtre principale est construite par \texttt{MainView}, qui hérite de \texttt{BorderPane}. Ce choix permet de séparer 
+proprement l'interface en trois zones : le menu en haut, le jeu au centre et la barre d'actions en bas. 
+
+\texttt{MainView} ne redessine pas le plateau lui-même ; ce rôle est délégué à \texttt{PlayView}, ce qui évite de concentrer 
+la logique d'affichage dans une seule classe. Cette délégation renforce la maintenabilité et facilite les tests unitaires de chaque 
+composant.
+
+\paragraph{BoardView et rendu interactif}
+
+\texttt{BoardView} est le compasant qui affiche réellement le damier, les pièces, les sélections, 
+les coups suggérés et les mouvements possibles. Le composant repose sur un \texttt{GridPane}, reconstruit visuellement à chaque 
+redraw. L'interaction suit un schéma à deux clics : au premier clic, la pièce est sélectionnée et surlignée en bleu ; au second clic, 
+la destination est envoyée au contrôleur pour exécution du coup.
+
+Un point crucial est que la GUI \textbf{ne recalcule pas} les règles de dames. Elle demande directement au modèle quels coups sont légaux, 
+puis ne garde que ceux qui concernent la pièce sélectionnée :
+
+\begin{minted}{java}
+List<Move> possibleMoves = game.getPossibleMoves(game.getCurrentPlayer());
+
+for (Move m : possibleMoves) {
+  if (m.getFrom() == selectedIndex) {
+    validDestinationSquares.add(board.indexToSquare(m.getTo()));
+  }
+}
+\end{minted}
+
+L'interface ne décide pas ce qui est légal ou non ; elle se contente d'afficher proprement ce que le moteur autorise. 
+Ce choix architectural évite de dupliquer la logique métier dans la vue et garantit la cohérence globale : une règle modifiée 
+dans le moteur s'applique immédiatement sans changement de code GUI.
+
+Le drag and drop a également été implémenté. Quand l'utilisateur commence à faire glisser une pièce, la case de départ est stockée 
+dans le \texttt{Dragboard} JavaFX. Au dépôt, la vue reconstruit simplement le déplacement et l'envoie au contrôleur sans validation locale. 
+Encore une fois, la vue gère l'interaction (UX), mais pas les règles.
+
+\paragraph{ConfigDialog et interactions complexes}
+
+Le dialogue de configuration \texttt{ConfigDialog} va au-delà d'une simple présentation de cases à cocher. Les composants réagissent 
+entre eux : si le mode blitz est désactivé, le spinner de temps l'est aussi. Si aucune IA n'est active, les options liées aux IA 
+sont désactivées automatiquement. Ces dépendances sont gérées via des listeners JavaFX sur les propriétés des contrôles.
+
+Plus important encore, le dialogue reconstruit un objet \texttt{Configuration} exploitable directement par le moteur. Il ne renvoie pas 
+juste des valeurs d'interface brutes : il normalise les choix, convertit les unités (par exemple, les secondes en millisecondes pour 
+l'IA) et prépare les bons formats.
+
+\paragraph{Tests de la GUI}
+
+Exemple : \texttt{ConfigDialog}. Les tests utilisent JUnit 5, TestFX 
+(framework pour tester JavaFX) et Mockito (pour simuler le contrôleur). Les composants JavaFX sont créés sur le bon thread 
+à l'aide de \texttt{Platform.runLater(...)}, puis les interactions utilisateur sont simulées avec \texttt{FxRobot}. 
+
+Par exemple, un test vérifie que cocher ou décocher le mode blitz active ou désactive correctement le spinner de temps :
+
+\begin{minted}{java}
+robot.interact(() -> blitzCheck.setSelected(false));
+assertTrue(timeSpinner.isDisabled());
+
+robot.interact(() -> blitzCheck.setSelected(true));
+assertFalse(timeSpinner.isDisabled());
+\end{minted}
+
+Cette approche garantit que le comportement du dialogue reste stable lors des refactorisations futures et valide que les interactions 
+entre composants restent cohérentes.
+
 \subsection{Module Réseau}
 \label{sec:reseau}
  
