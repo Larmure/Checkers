@@ -591,9 +591,10 @@ Le mode CLI (Command Line Interface) fournit une interface textuelle légère, u
 et l'exécution sur des environnements sans interface graphique. Dans ce mode, la Vue sérialise l'état du damier en texte
  (coordonnées, pièces, tour courant), puis lit des commandes utilisateur de type \texttt{MOVE}, \texttt{UNDO}, \texttt{SAVE} ou \texttt{LOAD}.
 
-D'un point de vue architectural, la CLI reste alignée sur MVC : elle ne touche jamais au \texttt{Board} directement. 
-Chaque commande est traduite en intention métier et transmise au \texttt{GameController}, qui valide le coup et orchestre 
-l'appel au moteur. Ce fonctionnement garantit que les mêmes règles sont appliquées, quel que soit le canal d'entrée (texte ou interface graphique).
+% Inutile
+% D'un point de vue architectural, la CLI reste alignée sur MVC : elle ne touche jamais au \texttt{Board} directement. 
+% Chaque commande est traduite en intention métier et transmise au \texttt{GameController}, qui valide le coup et orchestre 
+% l'appel au moteur. Ce fonctionnement garantit que les mêmes règles sont appliquées, quel que soit le canal d'entrée (texte ou interface graphique).
 
 Le mode CLI joue également un rôle important pour les tests automatisés du projet : son comportement déterministe facilite 
 l'écriture de scénarios reproductibles (entrées textuelles connues, sorties attendues), notamment pour vérifier les cas 
@@ -613,18 +614,19 @@ Cette séparation permet de conserver une GUI réactive tout en évitant les inc
  l'évolution de l'interface (thèmes, animations, ergonomie) sans impact sur le moteur, puisque le contrat entre Vue et contrôleur 
  reste inchangé.
 
-\subsubsection{Interaction avec le moteur MVC}
+ % Deja mentionné dans la section précédente, inutile de le répéter
+% \subsubsection{Interaction avec le moteur MVC}
 
-Le flux d'interaction suit une chaîne stricte :
-\begin{enumerate}
-    \item L'utilisateur agit via l'affichage (clic, commande, sélection).
-    \item Le module Vue transmet l'intention au \texttt{GameController}.
-    \item Le \texttt{GameController} valide et délègue l'opération au moteur (\texttt{GameCheckers}/\texttt{Board}).
-    \item Après mise à jour, le moteur notifie ses observateurs.
-    \item Le module d'affichage reçoit la notification et rafraîchit l'interface.
-\end{enumerate}
+% Le flux d'interaction suit une chaîne stricte :
+% \begin{enumerate}
+%     \item L'utilisateur agit via l'affichage (clic, commande, sélection).
+%     \item Le module Vue transmet l'intention au \texttt{GameController}.
+%     \item Le \texttt{GameController} valide et délègue l'opération au moteur (\texttt{GameCheckers}/\texttt{Board}).
+%     \item Après mise à jour, le moteur notifie ses observateurs.
+%     \item Le module d'affichage reçoit la notification et rafraîchit l'interface.
+% \end{enumerate}
 
-Ce schéma garantit que la Vue ne modifie jamais directement l'état du jeu : elle reste consommatrice de l'état produit par le modèle.
+% Ce schéma garantit que la Vue ne modifie jamais directement l'état du jeu : elle reste consommatrice de l'état produit par le modèle.
 
 \subsubsection{Dépendances et extensibilité}
 
@@ -1153,9 +1155,64 @@ L'IA fait appel à la méthode \texttt{mostVisitedChild()}, qui sélectionne le 
 \textbf{plus grand nombre de visites}. Ce critère est privilégié car il est statistiquement le plus robuste : une branche très visitée 
 signifie qu'elle a continuellement été considérée comme la plus prometteuse par l'algorithme, et qu'elle a survécu à un grand nombre de
  simulations face aux meilleures réponses possibles de l'adversaire.
-Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
 
-Ce choix de conception a été décisif pour notre flux de travail. Il nous a permis de développer, de faire tourner et de tester massivement l'intégralité du moteur de jeu et de l'IA via une interface textuelle simple, avant même de commencer à coder l'interface graphique. Remplacer le terminal par la vue JavaFX n'a nécessité aucune modification des classes du moteur.
+\paragraph{Stratégie de validation et de tests}
+
+Afin de garantir la robustesse de notre implémentation du MCTS, nous avons développé une série de tests unitaires centralisés dans la classe 
+\texttt{MctsTest}. La première étape de cette validation consiste à vérifier l'intégrité de l'arbre de recherche et de son cycle de vie. Cela 
+passe notamment par le contrôle de l'initialisation des paramètres fondamentaux, comme l'affectation correcte de la constante d'exploration à sa 
+valeur théorique par défaut de $\sqrt{2}$. Nous nous assurons également de la stabilité de l'algorithme face aux cas limites. Par exemple, si l'IA 
+est sollicitée sur un plateau où aucun mouvement légal n'est possible (en toute fin de partie), la méthode de recherche est tenue de retourner une 
+absence de coup sans provoquer la moindre erreur d'exécution. \\
+
+{\small
+\begin{minted}[frame=single]{java}
+@DisplayName("Default constructor sets exploration constant to sqrt(2)")
+void testDefaultConstructorExplorationConstant() {
+  Mcts mcts = new Mcts();
+  assertEquals(Mcts.DEFAULT_EXPLORATION, mcts.explorationConstant, 1e-9);
+}
+\end{minted}
+}
+
+Le mode de sélection par apprentissage automatique (\texttt{SelectionMode.ML}) a nécessité une approche de test plus pointue. Étant donné que 
+cette fonctionnalité manipule des classes internes privées, comme les nœuds de l'arbre, et lit des fichiers de poids externes, nous avons fait 
+appel à la réflexion Java pour isoler et éprouver ces composants. Cette technique nous permet de confirmer que la fonction de chargement analyse
+ correctement les vecteurs de caractéristiques, tout en gérant proprement les fichiers corrompus via des exceptions contrôlées. De plus, la réflexion
+  nous sert à simuler artificiellement des nœuds en cours de partie pour vérifier que l'algorithme bascule bien sur le moteur d'inférence ML, 
+  au lieu de la formule UCT, lorsque l'option correspondante est activée au lancement.\\
+
+{\small
+\begin{minted}[frame=single]{java}
+@DisplayName("Test direct du switch case ML dans select")
+void testSelectOnlyMl() throws Exception {
+  mcts.setSelectionMode(SelectionMode.ML);
+  Object result = selectMethod.invoke(mcts, root, board, undo);
+  assertEquals(child, result, "Le switch doit choisir l'enfant via le mode ML");
+}
+\end{minted}
+}
+
+Enfin, nous contrôlons rigoureusement la cohérence mathématique des calculs qui guident les choix de l'IA. Nos tests s'assurent par exemple que 
+l'évaluation par régression logistique génère systématiquement une probabilité valide, strictement bornée entre 0 et 1, grâce à l'application de 
+la fonction sigmoïde sur les statistiques du plateau. Du côté de l'approche statistique classique, nous validons le mécanisme de convergence de 
+l'UCT en vérifiant que le code attribue bien la priorité maximale (\texttt{Double.MAX\_VALUE}) aux branches non explorées. C'est cette garantie 
+mathématique qui force l'algorithme à évaluer chaque coup légal au moins une fois avant de se concentrer sur l'exploitation des meilleures variantes.
+
+{\small
+\begin{minted}[frame=single]{java}
+@DisplayName("evaluateMl correctly calculates probability with loaded weights")
+void testEvaluateMlCalculation(@TempDir Path tempDir) throws Exception {
+  double probability = (double) evaluateMlMethod.invoke(mcts, childNode, board, undo);
+  assertTrue(probability >= 0.0 && probability <= 1.0);
+}
+\end{minted}
+}
+
+% Je ne sais pas d'où ça sort
+% Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
+
+% Ce choix de conception a été décisif pour notre flux de travail. Il nous a permis de développer, de faire tourner et de tester massivement l'intégralité du moteur de jeu et de l'IA via une interface textuelle simple, avant même de commencer à coder l'interface graphique. Remplacer le terminal par la vue JavaFX n'a nécessité aucune modification des classes du moteur.
 
 \section{Revue critique de projet}
 
