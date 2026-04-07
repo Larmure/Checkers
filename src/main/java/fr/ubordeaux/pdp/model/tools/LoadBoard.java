@@ -5,10 +5,8 @@ import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.Piece;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,6 +32,17 @@ import java.util.List;
  * </ul>
  */
 public class LoadBoard {
+
+  /** One parsed logical line with its original source line. */
+  private static class ParsedLine {
+    private final int sourceLine;
+    private final String text;
+
+    ParsedLine(int sourceLine, String text) {
+      this.sourceLine = sourceLine;
+      this.text = text;
+    }
+  }
 
   /** The directory where save files are stored. */
   private static final String SAVE_DIRECTORY = System.getProperty("user.dir")
@@ -77,6 +86,8 @@ public class LoadBoard {
   /** Buffered board lines from the [game] section. */
   private List<String> loadedBoardLines = new ArrayList<>();
   private List<Integer> loadedBoardLineNumbers = new ArrayList<>();
+  /** Line where the [game] section header was found. */
+  private int gameSectionHeaderLine = -1;
 
   /** Creates a loader. */
   public LoadBoard() {
@@ -94,21 +105,18 @@ public class LoadBoard {
     resetState();
 
     if (!file.exists()) {
-      failLoad("Loading error: file not found at " + path);
+      failLoad("file not found at " + path);
       return;
     }
 
     try {
       String rawContent = Files.readString(path);
-      String cleanedContent = stripCommentsFromContent(rawContent);
+      List<ParsedLine> parsedLines = stripCommentsFromContent(rawContent);
 
-      BufferedReader reader = new BufferedReader(new StringReader(cleanedContent));
       String currentSection = "";
-      String line;
-      int lineNum = 0;
-
-      while ((line = reader.readLine()) != null) {
-        lineNum++;
+      for (ParsedLine parsed : parsedLines) {
+        int lineNum = parsed.sourceLine;
+        String line = parsed.text;
 
         String clean = line.trim();
 
@@ -120,7 +128,10 @@ public class LoadBoard {
           currentSection = clean.toLowerCase();
           switch (currentSection) {
             case "[settings]" -> seenSettings = true;
-            case "[game]" -> seenGame = true;
+            case "[game]" -> {
+              seenGame = true;
+              gameSectionHeaderLine = lineNum;
+            }
             case "[history]" -> seenHistory = true;
             default -> {
               // Unknown sections are ignored.
@@ -132,13 +143,8 @@ public class LoadBoard {
         try {
           processSectionData(currentSection, clean, lineNum);
         } catch (Exception e) {
-          failLoad(
-              "Format error at line "
-                  + lineNum
-                  + " ["
-                  + currentSection
-                  + "]: "
-                  + e.getMessage());
+          failLoadAtLine(lineNum,
+              "format error [" + currentSection + "]: " + e.getMessage());
           return;
         }
       }
@@ -162,8 +168,13 @@ public class LoadBoard {
       loadedGame.setHistory(new History(historyBuffer.toString()));
       loadedGame.checkGameOver();
 
+    } catch (IllegalStateException e) {
+      if ("LOAD_ABORTED".equals(e.getMessage())) {
+        throw e;
+      }
+      failLoad("critical loading state error: " + e.getMessage());
     } catch (Exception e) {
-      failLoad("Critical I/O error: " + e.getMessage());
+      failLoad("critical I/O error: " + e.getMessage());
     }
   }
 
@@ -205,6 +216,7 @@ public class LoadBoard {
     historyBuffer = new StringBuilder();
     loadedBoardLines = new ArrayList<>();
     loadedBoardLineNumbers = new ArrayList<>();
+    gameSectionHeaderLine = -1;
   }
 
   /**
@@ -222,7 +234,19 @@ public class LoadBoard {
    * @param message the error message
    */
   private void failLoad(String message) {
-    System.err.println(message);
+    System.err.println("[LOAD ERROR] " + message);
+    resetState();
+    exitOnLoadError();
+  }
+
+  /**
+   * Prints an error with its source line, resets state, and stops execution.
+   *
+   * @param lineNum source line number in the save file
+   * @param message error message
+   */
+  private void failLoadAtLine(int lineNum, String message) {
+    System.err.println("[LOAD ERROR] line " + lineNum + ": " + message);
     resetState();
     exitOnLoadError();
   }
@@ -244,23 +268,36 @@ public class LoadBoard {
    * allowing values split by a comment to be reconstructed.
    *
    * @param content raw file content
-   * @return content without comments
+   * @return parsed logical lines with their original source line numbers
    * @throws Exception if comment delimiters are invalid
    */
-  private String stripCommentsFromContent(String content) throws Exception {
-    StringBuilder clean = new StringBuilder();
+  private List<ParsedLine> stripCommentsFromContent(String content) throws Exception {
+    List<ParsedLine> lines = new ArrayList<>();
+    StringBuilder current = new StringBuilder();
     boolean inBlockComment = false;
+    boolean inInlineComment = false;
     int blockStartLine = -1;
     int lineNum = 1;
+    int logicalLineStart = 1;
 
     for (int i = 0; i < content.length(); i++) {
       char c = content.charAt(i);
 
       if (c == '\n') {
+        if (inInlineComment) {
+          inInlineComment = false;
+        }
+
         if (!inBlockComment) {
-          clean.append(c);
+          lines.add(new ParsedLine(logicalLineStart, current.toString()));
+          current.setLength(0);
+          logicalLineStart = lineNum + 1;
         }
         lineNum++;
+        continue;
+      }
+
+      if (inInlineComment) {
         continue;
       }
 
@@ -273,13 +310,7 @@ public class LoadBoard {
       }
 
       if (c == '#') {
-        while (i < content.length() && content.charAt(i) != '\n') {
-          i++;
-        }
-        if (i < content.length() && content.charAt(i) == '\n') {
-          clean.append('\n');
-          lineNum++;
-        }
+        inInlineComment = true;
         continue;
       }
 
@@ -290,18 +321,26 @@ public class LoadBoard {
       }
 
       if (c == '}') {
-        throw new Exception("Unexpected '}' without matching '{'.");
+        throw new Exception("line " + lineNum + ": unexpected '}' without matching '{'.");
       }
 
-      clean.append(c);
+      current.append(c);
     }
 
     if (inBlockComment) {
-      throw new Exception("Format error: unclosed block comment starting at line "
+      throw new Exception("format error: unclosed block comment starting at line "
           + blockStartLine + ".");
     }
 
-    return clean.toString();
+    if (inInlineComment) {
+      inInlineComment = false;
+    }
+
+    if (current.length() > 0) {
+      lines.add(new ParsedLine(logicalLineStart, current.toString()));
+    }
+
+    return lines;
   }
 
   /**
@@ -345,42 +384,70 @@ public class LoadBoard {
    */
   private boolean validateSections() {
     if (!seenGame) {
-      failLoad("Format error: missing [game] section.");
+      failLoad("format error: missing [game] section.");
       return false;
     }
     if (!seenSettings) {
-      failLoad("Format error: missing [settings] section.");
+      failLoad("format error: missing [settings] section.");
       return false;
     }
     if (!seenHistory) {
-      failLoad("Format error: missing [history] section.");
+      failLoad("format error: missing [history] section.");
       return false;
     }
     if (loadedBoardSize == null) {
-      failLoad("Format error: missing or invalid board-size.");
+      failLoad("format error: missing or invalid board-size.");
       return false;
     }
+
+    // Report the first malformed board row before reporting missing/extra row count.
+    for (int i = 0; i < loadedBoardLines.size(); i++) {
+      String[] cells = loadedBoardLines.get(i).trim().split("\\s+");
+      if (cells.length != loadedBoardSize) {
+        int rowLine = loadedBoardLineNumbers.get(i);
+        failLoadAtLine(rowLine,
+            "board row must have " + loadedBoardSize + " cells, got " + cells.length + ".");
+        return false;
+      }
+    }
+
     if (loadedBoardLines.size() != loadedBoardSize) {
-      failLoad(
-          "Format error: incomplete board - expected "
-              + loadedBoardSize
-              + " rows, got "
-              + loadedBoardLines.size()
-              + ".");
+      if (loadedBoardLines.size() < loadedBoardSize) {
+        int missingFromLine;
+        if (!loadedBoardLineNumbers.isEmpty()) {
+          missingFromLine = loadedBoardLineNumbers.get(loadedBoardLineNumbers.size() - 1) + 1;
+        } else {
+          missingFromLine = gameSectionHeaderLine + 1;
+        }
+        failLoadAtLine(missingFromLine,
+            "incomplete board - expected "
+                + loadedBoardSize
+                + " rows, got "
+                + loadedBoardLines.size()
+                + ".");
+      } else {
+        int firstUnexpectedLine = loadedBoardLineNumbers.get(loadedBoardSize);
+        failLoadAtLine(firstUnexpectedLine,
+            "too many board rows - expected "
+                + loadedBoardSize
+                + " rows, got "
+                + loadedBoardLines.size()
+                + ".");
+      }
       return false;
     }
 
     if (hasActiveAi()) {
       if (loadedAiMode == null || loadedAiMode.equals("none")) {
-        failLoad("Format error: active AI requires a valid ai-mode.");
+        failLoad("format error: active AI requires a valid ai-mode.");
         return false;
       }
       if (loadedAiDepth == null || loadedAiDepth <= 0) {
-        failLoad("Format error: active AI requires ai-depth > 0.");
+        failLoad("format error: active AI requires ai-depth > 0.");
         return false;
       }
       if (loadedAiTime == null || loadedAiTime <= 0) {
-        failLoad("Format error: active AI requires ai-time > 0.");
+        failLoad("format error: active AI requires ai-time > 0.");
         return false;
       }
     }
@@ -554,8 +621,8 @@ public class LoadBoard {
       String[] cells = data.split("\\s+");
 
       if (cells.length != n) {
-        failLoad("Loading error: board row at file line " + fileLine
-            + " must have " + n + " cells, got " + cells.length + ".");
+        failLoadAtLine(fileLine, "board row must have " + n + " cells, got "
+            + cells.length + ".");
         return;
       }
 
@@ -566,8 +633,8 @@ public class LoadBoard {
         String square = toSquare(boardRow, col);
 
         if (token.length() != 1) {
-          failLoad("Loading error: invalid board token '" + token
-              + "' at square " + square + " (file line " + fileLine + ").");
+          failLoadAtLine(fileLine, "invalid board token '" + token
+              + "' at square " + square + ".");
           return;
         }
 
@@ -575,16 +642,15 @@ public class LoadBoard {
         boolean playable = ((boardRow + col) % 2 == 0);
 
         if ("xoXO_".indexOf(c) == -1) {
-          failLoad("Loading error: invalid board character '" + c
-              + "' at square " + square + " (file line " + fileLine + ").");
+          failLoadAtLine(fileLine, "invalid board character '" + c
+              + "' at square " + square + ".");
           return;
         }
 
         if (!playable) {
           if (c != '_') {
-            failLoad("Loading error: piece '" + c
-                + "' on non-playable square " + square
-                + " (file line " + fileLine + ").");
+            failLoadAtLine(fileLine, "piece '" + c
+                + "' on non-playable square " + square + ".");
             return;
           }
           continue;

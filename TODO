@@ -36,7 +36,7 @@ F03: à finir
 F04: ./checkers Sauvegarde/fandu.txt (non fonctionnelle)
 F05: nickel
 F06: option reconnue mais non implémentée
-F07: partielement, une partie par défaut durectement sur le gui
+F07: nickel
 F08: nickel
 F09: nickel
 F10: score non fait 
@@ -44,17 +44,17 @@ F11: nickel avec un point d'interrogation
 F12: undo 3 contre une ia alors on peut tomber sur le tour de l'ia
 F13: nickel
 F14: nickel
-F15: ok MAIS attention, certaines commandes sont dans le help mais non reconnues en mode LOCAL
-F16: non fonctionnel Daniel?
+F15: nickel ?
+F16: nickel
 F17: nickel
 F18: nickel
 F19: nickel
 F20: nickel
-F21: signaler les erreurs + lignes manquantes 
-F22: {} non fonctionnel en cas de saut de ligne
+F21: nickel, à vérifié
+F22: nickel
 F23: nickel
-F24: préciser la ligne d'erreur et le programme doit s'arrêter
-F25: {} pour promotion
+F24: nickel
+F25: nickel
 F26: nickel
 F27: nickel
 F28: nickel

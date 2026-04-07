@@ -3,6 +3,8 @@ package fr.ubordeaux.pdp.model.tools;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -760,5 +762,49 @@ public class LoadBoardTest {
     assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_incomplete_board.txt"));
     assertNull(loader.getLoadedGame());
     assertNull(loader.getLoadedConfiguration());
+  }
+
+  @Test
+  void testLoadReportsFirstMalformedBoardRowLineBeforeExtraRows() throws IOException {
+    String content = "[settings]\n"
+        + "starting-player=black\n"
+        + "time-mode=classic\n"
+        + "ai-mode=white-minimax\n"
+        + "ai-depth=6\n"
+        + "ai-time=5000\n"
+        + "verbose=false\n"
+        + "debug=false\n"
+        + "board-size=8\n"
+        + "\n"
+        + "[game]\n"
+        + "\n"
+        + "_ _ _ x _ x _ x\n"
+        + "x _ x _ x _ x _\n"
+        + "_ x _ x _ x _ x invalid\n"
+        + "random_line\n"
+        + "_ _ x _ _ _ _ _\n"
+        + "_ o _ o _ _ _ _\n"
+        + "o _ o _ _ _ o _\n"
+        + "_ o _ o _ o _ o\n"
+        + "_ _ o _ o _ o _\n"
+        + "\n"
+        + "[history]\n";
+
+    writeSaveFile("load_bad_row_priority_line.txt", content);
+
+    LoadBoard loader = new TestableLoadBoard();
+    ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+    PrintStream originalErr = System.err;
+
+    try {
+      System.setErr(new PrintStream(errBuffer));
+      assertThrows(IllegalStateException.class, () -> loader.loadGameData("load_bad_row_priority_line.txt"));
+    } finally {
+      System.setErr(originalErr);
+    }
+
+    String errOutput = errBuffer.toString();
+    assertTrue(errOutput.contains("line 15"),
+        "Expected error to point to line 15, got: " + errOutput);
   }
 }
