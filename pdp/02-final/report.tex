@@ -681,9 +681,8 @@ entre composants restent cohérentes.
 \label{sec:reseau}
  
 La couche réseau de l'application s'appuie sur une architecture client-serveur
-TCP, répartie entre deux packages distincts :
-\texttt{fr.ubordeaux.pdp.server} côté serveur et
-\texttt{fr.ubordeaux.pdp.controller} côté client.
+TCP, basant principalement sur le package
+\texttt{fr.ubordeaux.pdp.server}.
 La figure~\ref{fig:architecture-serveur} en présente les composants principaux
 ainsi que leurs interactions.
  
@@ -734,7 +733,7 @@ ainsi que leurs interactions.
  
   % ---- Zone CLIENT ------------------------------------------
   \node[pdp blue] (SCR)
-    {ShellCommandRouter\\[-2pt]{\footnotesize\normalfont Routage des commandes}};
+    {PlayerSession\\[-2pt]{\footnotesize\normalfont Score des joueurs}};
  
   \node[pdp blue, below=of SCR] (CS)
     {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
