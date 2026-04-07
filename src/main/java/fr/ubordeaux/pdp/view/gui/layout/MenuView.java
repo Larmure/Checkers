@@ -70,6 +70,9 @@ public class MenuView extends MenuBar {
   /** Optional configuration provided from CLI startup flags. */
   private final Configuration cliConfig;
 
+  /** Last configuration used when opening the config dialog. */
+  private Configuration lastUsedConfig;
+
   /** Game menu item: undo last move. */
   private MenuItem undoItem;
 
@@ -305,8 +308,8 @@ public class MenuView extends MenuBar {
     dialog.setHeaderText(Internationalization.get("dialog.available_saves"));
     dialog.setContentText(Internationalization.get("dialog.load_from") + SAVE_DIR.getPath());
 
-    dialog.showAndWait().ifPresent(name ->
-        controller.executeCommand("load", new String[] { name }));
+    dialog.showAndWait().ifPresent(name -> controller.executeCommand(
+        "load", new String[] { name }));
   }
 
   /**
@@ -359,11 +362,15 @@ public class MenuView extends MenuBar {
    * {@link fr.ubordeaux.pdp.controller.GameController#startNewGame}.
    */
   public void openConfigDialog() {
+    Configuration configToPass = lastUsedConfig != null ? lastUsedConfig : cliConfig;
     ConfigDialog dialog = new ConfigDialog(shortcutManager, () -> {
       this.getMenus().clear();
       initMenus();
-    }, cliConfig);
-    dialog.showAndWait().ifPresent(cfg -> controller.startNewGame(cfg));
+    }, configToPass);
+    dialog.showAndWait().ifPresent(cfg -> {
+      lastUsedConfig = cfg;
+      controller.startNewGame(cfg);
+    });
   }
 
   /**
