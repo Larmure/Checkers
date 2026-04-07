@@ -52,6 +52,27 @@ public class ConfigDialog extends Dialog<Configuration> {
   /** Display label for Minimax AI mode. */
   private static final String MINIMAX = "Minimax";
 
+  /** Display label for Alpha-Beta AI mode. */
+  private static final String ALPHABETA = "Alpha-Beta";
+
+  /** Display label for MCTS AI mode. */
+  private static final String MCTS_MODE = "MCTS";
+
+  /** Display label for UCT selection mode. */
+  private static final String UCT = "UCT";
+
+  /** Display label for ML selection mode. */
+  private static final String ML = "ML";
+
+  /** Display label for Max scoring. */
+  private static final String MAX_SCORING = "Max";
+
+  /** Display label for Advanced scoring. */
+  private static final String ADVANCED_SCORING = "Advanced";
+
+  /** Display label for Simple scoring. */
+  private static final String SIMPLE_SCORING = "Simple";
+
   /** Board size selector: 8, 10 or 12. */
   private final ComboBox<Integer> sizeCombo = new ComboBox<>();
 
@@ -68,7 +89,8 @@ public class ConfigDialog extends Dialog<Configuration> {
   private final ComboBox<String> minimaxScoringCombo = new ComboBox<>();
 
   /** Enables blitz mode. Enabling it also enables the time spinner. */
-  private final CheckBox blitzCheck = new CheckBox("Blitz mode");
+  private final CheckBox blitzCheck = new CheckBox(
+      Internationalization.get("dialog.config.blitz_mode"));
 
   /**
    * Time limit per player in minutes (only meaningful when blitz is on).
@@ -78,19 +100,24 @@ public class ConfigDialog extends Dialog<Configuration> {
       new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 120));
 
   /** Enables AI for the white player. */
-  private final CheckBox whiteAiCheck = new CheckBox("White player (AI)");
+  private final CheckBox whiteAiCheck = new CheckBox(
+      Internationalization.get("dialog.config.white_player_ai"));
 
   /** Enables AI for the black player. */
-  private final CheckBox blackAiCheck = new CheckBox("Black player (AI)");
+  private final CheckBox blackAiCheck = new CheckBox(
+      Internationalization.get("dialog.config.black_player_ai"));
 
   /** Enables contest mode. */
-  private final CheckBox contestCheck = new CheckBox("Contest mode");
+  private final CheckBox contestCheck = new CheckBox(
+      Internationalization.get("dialog.config.contest_mode"));
 
   /** Enables verbose output. */
-  private final CheckBox verboseCheck = new CheckBox("Verbose");
+  private final CheckBox verboseCheck = new CheckBox(
+      Internationalization.get("dialog.config.verbose"));
 
   /** Enables debug output. */
-  private final CheckBox debugCheck = new CheckBox("Debug");
+  private final CheckBox debugCheck = new CheckBox(
+      Internationalization.get("dialog.config.debug"));
 
   /** AI thinking time in seconds. range 1–30. */
   private final Spinner<Integer> aiTimeSpinner = new Spinner<>(
@@ -122,8 +149,8 @@ public class ConfigDialog extends Dialog<Configuration> {
     this.shortcutManager = shortcutManager;
     this.onShortcutsChanged = onShortcutsChanged;
 
-    setTitle("New Game — Configuration");
-    setHeaderText("Configure the game options before starting.");
+    setTitle(Internationalization.get("dialog.config.title"));
+    setHeaderText(Internationalization.get("dialog.config.header"));
 
     ButtonType startButton = new ButtonType(Internationalization.get("dialog.start.game"),
         ButtonData.OK_DONE);
@@ -142,13 +169,13 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     whiteAiCheck.setSelected(defaults.iswhiteAi());
     blackAiCheck.setSelected(defaults.isblackAi());
-    whiteAiModeCombo.getItems().addAll("Minimax", "Alpha-Beta", "MCTS");
+    whiteAiModeCombo.getItems().addAll(MINIMAX, ALPHABETA, MCTS_MODE);
     whiteAiModeCombo.setValue(toDisplayAiMode(defaults.getWhiteAiMode()));
-    blackAiModeCombo.getItems().addAll("Minimax", "Alpha-Beta", "MCTS");
+    blackAiModeCombo.getItems().addAll(MINIMAX, ALPHABETA, MCTS_MODE);
     blackAiModeCombo.setValue(toDisplayAiMode(defaults.getBlackAiMode()));
-    mctsCombo.getItems().addAll("UCT", "ML");
-    mctsCombo.setValue(defaults.getSelectionMode().name());
-    minimaxScoringCombo.getItems().addAll("Max", "Advanced", "Simple");
+    mctsCombo.getItems().addAll(UCT, ML);
+    mctsCombo.setValue(toDisplayMctsMode(defaults.getSelectionMode().name()));
+    minimaxScoringCombo.getItems().addAll(MAX_SCORING, ADVANCED_SCORING, SIMPLE_SCORING);
     minimaxScoringCombo.setValue(toDisplayMinimaxScoring(defaults.getMinimaxScoring()));
 
     contestCheck.setSelected(defaults.isContest());
@@ -210,16 +237,16 @@ public class ConfigDialog extends Dialog<Configuration> {
     root.setStyle("-fx-padding: 20px; -fx-spacing: 16px;");
 
     root.getChildren().addAll(
-        buildSection("Board"),
+        buildSection(Internationalization.get("dialog.config.board")),
         buildBoardGrid(),
         new Separator(),
-        buildSection("Blitz"),
+        buildSection(Internationalization.get("dialog.config.blitz")),
         buildBlitzGrid(),
         new Separator(),
-        buildSection("Players"),
+        buildSection(Internationalization.get("dialog.config.players")),
         buildPlayersGrid(),
         new Separator(),
-        buildSection("Advanced"),
+        buildSection(Internationalization.get("dialog.config.advanced")),
         buildAdvancedGrid());
     Button shortcutsBtn = new Button(Internationalization.get("dialog.keyboard.shortcuts"));
     shortcutsBtn.setOnAction(e -> {
@@ -250,7 +277,7 @@ public class ConfigDialog extends Dialog<Configuration> {
    */
   private GridPane buildBoardGrid() {
     GridPane grid = baseGrid();
-    grid.add(new Label("Board size:"), 0, 0);
+    grid.add(new Label(Internationalization.get("dialog.config.board_size")), 0, 0);
     grid.add(sizeCombo, 1, 0);
     return grid;
   }
@@ -265,7 +292,7 @@ public class ConfigDialog extends Dialog<Configuration> {
     grid.add(blitzCheck, 0, 0);
 
     VBox timeBox = new VBox(4,
-        new Label("Time per player (min):"),
+        new Label(Internationalization.get("dialog.config.time_per_player")),
         timeSpinner);
     timeBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(timeBox, 0, 1);
@@ -284,37 +311,37 @@ public class ConfigDialog extends Dialog<Configuration> {
     grid.add(blackAiCheck, 0, 1);
 
     VBox whiteAiModeBox = new VBox(4,
-        new Label("White AI mode:"),
+        new Label(Internationalization.get("dialog.config.white_ai_mode")),
         whiteAiModeCombo);
     whiteAiModeBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(whiteAiModeBox, 0, 2);
 
     VBox blackAiModeBox = new VBox(4,
-        new Label("Black AI mode:"),
+        new Label(Internationalization.get("dialog.config.black_ai_mode")),
         blackAiModeCombo);
     blackAiModeBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(blackAiModeBox, 0, 3);
 
     VBox aiTimeBox = new VBox(4,
-        new Label("AI thinking time (sec):"),
+        new Label(Internationalization.get("dialog.config.ai_thinking_time")),
         aiTimeSpinner);
     aiTimeBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(aiTimeBox, 0, 4);
 
     VBox aiDepthBox = new VBox(4,
-        new Label("AI thinking depth:"),
+        new Label(Internationalization.get("dialog.config.ai_thinking_depth")),
         aiDepthSpinner);
     aiDepthBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(aiDepthBox, 0, 5);
 
     VBox mctsBox = new VBox(4,
-        new Label("MCTS selection mode:"),
+        new Label(Internationalization.get("dialog.config.mcts_selection_mode")),
         mctsCombo);
     mctsBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(mctsBox, 0, 6);
 
     VBox minimaxScoringBox = new VBox(4,
-        new Label("Minimax scoring:"),
+        new Label(Internationalization.get("dialog.config.minimax_scoring")),
         minimaxScoringCombo);
     minimaxScoringBox.setAlignment(Pos.CENTER_LEFT);
     grid.add(minimaxScoringBox, 0, 7);
@@ -361,16 +388,17 @@ public class ConfigDialog extends Dialog<Configuration> {
 
     String whiteMode = whiteAiModeCombo.getValue();
     String blackMode = blackAiModeCombo.getValue();
-    boolean whiteDepthSupported = MINIMAX.equals(whiteMode) || "Alpha-Beta".equals(whiteMode);
-    boolean blackDepthSupported = MINIMAX.equals(blackMode) || "Alpha-Beta".equals(blackMode);
+
+    boolean whiteDepthSupported = MINIMAX.equals(whiteMode) || ALPHABETA.equals(whiteMode);
+    boolean blackDepthSupported = MINIMAX.equals(blackMode) || ALPHABETA.equals(blackMode);
     aiDepthSpinner.setDisable(!aiEnabled || (!whiteDepthSupported && !blackDepthSupported));
 
-    boolean whiteMctsSelected = "MCTS".equals(whiteMode);
-    boolean blackMctsSelected = "MCTS".equals(blackMode);
+    boolean whiteMctsSelected = MCTS_MODE.equals(whiteMode);
+    boolean blackMctsSelected = MCTS_MODE.equals(blackMode);
     mctsCombo.setDisable(!aiEnabled || (!whiteMctsSelected && !blackMctsSelected));
 
-    boolean whiteMinimaxSelected = MINIMAX.equals(whiteMode) || "Alpha-Beta".equals(whiteMode);
-    boolean blackMinimaxSelected = MINIMAX.equals(blackMode) || "Alpha-Beta".equals(blackMode);
+    boolean whiteMinimaxSelected = MINIMAX.equals(whiteMode) || ALPHABETA.equals(whiteMode);
+    boolean blackMinimaxSelected = MINIMAX.equals(blackMode) || ALPHABETA.equals(blackMode);
     minimaxScoringCombo.setDisable(!aiEnabled || (!whiteMinimaxSelected && !blackMinimaxSelected));
   }
 
@@ -409,8 +437,8 @@ public class ConfigDialog extends Dialog<Configuration> {
       return MINIMAX;
     }
     return switch (aiMode.toLowerCase(Locale.ROOT)) {
-      case "alphabeta" -> "Alpha-Beta";
-      case "mcts" -> "MCTS";
+      case "alphabeta" -> ALPHABETA;
+      case "mcts" -> MCTS_MODE;
       case "minimax" -> MINIMAX;
       default -> MINIMAX;
     };
@@ -420,6 +448,14 @@ public class ConfigDialog extends Dialog<Configuration> {
     if (aiMode == null) {
       return Utils.DEFAULT_AI_MODE;
     }
+    if (aiMode.equals(ALPHABETA)) {
+      return "alphabeta";
+    } else if (aiMode.equals(MCTS_MODE)) {
+      return "mcts";
+    } else if (aiMode.equals(MINIMAX)) {
+      return "minimax";
+    }
+
     return switch (aiMode.trim().toLowerCase(Locale.ROOT)) {
       case "alpha-beta", "alphabeta" -> "alphabeta";
       case "mcts" -> "mcts";
@@ -430,13 +466,13 @@ public class ConfigDialog extends Dialog<Configuration> {
 
   private static String toDisplayMinimaxScoring(String scoring) {
     if (scoring == null) {
-      return "Max";
+      return MAX_SCORING;
     }
     return switch (scoring.toLowerCase(Locale.ROOT)) {
-      case "simple" -> "Simple";
-      case "advanced" -> "Advanced";
-      case "max" -> "Max";
-      default -> "Max";
+      case "simple" -> SIMPLE_SCORING;
+      case "advanced" -> ADVANCED_SCORING;
+      case "max" -> MAX_SCORING;
+      default -> MAX_SCORING;
     };
   }
 
@@ -444,6 +480,14 @@ public class ConfigDialog extends Dialog<Configuration> {
     if (scoring == null) {
       return Utils.DEFAULT_MINIMAX_SCORING;
     }
+    if (scoring.equals(MAX_SCORING)) {
+      return "max";
+    } else if (scoring.equals(ADVANCED_SCORING)) {
+      return "advanced";
+    } else if (scoring.equals(SIMPLE_SCORING)) {
+      return "simple";
+    }
+
     String normalized = scoring.trim().toLowerCase(Locale.ROOT);
     return switch (normalized) {
       case "simple", "advanced", "max" -> normalized;
@@ -458,10 +502,27 @@ public class ConfigDialog extends Dialog<Configuration> {
     return aiDepth;
   }
 
+  private static String toDisplayMctsMode(String mode) {
+    if (mode == null) {
+      return UCT;
+    }
+    return switch (mode.toUpperCase(Locale.ROOT)) {
+      case "UCT" -> UCT;
+      case "ML" -> ML;
+      default -> UCT;
+    };
+  }
+
   private static SelectionMode normalizeSelectionMode(String mode) {
     if (mode == null || mode.isBlank()) {
       return Mcts.DEFAULT_SELECTION_MODE;
     }
+    if (mode.equals(UCT) || mode.equalsIgnoreCase("uct")) {
+      return SelectionMode.UCT;
+    } else if (mode.equals(ML) || mode.equalsIgnoreCase("ml")) {
+      return SelectionMode.ML;
+    }
+
     try {
       return SelectionMode.valueOf(mode.trim().toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
