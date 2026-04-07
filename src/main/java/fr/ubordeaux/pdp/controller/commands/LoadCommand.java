@@ -56,7 +56,12 @@ public class LoadCommand implements Command, Helpable {
       return;
     }
 
-    String fileName = args[0].trim();
+    String fileName = Paths.get(args[0].trim()).getFileName().toString();
+    if (fileName == null || fileName.isBlank()) {
+      System.out.println(getHelp());
+      return;
+    }
+
     Path path = Paths.get(SAVE_DIRECTORY, fileName);
 
     if (!path.toFile().exists()) {

@@ -126,10 +126,28 @@ public class AppTest {
 
   @Test
   public void testUnrecognizedArguments() {
-    String[] args = { "-v", "hello" };
+    String[] args = { "-v", "hello", "extra" };
     int status = App.run(args);
 
     assertEquals(App.EXIT_ERROR, status, "Extra arguments should trigger an error status");
+  }
+
+  @Test
+  public void testPositionalSaveFileArgumentInCliMode() {
+    String[] args = { "Sauvegarde/fandu.txt" };
+    int status = App.run(args);
+
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertEquals("Sauvegarde/fandu.txt", App.getStartupSaveFile());
+  }
+
+  @Test
+  public void testPositionalSaveFileArgumentInGuiMode() {
+    String[] args = { "-g", "Sauvegarde/fandu.txt" };
+    int status = App.run(args);
+
+    assertEquals(App.EXIT_GUI, status);
+    assertEquals("Sauvegarde/fandu.txt", App.getStartupSaveFile());
   }
 
   @Test
