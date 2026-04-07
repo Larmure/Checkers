@@ -599,6 +599,12 @@ public class GameController {
       if (configuration.isBlitz()) {
         stopBlitzTimer();
       }
+      // DISPLAY SCORE GAME
+      System.out.println(Internationalization.get("game.white_score") + ": "
+          + game.getWhiteScore());
+      System.out.println(Internationalization.get("game.black_score") + ": "
+          + game.getBlackScore());
+
       System.out.println(Internationalization.get("game.start_new_game"));
 
       if (view instanceof GraphicalUserInterface gui) {

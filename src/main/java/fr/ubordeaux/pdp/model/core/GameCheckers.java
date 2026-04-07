@@ -541,4 +541,30 @@ public class GameCheckers implements Subject {
     return whiteAdvantage || blackAdvantage;
   }
 
+  /**
+   * Calculates the current score for the white player based on the number of pawns and checkers 
+   * they have on the board.
+   *
+   * @return The total score for the white player, where pawns are worth 1 point and checkers 
+    *     are worth 3 points.
+   */
+  public int getWhiteScore() {
+    int pawnValue = 1;
+    int checkerValue = 3;
+    return (board.whitePawnsCount() * pawnValue) + (board.whiteCheckersCount() * checkerValue);
+  }
+
+  /**
+   * Calculates the current score for the black player based on the number of pawns and checkers 
+   * they have on the board.
+   *
+   * @return The total score for the black player, where pawns are worth 1 point and checkers 
+    *     are worth 3 points.
+   */
+  public int getBlackScore() {
+    int pawnValue = 1;
+    int checkerValue = 3;
+    return (board.blackPawnsCount() * pawnValue) + (board.blackCheckersCount() * checkerValue);
+  }
+
 }

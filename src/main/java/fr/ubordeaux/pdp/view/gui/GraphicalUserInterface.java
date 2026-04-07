@@ -169,6 +169,15 @@ public class GraphicalUserInterface extends GameView {
       }
 
       alert.setHeaderText(headerText);
+
+      // -----DISPLAY SCORES IN GAME OVER ALERT-----
+      String scoreText = String.format(Internationalization.get("game.white_score") + " : %d\n"
+          + Internationalization.get("game.black_score") + " : %d",
+          game.getWhiteScore(),
+          game.getBlackScore());
+      alert.setContentText(scoreText);
+      // ------------------------------------------
+
       alert.showAndWait();
     });
   }
@@ -227,8 +236,9 @@ public class GraphicalUserInterface extends GameView {
   private void showInitialConfigDialog() {
     Platform.runLater(() -> {
       if (controller.getGame() == null) {
-        Configuration cfg = (cliConfig != null) 
-            ? cliConfig : Configuration.getDefaultConfiguration();
+        Configuration cfg = (cliConfig != null)
+            ? cliConfig
+            : Configuration.getDefaultConfiguration();
         controller.startNewGame(cfg);
       }
     });
