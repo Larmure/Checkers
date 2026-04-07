@@ -178,7 +178,7 @@ public class App {
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
           size, verbose, debug, whiteAi, blackAi, aiTime,
-          whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring));
+          whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring), serverMode, session);
       view = new GraphicalUserInterface(
           new Configuration(
               blitz,
@@ -199,8 +199,6 @@ public class App {
       view = new CommandLineInterface(verbose, debug);
     }
     GameController controller = new GameController(view);
-
-    ClientSession session = new ClientSession();
 
     session.setController(controller);
     ShellCommandRouter router = new ShellCommandRouter(controller, session);

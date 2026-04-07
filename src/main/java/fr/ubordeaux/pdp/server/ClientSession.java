@@ -258,7 +258,7 @@ public class ClientSession {
         openGuiWindow();
       }
 
-      if (controller != null && ! serverRequiresGui) {
+      if (controller != null ) {
         controller.stopBlitzTimer();
         controller.startNewGame(Configuration.getDefaultConfiguration());
       }
@@ -345,7 +345,9 @@ public class ClientSession {
     guiWindowOpened = true;
 
     GraphicalUserInterface gui = new GraphicalUserInterface(false, this);
-    gui.setController(controller);
+    GameController guiController = new GameController(gui);
+
+    this.controller = guiController;
     gui.start();
 
     System.out.println("[GUI] Window opened for network game.");
