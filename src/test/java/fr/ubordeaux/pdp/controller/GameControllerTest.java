@@ -766,4 +766,36 @@ class GameControllerTest {
     assertEquals("SetCommand", method.invoke(controller, "set", dummyArgs).getClass().getSimpleName());
     assertEquals("ContinueCommand", method.invoke(controller, "continue", dummyArgs).getClass().getSimpleName());
   }
+
+  @Test
+  void testUndoGame_whileAiPlayer_coversAllBranches() throws Exception {
+    GameCheckers mockGame = Mockito.mock(GameCheckers.class, Mockito.RETURNS_DEEP_STUBS);
+    AiPlayer mockAi = Mockito.mock(AiPlayer.class);
+
+    Mockito.when(mockGame.getState()).thenReturn(State.IN_GAME);
+    Mockito.when(mockGame.getCurrentPlayer()).thenReturn(mockAi);
+    Mockito.when(mockGame.getHistory().getSize()).thenReturn(3, 2, 2, 1, 1, 1);
+
+    Field gameField = GameController.class.getDeclaredField("game");
+    gameField.setAccessible(true);
+    gameField.set(controller, mockGame);
+
+    assertDoesNotThrow(() -> controller.undoGame(1));
+  }
+
+  @Test
+  void testRedoGame_whileAiPlayer_coversAllBranches() throws Exception {
+    GameCheckers mockGame = Mockito.mock(GameCheckers.class, Mockito.RETURNS_DEEP_STUBS);
+    AiPlayer mockAi = Mockito.mock(AiPlayer.class);
+
+    Mockito.when(mockGame.getState()).thenReturn(State.IN_GAME);
+    Mockito.when(mockGame.getCurrentPlayer()).thenReturn(mockAi);
+    Mockito.when(mockGame.getHistory().getSize()).thenReturn(1, 2, 2, 3, 3, 3);
+
+    Field gameField = GameController.class.getDeclaredField("game");
+    gameField.setAccessible(true);
+    gameField.set(controller, mockGame);
+
+    assertDoesNotThrow(() -> controller.redoGame(1));
+  }
 }
