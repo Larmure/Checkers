@@ -815,9 +815,55 @@ immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
 permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
 l'indépendance des états de parties concurrentes.
 
-\section{IA et Complexité}
+\section{Intelligence Artificielle}
 
-\subsection{Hypothèses et notations}
+\subsection{SimpleEvaluator}
+
+La classe \texttt{SimpleEvaluator} peut être vue comme une balance très basique : elle compte simplement
+le "matériel" sur le plateau, c'est-à-dire combien de pions et de dames possède chaque joueur.
+Si les blancs ont plus de pièces fortes, le score monte ; si les noirs sont avantagés, le score baisse.
+Cette approche est facile à comprendre, rapide, mais elle ne tient pas compte de la position stratégique des pièces.
+
+\subsection{AdvancedEvaluator}
+
+La classe \texttt{AdvancedEvaluator} reprend cette idée de balance, mais ajoute une intuition naturelle du jeu
+de dames : un pion qui avance vers la promotion devient plus dangereux. En pratique, cette classe récompense
+les pions qui progressent vers la dernière rangée. Elle reste simple, mais elle joue déjà plus "intelligemment"
+qu'un simple comptage de pièces.
+
+\subsection{MaxEvaluator}
+
+La classe \texttt{MaxEvaluator} va encore plus loin. En plus du matériel et de l'avancement, elle valorise
+le contrôle du centre du damier et la mobilité (le nombre de coups légaux disponibles). Intuitivement,
+un joueur qui contrôle le centre et qui garde beaucoup d'options est souvent en meilleure posture.
+Cette évaluation est plus riche et souvent plus précise, mais elle demande davantage de calcul.
+
+\subsection{MinMax}
+
+La classe \texttt{MinMax} représente la logique "je joue un coup, puis j'anticipe la meilleure réponse adverse".
+L'algorithme explore un arbre de possibilités en alternant les deux joueurs : il suppose que l'adversaire joue bien,
+et il cherche le coup qui reste le plus favorable malgré cela. Cette méthode donne des décisions solides,
+mais son coût augmente rapidement quand on approfondit la recherche.
+
+\subsection{MinMaxAlphaBeta}
+
+La classe \texttt{MinMaxAlphaBeta} suit exactement la même philosophie que MinMax, mais elle évite de calculer
+des branches qui ne pourront de toute façon pas changer la décision finale. On peut l'imaginer comme une lecture
+intelligente d'un arbre où l'on saute les chapitres déjà "perdus d'avance". Le résultat reste de même qualité,
+mais le temps de calcul peut être fortement réduit.
+
+\subsection{IterativeDeepening}
+
+La classe \texttt{IterativeDeepening} applique une stratégie très pratique en contexte réel : elle commence
+par une recherche peu profonde (rapide), puis recommence avec une profondeur plus grande, et ainsi de suite,
+jusqu'à épuisement du temps autorisé. L'avantage est qu'on dispose toujours d'un coup jouable, même si la recherche
+complète la plus profonde n'a pas le temps de se terminer.
+
+\section{Complexité}
+
+\subsection{Complexité de l'IA}
+
+\subsubsection{Hypothèses et notations}
 
 Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA fournies.
 La variable $n$ désigne le nombre de cases actives du plateau (typiquement \(32\), \(50\) ou \(72\)), $b$ représente
@@ -825,39 +871,7 @@ le facteur de branchement moyen (nombre de coups légaux par position), et $d$ l
 Nous distinguons la complexité \textit{propre} d'une méthode de recherche (nombre de n\oe{}uds explorés) du coût réel,
 qui inclut aussi la génération des coups par le moteur via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
 
-\subsection{Lecture intuitive des classes}
-
-La classe \texttt{SimpleEvaluator} peut être vue comme une balance très basique : elle compte simplement
-le "matériel" sur le plateau, c'est-à-dire combien de pions et de dames possède chaque joueur.
-Si les blancs ont plus de pièces fortes, le score monte ; si les noirs sont avantagés, le score baisse.
-Cette approche est facile à comprendre, rapide, mais elle ne tient pas compte de la position stratégique des pièces.
-
-La classe \texttt{AdvancedEvaluator} reprend cette idée de balance, mais ajoute une intuition naturelle du jeu
-de dames : un pion qui avance vers la promotion devient plus dangereux. En pratique, cette classe récompense
-les pions qui progressent vers la dernière rangée. Elle reste simple, mais elle joue déjà plus "intelligemment"
-qu'un simple comptage de pièces.
-
-La classe \texttt{MaxEvaluator} va encore plus loin. En plus du matériel et de l'avancement, elle valorise
-le contrôle du centre du damier et la mobilité (le nombre de coups légaux disponibles). Intuitivement,
-un joueur qui contrôle le centre et qui garde beaucoup d'options est souvent en meilleure posture.
-Cette évaluation est plus riche et souvent plus précise, mais elle demande davantage de calcul.
-
-La classe \texttt{MinMax} représente la logique "je joue un coup, puis j'anticipe la meilleure réponse adverse".
-L'algorithme explore un arbre de possibilités en alternant les deux joueurs : il suppose que l'adversaire joue bien,
-et il cherche le coup qui reste le plus favorable malgré cela. Cette méthode donne des décisions solides,
-mais son coût augmente rapidement quand on approfondit la recherche.
-
-La classe \texttt{MinMaxAlphaBeta} suit exactement la même philosophie que MinMax, mais elle évite de calculer
-des branches qui ne pourront de toute façon pas changer la décision finale. On peut l'imaginer comme une lecture
-intelligente d'un arbre où l'on saute les chapitres déjà "perdus d'avance". Le résultat reste de même qualité,
-mais le temps de calcul peut être fortement réduit.
-
-La classe \texttt{IterativeDeepening} applique une stratégie très pratique en contexte réel : elle commence
-par une recherche peu profonde (rapide), puis recommence avec une profondeur plus grande, et ainsi de suite,
-jusqu'à épuisement du temps autorisé. L'avantage est qu'on dispose toujours d'un coup jouable, même si la recherche
-complète la plus profonde n'a pas le temps de se terminer.
-
-\subsection{Complexité des fonctions d'évaluation}
+\subsubsection{Complexité des fonctions d'évaluation}
 
 \paragraph{SimpleEvaluator}
 La méthode \texttt{evaluate(Board)} réalise un parcours linéaire de l'ensemble des cases actives,
@@ -875,7 +889,7 @@ Sa complexité globale s'écrit donc $O(n + M_{w} + M_{b})$, où $M_{w}$ et $M_{
 de génération des coups blancs et noirs. La méthode \texttt{isInCenter(int, int, int)} elle-même ne fait
 que des comparaisons arithmétiques constantes et s'exécute en $O(1)$.
 
-\subsection{Complexité des algorithmes de recherche adversariale}
+\subsubsection{Complexité des algorithmes de recherche adversariale}
 
 \paragraph{MinMax}
 La méthode \texttt{calculateBestMove(...)} lance une recherche complète jusqu'à \texttt{maxDepth} et hérite donc
@@ -900,7 +914,7 @@ En pratique, le surcoût par rapport à une unique recherche à profondeur $d$ e
 et il est compensé par la robustesse de la stratégie : en cas d'interruption temporelle,
 le meilleur coup d'une profondeur entièrement terminée est déjà disponible.
 
-\subsection{Synthèse}
+\subsubsection{Synthèse}
 
 {\footnotesize
 \begin{longtable}{|p{3.4cm}|p{4.9cm}|p{2.2cm}|p{4.8cm}|}
@@ -1015,6 +1029,139 @@ Pire : $O(b^d)$
 & \texttt{checkTime(long)}
 & $O(1)$
 & Test constant, puis levée d'exception interne si le temps est dépassé. \\
+\hline
+\end{longtable}
+}
+
+\subsection{Complexité du Board}
+
+\subsubsection{Hypothèses et notations}
+
+Dans cette partie, nous analysons la classe \texttt{Board}, qui constitue le moteur de génération et d'application des coups.
+On note $n$ le nombre de cases actives (\(32\), \(50\) ou \(72\) selon la variante), $p$ le nombre de pièces présentes
+sur le plateau, et $c$ le nombre de pièces capturées par un coup donné. Les opérations bit-à-bit de base
+(tests, \texttt{OR}, \texttt{AND}, décalages, \texttt{bitCount}) sont considérées en temps constant sur mot machine.
+
+\subsubsection{Accès, comptage et conversion}
+
+Les requêtes élémentaires de présence, comme \texttt{isBitWhitePawn(int)}, \texttt{isBitBlackPawn(int)},
+\texttt{isBitWhiteChecker(int)} et \texttt{isBitBlackChecker(int)}, reposent sur un test de bit unique ; elles sont donc
+en $O(1)$. Les vérifications de bord \texttt{onLeftEdge(int)} et \texttt{onRightEdge(int)} sont également en $O(1)$.
+
+Les conversions d'indices (\texttt{indexToSquare(int)} et \texttt{boardToBitIndex(int,int)}) sont arithmétiques et valent $O(1)$.
+La méthode \texttt{squareToIndex(String)} reste $O(1)$ du point de vue asymptotique, car la longueur des coordonnées
+est bornée par la taille du plateau supportée (8, 10, 12).
+
+Les compteurs \texttt{whitePawnsCount()}, \texttt{blackPawnsCount()}, \texttt{whiteCheckersCount()} et
+\texttt{blackCheckersCount()} utilisent \texttt{Long.bitCount} sur deux mots 64 bits ; ils s'exécutent donc en $O(1)$.
+
+\subsubsection{Application d'un coup et mutations locales}
+
+La méthode \texttt{applyMove(Move)} comporte trois étapes : déplacement de la pièce, suppression des captures,
+et promotion éventuelle. Le déplacement et la promotion sont en $O(1)$, tandis que la suppression des captures parcourt
+la liste \texttt{move.getCaptured()} ; le coût est donc $O(c)$. On obtient ainsi :
+$$T(\texttt{applyMove}) = O(1 + c) = O(c).$$
+
+Les helpers de mutation ciblée (\texttt{addWhitePawn}, \texttt{removeWhitePawn}, \texttt{addBlackChecker}, etc.)
+ne modifient qu'un bit et restent en $O(1)$. Les méthodes utilitaires de test
+(\texttt{restorePiece}, \texttt{demoteBit}, \texttt{remove}, \texttt{addWhite}, \texttt{addBlack}, \texttt{clearBoard})
+sont donc toutes en $O(1)$ dans ce modèle borné.
+
+\subsubsection{Génération des coups}
+
+La génération globale \texttt{getValidMoves(boolean)} effectue un balayage des cases actives puis appelle des routines
+de coups simples et de prises. Le coût structurel de ce balayage est $O(n)$, mais le coût dominant provient des DFS
+de captures : \texttt{dfsPawn(...)} et \texttt{dfsChecker(...)}.
+
+Pour les coups simples, \texttt{pawnSimpleTargets(int, boolean)} teste un nombre constant de directions et reste en $O(1)$.
+\texttt{checkerSimpleTargets(int)} parcourt des rayons diagonaux, donc $O(n)$ dans le pire cas (plateau très dégagé).
+
+Pour les prises, \texttt{pawnMultiCaptures(...)} et \texttt{checkerMultiCaptures(...)} explorent un arbre de séquences
+de capture. Leur pire cas est exponentiel en profondeur de capture $k$ (en pratique bornée par le plateau), ce que l'on note
+$O(B^k)$, où $B$ est le facteur de branchement effectif des continuations de prise. Par conséquent, la complexité de
+\texttt{getWhiteValidMoves()} / \texttt{getBlackValidMoves()} s'écrit :
+$$O\bigl(n + \text{coût DFS captures}\bigr),$$
+et est dominée, dans les positions tactiques, par l'exploration des chaînes de captures.
+
+\subsubsection{Copie de plateau}
+
+La méthode \texttt{copy()} alloue un nouvel objet puis recopie un nombre constant de champs primitifs
+(huit bitboards + métadonnées). Elle est donc en $O(1)$, ce qui est un point clé pour les algorithmes de recherche.
+
+\subsubsection{Synthèse Board}
+
+{\footnotesize
+\begin{longtable}{|p{4.0cm}|p{4.1cm}|p{2.0cm}|p{5.2cm}|}
+\caption{Complexité des principales méthodes de \texttt{Board}}\label{tab:board-complexite} \\
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endhead
+
+\hline
+\multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
+\endfoot
+
+\hline
+\endlastfoot
+
+Accès bitboard
+& \texttt{isBit*}, \texttt{onLeftEdge}, \texttt{onRightEdge}
+& $O(1)$
+& Un nombre constant de tests/logiques binaires sur un ou deux mots 64 bits. \\
+\hline
+
+Conversion
+& \texttt{indexToSquare}, \texttt{boardToBitIndex}, \texttt{squareToIndex}
+& $O(1)$
+& Calculs arithmétiques et parsing de coordonnées de taille bornée. \\
+\hline
+
+Mutation locale
+& \texttt{add*}, \texttt{remove*}, \texttt{promoteBit}, \texttt{demoteBit}, \texttt{restorePiece}
+& $O(1)$
+& Modification d'un nombre constant de bits/champs. \\
+\hline
+
+Application d'un coup
+& \texttt{applyMove(Move)}
+& $O(c)$
+& Parcours des pièces capturées (taille $c$), le reste en temps constant. \\
+\hline
+
+Coups simples pion
+& \texttt{pawnSimpleTargets}
+& $O(1)$
+& Nombre fixe de directions testées, sans parcours global. \\
+\hline
+
+Coups simples dame
+& \texttt{checkerSimpleTargets}
+& $O(n)$ (pire cas)
+& Exploration potentielle de rayons diagonaux longs sur plateau dégagé. \\
+\hline
+
+Prises pion/dame
+& \texttt{pawnMultiCaptures}, \texttt{checkerMultiCaptures}, \texttt{dfsPawn}, \texttt{dfsChecker}
+& $O(B^k)$ (pire cas)
+& Exploration récursive d'un arbre de séquences de capture. \\
+\hline
+
+Génération globale
+& \texttt{getWhiteValidMoves}, \texttt{getBlackValidMoves}
+& $O(n + \text{DFS captures})$
+& Balayage des cases + génération des prises (coût dominant selon la position). \\
+\hline
+
+Copie
+& \texttt{copy}
+& $O(1)$
+& Recopie d'un nombre constant de champs primitifs. \\
 \hline
 \end{longtable}
 }
