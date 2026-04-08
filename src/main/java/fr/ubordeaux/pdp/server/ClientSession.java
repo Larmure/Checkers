@@ -40,6 +40,7 @@ public class ClientSession {
 
   private static final String DEFAULT_HOST = "localhost";
   private static final int DEFAULT_PORT = 12345;
+  private GameServer hostedServer;
 
   /**
    * Protects all connection-state fields.

@@ -28,8 +28,6 @@ public class ShellCommandRouter {
 
   private final GameController controller;
   private final ClientSession session;
-  private GameServer gameServer;
-
   /**
    * Creates a router for shell commands.
    *
@@ -37,10 +35,9 @@ public class ShellCommandRouter {
    * @param session the current client session.
    * @param
    */
-  public ShellCommandRouter(GameController controller, ClientSession session,GameServer server ) {
+  public ShellCommandRouter(GameController controller, ClientSession session) {
     this.controller = controller;
     this.session = session;
-    this.gameServer = server;
   }
 
   /**
@@ -214,10 +211,20 @@ public class ShellCommandRouter {
         new ServerStopCommand(session).execute();
       }
       case "status" -> {
-        if (blockUnless(ClientMode.SERVER, "No server running. Use 'server start first.")) {
+        if (blockUnless(ClientMode.SERVER, "No server running. Use 'server start' first.")) {
           return;
         }
-        new ServerStatusCommand(gameServer.getTcpPort(),).execute();
+
+        if (ServerStartCommand.activeServer == null
+            || !ServerStartCommand.activeServer.isRunning()) {
+          System.out.println("Server status unavailable.");
+          return;
+        }
+
+        new ServerStatusCommand(
+            ServerStartCommand.activeServer.getTcpPort(),
+            ServerStartCommand.activeServer.getRegistry()
+        ).execute();
       }
       default ->
         System.out.println(

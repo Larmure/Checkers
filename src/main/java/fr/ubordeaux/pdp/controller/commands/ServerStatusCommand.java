@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.controller.commands;
 import fr.ubordeaux.pdp.controller.Command;
 import fr.ubordeaux.pdp.controller.Helpable;
 import fr.ubordeaux.pdp.server.GameRegistry;
+import fr.ubordeaux.pdp.server.GameServer;
 
 /**
  * Server management command: {@code server status}.

@@ -575,7 +575,7 @@ public class GameServer {
     return tcpPort;
   }
 
-  public GameControllerFactory getControllerFactory() {
-    return controllerFactory;
+  public GameRegistry getRegistry() {
+    return registry;
   }
 }

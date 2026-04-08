@@ -21,6 +21,7 @@ class CommandLineInterfaceTest {
   private CommandLineInterface cli;
   private SpyController spyController;
 
+
   @BeforeEach
   void setUp() {
     cli = new CommandLineInterface(true, true);
