@@ -46,13 +46,26 @@
 
 \section{Contexte et objectifs du projet}
 
-Le projet a pour objectif de concevoir et développer un logiciel permettant de jouer au jeu de
-dames conformément aux règles officielles. Le programme doit permettre à deux joueurs de
-s'affronter sur un damier, soit en mode local, soit à distance via un réseau.
+\subsection{Historique}
 
-Le logiciel garantit le respect strict des règles du jeu tout en proposant une expérience
-utilisateur claire, robuste et extensible. Il s'inscrit dans une démarche de développement
-logiciel complète, intégrant la qualité du code, la documentation, les tests et les performances.
+Le jeu de dames est l'un des plus anciens jeux de plateau stratégiques, dont les origines remontent à plusieurs millénaires dans les civilisations méditerranéennes. 
+Perfectionné au fil des siècles, il a acquis ses règles modernes en Europe au cours du Moyen-Âge et fait aujourd'hui l'objet de compétitions internationales officielles régies par la Fédération Mondiale du Jeu de Dames (FMJD).
+
+\subsection{Présentation du jeu}
+Le jeu de dames est un jeu de stratégie abstraite opposant deux joueurs sur un plateau quadrillé. 
+Chaque joueur manœuvre ses pièces en diagonale dans le but de capturer l'intégralité des pièces 
+adverses ou de les immobiliser. Sa simplicité d'accès contraste avec la profondeur tactique qu'il 
+offre : la gestion des prises obligatoires, les enchaînements de captures multiples et la promotion 
+des pions en dames confèrent au jeu une richesse stratégique appréciée aussi bien des joueurs 
+occasionnels que des compétiteurs de haut niveau.
+
+\subsection{Objectifs du projet}
+
+Le projet a pour objectif de concevoir et développer un logiciel permettant de jouer au jeu de dames conformément aux règles officielles. 
+Le programme doit permettre à deux joueurs de s'affronter sur un damier, soit en mode local, soit à distance via un réseau.
+
+Le logiciel garantit le respect strict des règles du jeu tout en proposant une expérience utilisateur claire, robuste et extensible. 
+Il s'inscrit dans une démarche de développement logiciel complète, intégrant la qualité du code, la documentation, les tests et les performances.
 
 \subsection{Variantes supportées}
 \label{sec:variantes}
@@ -62,6 +75,8 @@ une option de configuration du plateau. Le style anglo-saxon, appelé Draughts, 
 chaque joueur disposant de 12 pions. Le jeu de dames international adopte quant à lui un plateau de 10×10, 
 avec 20 pions par joueur. Enfin, les dames canadiennes étendent encore la surface de jeu avec un plateau de 12×12, 
 portant le nombre de pions à 30 par joueur.
+
+\noindent\textit{Les images suivantes ont été obtenues à l'aide de notre implémentation. }
 
 \begin{figure}[h]
     \centering
@@ -116,75 +131,78 @@ aussi bien vers l'avant que vers l'arrière.
 \end{figure}
 \FloatBarrier
 
+\noindent\textit{Les cases surlignées en bleu indiquent les déplacements possibles de la pièce sélectionnée. }
+
 \subsubsection{La prise par un pion}
 \label{sec:prise-pion}
-
 Un pion capture un pion adverse en sautant par-dessus lui pour se poser sur la case vide
 située immédiatement derrière. La prise peut s'effectuer vers l'avant comme vers l'arrière.
-
 \textbf{La prise est obligatoire.} De plus, si après une capture le pion se retrouve à nouveau
 en position de prise, il doit continuer jusqu'à épuisement des captures possibles (rafle). Les
 pions capturés sont retirés du plateau uniquement à l'issue complète de la rafle, et non au fur
-et à mesure.
+et à mesure. La figure~\ref{fig:prise-pion} illustre le mécanisme de prise simple, tandis que 
+la figure~\ref{fig:rafle} montre un exemple de rafle enchaînant plusieurs captures successives.
 
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/pawn_capture.png}
-        \caption{Prise d'un pion}
-    \end{minipage}
-    \hspace{1cm}
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/rafle.png}
-        \caption{Rafle}
-    \end{minipage}
+\begin{figure}[h]
+\centering
+  \begin{minipage}{0.3\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{img_report/pawn_capture.png}
+  \caption{Prise d'un pion}
+  \label{fig:prise-pion}
+  \end{minipage}
+\hspace{1cm}
+  \begin{minipage}{0.3\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{img_report/rafle.png}
+  \caption{Rafle}
+  \label{fig:rafle}
+  \end{minipage}
 \end{figure}
 \FloatBarrier
 
 \subsubsection{La prise majoritaire}
 \label{sec:prise-majoritaire}
-
 Lorsque plusieurs séquences de capture sont possibles, le joueur est tenu de choisir celle qui
-capture le plus grand nombre de pièces, quel que soit leur rang. Ainsi, une séquence permettant
-de prendre deux pions est prioritaire sur la prise d'une dame isolée.
-
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/majority_capture.png}
-        \caption{Prise majoritaire~: 2 pions vs 1 dame}
-    \end{minipage}
-\end{figure}
-\FloatBarrier
+capture le plus grand nombre de pièces, quel que soit leur rang. Ainsi, comme l'illustre la 
+figure~\ref{fig:prise-majoritaire}, une séquence permettant de prendre deux pions est prioritaire 
+sur la prise d'une dame isolée.
 
 \subsubsection{La prise par la dame}
 \label{sec:prise-dame}
-
 Grâce à son amplitude de mouvement, la dame dispose de capacités de capture étendues. Elle doit
 prendre tout pion situé sur sa diagonale dès lors qu'une case libre est disponible
-immédiatement après. On ne peut passer qu'une seule fois sur un même pion, mais on peut traverser deux
-fois la même case.
+immédiatement après. On ne peut passer qu'une seule fois sur un même pion, mais on peut traverser 
+deux fois la même case. La figure~\ref{fig:prise-dame} présente un exemple de prise par la dame, 
+et la figure~\ref{fig:prise-dame-case} illustre le cas particulier où la dame repasse sur une 
+case déjà traversée au cours de sa rafle.
 
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/capture_checker.png}
-        \caption{Prise par la dame}
-    \end{minipage}
-    \hspace{1cm}
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/capture_checker_2.png}
-        \caption{Prise par la dame avec passage sur une même case}
-    \end{minipage}
+\begin{figure}[h]
+\centering
+  \begin{minipage}{0.3\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{img_report/capture_checker.png}
+    \caption{Prise par la dame}
+    \label{fig:prise-dame}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.3\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{img_report/capture_checker_2.png}
+    \caption{Prise par la dame avec passage sur une même case}
+    \label{fig:prise-dame-case}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.3\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{img_report/majority_capture.png}
+    \caption{Prise majoritaire~: 2 pions vs 1 dame}
+    \label{fig:prise-majoritaire}
+  \end{minipage}
 \end{figure}
 \FloatBarrier
 
-\subsection{Conditions de fin de partie}
+\subsubsection{Conditions de fin de partie}
 
 Une partie prend fin dans l'un des cas suivants :
 
@@ -853,49 +871,97 @@ immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
 permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
 l'indépendance des états de parties concurrentes.
 
-\section{Intelligence Artificielle}
+\subsection{Module Intelligence Artificielle}
+\label{sec:ai}
 
-\subsection{SimpleEvaluator}
+\sloppy Le module IA repose sur une séparation nette entre trois responsabilités. D'abord, la classe abstraite \texttt{Ai} fournit l'ossature commune : elle valide les paramètres, crée une copie du plateau de recherche, instancie un \texttt{ManagerUndoRedo} dédié et délègue le calcul du meilleur coup aux algorithmes concrets. Ensuite, \texttt{GameCheckers} agit comme point d'assemblage en appelant \texttt{Ai.buildAi(cfg, ...)} et \texttt{Ai.buildEvaluator(cfg)} à partir de la configuration courante. Enfin, \texttt{AiPlayer} encapsule l'algorithme et l'évaluateur pour exposer une seule méthode \texttt{getBestMove(...)}, ce qui évite de disperser la logique de décision dans le reste du moteur.
 
-La classe \texttt{SimpleEvaluator} peut être vue comme une balance très basique : elle compte simplement
-le "matériel" sur le plateau, c'est-à-dire combien de pions et de dames possède chaque joueur.
-Si les blancs ont plus de pièces fortes, le score monte ; si les noirs sont avantagés, le score baisse.
-Cette approche est facile à comprendre, rapide, mais elle ne tient pas compte de la position stratégique des pièces.
+Les classes d'évaluation \texttt{SimpleEvaluator}, \texttt{AdvancedEvaluator} et \texttt{MaxEvaluator} implémentent la même interface \texttt{Evaluator} mais avec des heuristiques de coût croissant. Elles sont consommées par les algorithmes de recherche pour donner une valeur aux feuilles de l'arbre. De son côté, \texttt{Mcts} n'utilise pas cette heuristique dans sa sélection principale, mais il reste compatible avec la même signature afin de pouvoir être instancié par le même pipeline que les autres IA.
 
-\subsection{AdvancedEvaluator}
+\begin{figure}[h]
+  \centering
+  \makebox[\textwidth][c]{
+    \begin{tikzpicture}[scale=0.8, transform shape, node distance=1.1cm and 1.4cm, >=Stealth]
+      \node[draw, rounded corners, align=center, fill=gray!10, minimum width=3.2cm] (cfg)
+      {Configuration\\\scriptsize modes, profondeur, temps, scoring};
 
-La classe \texttt{AdvancedEvaluator} reprend cette idée de balance, mais ajoute une intuition naturelle du jeu
-de dames : un pion qui avance vers la promotion devient plus dangereux. En pratique, cette classe récompense
-les pions qui progressent vers la dernière rangée. Elle reste simple, mais elle joue déjà plus "intelligemment"
-qu'un simple comptage de pièces.
+      \node[draw, rounded corners, align=center, fill=blue!10, right=of cfg, minimum width=3.0cm] (game)
+      {GameCheckers\\\scriptsize instanciation};
 
-\subsection{MaxEvaluator}
+      \node[draw, rounded corners, align=center, fill=blue!10, right=of game, minimum width=2.8cm] (player)
+      {AiPlayer\\\scriptsize delegation};
 
-La classe \texttt{MaxEvaluator} va encore plus loin. En plus du matériel et de l'avancement, elle valorise
-le contrôle du centre du damier et la mobilité (le nombre de coups légaux disponibles). Intuitivement,
-un joueur qui contrôle le centre et qui garde beaucoup d'options est souvent en meilleure posture.
-Cette évaluation est plus riche et souvent plus précise, mais elle demande davantage de calcul.
+      \node[draw, rounded corners, align=center, fill=green!12, below=of player, minimum width=2.8cm] (ai)
+      {Ai\\\scriptsize getBestMove()};
 
-\subsection{MinMax}
+      \node[draw, rounded corners, align=center, fill=orange!14, right=of ai, minimum width=3.4cm] (search)
+      {MinMax / AlphaBeta\\IterativeDeepening / Mcts};
 
-La classe \texttt{MinMax} représente la logique "je joue un coup, puis j'anticipe la meilleure réponse adverse".
-L'algorithme explore un arbre de possibilités en alternant les deux joueurs : il suppose que l'adversaire joue bien,
-et il cherche le coup qui reste le plus favorable malgré cela. Cette méthode donne des décisions solides,
-mais son coût augmente rapidement quand on approfondit la recherche.
+      \node[draw, rounded corners, align=center, fill=yellow!18, below=of search, minimum width=3.4cm] (eval)
+      {Evaluator\\\scriptsize Simple / Advanced / Max};
 
-\subsection{MinMaxAlphaBeta}
+      \node[draw, rounded corners, align=center, fill=red!12, right=of search, minimum width=3.6cm] (ml)
+      {SelectionMode\\\scriptsize UCT / ML\\LogisticRegressionTrainer};
 
-La classe \texttt{MinMaxAlphaBeta} suit exactement la même philosophie que MinMax, mais elle évite de calculer
-des branches qui ne pourront de toute façon pas changer la décision finale. On peut l'imaginer comme une lecture
-intelligente d'un arbre où l'on saute les chapitres déjà "perdus d'avance". Le résultat reste de même qualité,
-mais le temps de calcul peut être fortement réduit.
+      \draw[-{Stealth}] (cfg) -- (game);
+      
+      % On trace la flèche normalement
+      \draw[-{Stealth}] (game) -- (player);
+      
+      % On ajoute le texte spécifiquement à droite du noeud player
+      \node[right=0.2cm of player, font=\scriptsize, align=left, text=pdp-teal800] {setAlgorithm /\\ setEvaluator};
+      
+      \draw[-{Stealth}] (player) -- node[right, font=\scriptsize]{d\'el\'egation} (ai);
+      \draw[-{Stealth}] (ai) -- (search);
+      \draw[-{Stealth}, dashed] (search) -- node[right, font=\scriptsize]{heuristique} (eval);
+      \draw[-{Stealth}] (search) -- (ml);
+    \end{tikzpicture}
+  }
+  \caption{Cha\^ine de d\'ependance du module Intelligence Artificielle}
+  \label{fig:ia-dependencies}
+\end{figure}
 
-\subsection{IterativeDeepening}
+\subsubsection{SimpleEvaluator}
 
-La classe \texttt{IterativeDeepening} applique une stratégie très pratique en contexte réel : elle commence
-par une recherche peu profonde (rapide), puis recommence avec une profondeur plus grande, et ainsi de suite,
-jusqu'à épuisement du temps autorisé. L'avantage est qu'on dispose toujours d'un coup jouable, même si la recherche
-complète la plus profonde n'a pas le temps de se terminer.
+\texttt{SimpleEvaluator} est l'heuristique la plus légère du module. Son implémentation parcourt toutes les cases actives du plateau via \texttt{board.getIndexMax()} et interroge directement les bitboards avec \texttt{isBitWhitePawn}, \texttt{isBitBlackPawn}, \texttt{isBitWhiteChecker} et \texttt{isBitBlackChecker}. Chaque pion vaut 100 points et chaque dame 350 points ; le score final est positif si la position favorise les blancs et négatif si elle favorise les noirs.
+
+Cette classe n'a pas de dépendance métier lourde : elle ne consulte ni l'historique, ni les coups légaux, ni le système d'annulation. Elle sert donc de base de comparaison pour les recherches MinMax et comme option de configuration quand on veut une évaluation rapide et déterministe.
+
+\subsubsection{AdvancedEvaluator}
+
+\texttt{AdvancedEvaluator} reprend la logique matérielle de \texttt{SimpleEvaluator}, mais ajoute un bonus de progression pour les pions. Pour calculer ce bonus, la classe reconstruit la ligne de chaque case à partir de l'indice courant et de la taille du plateau, puis ajoute ou retire un bonus d'avancement proportionnel à la distance parcourue vers la promotion. Les dames gardent leur valeur fixe, ce qui permet de conserver une heuristique lisible tout en intégrant une notion de dynamique de partie.
+
+En pratique, cette classe est utile pour les variantes où l'on veut un MinMax un peu plus sensible au développement des pions sans payer le coût des calculs de mobilité. Elle reste autonome vis-à-vis des autres classes du moteur et ne dépend que de \texttt{Board} pour récupérer la géométrie du plateau.
+
+\subsubsection{MaxEvaluator}
+
+\texttt{MaxEvaluator} est l'heuristique la plus coûteuse du trio. Elle combine d'abord le comptage matériel et le bonus d'avancement, puis ajoute deux critères stratégiques supplémentaires : le contrôle du centre et la mobilité. Le centre est détecté par la méthode privée \texttt{isInCenter(...)} à partir des coordonnées ligne/colonne, tandis que la mobilité est évaluée en appelant \texttt{board.getWhiteValidMoves()} et \texttt{board.getBlackValidMoves()}.
+
+Cette classe introduit donc une dépendance forte vers le moteur de génération de coups de \texttt{Board}. Contrairement aux deux autres évaluateurs, elle peut déclencher une exploration de coups complète lors du calcul du score, ce qui la rend plus informative mais aussi plus lente. C'est précisément pour cela qu'elle est utilisée comme heuristique "maximale" dans la configuration MinMax.
+
+\subsubsection{MinMax}
+
+\texttt{MinMax} implémente la stratégie classique de recherche adversariale. Le point d'entrée réel passe par \texttt{Ai.getBestMove(...)}, qui travaille sur une copie du plateau et crée un \texttt{ManagerUndoRedo} dédié à l'exploration. L'algorithme parcourt ensuite l'arbre de jeu en alternant les fonctions \texttt{minMax(...)} et \texttt{maxMin(...)} : chaque coup est appliqué avec \texttt{board.applyMove(move)}, enregistré dans \texttt{undo.registerMove(...)} puis annulé immédiatement après l'évaluation de la branche.
+
+La classe dépend donc à la fois de \texttt{Board} pour générer les coups légaux, de \texttt{ManagerUndoRedo} pour revenir en arrière, et de \texttt{Evaluator} pour scorer les feuilles. La gestion du temps repose sur une exception interne \texttt{TimeExceededException} qui interrompt proprement la récursion si le budget est dépassé. Le résultat est ensuite renvoyé sous forme d'un \texttt{Move} détaché de l'arbre de recherche afin de ne pas propager d'état interne vers la partie réelle.
+
+\subsubsection{MinMaxAlphaBeta}
+
+\texttt{MinMaxAlphaBeta} reprend exactement le même contrat que \texttt{MinMax}, mais ajoute deux bornes locales, \(\alpha\) et \(\beta\), dans les méthodes \texttt{maxValue(...)} et \texttt{minValue(...)}. Après chaque enfant évalué, la borne adaptée est mise à jour ; dès que \(\beta \leq \alpha\), la boucle est interrompue et les frères restants sont ignorés. La qualité du résultat reste identique à celle de MinMax, mais l'arbre visité peut être très réduit lorsque l'ordre des coups est favorable.
+
+Du point de vue des dépendances, la classe reste branchée sur les mêmes briques que \texttt{MinMax} : \texttt{Board}, \texttt{ManagerUndoRedo}, \texttt{Evaluator} et \texttt{PlayerColor}. La différence est purement algorithmique, ce qui permet à \texttt{GameCheckers} de la substituer à MinMax sans changer le reste du moteur.
+
+\subsubsection{IterativeDeepening}
+
+\texttt{IterativeDeepening} n'implémente pas son propre arbre de recherche ; elle encapsule un \texttt{MinMax} interne et relance le calcul pour des profondeurs croissantes, de 1 jusqu'à \texttt{maxDepth}. À chaque itération terminée, le meilleur coup courant remplace le précédent. Si le temps expire au milieu d'une profondeur, la classe conserve simplement le dernier coup entièrement validé.
+
+Cette organisation fait de la classe un adaptateur temporel plutôt qu'un nouvel algorithme de décision. Sa dépendance principale est donc le \texttt{MinMax} embarqué, auquel elle délègue toute l'exploration. Le bénéfice est double : on garantit toujours une réponse jouable et on améliore progressivement la qualité de la décision tant que le budget temps le permet.
+
+\subsubsection{Relations entre les classes}
+
+La figure~\ref{fig:ia-dependencies} résume le chemin suivi lors d'une décision. \texttt{GameCheckers} choisit l'algorithme et l'évaluateur à partir de la configuration, \texttt{AiPlayer} les encapsule, puis \texttt{Ai} orchestre la recherche sur une copie du plateau. Les algorithmes MinMax dérivés consomment ensuite l'évaluateur choisi, tandis que \texttt{Mcts} conserve la même interface mais s'appuie sur \texttt{SelectionMode} pour basculer entre UCT et la sélection guidée par apprentissage automatique.
+
+Le cas MCTS introduit une chaîne de dépendances supplémentaire : la sélection \texttt{ML} lit les poids produits par \texttt{LogisticRegressionTrainer}, lesquels sont sauvegardés dans \texttt{ml\_weights.txt} après l'entraînement supervisé. Le module d'apprentissage reste donc découplé du moteur de recherche : l'entraînement écrit un fichier de paramètres, et MCTS le charge uniquement lorsqu'on active ce mode de sélection.
 
 \section{Complexité}
 
@@ -903,7 +969,7 @@ complète la plus profonde n'a pas le temps de se terminer.
 
 \subsubsection{Hypothèses et notations}
 
-Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA fournies.
+Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA fournies\ref{sec:ai}.
 La variable $n$ désigne le nombre de cases actives du plateau (typiquement \(32\), \(50\) ou \(72\)), $b$ représente
 le facteur de branchement moyen (nombre de coups légaux par position), et $d$ la profondeur maximale de recherche.
 Nous distinguons la complexité \textit{propre} d'une méthode de recherche (nombre de n\oe{}uds explorés) du coût réel,
