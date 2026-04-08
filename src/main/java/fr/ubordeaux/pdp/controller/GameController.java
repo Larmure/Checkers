@@ -62,6 +62,9 @@ public class GameController {
   /** Flag indicating if the game ended due to time expiration in blitz mode. */
   private boolean timeExpired = false;
 
+  /** The last load error message (null if loading succeeded). */
+  private String lastLoadError = null;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -588,6 +591,24 @@ public class GameController {
       lastSavedMoveCount = game.getHistory().getSize();
       lastSavedMove = lastSavedMoveCount > 0 ? game.getHistory().getLastMove() : null;
     }
+  }
+
+  /**
+   * Sets the last load error message.
+   *
+   * @param errorMessage the error message, or null if loading succeeded
+   */
+  public void setLastLoadError(String errorMessage) {
+    this.lastLoadError = errorMessage;
+  }
+
+  /**
+   * Gets the last load error message.
+   *
+   * @return the error message, or null if the last load succeeded
+   */
+  public String getLastLoadError() {
+    return lastLoadError;
   }
 
   /**

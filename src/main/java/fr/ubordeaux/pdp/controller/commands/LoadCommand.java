@@ -70,16 +70,25 @@ public class LoadCommand implements Command, Helpable {
     }
 
     LoadBoard loader = new LoadBoard();
+    loader.setShouldExitOnError(false);
     loader.loadGameData(fileName);
 
     GameCheckers loadedGame = loader.getLoadedGame();
     Configuration loadedConfig = loader.getLoadedConfiguration();
 
     if (loadedGame == null || loadedConfig == null) {
-      System.out.println("Loading error: could not restore game state.");
+      String errorMsg = loader.getLastErrorMessage();
+      if (errorMsg != null) {
+        controller.setLastLoadError(errorMsg);
+        System.out.println("Loading error: " + errorMsg);
+      } else {
+        controller.setLastLoadError("Could not restore game state");
+        System.out.println("Loading error: could not restore game state.");
+      }
       return;
     }
 
+    controller.setLastLoadError(null);
     controller.setGame(loadedGame, loadedConfig);
     System.out.println("Game loaded: " + fileName);
   }
