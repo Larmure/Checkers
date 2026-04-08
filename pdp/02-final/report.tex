@@ -356,6 +356,7 @@ adversariale, richesse algorithmique de l'IA, et protocole réseau adapté
 à un client Java interactif.
 
 \section{Algorithme et Structure de données}
+\label{sec:algo}
 
 \subsection{Bitboard}
 
@@ -533,9 +534,11 @@ En sortie, le moteur dicte le rythme grâce au patron de conception Observateur.
 \end{figure}
 \FloatBarrier
 
+\noindent\textit{Note : La bulle « CONNECTED/SERVER » visible sur ce schéma représente le point d'entrée vers les fonctionnalités réseaux. Le fonctionnement détaillé de ce module (protocole TCP, sockets et gestion du serveur) est traité spécifiquement dans la section \ref{sec:reseau}.}
+
 \subsubsection{Choix techniques et boucle de contrôle}
 
-D'un point de vue technique, la représentation du plateau ne repose pas sur un simple tableau à deux dimensions, mais sur des \textit{bitboards} (comme détaillé dans la section algorithmique). Ce choix garantit un accès et une manipulation en temps $O(1)$ via des opérations binaires.
+D'un point de vue technique, la représentation du plateau ne repose pas sur un simple tableau à deux dimensions, mais sur des \textit{bitboards} (comme détaillé dans la section algorithmique \ref{sec:algo}). Ce choix garantit un accès et une manipulation en temps $O(1)$ via des opérations binaires.
 
 Concernant la dynamique, le jeu s'exécute au tour par tour, géré par une machine à états simple définie par l'énumération \texttt{State} (\texttt{IN\_GAME}, \texttt{PAUSE}, \texttt{FINISHED}). L'évolution du système lors de l'application d'un coup suit toujours la même séquence logique stricte :
 
@@ -570,75 +573,116 @@ Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vé
 
 \subsection{Module affichage}
 
-Le module d'affichage constitue la couche Vue de notre architecture. Son objectif est de transformer l'état métier fourni par le 
-moteur en informations compréhensibles par l'utilisateur, puis de remonter les intentions de jeu vers le contrôleur.
+Le module d'affichage correspond à la couche Vue de notre architecture MVC. Dans la pratique, il repose sur une base commune, \texttt{GameView}, puis sur trois implémentations adaptées au contexte d'exécution : \texttt{CommandLineInterface} pour le terminal, \texttt{GraphicalUserInterface} pour JavaFX, et \texttt{HeadlessView} côté serveur lorsque l'on veut exécuter une partie sans affichage. Ce découpage a été choisi très tôt pour éviter de mélanger logique d'interaction, rendu visuel et règles du jeu.
 
-\subsubsection{Responsabilités du module}
+Le point important est que le contrôleur ne connaît que l'abstraction \texttt{GameView}. Quand un joueur agit, la vue transforme cette action en appel contrôleur (commande ou déplacement), puis le moteur met à jour l'état de jeu. La vue n'écrit jamais directement dans le modèle. Une fois le coup traité, le mécanisme d'observation notifie les vues, qui se contentent de se rafraîchir. Ce fonctionnement paraît simple, mais c'est ce qui nous a permis de garder exactement les mêmes règles en CLI, en GUI et en mode headless.
 
-Ce module ne contient aucune règle de dames. Il se limite à trois responsabilités :
-\begin{itemize}
-    \item \textbf{Rendu de l'état courant} : représentation du plateau, des pièces, du joueur actif et des messages de statut.
-    \item \textbf{Capture des actions utilisateur} : sélection d'une case, validation d'un coup, demandes de pause / sauvegarde / chargement.
-    \item \textbf{Retour d'information} : affichage des coups illégaux, de la fin de partie et des événements de synchronisation réseau.
-\end{itemize}
+En CLI, nous avons utilisé JLine pour ne pas nous limiter à un \texttt{Scanner} minimaliste. On bénéficie ainsi d'une saisie plus robuste (édition de ligne, complétion, gestion propre des interruptions) et d'un comportement plus stable pendant les tests. Nous avons aussi séparé volontairement la lecture d'entrée du routage des commandes : \texttt{CommandLineInterface} lit et affiche, tandis que \texttt{ShellCommandRouter} décide quoi faire de la commande. Cette séparation nous a évité une classe trop chargée et a rendu les tests de parsing beaucoup plus simples.
 
-\subsubsection{Affichage en mode CLI}
+En GUI, la même logique a été conservée, avec une organisation en sous-vues (\texttt{MainView}, \texttt{PlayView}, \texttt{BoardView}, \texttt{LogView}) pour garder du code lisible. Le principal choix technique ici concerne les threads : une mise à jour visuelle doit toujours passer par \texttt{Platform.runLater(...)}. Sans cela, les notifications venant du timer blitz ou d'un calcul d'IA peuvent provoquer des erreurs JavaFX difficiles à reproduire. Nous avons également lié la taille des cases à la taille de la fenêtre via des bindings, pour conserver un damier correct sur les trois formats de plateau pris en charge.
 
-Le mode CLI (Command Line Interface) fournit une interface textuelle légère, utile pour les tests rapides, le débogage 
-et l'exécution sur des environnements sans interface graphique. Dans ce mode, la Vue sérialise l'état du damier en texte
- (coordonnées, pièces, tour courant), puis lit des commandes utilisateur de type \texttt{MOVE}, \texttt{UNDO}, \texttt{SAVE} ou \texttt{LOAD}.
+Avec le recul, ce module fonctionne surtout parce qu'il reste discipliné : l'affichage reste un adaptateur, pas un second moteur de jeu. C'est ce qui nous permet d'ajouter des fonctionnalités d'interface sans toucher aux règles, et d'exécuter les mêmes scénarios de jeu dans des environnements très différents.
 
-D'un point de vue architectural, la CLI reste alignée sur MVC : elle ne touche jamais au \texttt{Board} directement. 
-Chaque commande est traduite en intention métier et transmise au \texttt{GameController}, qui valide le coup et orchestre 
-l'appel au moteur. Ce fonctionnement garantit que les mêmes règles sont appliquées, quel que soit le canal d'entrée (texte ou interface graphique).
+\subsubsection{Architecture interne de la GUI}
 
-Le mode CLI joue également un rôle important pour les tests automatisés du projet : son comportement déterministe facilite 
-l'écriture de scénarios reproductibles (entrées textuelles connues, sorties attendues), notamment pour vérifier les cas 
-limites des règles, le routage des commandes et la robustesse des opérations de sauvegarde/chargement.
+L'implémentation de la GUI repose sur javafx et une décomposition en plusieurs composants spécialisés :
 
-\subsubsection{Affichage en mode GUI}
+\paragraph{GraphicalUserInterface et le pattern Observer}
 
-Le mode GUI (Graphical User Interface) vise une expérience utilisateur interactive et visuelle. Il représente le plateau, les pièces
- et les états de partie sous forme de composants graphiques, et gère des événements riches (clic sur case, sélection d'une pièce, 
- surbrillance des coups possibles, messages contextuels).
+La classe \texttt{GraphicalUserInterface} étend \texttt{GameView}, ce qui lui permet de s'intégrer directement au pattern Observer 
+déjà utilisé par le projet. Quand le modèle change, la GUI reçoit l'information via la méthode \texttt{update(GameCheckers)} 
+et redirige la mise à jour vers les composants visuels.
 
-Comme pour la CLI, la GUI n'intègre pas la logique des règles : elle agit comme un adaptateur événementiel. Lorsqu'un utilisateur 
-clique sur une case de départ puis une case d'arrivée, l'action est convertie en requête métier vers le \texttt{GameController}. 
-Après traitement par \texttt{GameCheckers}, la mise à jour de l'affichage est déclenchée par le mécanisme d'observation (\texttt{notifyObservers()}).
+Le point central ici est la gestion du thread JavaFX. Comme JavaFX impose que toute modification de l'interface passe par son 
+thread dédié (Application Thread), les mises à jour sont dispatchées via \texttt{Platform.runLater(...)} :
 
-Cette séparation permet de conserver une GUI réactive tout en évitant les incohérences fonctionnelles. Elle facilite aussi
- l'évolution de l'interface (thèmes, animations, ergonomie) sans impact sur le moteur, puisque le contrat entre Vue et contrôleur 
- reste inchangé.
+\begin{minted}{java}
+@Override
+public void update(GameCheckers game) {
+  Platform.runLater(() -> {
+    if (mainView != null) {
+      mainView.update(game);
+    }
+  });
+}
+\end{minted}
 
-\subsubsection{Interaction avec le moteur MVC}
+Ce pattern de thread est \textbf{central} : sans lui, toute mise à jour du modèle provenant d'un autre thread provoque une exception \texttt{IllegalStateException}. La classe gère aussi 
+l'initialisation de la fenêtre principale, l'application de la feuille de style CSS 
+et la fermeture contrôlée avec vérification des sauvegardes avant quitter.
 
-Le flux d'interaction suit une chaîne stricte :
-\begin{enumerate}
-    \item L'utilisateur agit via l'affichage (clic, commande, sélection).
-    \item Le module Vue transmet l'intention au \texttt{GameController}.
-    \item Le \texttt{GameController} valide et délègue l'opération au moteur (\texttt{GameCheckers}/\texttt{Board}).
-    \item Après mise à jour, le moteur notifie ses observateurs.
-    \item Le module d'affichage reçoit la notification et rafraîchit l'interface.
-\end{enumerate}
+\paragraph{MainView et organisation visuelle}
 
-Ce schéma garantit que la Vue ne modifie jamais directement l'état du jeu : elle reste consommatrice de l'état produit par le modèle.
+La fenêtre principale est construite par \texttt{MainView}, qui hérite de \texttt{BorderPane}. Ce choix permet de séparer 
+proprement l'interface en trois zones : le menu en haut, le jeu au centre et la barre d'actions en bas. 
 
-\subsubsection{Dépendances et extensibilité}
+\texttt{MainView} ne redessine pas le plateau lui-même ; ce rôle est délégué à \texttt{PlayView}, ce qui évite de concentrer 
+la logique d'affichage dans une seule classe. Cette délégation renforce la maintenabilité et facilite les tests unitaires de chaque 
+composant.
 
-Les dépendances sont orientées de la Vue vers le contrôleur, jamais l'inverse. Le module d'affichage dépend d'interfaces publiques stables 
-(état de partie, coups légaux, notifications), ce qui permet :
-\begin{itemize}
-    \item d'ajouter un nouveau type d'interface sans toucher au moteur ;
-    \item d'exécuter des tests du moteur sans initialiser d'interface graphique ;
-    \item de conserver une cohérence fonctionnelle entre mode local, IA et réseau.
-\end{itemize}
+\paragraph{BoardView et rendu interactif}
 
-\subsection{Architecture réseau}
+\texttt{BoardView} est le compasant qui affiche réellement le damier, les pièces, les sélections, 
+les coups suggérés et les mouvements possibles. Le composant repose sur un \texttt{GridPane}, reconstruit visuellement à chaque 
+redraw. L'interaction suit un schéma à deux clics : au premier clic, la pièce est sélectionnée et surlignée en bleu ; au second clic, 
+la destination est envoyée au contrôleur pour exécution du coup.
+
+Un point crucial est que la GUI \textbf{ne recalcule pas} les règles de dames. Elle demande directement au modèle quels coups sont légaux, 
+puis ne garde que ceux qui concernent la pièce sélectionnée :
+
+\begin{minted}{java}
+List<Move> possibleMoves = game.getPossibleMoves(game.getCurrentPlayer());
+
+for (Move m : possibleMoves) {
+  if (m.getFrom() == selectedIndex) {
+    validDestinationSquares.add(board.indexToSquare(m.getTo()));
+  }
+}
+\end{minted}
+
+L'interface ne décide pas ce qui est légal ou non ; elle se contente d'afficher proprement ce que le moteur autorise. 
+Ce choix architectural évite de dupliquer la logique métier dans la vue et garantit la cohérence globale : une règle modifiée 
+dans le moteur s'applique immédiatement sans changement de code GUI.
+
+Le drag and drop a également été implémenté. Quand l'utilisateur commence à faire glisser une pièce, la case de départ est stockée 
+dans le \texttt{Dragboard} JavaFX. Au dépôt, la vue reconstruit simplement le déplacement et l'envoie au contrôleur sans validation locale. 
+Encore une fois, la vue gère l'interaction (UX), mais pas les règles.
+
+\paragraph{ConfigDialog et interactions complexes}
+
+Le dialogue de configuration \texttt{ConfigDialog} va au-delà d'une simple présentation de cases à cocher. Les composants réagissent 
+entre eux : si le mode blitz est désactivé, le spinner de temps l'est aussi. Si aucune IA n'est active, les options liées aux IA 
+sont désactivées automatiquement. Ces dépendances sont gérées via des listeners JavaFX sur les propriétés des contrôles.
+
+Plus important encore, le dialogue reconstruit un objet \texttt{Configuration} exploitable directement par le moteur. Il ne renvoie pas 
+juste des valeurs d'interface brutes : il normalise les choix, convertit les unités (par exemple, les secondes en millisecondes pour 
+l'IA) et prépare les bons formats.
+
+\paragraph{Tests de la GUI}
+
+Exemple : \texttt{ConfigDialog}. Les tests utilisent JUnit 5, TestFX 
+(framework pour tester JavaFX) et Mockito (pour simuler le contrôleur). Les composants JavaFX sont créés sur le bon thread 
+à l'aide de \texttt{Platform.runLater(...)}, puis les interactions utilisateur sont simulées avec \texttt{FxRobot}. 
+
+Par exemple, un test vérifie que cocher ou décocher le mode blitz active ou désactive correctement le spinner de temps :
+
+\begin{minted}{java}
+robot.interact(() -> blitzCheck.setSelected(false));
+assertTrue(timeSpinner.isDisabled());
+
+robot.interact(() -> blitzCheck.setSelected(true));
+assertFalse(timeSpinner.isDisabled());
+\end{minted}
+
+Cette approche garantit que le comportement du dialogue reste stable lors des refactorisations futures et valide que les interactions 
+entre composants restent cohérentes.
+
+\subsection{Module Réseau}
+\label{sec:reseau}
  
 La couche réseau de l'application s'appuie sur une architecture client-serveur
-TCP, répartie entre deux packages distincts :
-\texttt{fr.ubordeaux.pdp.server} côté serveur et
-\texttt{fr.ubordeaux.pdp.controller} côté client.
+TCP, basant principalement sur le package
+\texttt{fr.ubordeaux.pdp.server}.
 La figure~\ref{fig:architecture-serveur} en présente les composants principaux
 ainsi que leurs interactions.
  
@@ -689,7 +733,7 @@ ainsi que leurs interactions.
  
   % ---- Zone CLIENT ------------------------------------------
   \node[pdp blue] (SCR)
-    {ShellCommandRouter\\[-2pt]{\footnotesize\normalfont Routage des commandes}};
+    {PlayerSession\\[-2pt]{\footnotesize\normalfont Score des joueurs}};
  
   \node[pdp blue, below=of SCR] (CS)
     {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
@@ -809,147 +853,55 @@ immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
 permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
 l'indépendance des états de parties concurrentes.
 
-\section{Explication approfondie : Monte Carlo Tree Search (MCTS)}
+\section{Intelligence Artificielle}
 
-\subsection{Logique théorique de l'algorithme}
+\subsection{SimpleEvaluator}
 
-Contrairement à l'algorithme Minimax qui tente d'évaluer exhaustivement toutes les branches jusqu'à une profondeur donnée, 
-le MCTS repose sur des simulations statistiques probabilistes. La recherche s'effectue en répétant une boucle de quatre phases fondamentales
- jusqu'à épuisement du temps de réflexion imparti :
+La classe \texttt{SimpleEvaluator} peut être vue comme une balance très basique : elle compte simplement
+le "matériel" sur le plateau, c'est-à-dire combien de pions et de dames possède chaque joueur.
+Si les blancs ont plus de pièces fortes, le score monte ; si les noirs sont avantagés, le score baisse.
+Cette approche est facile à comprendre, rapide, mais elle ne tient pas compte de la position stratégique des pièces.
 
-\subsubsection{Sélection} 
-À chaque itération, l'algorithme part de la racine de l'arbre (l'état actuel du damier) et descend vers les feuilles. 
-Pour choisir quel chemin emprunter, il utilise la formule UCT (Upper Confidence Bound applied to Trees):
-$$UCT_{j} = \frac{w_{j}}{n_{j}} + C \sqrt{\frac{\ln n}{n_{j}}}$$
+\subsection{AdvancedEvaluator}
 
-Où :
-\begin{itemize}
-    \item $w_j$ représente le nombre de victoires accumulées par les simulations passant par le nœud enfant $j$.
-    \item $n_j$ est le nombre total de simulations ayant traversé ce nœud $j$.
-    \item $n$ est le nombre total de visites du nœud parent.
-    \item $C$ est la constante d'exploration.
-\end{itemize}
+La classe \texttt{AdvancedEvaluator} reprend cette idée de balance, mais ajoute une intuition naturelle du jeu
+de dames : un pion qui avance vers la promotion devient plus dangereux. En pratique, cette classe récompense
+les pions qui progressent vers la dernière rangée. Elle reste simple, mais elle joue déjà plus "intelligemment"
+qu'un simple comptage de pièces.
 
-\textit{Concrètement :} Cette formule résout le dilemme "Exploration vs Exploitation". Le terme de gauche 
-favorise les coups ayant un fort taux de victoire (exploitation), tandis que le terme de droite grandit pour les coups peu testés
- (exploration). Si un nœud enfant n'a jamais été visité, sa valeur est considérée comme infinie pour forcer l'algorithme à tester chaque
-  coup légal au moins une fois.
+\subsection{MaxEvaluator}
 
-\subsubsection{Expansion} 
-Une fois arrivé sur un nœud dont tous les coups possibles n'ont pas encore été explorés, l'algorithme choisit un de ces mouvements
- non testés, crée un nouveau nœud dans l'arbre pour représenter ce nouvel état, et passe à la phase suivante.
+La classe \texttt{MaxEvaluator} va encore plus loin. En plus du matériel et de l'avancement, elle valorise
+le contrôle du centre du damier et la mobilité (le nombre de coups légaux disponibles). Intuitivement,
+un joueur qui contrôle le centre et qui garde beaucoup d'options est souvent en meilleure posture.
+Cette évaluation est plus riche et souvent plus précise, mais elle demande davantage de calcul.
 
-\subsubsection{Simulation} 
-Depuis ce nœud nouvellement créé, l'algorithme lance une partie virtuelle. Il joue des coups totalement aléatoires pour les deux 
-joueurs jusqu'à atteindre un état final (victoire, défaite ou égalité).
-\subsubsection{Rétropropagation}  
-Une fois la partie simulée terminée, le résultat (victoire, défaite ou nul) est remonté le long de l'arbre en suivant
- le chemin exact pris lors de la phase de sélection. Tous les nœuds ancêtres traversés voient leurs statistiques mises à jour :
-  incrémentation de leur compteur de visites, et ajustement de leur score de victoire selon le camp gagnant.
+\subsection{MinMax}
 
-% ----------------------------------------------------------------------
+La classe \texttt{MinMax} représente la logique "je joue un coup, puis j'anticipe la meilleure réponse adverse".
+L'algorithme explore un arbre de possibilités en alternant les deux joueurs : il suppose que l'adversaire joue bien,
+et il cherche le coup qui reste le plus favorable malgré cela. Cette méthode donne des décisions solides,
+mais son coût augmente rapidement quand on approfondit la recherche.
 
-% ----------------------------------------------------------------------
+\subsection{MinMaxAlphaBeta}
 
-\subsection{Implémentation et optimisations dans notre projet}
+La classe \texttt{MinMaxAlphaBeta} suit exactement la même philosophie que MinMax, mais elle évite de calculer
+des branches qui ne pourront de toute façon pas changer la décision finale. On peut l'imaginer comme une lecture
+intelligente d'un arbre où l'on saute les chapitres déjà "perdus d'avance". Le résultat reste de même qualité,
+mais le temps de calcul peut être fortement réduit.
 
-Notre classe \texttt{Mcts} gère cette recherche de manière optimisée en traduisant cette théorie à travers des choix d'architecture précis.
+\subsection{IterativeDeepening}
 
-\subsubsection{Traduction des phases en code}
-La boucle principale est gérée par la méthode \texttt{calculateBestMove()}, qui s'exécute tant que la limite de temps (\texttt{isTimeExceeded}) n'est pas atteinte. 
+La classe \texttt{IterativeDeepening} applique une stratégie très pratique en contexte réel : elle commence
+par une recherche peu profonde (rapide), puis recommence avec une profondeur plus grande, et ainsi de suite,
+jusqu'à épuisement du temps autorisé. L'avantage est qu'on dispose toujours d'un coup jouable, même si la recherche
+complète la plus profonde n'a pas le temps de se terminer.
 
-Lors de la phase de \textbf{sélection}, la formule UCT est appliquée par \texttt{bestChildByUcb1()}. Si $n_j = 0$, la méthode renvoie 
-\texttt{Double.MAX\_VALUE} pour assurer l'exploration initiale :
+\section{Complexité}
 
-\begin{minted}[frame=single, fontsize=\small]{java}
-double score = child.visits == 0
-    ? Double.MAX_VALUE
-    : child.winRate() + explorationConstant * Math.sqrt(logVisits / child.visits);
-\end{minted}
+\subsection{Complexité de l'IA}
 
-Lors de la \textbf{simulation} (\texttt{simulate()}), pour éviter des parties virtuelles infinies sur des situations bloquées, nous avons 
-introduit une limite stricte de profondeur (\texttt{SIMULATION\_DEPTH = 60}). Si cette limite est atteinte sans vainqueur, la partie rapporte 
-un score de parité (\texttt{DRAW\_SCORE = 0.5}), contre \texttt{WIN\_SCORE = 1.0} pour une victoire.
-
-\subsubsection{Optimisation mémoire (ManagerUndoRedo)}
-L'un des plus grands défis du MCTS est la gestion de la mémoire. Au lieu de cloner l'objet \texttt{Board} des milliers de fois pour
- chaque nœud et simulation (ce qui saturerait la RAM et ralentirait drastiquement l'exécution), nous utilisons une instance unique 
- du plateau couplée à un \texttt{ManagerUndoRedo}. Chaque coup testé lors de la sélection, de l'expansion et de la simulation est 
- appliqué physiquement sur le plateau, puis proprement annulé lors de la phase de \texttt{backpropagate} :
-
-\begin{minted}[frame=single, fontsize=\small]{java}
-// Rétropropagation : on remonte jusqu'à la racine en annulant les coups joués
-while (current != null) {
-    current.visits++;
-    // Mise à jour des scores...
-    
-    // Annulation physique du coup sur le plateau unique
-    if (current.move != null) {
-        undo.undo(current.player == PlayerColor.WHITE);
-    }
-    current = current.parent;
-}
-\end{minted}
-
-\subsubsection{Guidage par Machine Learning}
-
-\paragraph{Pipeline d'entraînement du modèle}
-Pour générer les poids (\texttt{mlWeights}) et le biais (\texttt{mlBias}) utilisés par cette fonction, nous avons implémenté un pipeline
- d'apprentissage supervisé autonome dans la classe \texttt{LogisticRegressionTrainer}. L'entraînement s'effectue via l'option en ligne de 
- commande \texttt{-tr}. Le processus se divise en trois grandes étapes :
-
-\begin{enumerate}
-    \item \textbf{Génération des données par Self-Play :} L'application fait s'affronter deux instances de l'IA (MCTS pur) l'une 
-    contre l'autre. Pour éviter les parties infinies, une limite stricte de 100 coups est fixée (\texttt{MAX\_MOVES}). À chaque demi-coup,
-     un vecteur de 6 caractéristiques (\textit{features}) est extrait du plateau :
-    \begin{itemize}
-        \item Nombre de pions blancs et noirs.
-        \item Nombre de dames blanches et noires.
-        \item Différentiel de pions (Blancs - Noirs).
-        \item Différentiel de dames (Blancs - Noirs).
-    \end{itemize}
-    Si la partie aboutit à une victoire, tous les vecteurs de cette partie sont étiquetés avec le résultat réel 
-    ($1.0$ pour une victoire des blancs, $0.0$ pour les noirs). Les parties nulles sont ignorées pour ne pas bruiter le modèle.
-
-    \item \textbf{Optimisation par descente de gradient :} Une fois les données collectées (par défaut sur 10 parties), 
-    la méthode \texttt{train()} ajuste les poids itérativement sur 1000 \textit{epochs}. À chaque étape, pour chaque vecteur d'état,
-     le modèle effectue une prédiction. L'erreur par rapport au résultat réel (\textit{label}) est calculée, et les poids sont mis à 
-     jour selon un taux d'apprentissage (\texttt{learningRate = 0.01}) :
-    $$W_{j} = W_{j} - \alpha \times \text{erreur} \times X_{j}$$
-    Où $\alpha$ est le taux d'apprentissage, $W_j$ le poids de la caractéristique $j$, et $X_j$ la valeur de la caractéristique.
-
-    \item \textbf{Sauvegarde et chargement :} À l'issue de l'entraînement, les poids finaux et le biais sont sauvegardés dans un 
-    fichier texte (\texttt{ml\_weights.txt}). Ce fichier est ensuite chargé dynamiquement par \texttt{Mcts} lors de son 
-    instanciation, garantissant une séparation propre entre la phase d'entraînement et la phase d'inférence (jeu).
-\end{enumerate}
-
-\paragraph{Bilan de l'approche}
-Bien évidemment, ce mode de sélection par apprentissage automatique n'a pas démontré de gain significatif en termes de 
-performance ou de qualité de jeu par rapport à l'UCT classique. Cela s'explique par la simplicité de notre modèle : 
-la régression logistique est un modèle linéaire, et nos 6 \textit{features} mathématiques (uniquement basées sur le comptage matériel)
- ne capturent pas les subtilités positionnelles du jeu de dames. 
-
-Cependant, cette implémentation robuste démontre l'extensibilité de notre architecture. Le pipeline de génération de données, 
-d'entraînement et d'inférence est pleinement fonctionnel, ce qui ouvre la porte à des améliorations futures plus sophistiquées 
-(comme le remplacement de la régression logistique par un réseau de neurones profond évaluant des motifs complexes) pour renforcer drastiquement 
-l'intelligence de notre agent.
-
-\subsubsection{Détermination du meilleur coup final}
-
-À l'épuisement du temps de réflexion imparti, l'arbre cesse de croître. Quelle que soit l'heuristique de sélection utilisée durant la recherche 
-(la formule UCT classique ou les prédictions du modèle de Machine Learning), la décision finale ne se base pas sur ces scores d'évaluation. 
-
-L'IA fait appel à la méthode \texttt{mostVisitedChild()}, qui sélectionne le nœud enfant de la racine possédant le 
-\textbf{plus grand nombre de visites}. Ce critère est privilégié car il est statistiquement le plus robuste : une branche très visitée 
-signifie qu'elle a continuellement été considérée comme la plus prometteuse par l'algorithme, et qu'elle a survécu à un grand nombre de
- simulations face aux meilleures réponses possibles de l'adversaire.
-Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
-
-Ce choix de conception a été décisif pour notre flux de travail. Il nous a permis de développer, de faire tourner et de tester massivement l'intégralité du moteur de jeu et de l'IA via une interface textuelle simple, avant même de commencer à coder l'interface graphique. Remplacer le terminal par la vue JavaFX n'a nécessité aucune modification des classes du moteur.
-
-\section{IA et Complexité}
-
-\subsection{Hypothèses et notations}
+\subsubsection{Hypothèses et notations}
 
 Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA fournies.
 La variable $n$ désigne le nombre de cases actives du plateau (typiquement \(32\), \(50\) ou \(72\)), $b$ représente
@@ -957,39 +909,7 @@ le facteur de branchement moyen (nombre de coups légaux par position), et $d$ l
 Nous distinguons la complexité \textit{propre} d'une méthode de recherche (nombre de n\oe{}uds explorés) du coût réel,
 qui inclut aussi la génération des coups par le moteur via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
 
-\subsection{Lecture intuitive des classes}
-
-La classe \texttt{SimpleEvaluator} peut être vue comme une balance très basique : elle compte simplement
-le "matériel" sur le plateau, c'est-à-dire combien de pions et de dames possède chaque joueur.
-Si les blancs ont plus de pièces fortes, le score monte ; si les noirs sont avantagés, le score baisse.
-Cette approche est facile à comprendre, rapide, mais elle ne tient pas compte de la position stratégique des pièces.
-
-La classe \texttt{AdvancedEvaluator} reprend cette idée de balance, mais ajoute une intuition naturelle du jeu
-de dames : un pion qui avance vers la promotion devient plus dangereux. En pratique, cette classe récompense
-les pions qui progressent vers la dernière rangée. Elle reste simple, mais elle joue déjà plus "intelligemment"
-qu'un simple comptage de pièces.
-
-La classe \texttt{MaxEvaluator} va encore plus loin. En plus du matériel et de l'avancement, elle valorise
-le contrôle du centre du damier et la mobilité (le nombre de coups légaux disponibles). Intuitivement,
-un joueur qui contrôle le centre et qui garde beaucoup d'options est souvent en meilleure posture.
-Cette évaluation est plus riche et souvent plus précise, mais elle demande davantage de calcul.
-
-La classe \texttt{MinMax} représente la logique "je joue un coup, puis j'anticipe la meilleure réponse adverse".
-L'algorithme explore un arbre de possibilités en alternant les deux joueurs : il suppose que l'adversaire joue bien,
-et il cherche le coup qui reste le plus favorable malgré cela. Cette méthode donne des décisions solides,
-mais son coût augmente rapidement quand on approfondit la recherche.
-
-La classe \texttt{MinMaxAlphaBeta} suit exactement la même philosophie que MinMax, mais elle évite de calculer
-des branches qui ne pourront de toute façon pas changer la décision finale. On peut l'imaginer comme une lecture
-intelligente d'un arbre où l'on saute les chapitres déjà "perdus d'avance". Le résultat reste de même qualité,
-mais le temps de calcul peut être fortement réduit.
-
-La classe \texttt{IterativeDeepening} applique une stratégie très pratique en contexte réel : elle commence
-par une recherche peu profonde (rapide), puis recommence avec une profondeur plus grande, et ainsi de suite,
-jusqu'à épuisement du temps autorisé. L'avantage est qu'on dispose toujours d'un coup jouable, même si la recherche
-complète la plus profonde n'a pas le temps de se terminer.
-
-\subsection{Complexité des fonctions d'évaluation}
+\subsubsection{Complexité des fonctions d'évaluation}
 
 \paragraph{SimpleEvaluator}
 La méthode \texttt{evaluate(Board)} réalise un parcours linéaire de l'ensemble des cases actives,
@@ -1007,7 +927,7 @@ Sa complexité globale s'écrit donc $O(n + M_{w} + M_{b})$, où $M_{w}$ et $M_{
 de génération des coups blancs et noirs. La méthode \texttt{isInCenter(int, int, int)} elle-même ne fait
 que des comparaisons arithmétiques constantes et s'exécute en $O(1)$.
 
-\subsection{Complexité des algorithmes de recherche adversariale}
+\subsubsection{Complexité des algorithmes de recherche adversariale}
 
 \paragraph{MinMax}
 La méthode \texttt{calculateBestMove(...)} lance une recherche complète jusqu'à \texttt{maxDepth} et hérite donc
@@ -1032,7 +952,7 @@ En pratique, le surcoût par rapport à une unique recherche à profondeur $d$ e
 et il est compensé par la robustesse de la stratégie : en cas d'interruption temporelle,
 le meilleur coup d'une profondeur entièrement terminée est déjà disponible.
 
-\subsection{Synthèse}
+\subsubsection{Synthèse}
 
 {\footnotesize
 \begin{longtable}{|p{3.4cm}|p{4.9cm}|p{2.2cm}|p{4.8cm}|}
@@ -1151,7 +1071,333 @@ Pire : $O(b^d)$
 \end{longtable}
 }
 
+\subsection{Complexité du Board}
+
+\subsubsection{Hypothèses et notations}
+
+Dans cette partie, nous analysons la classe \texttt{Board}, qui constitue le moteur de génération et d'application des coups.
+On note $n$ le nombre de cases actives (\(32\), \(50\) ou \(72\) selon la variante), $p$ le nombre de pièces présentes
+sur le plateau, et $c$ le nombre de pièces capturées par un coup donné. Les opérations bit-à-bit de base
+(tests, \texttt{OR}, \texttt{AND}, décalages, \texttt{bitCount}) sont considérées en temps constant sur mot machine.
+
+\subsubsection{Accès, comptage et conversion}
+
+Les requêtes élémentaires de présence, comme \texttt{isBitWhitePawn(int)}, \texttt{isBitBlackPawn(int)},
+\texttt{isBitWhiteChecker(int)} et \texttt{isBitBlackChecker(int)}, reposent sur un test de bit unique ; elles sont donc
+en $O(1)$. Les vérifications de bord \texttt{onLeftEdge(int)} et \texttt{onRightEdge(int)} sont également en $O(1)$.
+
+Les conversions d'indices (\texttt{indexToSquare(int)} et \texttt{boardToBitIndex(int,int)}) sont arithmétiques et valent $O(1)$.
+La méthode \texttt{squareToIndex(String)} reste $O(1)$ du point de vue asymptotique, car la longueur des coordonnées
+est bornée par la taille du plateau supportée (8, 10, 12).
+
+Les compteurs \texttt{whitePawnsCount()}, \texttt{blackPawnsCount()}, \texttt{whiteCheckersCount()} et
+\texttt{blackCheckersCount()} utilisent \texttt{Long.bitCount} sur deux mots 64 bits ; ils s'exécutent donc en $O(1)$.
+
+\subsubsection{Application d'un coup et mutations locales}
+
+La méthode \texttt{applyMove(Move)} comporte trois étapes : déplacement de la pièce, suppression des captures,
+et promotion éventuelle. Le déplacement et la promotion sont en $O(1)$, tandis que la suppression des captures parcourt
+la liste \texttt{move.getCaptured()} ; le coût est donc $O(c)$. On obtient ainsi :
+$$T(\texttt{applyMove}) = O(1 + c) = O(c).$$
+
+Les helpers de mutation ciblée (\texttt{addWhitePawn}, \texttt{removeWhitePawn}, \texttt{addBlackChecker}, etc.)
+ne modifient qu'un bit et restent en $O(1)$. Les méthodes utilitaires de test
+(\texttt{restorePiece}, \texttt{demoteBit}, \texttt{remove}, \texttt{addWhite}, \texttt{addBlack}, \texttt{clearBoard})
+sont donc toutes en $O(1)$ dans ce modèle borné.
+
+\subsubsection{Génération des coups}
+
+La génération globale \texttt{getValidMoves(boolean)} effectue un balayage des cases actives puis appelle des routines
+de coups simples et de prises. Le coût structurel de ce balayage est $O(n)$, mais le coût dominant provient des DFS
+de captures : \texttt{dfsPawn(...)} et \texttt{dfsChecker(...)}.
+
+Pour les coups simples, \texttt{pawnSimpleTargets(int, boolean)} teste un nombre constant de directions et reste en $O(1)$.
+\texttt{checkerSimpleTargets(int)} parcourt des rayons diagonaux, donc $O(n)$ dans le pire cas (plateau très dégagé).
+
+Pour les prises, \texttt{pawnMultiCaptures(...)} et \texttt{checkerMultiCaptures(...)} explorent un arbre de séquences
+de capture. Leur pire cas est exponentiel en profondeur de capture $k$ (en pratique bornée par le plateau), ce que l'on note
+$O(B^k)$, où $B$ est le facteur de branchement effectif des continuations de prise. Par conséquent, la complexité de
+\texttt{getWhiteValidMoves()} / \texttt{getBlackValidMoves()} s'écrit :
+$$O\bigl(n + \text{coût DFS captures}\bigr),$$
+et est dominée, dans les positions tactiques, par l'exploration des chaînes de captures.
+
+\subsubsection{Copie de plateau}
+
+La méthode \texttt{copy()} alloue un nouvel objet puis recopie un nombre constant de champs primitifs
+(huit bitboards + métadonnées). Elle est donc en $O(1)$, ce qui est un point clé pour les algorithmes de recherche.
+
+\subsubsection{Synthèse Board}
+
+{\footnotesize
+\begin{longtable}{|p{4.0cm}|p{4.1cm}|p{2.0cm}|p{5.2cm}|}
+\caption{Complexité des principales méthodes de \texttt{Board}}\label{tab:board-complexite} \\
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endhead
+
+\hline
+\multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
+\endfoot
+
+\hline
+\endlastfoot
+
+Accès bitboard
+& \texttt{isBit*}, \texttt{onLeftEdge}, \texttt{onRightEdge}
+& $O(1)$
+& Un nombre constant de tests/logiques binaires sur un ou deux mots 64 bits. \\
+\hline
+
+Conversion
+& \texttt{indexToSquare}, \texttt{boardToBitIndex}, \texttt{squareToIndex}
+& $O(1)$
+& Calculs arithmétiques et parsing de coordonnées de taille bornée. \\
+\hline
+
+Mutation locale
+& \texttt{add*}, \texttt{remove*}, \texttt{promoteBit}, \texttt{demoteBit}, \texttt{restorePiece}
+& $O(1)$
+& Modification d'un nombre constant de bits/champs. \\
+\hline
+
+Application d'un coup
+& \texttt{applyMove(Move)}
+& $O(c)$
+& Parcours des pièces capturées (taille $c$), le reste en temps constant. \\
+\hline
+
+Coups simples pion
+& \texttt{pawnSimpleTargets}
+& $O(1)$
+& Nombre fixe de directions testées, sans parcours global. \\
+\hline
+
+Coups simples dame
+& \texttt{checkerSimpleTargets}
+& $O(n)$ (pire cas)
+& Exploration potentielle de rayons diagonaux longs sur plateau dégagé. \\
+\hline
+
+Prises pion/dame
+& \texttt{pawnMultiCaptures}, \texttt{checkerMultiCaptures}, \texttt{dfsPawn}, \texttt{dfsChecker}
+& $O(B^k)$ (pire cas)
+& Exploration récursive d'un arbre de séquences de capture. \\
+\hline
+
+Génération globale
+& \texttt{getWhiteValidMoves}, \texttt{getBlackValidMoves}
+& $O(n + \text{DFS captures})$
+& Balayage des cases + génération des prises (coût dominant selon la position). \\
+\hline
+
+Copie
+& \texttt{copy}
+& $O(1)$
+& Recopie d'un nombre constant de champs primitifs. \\
+\hline
+\end{longtable}
+}
+
 \section{Explication approfondie}
+
+\subsection{F36 : Monte Carlo Tree Search (MCTS)}
+
+\subsubsection{Logique théorique de l'algorithme}
+
+Contrairement à l'algorithme Minimax qui tente d'évaluer exhaustivement toutes les branches jusqu'à une profondeur donnée, 
+le MCTS repose sur des simulations statistiques probabilistes. La recherche s'effectue en répétant une boucle de quatre phases fondamentales
+ jusqu'à épuisement du temps de réflexion imparti :
+
+\paragraph{Sélection}
+À chaque itération, l'algorithme part de la racine de l'arbre (l'état actuel du damier) et descend vers les feuilles. 
+Pour choisir quel chemin emprunter, il utilise la formule UCT (Upper Confidence Bound applied to Trees):
+$$UCT_{j} = \frac{w_{j}}{n_{j}} + C \sqrt{\frac{\ln n}{n_{j}}}$$
+
+Où :
+\begin{itemize}
+    \item $w_j$ représente le nombre de victoires accumulées par les simulations passant par le nœud enfant $j$.
+    \item $n_j$ est le nombre total de simulations ayant traversé ce nœud $j$.
+    \item $n$ est le nombre total de visites du nœud parent.
+    \item $C$ est la constante d'exploration.
+\end{itemize}
+
+\textit{Concrètement :} Cette formule résout le dilemme "Exploration vs Exploitation". Le terme de gauche 
+favorise les coups ayant un fort taux de victoire (exploitation), tandis que le terme de droite grandit pour les coups peu testés
+ (exploration). Si un nœud enfant n'a jamais été visité, sa valeur est considérée comme infinie pour forcer l'algorithme à tester chaque
+  coup légal au moins une fois.
+
+\paragraph{Expansion}
+Une fois arrivé sur un nœud dont tous les coups possibles n'ont pas encore été explorés, l'algorithme choisit un de ces mouvements
+ non testés, crée un nouveau nœud dans l'arbre pour représenter ce nouvel état, et passe à la phase suivante.
+
+\paragraph{Simulation}
+Depuis ce nœud nouvellement créé, l'algorithme lance une partie virtuelle. Il joue des coups totalement aléatoires pour les deux 
+joueurs jusqu'à atteindre un état final (victoire, défaite ou égalité).
+\paragraph{Rétropropagation}
+Une fois la partie simulée terminée, le résultat (victoire, défaite ou nul) est remonté le long de l'arbre en suivant
+ le chemin exact pris lors de la phase de sélection. Tous les nœuds ancêtres traversés voient leurs statistiques mises à jour :
+  incrémentation de leur compteur de visites, et ajustement de leur score de victoire selon le camp gagnant.
+
+% ----------------------------------------------------------------------
+
+% ----------------------------------------------------------------------
+
+\subsubsection{Implémentation et optimisations dans notre projet}
+
+Notre classe \texttt{Mcts} gère cette recherche de manière optimisée en traduisant cette théorie à travers des choix d'architecture précis.
+
+\paragraph{Traduction des phases en code}
+La boucle principale est gérée par la méthode \texttt{calculateBestMove()}, qui s'exécute tant que la limite de temps (\texttt{isTimeExceeded}) n'est pas atteinte. 
+
+Lors de la phase de \textbf{sélection}, la formule UCT est appliquée par \texttt{bestChildByUcb1()}. Si $n_j = 0$, la méthode renvoie 
+\texttt{Double.MAX\_VALUE} pour assurer l'exploration initiale :
+
+\begin{minted}[frame=single, fontsize=\small]{java}
+double score = child.visits == 0
+    ? Double.MAX_VALUE
+    : child.winRate() + explorationConstant * Math.sqrt(logVisits / child.visits);
+\end{minted}
+
+Lors de la \textbf{simulation} (\texttt{simulate()}), pour éviter des parties virtuelles infinies sur des situations bloquées, nous avons 
+introduit une limite stricte de profondeur (\texttt{SIMULATION\_DEPTH = 60}). Si cette limite est atteinte sans vainqueur, la partie rapporte 
+un score de parité (\texttt{DRAW\_SCORE = 0.5}), contre \texttt{WIN\_SCORE = 1.0} pour une victoire.
+
+\paragraph{Optimisation mémoire (ManagerUndoRedo)}
+L'un des plus grands défis du MCTS est la gestion de la mémoire. Au lieu de cloner l'objet \texttt{Board} des milliers de fois pour
+ chaque nœud et simulation (ce qui saturerait la RAM et ralentirait drastiquement l'exécution), nous utilisons une instance unique 
+ du plateau couplée à un \texttt{ManagerUndoRedo}. Chaque coup testé lors de la sélection, de l'expansion et de la simulation est 
+ appliqué physiquement sur le plateau, puis proprement annulé lors de la phase de \texttt{backpropagate} :
+
+\begin{minted}[frame=single, fontsize=\small]{java}
+// Rétropropagation : on remonte jusqu'à la racine en annulant les coups joués
+while (current != null) {
+    current.visits++;
+    // Mise à jour des scores...
+    
+    // Annulation physique du coup sur le plateau unique
+    if (current.move != null) {
+        undo.undo(current.player == PlayerColor.WHITE);
+    }
+    current = current.parent;
+}
+\end{minted}
+
+\paragraph{Guidage par Machine Learning}
+
+\paragraph{Pipeline d'entraînement du modèle}
+Pour générer les poids (\texttt{mlWeights}) et le biais (\texttt{mlBias}) utilisés par cette fonction, nous avons implémenté un pipeline
+ d'apprentissage supervisé autonome dans la classe \texttt{LogisticRegressionTrainer}. L'entraînement s'effectue via l'option en ligne de 
+ commande \texttt{-tr}. Le processus se divise en trois grandes étapes :
+
+\begin{enumerate}
+    \item \textbf{Génération des données par Self-Play :} L'application fait s'affronter deux instances de l'IA (MCTS pur) l'une 
+    contre l'autre. Pour éviter les parties infinies, une limite stricte de 100 coups est fixée (\texttt{MAX\_MOVES}). À chaque demi-coup,
+     un vecteur de 6 caractéristiques (\textit{features}) est extrait du plateau :
+    \begin{itemize}
+        \item Nombre de pions blancs et noirs.
+        \item Nombre de dames blanches et noires.
+        \item Différentiel de pions (Blancs - Noirs).
+        \item Différentiel de dames (Blancs - Noirs).
+    \end{itemize}
+    Si la partie aboutit à une victoire, tous les vecteurs de cette partie sont étiquetés avec le résultat réel 
+    ($1.0$ pour une victoire des blancs, $0.0$ pour les noirs). Les parties nulles sont ignorées pour ne pas bruiter le modèle.
+
+    \item \textbf{Optimisation par descente de gradient :} Une fois les données collectées (par défaut sur 10 parties), 
+    la méthode \texttt{train()} ajuste les poids itérativement sur 1000 \textit{epochs}. À chaque étape, pour chaque vecteur d'état,
+     le modèle effectue une prédiction. L'erreur par rapport au résultat réel (\textit{label}) est calculée, et les poids sont mis à 
+     jour selon un taux d'apprentissage (\texttt{learningRate = 0.01}) :
+    $$W_{j} = W_{j} - \alpha \times \text{erreur} \times X_{j}$$
+    Où $\alpha$ est le taux d'apprentissage, $W_j$ le poids de la caractéristique $j$, et $X_j$ la valeur de la caractéristique.
+
+    \item \textbf{Sauvegarde et chargement :} À l'issue de l'entraînement, les poids finaux et le biais sont sauvegardés dans un 
+    fichier texte (\texttt{ml\_weights.txt}). Ce fichier est ensuite chargé dynamiquement par \texttt{Mcts} lors de son 
+    instanciation, garantissant une séparation propre entre la phase d'entraînement et la phase d'inférence (jeu).
+\end{enumerate}
+
+\paragraph{Bilan de l'approche}
+Bien évidemment, ce mode de sélection par apprentissage automatique n'a pas démontré de gain significatif en termes de 
+performance ou de qualité de jeu par rapport à l'UCT classique. Cela s'explique par la simplicité de notre modèle : 
+la régression logistique est un modèle linéaire, et nos 6 \textit{features} mathématiques (uniquement basées sur le comptage matériel)
+ ne capturent pas les subtilités positionnelles du jeu de dames. 
+
+Cependant, cette implémentation robuste démontre l'extensibilité de notre architecture. Le pipeline de génération de données, 
+d'entraînement et d'inférence est pleinement fonctionnel, ce qui ouvre la porte à des améliorations futures plus sophistiquées 
+(comme le remplacement de la régression logistique par un réseau de neurones profond évaluant des motifs complexes) pour renforcer drastiquement 
+l'intelligence de notre agent.
+
+\paragraph{Détermination du meilleur coup final}
+
+À l'épuisement du temps de réflexion imparti, l'arbre cesse de croître. Quelle que soit l'heuristique de sélection utilisée durant la recherche 
+(la formule UCT classique ou les prédictions du modèle de Machine Learning), la décision finale ne se base pas sur ces scores d'évaluation. 
+
+L'IA fait appel à la méthode \texttt{mostVisitedChild()}, qui sélectionne le nœud enfant de la racine possédant le 
+\textbf{plus grand nombre de visites}. Ce critère est privilégié car il est statistiquement le plus robuste : une branche très visitée 
+signifie qu'elle a continuellement été considérée comme la plus prometteuse par l'algorithme, et qu'elle a survécu à un grand nombre de
+ simulations face aux meilleures réponses possibles de l'adversaire.
+
+\paragraph{Stratégie de validation et de tests}
+
+Afin de garantir la robustesse de notre implémentation du MCTS, nous avons développé une série de tests unitaires centralisés dans la classe 
+\texttt{MctsTest}. La première étape de cette validation consiste à vérifier l'intégrité de l'arbre de recherche et de son cycle de vie. Cela 
+passe notamment par le contrôle de l'initialisation des paramètres fondamentaux, comme l'affectation correcte de la constante d'exploration à sa 
+valeur théorique par défaut de $\sqrt{2}$. Nous nous assurons également de la stabilité de l'algorithme face aux cas limites. Par exemple, si l'IA 
+est sollicitée sur un plateau où aucun mouvement légal n'est possible (en toute fin de partie), la méthode de recherche est tenue de retourner une 
+absence de coup sans provoquer la moindre erreur d'exécution. \\
+
+{\small
+\begin{minted}[frame=single]{java}
+@DisplayName("Default constructor sets exploration constant to sqrt(2)")
+void testDefaultConstructorExplorationConstant() {
+  Mcts mcts = new Mcts();
+  assertEquals(Mcts.DEFAULT_EXPLORATION, mcts.explorationConstant, 1e-9);
+}
+\end{minted}
+}
+
+Le mode de sélection par apprentissage automatique (\texttt{SelectionMode.ML}) a nécessité une approche de test plus pointue. Étant donné que 
+cette fonctionnalité manipule des classes internes privées, comme les nœuds de l'arbre, et lit des fichiers de poids externes, nous avons fait 
+appel à la réflexion Java pour isoler et éprouver ces composants. Cette technique nous permet de confirmer que la fonction de chargement analyse
+ correctement les vecteurs de caractéristiques, tout en gérant proprement les fichiers corrompus via des exceptions contrôlées. De plus, la réflexion
+  nous sert à simuler artificiellement des nœuds en cours de partie pour vérifier que l'algorithme bascule bien sur le moteur d'inférence ML, 
+  au lieu de la formule UCT, lorsque l'option correspondante est activée au lancement.\\
+
+{\small
+\begin{minted}[frame=single]{java}
+@DisplayName("Test direct du switch case ML dans select")
+void testSelectOnlyMl() throws Exception {
+  mcts.setSelectionMode(SelectionMode.ML);
+  Object result = selectMethod.invoke(mcts, root, board, undo);
+  assertEquals(child, result, "Le switch doit choisir l'enfant via le mode ML");
+}
+\end{minted}
+}
+
+Enfin, nous contrôlons rigoureusement la cohérence mathématique des calculs qui guident les choix de l'IA. Nos tests s'assurent par exemple que 
+l'évaluation par régression logistique génère systématiquement une probabilité valide, strictement bornée entre 0 et 1, grâce à l'application de 
+la fonction sigmoïde sur les statistiques du plateau. Du côté de l'approche statistique classique, nous validons le mécanisme de convergence de 
+l'UCT en vérifiant que le code attribue bien la priorité maximale (\texttt{Double.MAX\_VALUE}) aux branches non explorées. C'est cette garantie 
+mathématique qui force l'algorithme à évaluer chaque coup légal au moins une fois avant de se concentrer sur l'exploitation des meilleures variantes.
+
+{\small
+\begin{minted}[frame=single]{java}
+@DisplayName("evaluateMl correctly calculates probability with loaded weights")
+void testEvaluateMlCalculation(@TempDir Path tempDir) throws Exception {
+  double probability = (double) evaluateMlMethod.invoke(mcts, childNode, board, undo);
+  assertTrue(probability >= 0.0 && probability <= 1.0);
+}
+\end{minted}
+}
+
+% Je ne sais pas d'où ça sort
+% Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
+
+% Ce choix de conception a été décisif pour notre flux de travail. Il nous a permis de développer, de faire tourner et de tester massivement l'intégralité du moteur de jeu et de l'IA via une interface textuelle simple, avant même de commencer à coder l'interface graphique. Remplacer le terminal par la vue JavaFX n'a nécessité aucune modification des classes du moteur.
 
 \section{Revue critique de projet}
 

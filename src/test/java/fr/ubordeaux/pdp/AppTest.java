@@ -151,6 +151,26 @@ public class AppTest {
   }
 
   @Test
+  public void testContestOptionWithSaveFileArgument() {
+    String[] args = { "-c", "Sauvegarde/fandu.txt" };
+    int status = App.run(args);
+
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertTrue(App.isContest());
+    assertEquals("Sauvegarde/fandu.txt", App.getStartupSaveFile());
+  }
+
+  @Test
+  public void testLegacyContestAliasWithSaveFileArgument() {
+    String[] args = { "-contest", "Sauvegarde/fandu.txt" };
+    int status = App.run(args);
+
+    assertEquals(App.EXIT_SUCCESS, status);
+    assertTrue(App.isContest());
+    assertEquals("Sauvegarde/fandu.txt", App.getStartupSaveFile());
+  }
+
+  @Test
   public void testRunExecutionFlow() {
     String[] args = { "-v" };
     int status = App.run(args);

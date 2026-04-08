@@ -1,0 +1,7 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{n}{robot}\PYG{p}{.}\PYG{n+na}{interact}\PYG{p}{(}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{n}{blitzCheck}\PYG{p}{.}\PYG{n+na}{setSelected}\PYG{p}{(}\PYG{k+kc}{false}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
+\PYG{n}{assertTrue}\PYG{p}{(}\PYG{n}{timeSpinner}\PYG{p}{.}\PYG{n+na}{isDisabled}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
+
+\PYG{n}{robot}\PYG{p}{.}\PYG{n+na}{interact}\PYG{p}{(}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{n}{blitzCheck}\PYG{p}{.}\PYG{n+na}{setSelected}\PYG{p}{(}\PYG{k+kc}{true}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
+\PYG{n}{assertFalse}\PYG{p}{(}\PYG{n}{timeSpinner}\PYG{p}{.}\PYG{n+na}{isDisabled}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
+\end{MintedVerbatim}
