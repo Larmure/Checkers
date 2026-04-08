@@ -20,4 +20,5 @@ ml_weights.txt
 pdp/02-final/report.bbl
 pdp/02-final/report.blg
 pdp/02-final/_minted-report/*.pygtex
-pdp/02-final/.nfs00000000041044fe00000059
+pdp/02-final/.*
+pdp/02-final/report.pdf
