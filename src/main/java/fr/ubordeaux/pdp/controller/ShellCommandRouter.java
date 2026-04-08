@@ -1,15 +1,11 @@
 package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.controller.commands.JoinCommand;
-import fr.ubordeaux.pdp.controller.commands.PingCommand;
-import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
-import fr.ubordeaux.pdp.controller.commands.QuitCommand;
-import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
-import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
-import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
+import fr.ubordeaux.pdp.controller.commands.*;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
+import fr.ubordeaux.pdp.server.GameServer;
+
 import java.util.Arrays;
 
 /**
@@ -32,16 +28,19 @@ public class ShellCommandRouter {
 
   private final GameController controller;
   private final ClientSession session;
+  private GameServer gameServer;
 
   /**
    * Creates a router for shell commands.
    *
    * @param controller the local game controller.
    * @param session the current client session.
+   * @param
    */
-  public ShellCommandRouter(GameController controller, ClientSession session) {
+  public ShellCommandRouter(GameController controller, ClientSession session,GameServer server ) {
     this.controller = controller;
     this.session = session;
+    this.gameServer = server;
   }
 
   /**
@@ -213,6 +212,12 @@ public class ShellCommandRouter {
           return;
         }
         new ServerStopCommand(session).execute();
+      }
+      case "status" -> {
+        if (blockUnless(ClientMode.SERVER, "No server running. Use 'server start first.")) {
+          return;
+        }
+        new ServerStatusCommand(gameServer.getTcpPort(),).execute();
       }
       default ->
         System.out.println(

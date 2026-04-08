@@ -60,20 +60,12 @@ import java.util.stream.Collectors;
 public class GameServer {
 
   private static final int CLIENT_TIMEOUT_MS = 180_000;
-
-  // -------------------------------------------------------------------------
-  // Immutable configuration
-  // -------------------------------------------------------------------------
-
   private final int tcpPort;
   private final String serverName;
   private final boolean daemon;
   private final boolean guiOnly;
   private final GameControllerFactory controllerFactory;
 
-  // -------------------------------------------------------------------------
-  // Lifecycle lock
-  // -------------------------------------------------------------------------
 
   /**
    * Ensures {@link #start()} and {@link #stop()} are mutually exclusive.
@@ -83,11 +75,6 @@ public class GameServer {
    * double-bind or a double-close.
    */
   private final ReentrantLock lifecycleLock = new ReentrantLock();
-
-  // -------------------------------------------------------------------------
-  // Mutable server state (guarded by lifecycleLock or volatile)
-  // -------------------------------------------------------------------------
-
   private final GameRegistry registry = new GameRegistry();
   private final InvitationManager invitationManager = new InvitationManager();
 
@@ -582,5 +569,13 @@ public class GameServer {
           "WAITING You are the only player connected. "
               + "Use 'players' to list others, then 'new <id>' to invite someone.");
     }
+  }
+
+  public int getTcpPort() {
+    return tcpPort;
+  }
+
+  public GameControllerFactory getControllerFactory() {
+    return controllerFactory;
   }
 }

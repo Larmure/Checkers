@@ -679,152 +679,165 @@ entre composants restent cohérentes.
 
 \subsection{Module Réseau}
 \label{sec:reseau}
- 
-La couche réseau de l'application s'appuie sur une architecture client-serveur
-TCP, basant principalement sur le package
-\texttt{fr.ubordeaux.pdp.server}.
+
+La couche réseau de l'application repose sur une architecture client--serveur
+basée sur TCP et structurée principalement autour du package \texttt{server}.
+La figure~\ref{fig:architecture-serveur} présente les principaux composants de
+ce module ainsi que leurs interactions.
+\texttt{server}.
 La figure~\ref{fig:architecture-serveur} en présente les composants principaux
 ainsi que leurs interactions.
  
 % ----------------------------------------------------------------
 %  Couleurs (nommer avec pdp- pour éviter les conflits)
 % ----------------------------------------------------------------
-\definecolor{pdp-teal50}  {HTML}{E1F5EE}
-\definecolor{pdp-teal600} {HTML}{0F6E56}
-\definecolor{pdp-teal800} {HTML}{085041}
-\definecolor{pdp-purple50} {HTML}{EEEDFE}
+% ----------------------------------------------------------------
+%  Couleurs
+% ----------------------------------------------------------------
+\definecolor{pdp-teal50}{HTML}{E1F5EE}
+\definecolor{pdp-teal600}{HTML}{0F6E56}
+\definecolor{pdp-teal800}{HTML}{085041}
+\definecolor{pdp-purple50}{HTML}{EEEDFE}
 \definecolor{pdp-purple600}{HTML}{534AB7}
 \definecolor{pdp-purple800}{HTML}{3C3489}
-\definecolor{pdp-gray50}  {HTML}{F1EFE8}
-\definecolor{pdp-gray600} {HTML}{5F5E5A}
-\definecolor{pdp-blue50}  {HTML}{E6F1FB}
-\definecolor{pdp-blue600} {HTML}{185FA5}
-\definecolor{pdp-blue800} {HTML}{0C447C}
-\definecolor{pdp-border}  {HTML}{C4C2B8}
- 
+\definecolor{pdp-gray50}{HTML}{F1EFE8}
+\definecolor{pdp-gray600}{HTML}{5F5E5A}
+\definecolor{pdp-blue50}{HTML}{E6F1FB}
+\definecolor{pdp-blue600}{HTML}{185FA5}
+\definecolor{pdp-blue800}{HTML}{0C447C}
+\definecolor{pdp-border}{HTML}{C4C2B8}
+
 \tikzset{
-  pdp base/.style={
-    draw, rounded corners=5pt,
-    minimum width=3.6cm, minimum height=1.0cm,
-    align=center, font=\small\bfseries,
-    inner sep=5pt, line width=0.4pt
-  },
-  pdp teal/.style={pdp base,
+    pdp base/.style={
+        draw,
+        rounded corners=5pt,
+        minimum width=3.8cm,
+        minimum height=1.0cm,
+        align=center,
+        font=\small\bfseries,
+        inner sep=5pt,
+        line width=0.4pt
+    },
+    pdp teal/.style={pdp base,
     fill=pdp-teal50, draw=pdp-teal600, text=pdp-teal800},
-  pdp purple/.style={pdp base,
+    pdp purple/.style={pdp base,
     fill=pdp-purple50, draw=pdp-purple600, text=pdp-purple800},
-  pdp gray/.style={pdp base,
+    pdp gray/.style={pdp base,
     fill=pdp-gray50, draw=pdp-gray600, text=pdp-gray600},
-  pdp blue/.style={pdp base,
+    pdp blue/.style={pdp base,
     fill=pdp-blue50, draw=pdp-blue600, text=pdp-blue800},
-  pdp zone/.style={
-    draw=pdp-border, dashed, rounded corners=8pt,
-    line width=0.5pt, inner sep=10pt
-  },
-  pdp rel/.style={
-    -{Stealth[length=4.5pt]}, line width=0.6pt, color=pdp-gray600
-  },
-  pdp lbl/.style={font=\scriptsize\itshape, color=pdp-gray600},
+    pdp zone/.style={
+        draw=pdp-border,
+        dashed,
+        rounded corners=8pt,
+        line width=0.5pt,
+        inner sep=10pt
+    },
+    pdp rel/.style={
+        -{Stealth[length=4.5pt]},
+        line width=0.6pt,
+        color=pdp-gray600
+    },
+    pdp lbl/.style={
+        font=\scriptsize\itshape,
+        color=pdp-gray600,
+        fill=white,
+        inner sep=1pt
+    }
 }
- 
+
 \begin{figure}[ht]
-\centering
-\begin{tikzpicture}[node distance=0.5cm and 0.8cm]
- 
-  % ---- Zone CLIENT ------------------------------------------
-  \node[pdp blue] (SCR)
-    {PlayerSession\\[-2pt]{\footnotesize\normalfont Score des joueurs}};
- 
-  \node[pdp blue, below=of SCR] (CS)
-    {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
- 
-  \node[pdp gray, below=of CS] (CM)
-    {ClientMode\\[-2pt]{\footnotesize\normalfont\textit{«enum»}}};
- 
-  \node[pdp gray, below=of CM] (SLS)
-    {ServerListService\\[-2pt]{\footnotesize\normalfont Découverte UDP}};
- 
-  \begin{pgfonlayer}{background}
-    \node[pdp zone,
-          label={[font=\small\bfseries, text=pdp-gray600]above:Client},
-          fit=(SCR)(CS)(CM)(SLS)] (clientZone) {};
-  \end{pgfonlayer}
- 
-  % ---- Zone SERVEUR -----------------------------------------
-  \node[pdp teal,   right=2.0cm of SCR]  (GR)
-    {GameRegistry\\[-2pt]{\footnotesize\normalfont Registre thread-safe}};
- 
-  \node[pdp purple, right=0.9cm of GR]   (IM)
-    {InvitationManager\\[-2pt]{\footnotesize\normalfont Cycle de vie des invitations}};
- 
-  \node[pdp teal,   below=of GR]         (PS)  {PlayerSession};
-  \node[pdp teal,   below=of PS]         (GS)  {GameSession};
-  \node[pdp purple, below=of IM]         (INV) {Invitation};
- 
-  \node[pdp gray, below=0.85cm of GS]   (DS)
-    {DiscoveryService\\[-2pt]{\footnotesize\normalfont Broadcast UDP}};
- 
-  \node[pdp gray, below=0.85cm of INV]   (GCF)
-    {GameControllerFactory\\[-2pt]{\footnotesize\normalfont\textit{«interface fonctionnelle»}}};
- 
-  \begin{pgfonlayer}{background}
-    \node[pdp zone,
-          label={[font=\small\bfseries, text=pdp-gray600]above:%
-            Serveur (\texttt{fr.ubordeaux.pdp.server})},
-          fit=(GR)(IM)(PS)(GS)(INV)(DS)(GCF)] (serverZone) {};
-  \end{pgfonlayer}
- 
-  % Séparateur infrastructure
-  \draw[dashed, color=pdp-border, line width=0.4pt]
-    ([yshift=-0.30cm] GS.south -| serverZone.west)
-    -- ([yshift=-0.30cm] GS.south -| serverZone.east)
-    node[midway, above, font=\scriptsize\itshape, color=pdp-gray600]
-      {infrastructure};
- 
-  % ---- Relations --------------------------------------------
-  % ClientSession → GameRegistry (TCP)
-  \draw[pdp rel] (CS.east)
-    -| node[pdp lbl, above, pos=0.25] {TCP}
-    (GR.west);
- 
-  % GameRegistry → PlayerSession
-  \draw[pdp rel] (GR.south) -- (PS.north);
- 
-  % GameRegistry → GameSession (contournement)
-  \draw[pdp rel] (GR.south east) -- ++(0.35,0)
-    |- node[pdp lbl, right] {gère} (GS.east);
- 
-  % InvitationManager → Invitation
-  \draw[pdp rel] (IM.south)
-    -- node[pdp lbl, right] {crée} (INV.north);
- 
-  % DiscoveryService → ServerListService (UDP)
-  \draw[pdp rel] (DS.west) -|
-    node[pdp lbl, above, pos=0.25] {UDP}
-    (SLS.east);
- 
-  % GameSession → GameControllerFactory
-  \draw[pdp rel] (GS.east) -- ++(0.35,0)
-    |- node[pdp lbl, right] {utilise} (GCF.west);
- 
-  % ---- Légende ----------------------------------------------
-  \matrix [below=0.5cm of serverZone.south,
-           column sep=1.0cm,
-           nodes={anchor=west, font=\small}] {
-    \node[pdp teal,   minimum width=0.8cm,
-          minimum height=0.35cm, inner sep=2pt] {};
-      & \node {Registre \& sessions (données de jeu)}; \\
-    \node[pdp purple, minimum width=0.8cm,
-          minimum height=0.35cm, inner sep=2pt] {};
-      & \node {Système d'invitations}; \\
-    \node[pdp gray,   minimum width=0.8cm,
-          minimum height=0.35cm, inner sep=2pt] {};
-      & \node {Infrastructure \& client}; \\
-  };
- 
-\end{tikzpicture}
-\caption{Architecture structurelle de la couche réseau}
-\label{fig:architecture-serveur}
+    \centering
+    \begin{tikzpicture}[node distance=0.7cm and 1.2cm]
+
+        % ---- Zone client ------------------------------------------
+        \node[pdp blue] (cs)
+        {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
+
+        \node[pdp blue, above=of cs] (psclient)
+        {PlayerSession\\[-2pt]{\footnotesize\normalfont État local du joueur}};
+
+        \node[pdp gray, below=of cs] (cm)
+        {ClientMode\\[-2pt]{\footnotesize\normalfont \textit{enum}}};
+
+        \node[pdp gray, below=of cm] (sls)
+        {ServerListService\\[-2pt]{\footnotesize\normalfont Découverte UDP}};
+
+        \begin{pgfonlayer}{background}
+            \node[pdp zone,
+                label={[font=\small\bfseries, text=pdp-gray600]above:Client},
+                fit=(psclient)(cs)(cm)(sls)] {};
+        \end{pgfonlayer}
+
+        % ---- Zone serveur -----------------------------------------
+        \node[pdp teal, right=3.2cm of cs] (gr)
+        {GameRegistry\\[-2pt]{\footnotesize\normalfont Registre thread-safe}};
+
+        \node[pdp purple, right=1.5cm of gr] (im)
+        {InvitationManager\\[-2pt]{\footnotesize\normalfont Gestion des invitations}};
+
+        \node[pdp teal, below=of gr] (ps)
+        {PlayerSession};
+
+        \node[pdp teal, below=of ps] (gs)
+        {GameSession};
+
+        \node[pdp purple, below=of im] (inv)
+        {Invitation};
+
+        \node[pdp gray, below=1.0cm of gs] (ds)
+        {DiscoveryService\\[-2pt]{\footnotesize\normalfont Annonce UDP}};
+
+        \node[pdp gray, below=1.0cm of inv] (gcf)
+        {GameControllerFactory\\[-2pt]{\footnotesize\normalfont \textit{interface fonctionnelle}}};
+
+        \begin{pgfonlayer}{background}
+            \node[pdp zone,
+                label={[font=\small\bfseries, text=pdp-gray600]above:Serveur (\texttt{server})},
+                fit=(gr)(im)(ps)(gs)(inv)(ds)(gcf)] (serverzone) {};
+        \end{pgfonlayer}
+
+        % ---- Séparateur -------------------------------------------
+        \draw[dashed, color=pdp-border, line width=0.4pt]
+        ([yshift=-0.35cm] gs.south -| serverzone.west)
+        -- ([yshift=-0.35cm] gs.south -| serverzone.east)
+        node[midway, above, font=\scriptsize\itshape, color=pdp-gray600]
+            {infrastructure};
+
+        % ---- Relations principales --------------------------------
+        \draw[pdp rel] (cs.east) -- node[pdp lbl, above] {TCP} (gr.west);
+
+        \draw[pdp rel] (gr.south) -- (ps.north);
+
+        \draw[pdp rel] (ps.south) -- node[pdp lbl, right] {session active} (gs.north);
+
+        \draw[pdp rel] (im.south) -- node[pdp lbl, right] {crée} (inv.north);
+
+        \draw[pdp rel] (ds.west) -- node[pdp lbl, above] {UDP} (sls.east);
+
+        \draw[pdp rel] (gs.east) -- node[pdp lbl, right] {utilise} (gcf.west);
+
+        \draw[pdp rel] (gr.east) -- node[pdp lbl, above] {coordonne} (im.west);
+
+        % ---- Légende ----------------------------------------------
+        \matrix[
+            below=0.7cm of serverzone.south,
+            column sep=1.0cm,
+            nodes={anchor=west, font=\small}
+        ] {
+            \node[pdp teal, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
+            & \node {Registre et sessions de jeu}; \\
+            \node[pdp purple, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
+            & \node {Système d'invitations}; \\
+            \node[pdp gray, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
+            & \node {Infrastructure}; \\
+            \node[pdp blue, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
+            & \node {Composants côté client}; \\
+        };
+
+    \end{tikzpicture}
+    \caption{Architecture structurelle de la couche réseau}
+    \label{fig:architecture-serveur}
 \end{figure}
 \FloatBarrier
  
@@ -1405,9 +1418,7 @@ mais de faire en sorte que cette communication distante s'intègre proprement à
 Concrètement, il fallait que le même moteur de jeu puisse être piloté localement ou à distance, 
 sans dupliquer la logique métier, tout en ajoutant les commande demandées. Cette fonctionnalité relie 
 donc plusieurs composants centraux du projet : {\texttt{ClientSession}}, {\texttt{GameServer}}, 
-{\texttt{GameRegistry}},{\texttt{GameSession}} et {\texttt{PlayerSession}}. 
-
-\subsubsection{Articulation entre mode local, mode serveur et mode connecté}
+{\texttt{GameRegistry}},{\texttt{GameSession}} et {\texttt{PlayerSession}}.
 
 Pour rendre cette intégration cohérente, nous avons d'abord introduit une notion explicite de 
 \textbf{mode d'exécution} grâce à l'énumération {\texttt{ClientMode}}.
@@ -1426,7 +1437,6 @@ Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSes
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}[
-        node distance=2.8cm and 2.8cm,
         state/.style={
             rectangle,
             rounded corners,
@@ -1439,15 +1449,15 @@ Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSes
         },
         arrow/.style={->, thick}
     ]
-
-        \node[state] (local) {
+        % Disposition en triangle isocèle
+        \node[state] (local) at (0, 0) {
             \textbf{LOCAL}\\[0.2cm]
             \textit{État par défaut}\\
             \textbf{Commandes autorisées :}\\
-            \texttt{new}, \texttt{join}, \texttt{server start}, \texttt{help}, \dots
+            \texttt{new}, \texttt{join},\\
+            \texttt{server start}, \texttt{help}, \dots
         };
-
-        \node[state, right=of local] (server) {
+        \node[state] (server) at (9, 0) {
             \textbf{SERVER}\\[0.2cm]
             \textit{Serveur lancé localement}\\
             \textbf{Commandes autorisées :}\\
@@ -1457,8 +1467,7 @@ Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSes
             \texttt{scoreboard}\\
             \textbf{Bloquées :} \texttt{join}, \texttt{ping}
         };
-
-        \node[state, below=of server] (connected) {
+        \node[state] (connected) at (4.5, -7) {
             \textbf{CONNECTED}\\[0.2cm]
             \textit{Connecté à un serveur distant}\\
             \textbf{Commandes autorisées :}\\
@@ -1466,16 +1475,48 @@ Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSes
             \textbf{Bloquée :} \texttt{server start}
         };
 
-        \draw[arrow] (local) -- node[above] {\texttt{server start}} (server);
-        \draw[arrow] (server) -- node[below] {\texttt{server stop}} (local);
-        \draw[arrow] (local) -- node[left] {\texttt{join}} (connected);
-        \draw[arrow] (connected) -- node[right] {\texttt{quit}} (local);
+        % LOCAL <-> SERVER
+        \draw[arrow] ([yshift= 4pt]local.east) --
+        node[above, font=\small\ttfamily] {server start}
+        ([yshift= 4pt]server.west);
+        \draw[arrow] ([yshift=-4pt]server.west) --
+        node[below, font=\small\ttfamily] {server stop}
+        ([yshift=-4pt]local.east);
+
+        % LOCAL <-> CONNECTED
+        \draw[arrow] ([xshift=-4pt]local.south) --
+        node[left, font=\small\ttfamily] {join}
+        ([xshift=-4pt]connected.north west);
+        \draw[arrow] ([xshift= 4pt]connected.north west) --
+        node[right, font=\small\ttfamily] {quit}
+        ([xshift= 4pt]local.south);
+
+        % SERVER <-> CONNECTED
+        \draw[arrow] ([xshift= 4pt]server.south) --
+        node[right, font=\small\ttfamily] {server stop / join}
+        ([xshift= 4pt]connected.north east);
+        \draw[arrow] ([xshift=-4pt]connected.north east) --
+        node[left, font=\small\ttfamily] {quit / server start}
+        ([xshift=-4pt]server.south);
 
     \end{tikzpicture}
     \caption{Modes d'exécution du client et commandes autorisées selon \texttt{ClientMode}.}
     \label{fig:clientmode}
 \end{figure}
 
+
+Pour rendre cette intégration cohérente, nous avons d'abord introduit une notion explicite de
+\textbf{mode d'exécution} grâce à l'énumération {\texttt{ClientMode}}.
+Trois états ont été définis : {\texttt{LOCAL}},
+lorsque l'application fonctionne sans connexion réseau ; \underline{\texttt{SERVER}},
+lorsqu'un serveur est démarré localement ; et \underline{\texttt{CONNECTED}},
+lorsqu'un client est relié à un serveur distant. Cette séparation est essentielle,
+car elle permet de contrôler quelles commandes sont autorisées selon le contexte.
+Par exemple, un client déjà connecté ne doit pas pouvoir démarrer un serveur local,
+tandis qu'une instance qui héberge déjà un serveur ne doit pas réutiliser certaines
+commandes purement clientes.
+Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSession}} via des méthodes comme  {\texttt{enterServerMode()}},
+{\texttt{exitServerMode()}} et {\texttt{getMode()}}.
 \subsubsection{Connexion réseau et intégration avec les interfaces CLI et GUI}
 
 La classe \underline{\texttt{ClientSession}} constitue le point d'entrée principal
@@ -1623,19 +1664,6 @@ cohérentes malgré des accès depuis plusieurs threads. Le rôle des mutex n'es
 donc pas d'ajouter une nouvelle fonctionnalité visible, mais de garantir que
 toutes les fonctionnalités réseau précédemment décrites restent correctes, même
 en environnement multi-thread.
-
-\subsubsection{Découverte réseau et ergonomie d'utilisation}
-
-Enfin, F39 comprend aussi un aspect ergonomique avec les services de découverte
-réseau. La classe \underline{\texttt{DiscoveryService}} diffuse régulièrement la
-présence du serveur sur le réseau local via UDP, tandis que
-\underline{\texttt{ServerListService}} écoute ces annonces et construit une
-liste des serveurs actifs encore disponibles. Cette fonctionnalité améliore
-l'expérience utilisateur, car elle évite d'avoir à saisir manuellement toutes
-les informations de connexion. Elle montre également que l'intégration réseau a
-été pensée dans sa globalité : non seulement le système permet de jouer à
-distance, mais il aide aussi à découvrir automatiquement les serveurs présents
-dans l'environnement local.
 
 \subsubsection{Bilan de la fonctionnalité}
 
