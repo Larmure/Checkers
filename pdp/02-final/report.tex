@@ -1097,21 +1097,24 @@ Le cas MCTS introduit une chaîne de dépendances supplémentaire : la sélectio
 
 \paragraph{Hypothèses et notations}
 
-Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA fournies\ref{sec:ai}.
+Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA présentées en section~\ref{sec:ai}.
 La variable $n$ désigne le nombre de cases actives du plateau (typiquement \(32\), \(50\) ou \(72\)), $b$ représente
 le facteur de branchement moyen (nombre de coups légaux par position), et $d$ la profondeur maximale de recherche.
 Nous distinguons la complexité \textit{propre} d'une méthode de recherche (nombre de n\oe{}uds explorés) du coût réel,
 qui inclut aussi la génération des coups par le moteur via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
+Les résultats sont récapitulés dans le tableau~\ref{tab:ai-complexite-detaillee}, qui sert de référence de correspondance méthode par méthode.
 
 \paragraph{Complexité des fonctions d'évaluation}
 
 \paragraph{SimpleEvaluator}
 La méthode \texttt{evaluate(Board)} réalise un parcours linéaire de l'ensemble des cases actives,
 avec uniquement des tests bit-à-bit en temps constant à chaque itération. Sa complexité est donc $O(n)$.
+Cette analyse correspond à l'entrée \texttt{SimpleEvaluator::evaluate(Board)} du tableau~\ref{tab:ai-complexite-detaillee}.
 
 \paragraph{AdvancedEvaluator}
 La méthode \texttt{evaluate(Board)} suit le même schéma que \texttt{SimpleEvaluator} : un balayage linéaire des cases
 et un calcul de bonus d'avancement en temps constant par case. La complexité reste donc $O(n)$.
+Voir l'entrée \texttt{AdvancedEvaluator::evaluate(Board)} dans le tableau~\ref{tab:ai-complexite-detaillee}.
 
 \paragraph{MaxEvaluator}
 La méthode \texttt{evaluate(Board)} combine trois contributions : un parcours principal en $O(n)$,
@@ -1120,6 +1123,7 @@ dont le coût dépend des appels \texttt{getWhiteValidMoves()} et \texttt{getBla
 Sa complexité globale s'écrit donc $O(n + M_{w} + M_{b})$, où $M_{w}$ et $M_{b}$ représentent les coûts
 de génération des coups blancs et noirs. La méthode \texttt{isInCenter(int, int, int)} elle-même ne fait
 que des comparaisons arithmétiques constantes et s'exécute en $O(1)$.
+Ces deux résultats correspondent aux entrées \texttt{MaxEvaluator::evaluate(Board)} et \texttt{MaxEvaluator::isInCenter(...)} du tableau~\ref{tab:ai-complexite-detaillee}.
 
 \paragraph{Complexité des algorithmes de recherche adversariale}
 
@@ -1130,6 +1134,7 @@ La méthode \texttt{findBestMoveAtDepth(...)} itère d'abord sur les coups racin
 récursive \texttt{minMax} / \texttt{maxMin}, ce qui conduit au même ordre de grandeur. Plus finement,
 \texttt{minMax(...)} et \texttt{maxMin(...)} coûtent $O(b^k)$ à profondeur restante $k$, soit $O(b^d)$ au pire
 depuis la racine. Enfin, \texttt{checkTime(long)} effectue un test booléen constant en $O(1)$.
+Le détail de ces méthodes (\texttt{calculateBestMove}, \texttt{findBestMoveAtDepth}, \texttt{minMax}, \texttt{maxMin}, \texttt{checkTime}) est donné dans le tableau~\ref{tab:ai-complexite-detaillee}.
 
 \paragraph{MinMaxAlphaBeta}
 Les méthodes \texttt{calculateBestMove(...)} et \texttt{findBestMoveAtDepth(...)} suivent la même logique
@@ -1137,6 +1142,7 @@ que MinMax, mais ajoutent les bornes $\alpha$ et $\beta$ pour couper des sous-ar
 Ainsi, \texttt{maxValue(...)} et \texttt{minValue(...)} restent en $O(b^d)$ dans le pire cas (ordre des coups défavorable),
 mais peuvent atteindre $O(b^{d/2})$ dans le meilleur cas théorique avec un ordre des coups optimal.
 La méthode \texttt{checkTime(long)} reste en $O(1)$.
+Les bornes meilleur/pire cas et le détail par méthode (\texttt{findBestMoveAtDepth}, \texttt{maxValue}, \texttt{minValue}, \texttt{checkTime}) sont regroupés dans le tableau~\ref{tab:ai-complexite-detaillee}.
 
 \paragraph{IterativeDeepening}
 La méthode \texttt{calculateBestMove(...)} enchaîne des recherches successives de profondeur
@@ -1145,6 +1151,7 @@ $$\sum_{k=1}^{d} O(b^k) = O(b^d).$$
 En pratique, le surcoût par rapport à une unique recherche à profondeur $d$ est modéré,
 et il est compensé par la robustesse de la stratégie : en cas d'interruption temporelle,
 le meilleur coup d'une profondeur entièrement terminée est déjà disponible.
+Cette complexité correspond à l'entrée \texttt{IterativeDeepening::calculateBestMove(...)} du tableau~\ref{tab:ai-complexite-detaillee}.
 
 \paragraph{Synthèse}
 
