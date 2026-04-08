@@ -1006,7 +1006,7 @@ l'indépendance des états de parties concurrentes.
 
 \sloppy Le module IA repose sur une séparation nette entre trois responsabilités. D'abord, la classe abstraite \texttt{Ai} fournit l'ossature commune : elle valide les paramètres, crée une copie du plateau de recherche, instancie un \texttt{ManagerUndoRedo} dédié et délègue le calcul du meilleur coup aux algorithmes concrets. Ensuite, \texttt{GameCheckers} agit comme point d'assemblage en appelant \texttt{Ai.buildAi(cfg, ...)} et \texttt{Ai.buildEvaluator(cfg)} à partir de la configuration courante. Enfin, \texttt{AiPlayer} encapsule l'algorithme et l'évaluateur pour exposer une seule méthode \texttt{getBestMove(...)}, ce qui évite de disperser la logique de décision dans le reste du moteur.
 
-Les classes d'évaluation \texttt{SimpleEvaluator}, \texttt{AdvancedEvaluator} et \texttt{MaxEvaluator} implémentent la même interface \texttt{Evaluator} mais avec des heuristiques de coût croissant. Elles sont consommées par les algorithmes de recherche pour donner une valeur aux feuilles de l'arbre. De son côté, \texttt{Mcts} n'utilise pas cette heuristique dans sa sélection principale, mais il reste compatible avec la même signature afin de pouvoir être instancié par le même pipeline que les autres IA.
+Les classes d'évaluation \texttt{SimpleEvaluator}, \texttt{AdvancedEvaluator} et \texttt{MaxEvaluator} implémentent la même interface \texttt{Evaluator} mais avec des heuristiques de coût croissant. Elles sont consommées par les algorithmes de recherche pour donner une valeur aux feuilles de l'arbre. Les trois évaluateurs se basent sur le site WinDames~\cite{windames_evaluation}. De son côté, \texttt{Mcts} n'utilise pas cette heuristique dans sa sélection principale, mais il reste compatible avec la même signature afin de pouvoir être instancié par le même pipeline que les autres IA.
 
 \begin{figure}[h]
   \centering
@@ -1053,21 +1053,15 @@ Les classes d'évaluation \texttt{SimpleEvaluator}, \texttt{AdvancedEvaluator} e
 
 \subsubsection{SimpleEvaluator}
 
-\texttt{SimpleEvaluator} est l'heuristique la plus légère du module. Son implémentation parcourt toutes les cases actives du plateau via \texttt{board.getIndexMax()} et interroge directement les bitboards avec \texttt{isBitWhitePawn}, \texttt{isBitBlackPawn}, \texttt{isBitWhiteChecker} et \texttt{isBitBlackChecker}. Chaque pion vaut 100 points et chaque dame 350 points ; le score final est positif si la position favorise les blancs et négatif si elle favorise les noirs.
-
-Cette classe n'a pas de dépendance métier lourde : elle ne consulte ni l'historique, ni les coups légaux, ni le système d'annulation. Elle sert donc de base de comparaison pour les recherches MinMax et comme option de configuration quand on veut une évaluation rapide et déterministe.
+\texttt{SimpleEvaluator} est l'heuristique la plus légère du module. Son implémentation parcourt toutes les cases actives du plateau via \texttt{board.getIndexMax()} et interroge directement les bitboards avec \texttt{isBitWhitePawn}, \texttt{isBitBlackPawn}, \texttt{isBitWhiteChecker} et \texttt{isBitBlackChecker}. Chaque pion vaut 100 points et chaque dame 350 points ; le score final est positif si la position favorise les blancs et négatif si elle favorise les noirs\cite{windames_evaluation}.
 
 \subsubsection{AdvancedEvaluator}
 
-\texttt{AdvancedEvaluator} reprend la logique matérielle de \texttt{SimpleEvaluator}, mais ajoute un bonus de progression pour les pions. Pour calculer ce bonus, la classe reconstruit la ligne de chaque case à partir de l'indice courant et de la taille du plateau, puis ajoute ou retire un bonus d'avancement proportionnel à la distance parcourue vers la promotion. Les dames gardent leur valeur fixe, ce qui permet de conserver une heuristique lisible tout en intégrant une notion de dynamique de partie.
-
-En pratique, cette classe est utile pour les variantes où l'on veut un MinMax un peu plus sensible au développement des pions sans payer le coût des calculs de mobilité. Elle reste autonome vis-à-vis des autres classes du moteur et ne dépend que de \texttt{Board} pour récupérer la géométrie du plateau.
+\texttt{AdvancedEvaluator} reprend la logique matérielle de \texttt{SimpleEvaluator}, mais ajoute un bonus de progression pour les pions. Pour calculer ce bonus, la classe reconstruit la ligne de chaque case à partir de l'indice courant et de la taille du plateau, puis ajoute ou retire un bonus d'avancement proportionnel à la distance parcourue vers la promotion. Les dames gardent leur valeur fixe, ce qui permet de conserver une heuristique lisible tout en intégrant une notion de dynamique de partie \cite{windames_evaluation}.
 
 \subsubsection{MaxEvaluator}
 
-\texttt{MaxEvaluator} est l'heuristique la plus coûteuse du trio. Elle combine d'abord le comptage matériel et le bonus d'avancement, puis ajoute deux critères stratégiques supplémentaires : le contrôle du centre et la mobilité. Le centre est détecté par la méthode privée \texttt{isInCenter(...)} à partir des coordonnées ligne/colonne, tandis que la mobilité est évaluée en appelant \texttt{board.getWhiteValidMoves()} et \texttt{board.getBlackValidMoves()}.
-
-Cette classe introduit donc une dépendance forte vers le moteur de génération de coups de \texttt{Board}. Contrairement aux deux autres évaluateurs, elle peut déclencher une exploration de coups complète lors du calcul du score, ce qui la rend plus informative mais aussi plus lente. C'est précisément pour cela qu'elle est utilisée comme heuristique "maximale" dans la configuration MinMax.
+\texttt{MaxEvaluator} est l'heuristique la plus coûteuse du trio. Elle combine d'abord le comptage matériel et le bonus d'avancement, puis ajoute deux critères stratégiques supplémentaires : le contrôle du centre et la mobilité. Le centre est détecté par la méthode privée \texttt{isInCenter(...)} à partir des coordonnées ligne/colonne, tandis que la mobilité est évaluée en appelant \texttt{board.getWhiteValidMoves()} et \texttt{board.getBlackValidMoves()} \cite{windames_evaluation}.
 
 \subsubsection{MinMax}
 
