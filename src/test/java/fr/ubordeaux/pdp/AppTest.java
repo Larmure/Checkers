@@ -266,6 +266,30 @@ public class AppTest {
   }
 
   @Test
+  public void testAiModeSetsBothPlayerModes() {
+    App.run(new String[] { "-am", "alphabeta" });
+
+    assertEquals("alphabeta", App.getWhiteAiMode());
+    assertEquals("alphabeta", App.getBlackAiMode());
+  }
+
+  @Test
+  public void testWhiteAiModeOption() {
+    App.run(new String[] { "-wam", "iterative" });
+
+    assertEquals("iterative", App.getWhiteAiMode());
+    assertEquals(Utils.DEFAULT_AI_MODE, App.getBlackAiMode());
+  }
+
+  @Test
+  public void testBlackAiModeOption() {
+    App.run(new String[] { "-bam", "mcts" });
+
+    assertEquals(Utils.DEFAULT_AI_MODE, App.getWhiteAiMode());
+    assertEquals("mcts", App.getBlackAiMode());
+  }
+
+  @Test
   public void testInvalidSelectionMode() {
     App.run(new String[] { "-as", "invalid" });
 
