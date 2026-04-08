@@ -107,17 +107,14 @@ public class ConfigDialog extends Dialog<Configuration> {
   private final CheckBox blackAiCheck = new CheckBox(
       Internationalization.get("dialog.config.black_player_ai"));
 
-  /** Enables contest mode. */
-  private final CheckBox contestCheck = new CheckBox(
-      Internationalization.get("dialog.config.contest_mode"));
+  /** Contest mode value kept from defaults/initial config (no GUI control). */
+  private final boolean contestValue;
 
-  /** Enables verbose output. */
-  private final CheckBox verboseCheck = new CheckBox(
-      Internationalization.get("dialog.config.verbose"));
+  /** Verbose value kept from defaults/initial config (no GUI control). */
+  private final boolean verboseValue;
 
-  /** Enables debug output. */
-  private final CheckBox debugCheck = new CheckBox(
-      Internationalization.get("dialog.config.debug"));
+  /** Debug value kept from defaults/initial config (no GUI control). */
+  private final boolean debugValue;
 
   /** AI thinking time in seconds. range 1–30. */
   private final Spinner<Integer> aiTimeSpinner = new Spinner<>(
@@ -178,9 +175,9 @@ public class ConfigDialog extends Dialog<Configuration> {
     minimaxScoringCombo.getItems().addAll(MAX_SCORING, ADVANCED_SCORING, SIMPLE_SCORING);
     minimaxScoringCombo.setValue(toDisplayMinimaxScoring(defaults.getMinimaxScoring()));
 
-    contestCheck.setSelected(defaults.isContest());
-    verboseCheck.setSelected(defaults.isVerbose());
-    debugCheck.setSelected(defaults.isDebug());
+    contestValue = defaults.isContest();
+    verboseValue = defaults.isVerbose();
+    debugValue = defaults.isDebug();
 
     aiTimeSpinner.getValueFactory().setValue((int) (defaults.getAiTime() / 1000));
     aiTimeSpinner.setPrefWidth(80);
@@ -244,10 +241,7 @@ public class ConfigDialog extends Dialog<Configuration> {
         buildBlitzGrid(),
         new Separator(),
         buildSection(Internationalization.get("dialog.config.players")),
-        buildPlayersGrid(),
-        new Separator(),
-        buildSection(Internationalization.get("dialog.config.advanced")),
-        buildAdvancedGrid());
+        buildPlayersGrid());
     Button shortcutsBtn = new Button(Internationalization.get("dialog.keyboard.shortcuts"));
     shortcutsBtn.setOnAction(e -> {
       new ShortcutDialog(shortcutManager).showAndWait();
@@ -350,19 +344,6 @@ public class ConfigDialog extends Dialog<Configuration> {
   }
 
   /**
-   * Builds the advanced-options rows (contest, verbose, debug).
-   *
-   * @return a {@link GridPane} with the three checkboxes
-   */
-  private GridPane buildAdvancedGrid() {
-    GridPane grid = baseGrid();
-    grid.add(contestCheck, 0, 0);
-    grid.add(verboseCheck, 0, 1);
-    grid.add(debugCheck, 0, 2);
-    return grid;
-  }
-
-  /**
    * Returns a pre-configured {@link GridPane} with standard gaps and padding.
    *
    * @return the base grid
@@ -411,11 +392,11 @@ public class ConfigDialog extends Dialog<Configuration> {
     boolean blitz = blitzCheck.isSelected();
     Integer timeValue = timeSpinner.getValue();
     int timeSec = blitz ? (timeValue != null ? timeValue : Utils.DEFAULT_TIME) : Utils.DEFAULT_TIME;
-    boolean contest = contestCheck.isSelected();
+    boolean contest = contestValue;
     Integer sizeValue = sizeCombo.getValue();
     int size = sizeValue != null ? sizeValue : Utils.DEFAULT_BOARD_SIZE;
-    boolean verbose = verboseCheck.isSelected();
-    boolean debug = debugCheck.isSelected();
+    boolean verbose = verboseValue;
+    boolean debug = debugValue;
     boolean whiteAi = whiteAiCheck.isSelected();
     boolean blackAi = blackAiCheck.isSelected();
     Integer aiTimeValue = aiTimeSpinner.getValue();
