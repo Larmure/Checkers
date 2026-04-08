@@ -31,7 +31,7 @@ class GraphicalUserInterfaceTest {
   @Test
   void testConstructorWithCliConfigStoresConfig() throws Exception {
     Configuration cfg = Configuration.getDefaultConfiguration();
-    GraphicalUserInterface gui = new GraphicalUserInterface(cfg);
+    GraphicalUserInterface gui = new GraphicalUserInterface(cfg, false, null);
 
     Field cliConfigField = GraphicalUserInterface.class.getDeclaredField("cliConfig");
     cliConfigField.setAccessible(true);
@@ -41,14 +41,14 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testShowHintWithNullMainViewDoesNotThrow() {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
 
     assertDoesNotThrow(() -> gui.showHint("A1", "B2"));
   }
 
   @Test
   void testShowGameOverAlertReturnsImmediatelyWhenAlreadyShown() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     setGameOverAlert(gui, true);
 
     assertDoesNotThrow(() -> gui.showGameOverAlert(null, false));
@@ -57,7 +57,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testUpdateResetsGameOverAlertWhenStateIsInGame() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Mockito.when(game.getState()).thenReturn(State.IN_GAME);
 
@@ -69,7 +69,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testUpdateKeepsGameOverAlertWhenStateIsNotInGame() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Mockito.when(game.getState()).thenReturn(State.FINISHED);
 
@@ -81,7 +81,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testDisplayDelegatesToUpdateAndResetsFlagInGame() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Mockito.when(game.getState()).thenReturn(State.IN_GAME);
 
@@ -93,14 +93,14 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testStartWhenToolkitAlreadyInitializedThrowsIllegalStateException() {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
 
     assertThrows(IllegalStateException.class, gui::start);
   }
 
   @Test
   void testRequestQuitWhenGameInProgressPausesBeforeUnsavedCheck() {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameController controller = Mockito.mock(GameController.class);
     GameCheckers game = Mockito.mock(GameCheckers.class);
 
@@ -115,6 +115,7 @@ class GraphicalUserInterfaceTest {
     Mockito.verify(controller).executeCommand("pause", new String[0]);
     Mockito.verify(controller).hasUnsavedChanges();
   }
+
 
   private void setGameOverAlert(GraphicalUserInterface gui, boolean value) throws Exception {
     Field f = GraphicalUserInterface.class.getDeclaredField("gameOverAlert");

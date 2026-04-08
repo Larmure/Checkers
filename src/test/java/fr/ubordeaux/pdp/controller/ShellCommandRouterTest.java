@@ -307,12 +307,16 @@ public class ShellCommandRouterTest {
     assertFalse(output.contains("[blocked]"));
     assertTrue(session.sentMessages.isEmpty());
   }
-
   private static final class FakeRunningGameServer extends GameServer {
     private final int port;
 
     private FakeRunningGameServer(int port) {
-      super("FakeServer", port, () -> new GameController(new NoopGameView()));
+      super(
+          "FakeServer",
+          port,
+          () -> new GameController(new NoopGameView()),
+          false,
+          false);
       this.port = port;
     }
 

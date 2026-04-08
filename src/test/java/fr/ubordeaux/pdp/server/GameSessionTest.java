@@ -1,19 +1,18 @@
 package fr.ubordeaux.pdp.server;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.view.HeadlessView;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class GameSessionTest {
 
@@ -25,9 +24,13 @@ class GameSessionTest {
   @BeforeEach
   void setUp() {
     alice = new PlayerSession(
-        "alice", "Alice", new PrintWriter(new StringWriter(), true), "GUI");
+        "alice",
+        "Alice",
+        new PrintWriter(new StringWriter(), true));
     bob = new PlayerSession(
-        "bob", "Bob", new PrintWriter(new StringWriter(), true), "GUI");
+        "bob",
+        "Bob",
+        new PrintWriter(new StringWriter(), true));
     controller = new FakeGameController();
     session = new GameSession(List.of(alice, bob), controller);
   }
@@ -167,10 +170,7 @@ class GameSessionTest {
     assertTrue(text.contains("turn=alice"));
   }
 
-  /**
-   * Faux contrôleur minimal pour tester GameSession sans dépendre
-   * de la vraie logique du jeu.
-   */
+  /** Fake controller for GameSession tests. */
   private static class FakeGameController extends GameController {
 
     private String lastFrom;

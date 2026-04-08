@@ -2,14 +2,14 @@ package fr.ubordeaux.pdp.view.gui.layout;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.player.AiPlayer;
-import fr.ubordeaux.pdp.model.player.Player;
+import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -17,18 +17,14 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testfx.framework.junit5.ApplicationTest;
 
 /**
  * Unit tests for {@link MainView}.
- *
- * <p>Tests the main view layout, toolbar initialization, game state updates,
- * and delegation to child components (MenuView, PlayView).
- * Uses TestFX for JavaFX initialization and mocks for dependencies.
  */
 @DisplayName("MainView Tests")
 class MainViewTest extends ApplicationTest {
@@ -48,13 +44,13 @@ class MainViewTest extends ApplicationTest {
   private GameCheckers mockGame;
 
   @Mock
-  private Player mockPlayer;
-
-  @Mock
   private AiPlayer mockAiPlayer;
 
   @Mock
   private GraphicalUserInterface mockGui;
+
+  @Mock
+  private ClientSession mockSession;
 
   @BeforeAll
   static void initJavaFxToolkit() {
@@ -66,9 +62,6 @@ class MainViewTest extends ApplicationTest {
     }
   }
 
-  /**
-   * Initializes the JavaFX Stage for testing. Required by TestFX.
-   */
   @Override
   public void start(Stage stage) {
     stage.show();
@@ -78,12 +71,15 @@ class MainViewTest extends ApplicationTest {
   void setUp() {
     MockitoAnnotations.openMocks(this);
 
-    // Configure default mock behaviour
     when(mockController.isWhiteAi()).thenReturn(false);
     when(mockController.isBlackAi()).thenReturn(false);
 
-    // Initialize MainView
-    mainView = new MainView(mockController, mockConfigManager, mockCliConfig);
+    mainView = new MainView(
+        mockController,
+        mockConfigManager,
+        mockCliConfig,
+        false,
+        mockSession);
   }
 
   @Test
@@ -97,9 +93,9 @@ class MainViewTest extends ApplicationTest {
   @DisplayName("MainView should be initialized with menu, content, and toolbar")
   void testMainViewInitialization() {
     assertNotNull(mainView);
-    assertNotNull(mainView.getTop()); // MenuView
-    assertNotNull(mainView.getCenter()); // PlayView
-    assertNotNull(mainView.getBottom()); // Toolbar
+    assertNotNull(mainView.getTop());
+    assertNotNull(mainView.getCenter());
+    assertNotNull(mainView.getBottom());
   }
 
   @Test
@@ -107,28 +103,24 @@ class MainViewTest extends ApplicationTest {
   void testToolbarStructure() {
     var toolbar = mainView.getBottom();
     assertNotNull(toolbar);
-    // Verify toolbar is an HBox with expected styling
     assertTrue(toolbar instanceof javafx.scene.layout.HBox);
   }
 
   @Test
   @DisplayName("passStageToMenu should accept a Stage reference")
   void testPassStageToMenu() {
-    // Just verify the method executes without error
     mainView.passStageToMenu(null);
   }
 
   @Test
   @DisplayName("passGuiToMenu should accept a GUI reference")
   void testPassGuiToMenu() {
-    // Just verify the method executes without error
     mainView.passGuiToMenu(mockGui);
   }
 
   @Test
   @DisplayName("bindToScene should accept a Scene reference")
   void testBindToScene() {
-    // Just verify the method executes without error
     Scene scene = new Scene(mainView);
     mainView.bindToScene(scene);
   }
@@ -136,21 +128,18 @@ class MainViewTest extends ApplicationTest {
   @Test
   @DisplayName("openSaveDialog method exists and is callable")
   void testOpenSaveDialogExists() {
-    // Method should exist and be accessible
     assertNotNull(mainView);
   }
 
   @Test
   @DisplayName("openConfigDialog method exists and is callable")
   void testOpenConfigDialogExists() {
-    // Method should exist and be accessible
     assertNotNull(mainView);
   }
 
   @Test
   @DisplayName("update should not crash with null game")
   void testUpdateDoesNotCrash() {
-    // Update with null should be handled gracefully
     mainView.update(null);
     assertNotNull(mainView);
   }
@@ -158,13 +147,11 @@ class MainViewTest extends ApplicationTest {
   @Test
   @DisplayName("undo/redo buttons should be adjustable based on game state")
   void testUndoRedoButtonManagement() {
-    // Just verify that mainView was initialized properly
     assertNotNull(mainView);
     assertNotNull(mainView.getBottom());
   }
 
   @Test
-
   @DisplayName("toolbar buttons should be properly initialized")
   void testToolbarButtonsInitialization() {
     var toolbar = mainView.getBottom();
@@ -175,7 +162,6 @@ class MainViewTest extends ApplicationTest {
   @Test
   @DisplayName("showHint should handle valid positions")
   void testShowHintMethod() {
-    // Method should be callable without exceptions
     mainView.showHint("A1", "B2");
     assertNotNull(mainView);
   }
@@ -184,23 +170,25 @@ class MainViewTest extends ApplicationTest {
   @DisplayName("showHint should be callable without error")
   void testShowHint() {
     mainView.showHint("A1", "B2");
-    // Just verify no exception is thrown
   }
 
   @Test
-
   @DisplayName("MainView components are properly linked")
   void testMainViewComponentsLinked() {
-    // Verify all three regions are present
-    assertNotNull(mainView.getTop()); // MenuView
-    assertNotNull(mainView.getCenter()); // PlayView
-    assertNotNull(mainView.getBottom()); // Toolbar
+    assertNotNull(mainView.getTop());
+    assertNotNull(mainView.getCenter());
+    assertNotNull(mainView.getBottom());
   }
 
   @Test
   @DisplayName("MainView should initialize with provided ConfigManager")
   void testMainViewWithConfigManager() {
-    MainView view = new MainView(mockController, mockConfigManager, null);
+    MainView view = new MainView(
+        mockController,
+        mockConfigManager,
+        null,
+        false,
+        mockSession);
     assertNotNull(view);
     assertNotNull(view.getTop());
     assertNotNull(view.getCenter());
@@ -210,10 +198,28 @@ class MainViewTest extends ApplicationTest {
   @Test
   @DisplayName("MainView should initialize with CLI configuration")
   void testMainViewWithCliConfig() {
-    MainView view = new MainView(mockController, mockConfigManager, mockCliConfig);
+    MainView view = new MainView(
+        mockController,
+        mockConfigManager,
+        mockCliConfig,
+        false,
+        mockSession);
     assertNotNull(view);
-    // Verify that all regions are properly initialized
     assertNotNull(view.getTop());
+    assertNotNull(view.getCenter());
+    assertNotNull(view.getBottom());
+  }
+
+  @Test
+  @DisplayName("MainView in server mode should not create menu")
+  void testMainViewInServerMode() {
+    MainView view = new MainView(
+        mockController,
+        mockConfigManager,
+        mockCliConfig,
+        true,
+        mockSession);
+    assertNotNull(view);
     assertNotNull(view.getCenter());
     assertNotNull(view.getBottom());
   }
@@ -221,7 +227,6 @@ class MainViewTest extends ApplicationTest {
   @Test
   @DisplayName("Controller should be properly passed to components")
   void testControllerInitialization() {
-    // Verify that controller methods are called properly during operations
     when(mockController.getGame()).thenReturn(mockGame);
     assertNotNull(mainView);
   }
@@ -236,7 +241,6 @@ class MainViewTest extends ApplicationTest {
   @Test
   @DisplayName("MainView handles different AI configurations")
   void testDifferentAiConfigurations() {
-    // Test with different AI setups
     when(mockController.isWhiteAi()).thenReturn(true);
     when(mockController.isBlackAi()).thenReturn(true);
     assertNotNull(mainView);
@@ -251,10 +255,13 @@ class MainViewTest extends ApplicationTest {
   @Test
   @DisplayName("ConfigManager should be used to configure menu")
   void testConfigManagerUsage() {
-    // Create a new MainView to verify ConfigManager is passed
-    MainView view = new MainView(mockController, mockConfigManager, null);
+    MainView view = new MainView(
+        mockController,
+        mockConfigManager,
+        null,
+        false,
+        mockSession);
     assertNotNull(view);
-    // Verify that MenuView was initialized with the config manager
     assertNotNull(view.getTop());
   }
 }

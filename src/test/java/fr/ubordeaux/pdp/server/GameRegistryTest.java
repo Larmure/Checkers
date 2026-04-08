@@ -112,12 +112,16 @@ class GameRegistryTest {
     p2.recordWin();
 
     String scoreboard = registry.getScoreboardFormatted();
-    String[] lines = scoreboard.split("\n");
 
-    assertEquals(3, lines.length);
-    assertTrue(lines[0].contains("p1"), "Le joueur avec le plus de victoires doit être premier.");
-    assertTrue(lines[1].contains("p2"), "Le joueur avec moins de victoires doit venir après.");
-    assertTrue(lines[2].contains("p3"), "Le joueur sans victoire doit être en dernier.");
+    int idxP1 = scoreboard.indexOf("ID       : p1");
+    int idxP2 = scoreboard.indexOf("ID       : p2");
+    int idxP3 = scoreboard.indexOf("ID       : p3");
+
+    assertTrue(idxP1 >= 0);
+    assertTrue(idxP2 >= 0);
+    assertTrue(idxP3 >= 0);
+    assertTrue(idxP1 < idxP2, "p1 doit apparaître avant p2");
+    assertTrue(idxP2 < idxP3, "p2 doit apparaître avant p3");
   }
 
   @Test

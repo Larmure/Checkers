@@ -71,15 +71,20 @@ class ServerStartCommandTest {
   @Test
   void execute_whenServerAlreadyRunning_printsMessageAndDoesNothing() throws Exception {
     int port = findFreePort();
-    GameServer runningServer = new GameServer("GameServer", port,
-        () -> new fr.ubordeaux.pdp.controller.GameController(new fr.ubordeaux.pdp.view.HeadlessView()));
+    GameServer runningServer = new GameServer(
+        "GameServer",
+        port,
+        () -> new fr.ubordeaux.pdp.controller.GameController(
+            new fr.ubordeaux.pdp.view.HeadlessView()),
+        false,
+        false);
     setRunningFlag(runningServer, true);
     ServerStartCommand.activeServer = runningServer;
 
     ClientSession session = new ClientSession();
     System.setOut(new PrintStream(outContent, true, StandardCharsets.UTF_8));
 
-    new ServerStartCommand(null, new String[] { "23456" }, session).execute();
+    new ServerStartCommand(null, new String[] {"23456"}, session).execute();
 
     assertTrue(output().contains("A server is already running on port " + port + "."));
     assertEquals(ClientMode.LOCAL, session.getMode());

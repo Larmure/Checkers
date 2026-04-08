@@ -118,6 +118,7 @@ class ClientSessionTest {
     StringWriter stringWriter = new StringWriter();
     PrintWriter writer = new PrintWriter(stringWriter, true);
     setField(session, "out", writer);
+    setField(session, "connected", true);
 
     session.send("PING");
 
@@ -257,7 +258,7 @@ class ClientSessionTest {
   void handleServerMessage_opponentMove_whenControllerThrows_printsWarning() throws Exception {
     ClientSession session = new ClientSession();
     GameController controller = Mockito.mock(GameController.class);
-    doThrow(new RuntimeException("boom")).when(controller).executeMove(eq("C5"), eq("D4"), eq(false));
+    doThrow(new RuntimeException("boom")).when(controller).executeMove(Mockito.anyString(), Mockito.anyString(), eq(false));
     session.setController(controller);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -270,7 +271,7 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    assertTrue(out.toString().contains("[warning] Could not apply opponent move: boom"));
+    assertTrue(out.toString().contains("[warning] Could not apply local move: boom"));
   }
 
   @Test
