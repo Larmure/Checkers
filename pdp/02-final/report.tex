@@ -573,78 +573,116 @@ Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vé
 
 \subsection{Module affichage}
 
-Le module d'affichage constitue la couche Vue de notre architecture. Son objectif est de transformer l'état métier fourni par le 
-moteur en informations compréhensibles par l'utilisateur, puis de remonter les intentions de jeu vers le contrôleur.
+Le module d'affichage correspond à la couche Vue de notre architecture MVC. Dans la pratique, il repose sur une base commune, \texttt{GameView}, puis sur trois implémentations adaptées au contexte d'exécution : \texttt{CommandLineInterface} pour le terminal, \texttt{GraphicalUserInterface} pour JavaFX, et \texttt{HeadlessView} côté serveur lorsque l'on veut exécuter une partie sans affichage. Ce découpage a été choisi très tôt pour éviter de mélanger logique d'interaction, rendu visuel et règles du jeu.
 
-\subsubsection{Responsabilités du module}
+Le point important est que le contrôleur ne connaît que l'abstraction \texttt{GameView}. Quand un joueur agit, la vue transforme cette action en appel contrôleur (commande ou déplacement), puis le moteur met à jour l'état de jeu. La vue n'écrit jamais directement dans le modèle. Une fois le coup traité, le mécanisme d'observation notifie les vues, qui se contentent de se rafraîchir. Ce fonctionnement paraît simple, mais c'est ce qui nous a permis de garder exactement les mêmes règles en CLI, en GUI et en mode headless.
 
-Ce module ne contient aucune règle de dames. Il se limite à trois responsabilités :
-\begin{itemize}
-    \item \textbf{Rendu de l'état courant} : représentation du plateau, des pièces, du joueur actif et des messages de statut.
-    \item \textbf{Capture des actions utilisateur} : sélection d'une case, validation d'un coup, demandes de pause / sauvegarde / chargement.
-    \item \textbf{Retour d'information} : affichage des coups illégaux, de la fin de partie et des événements de synchronisation réseau.
-\end{itemize}
+En CLI, nous avons utilisé JLine pour ne pas nous limiter à un \texttt{Scanner} minimaliste. On bénéficie ainsi d'une saisie plus robuste (édition de ligne, complétion, gestion propre des interruptions) et d'un comportement plus stable pendant les tests. Nous avons aussi séparé volontairement la lecture d'entrée du routage des commandes : \texttt{CommandLineInterface} lit et affiche, tandis que \texttt{ShellCommandRouter} décide quoi faire de la commande. Cette séparation nous a évité une classe trop chargée et a rendu les tests de parsing beaucoup plus simples.
 
-\subsubsection{Affichage en mode CLI}
+En GUI, la même logique a été conservée, avec une organisation en sous-vues (\texttt{MainView}, \texttt{PlayView}, \texttt{BoardView}, \texttt{LogView}) pour garder du code lisible. Le principal choix technique ici concerne les threads : une mise à jour visuelle doit toujours passer par \texttt{Platform.runLater(...)}. Sans cela, les notifications venant du timer blitz ou d'un calcul d'IA peuvent provoquer des erreurs JavaFX difficiles à reproduire. Nous avons également lié la taille des cases à la taille de la fenêtre via des bindings, pour conserver un damier correct sur les trois formats de plateau pris en charge.
 
-Le mode CLI (Command Line Interface) fournit une interface textuelle légère, utile pour les tests rapides, le débogage 
-et l'exécution sur des environnements sans interface graphique. Dans ce mode, la Vue sérialise l'état du damier en texte
- (coordonnées, pièces, tour courant), puis lit des commandes utilisateur de type \texttt{MOVE}, \texttt{UNDO}, \texttt{SAVE} ou \texttt{LOAD}.
+Avec le recul, ce module fonctionne surtout parce qu'il reste discipliné : l'affichage reste un adaptateur, pas un second moteur de jeu. C'est ce qui nous permet d'ajouter des fonctionnalités d'interface sans toucher aux règles, et d'exécuter les mêmes scénarios de jeu dans des environnements très différents.
 
-% Inutile
-% D'un point de vue architectural, la CLI reste alignée sur MVC : elle ne touche jamais au \texttt{Board} directement. 
-% Chaque commande est traduite en intention métier et transmise au \texttt{GameController}, qui valide le coup et orchestre 
-% l'appel au moteur. Ce fonctionnement garantit que les mêmes règles sont appliquées, quel que soit le canal d'entrée (texte ou interface graphique).
+\subsubsection{Architecture interne de la GUI}
 
-Le mode CLI joue également un rôle important pour les tests automatisés du projet : son comportement déterministe facilite 
-l'écriture de scénarios reproductibles (entrées textuelles connues, sorties attendues), notamment pour vérifier les cas 
-limites des règles, le routage des commandes et la robustesse des opérations de sauvegarde/chargement.
+L'implémentation de la GUI repose sur javafx et une décomposition en plusieurs composants spécialisés :
 
-\subsubsection{Affichage en mode GUI}
+\paragraph{GraphicalUserInterface et le pattern Observer}
 
-Le mode GUI (Graphical User Interface) vise une expérience utilisateur interactive et visuelle. Il représente le plateau, les pièces
- et les états de partie sous forme de composants graphiques, et gère des événements riches (clic sur case, sélection d'une pièce, 
- surbrillance des coups possibles, messages contextuels).
+La classe \texttt{GraphicalUserInterface} étend \texttt{GameView}, ce qui lui permet de s'intégrer directement au pattern Observer 
+déjà utilisé par le projet. Quand le modèle change, la GUI reçoit l'information via la méthode \texttt{update(GameCheckers)} 
+et redirige la mise à jour vers les composants visuels.
 
-Comme pour la CLI, la GUI n'intègre pas la logique des règles : elle agit comme un adaptateur événementiel. Lorsqu'un utilisateur 
-clique sur une case de départ puis une case d'arrivée, l'action est convertie en requête métier vers le \texttt{GameController}. 
-Après traitement par \texttt{GameCheckers}, la mise à jour de l'affichage est déclenchée par le mécanisme d'observation (\texttt{notifyObservers()}).
+Le point central ici est la gestion du thread JavaFX. Comme JavaFX impose que toute modification de l'interface passe par son 
+thread dédié (Application Thread), les mises à jour sont dispatchées via \texttt{Platform.runLater(...)} :
 
-Cette séparation permet de conserver une GUI réactive tout en évitant les incohérences fonctionnelles. Elle facilite aussi
- l'évolution de l'interface (thèmes, animations, ergonomie) sans impact sur le moteur, puisque le contrat entre Vue et contrôleur 
- reste inchangé.
+\begin{minted}{java}
+@Override
+public void update(GameCheckers game) {
+  Platform.runLater(() -> {
+    if (mainView != null) {
+      mainView.update(game);
+    }
+  });
+}
+\end{minted}
 
- % Deja mentionné dans la section précédente, inutile de le répéter
-% \subsubsection{Interaction avec le moteur MVC}
+Ce pattern de thread est \textbf{central} : sans lui, toute mise à jour du modèle provenant d'un autre thread provoque une exception \texttt{IllegalStateException}. La classe gère aussi 
+l'initialisation de la fenêtre principale, l'application de la feuille de style CSS 
+et la fermeture contrôlée avec vérification des sauvegardes avant quitter.
 
-% Le flux d'interaction suit une chaîne stricte :
-% \begin{enumerate}
-%     \item L'utilisateur agit via l'affichage (clic, commande, sélection).
-%     \item Le module Vue transmet l'intention au \texttt{GameController}.
-%     \item Le \texttt{GameController} valide et délègue l'opération au moteur (\texttt{GameCheckers}/\texttt{Board}).
-%     \item Après mise à jour, le moteur notifie ses observateurs.
-%     \item Le module d'affichage reçoit la notification et rafraîchit l'interface.
-% \end{enumerate}
+\paragraph{MainView et organisation visuelle}
 
-% Ce schéma garantit que la Vue ne modifie jamais directement l'état du jeu : elle reste consommatrice de l'état produit par le modèle.
+La fenêtre principale est construite par \texttt{MainView}, qui hérite de \texttt{BorderPane}. Ce choix permet de séparer 
+proprement l'interface en trois zones : le menu en haut, le jeu au centre et la barre d'actions en bas. 
 
-\subsubsection{Dépendances et extensibilité}
+\texttt{MainView} ne redessine pas le plateau lui-même ; ce rôle est délégué à \texttt{PlayView}, ce qui évite de concentrer 
+la logique d'affichage dans une seule classe. Cette délégation renforce la maintenabilité et facilite les tests unitaires de chaque 
+composant.
 
-Les dépendances sont orientées de la Vue vers le contrôleur, jamais l'inverse. Le module d'affichage dépend d'interfaces publiques stables 
-(état de partie, coups légaux, notifications), ce qui permet :
-\begin{itemize}
-    \item d'ajouter un nouveau type d'interface sans toucher au moteur ;
-    \item d'exécuter des tests du moteur sans initialiser d'interface graphique ;
-    \item de conserver une cohérence fonctionnelle entre mode local, IA et réseau.
-\end{itemize}
+\paragraph{BoardView et rendu interactif}
+
+\texttt{BoardView} est le compasant qui affiche réellement le damier, les pièces, les sélections, 
+les coups suggérés et les mouvements possibles. Le composant repose sur un \texttt{GridPane}, reconstruit visuellement à chaque 
+redraw. L'interaction suit un schéma à deux clics : au premier clic, la pièce est sélectionnée et surlignée en bleu ; au second clic, 
+la destination est envoyée au contrôleur pour exécution du coup.
+
+Un point crucial est que la GUI \textbf{ne recalcule pas} les règles de dames. Elle demande directement au modèle quels coups sont légaux, 
+puis ne garde que ceux qui concernent la pièce sélectionnée :
+
+\begin{minted}{java}
+List<Move> possibleMoves = game.getPossibleMoves(game.getCurrentPlayer());
+
+for (Move m : possibleMoves) {
+  if (m.getFrom() == selectedIndex) {
+    validDestinationSquares.add(board.indexToSquare(m.getTo()));
+  }
+}
+\end{minted}
+
+L'interface ne décide pas ce qui est légal ou non ; elle se contente d'afficher proprement ce que le moteur autorise. 
+Ce choix architectural évite de dupliquer la logique métier dans la vue et garantit la cohérence globale : une règle modifiée 
+dans le moteur s'applique immédiatement sans changement de code GUI.
+
+Le drag and drop a également été implémenté. Quand l'utilisateur commence à faire glisser une pièce, la case de départ est stockée 
+dans le \texttt{Dragboard} JavaFX. Au dépôt, la vue reconstruit simplement le déplacement et l'envoie au contrôleur sans validation locale. 
+Encore une fois, la vue gère l'interaction (UX), mais pas les règles.
+
+\paragraph{ConfigDialog et interactions complexes}
+
+Le dialogue de configuration \texttt{ConfigDialog} va au-delà d'une simple présentation de cases à cocher. Les composants réagissent 
+entre eux : si le mode blitz est désactivé, le spinner de temps l'est aussi. Si aucune IA n'est active, les options liées aux IA 
+sont désactivées automatiquement. Ces dépendances sont gérées via des listeners JavaFX sur les propriétés des contrôles.
+
+Plus important encore, le dialogue reconstruit un objet \texttt{Configuration} exploitable directement par le moteur. Il ne renvoie pas 
+juste des valeurs d'interface brutes : il normalise les choix, convertit les unités (par exemple, les secondes en millisecondes pour 
+l'IA) et prépare les bons formats.
+
+\paragraph{Tests de la GUI}
+
+Exemple : \texttt{ConfigDialog}. Les tests utilisent JUnit 5, TestFX 
+(framework pour tester JavaFX) et Mockito (pour simuler le contrôleur). Les composants JavaFX sont créés sur le bon thread 
+à l'aide de \texttt{Platform.runLater(...)}, puis les interactions utilisateur sont simulées avec \texttt{FxRobot}. 
+
+Par exemple, un test vérifie que cocher ou décocher le mode blitz active ou désactive correctement le spinner de temps :
+
+\begin{minted}{java}
+robot.interact(() -> blitzCheck.setSelected(false));
+assertTrue(timeSpinner.isDisabled());
+
+robot.interact(() -> blitzCheck.setSelected(true));
+assertFalse(timeSpinner.isDisabled());
+\end{minted}
+
+Cette approche garantit que le comportement du dialogue reste stable lors des refactorisations futures et valide que les interactions 
+entre composants restent cohérentes.
 
 \subsection{Module Réseau}
 \label{sec:reseau}
  
 La couche réseau de l'application s'appuie sur une architecture client-serveur
-TCP, répartie entre deux packages distincts :
-\texttt{fr.ubordeaux.pdp.server} côté serveur et
-\texttt{fr.ubordeaux.pdp.controller} côté client.
+TCP, basant principalement sur le package
+\texttt{fr.ubordeaux.pdp.server}.
 La figure~\ref{fig:architecture-serveur} en présente les composants principaux
 ainsi que leurs interactions.
  
@@ -695,7 +733,7 @@ ainsi que leurs interactions.
  
   % ---- Zone CLIENT ------------------------------------------
   \node[pdp blue] (SCR)
-    {ShellCommandRouter\\[-2pt]{\footnotesize\normalfont Routage des commandes}};
+    {PlayerSession\\[-2pt]{\footnotesize\normalfont Score des joueurs}};
  
   \node[pdp blue, below=of SCR] (CS)
     {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
