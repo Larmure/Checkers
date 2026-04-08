@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.view.gui.layout;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
@@ -308,8 +309,20 @@ public class MenuView extends MenuBar {
     dialog.setHeaderText(Internationalization.get("dialog.available_saves"));
     dialog.setContentText(Internationalization.get("dialog.load_from") + SAVE_DIR.getPath());
 
-    dialog.showAndWait().ifPresent(name -> controller.executeCommand(
-        "load", new String[] { name }));
+    dialog.showAndWait().ifPresent(name -> {
+      // Clear previous load error
+      controller.setLastLoadError(null);
+
+      // Execute load command
+      controller.executeCommand("load", new String[] { name });
+
+      // Check if load failed by checking error message
+      String loadError = controller.getLastLoadError();
+      if (loadError != null) {
+        showError(Internationalization.get("dialog.load_failed"),
+            Internationalization.get("dialog.load_failed_content") + name + "\n" + loadError);
+      }
+    });
   }
 
   /**

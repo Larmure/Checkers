@@ -89,8 +89,32 @@ public class LoadBoard {
   /** Line where the [game] section header was found. */
   private int gameSectionHeaderLine = -1;
 
+  /** Whether to exit on loading error. */
+  private boolean shouldExitOnError = true;
+  /** Stores the last error message encountered during loading. */
+  private String lastErrorMessage = null;
+
   /** Creates a loader. */
   public LoadBoard() {
+  }
+
+  /**
+   * Sets whether to exit the JVM on load error.
+   * When used from GUI, set to false to display error messages instead of crashing.
+   *
+   * @param shouldExit whether to exit on error
+   */
+  public void setShouldExitOnError(boolean shouldExit) {
+    this.shouldExitOnError = shouldExit;
+  }
+
+  /**
+   * Gets the last error message encountered during loading.
+   *
+   * @return the error message, or null if no error occurred
+   */
+  public String getLastErrorMessage() {
+    return lastErrorMessage;
   }
 
   /**
@@ -225,7 +249,9 @@ public class LoadBoard {
    * <p>Kept protected so tests can override it.
    */
   protected void exitOnLoadError() {
-    System.exit(1);
+    if (shouldExitOnError) {
+      System.exit(1);
+    }
   }
 
   /**
@@ -234,6 +260,7 @@ public class LoadBoard {
    * @param message the error message
    */
   private void failLoad(String message) {
+    lastErrorMessage = message;
     System.err.println("[LOAD ERROR] " + message);
     resetState();
     exitOnLoadError();
@@ -246,7 +273,8 @@ public class LoadBoard {
    * @param message error message
    */
   private void failLoadAtLine(int lineNum, String message) {
-    System.err.println("[LOAD ERROR] line " + lineNum + ": " + message);
+    lastErrorMessage = "line " + lineNum + ": " + message;
+    System.err.println("[LOAD ERROR] " + lastErrorMessage);
     resetState();
     exitOnLoadError();
   }
