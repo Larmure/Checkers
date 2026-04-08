@@ -50,7 +50,7 @@ public class InvitationManager {
    *                       Receives the expired invitation and the registry.
    */
   public void startSweeper(GameRegistry registry,
-      BiConsumer<Invitation, GameRegistry> expiryCallback) {
+                           BiConsumer<Invitation, GameRegistry> expiryCallback) {
     scheduler.scheduleAtFixedRate(
         () -> sweepExpired(registry, expiryCallback),
         SWEEP_PERIOD_SECONDS, SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
@@ -217,7 +217,7 @@ public class InvitationManager {
    * Marks all pending-but-expired invitations as expired and fires the callback.
    */
   private void sweepExpired(GameRegistry registry,
-      BiConsumer<Invitation, GameRegistry> expiryCallback) {
+                            BiConsumer<Invitation, GameRegistry> expiryCallback) {
     invitations.values().forEach(inv -> {
       if (inv.getStatus() == Invitation.InvitationStatus.PENDING && inv.isExpired()) {
         inv.markExpired();

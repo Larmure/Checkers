@@ -7,25 +7,48 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
  * Thread-safe registry of connected players and active game sessions.
  *
- * <p>All structural mutations (register/remove player, create/end session) are
- * {@code synchronized} to prevent race conditions from concurrent client threads.
- * Read-only accessors use the underlying {@link ConcurrentHashMap} directly and do not
- * require additional locking.
+ * <h2>Locking strategy</h2>
  *
- * <p>This class is the single source of truth for:
+ * <p>A {@link ReentrantReadWriteLock} replaces the previous coarse-grained
+ * {@code synchronized} approach:
  *
  * <ul>
- *   <li>Which players are connected and what their current status is.
- *   <li>Which game sessions are active and which players are in them.
+ *   <li><b>Write lock</b> — acquired for all structural mutations:
+ *       {@link #registerPlayer}, {@link #removePlayer}, {@link #createSession},
+ *       and {@link #cleanupEndedSessions}.
+ *   <li><b>Read lock</b> — acquired for all read-only accessors:
+ *       {@link #getPlayer}, {@link #getAllPlayers}, {@link #getPlayerCount},
+ *       {@link #getPlayersFormatted}, {@link #getScoreboardFormatted},
+ *       {@link #getSessionForPlayer}, {@link #getActiveSessions}, and
+ *       {@link #getActiveSessionCount}.
  * </ul>
+ *
+ * <p>This allows multiple reader threads (e.g. concurrent client handlers calling
+ * {@code PLAYERS} or {@code SCOREBOARD}) to proceed in parallel while writers
+ * still get exclusive access.
+ *
+ * <p>Both maps remain {@link ConcurrentHashMap} instances so that the
+ * {@link java.util.concurrent.ConcurrentHashMap#size()} and
+ * {@link java.util.concurrent.ConcurrentHashMap#entrySet()} operations
+ * are cheap and non-blocking within the lock scopes.
  */
 public class GameRegistry {
 
+  /**
+   * Fair ReadWriteLock so that long-running reader threads cannot starve writers.
+   *
+   * <p>Fairness adds a small overhead per acquisition but prevents the starvation
+   * scenario where a flood of {@code PLAYERS} commands blocks a
+   * {@code REGISTER} from completing.
+   */
+  private final ReadWriteLock rwLock = new ReentrantReadWriteLock(/* fair= */ true);
   private final Map<String, PlayerSession> players = new ConcurrentHashMap<>();
   private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
 
@@ -37,14 +60,18 @@ public class GameRegistry {
    * @param out output stream bound to the player's TCP socket.
    * @return the created {@link PlayerSession}, or {@code null} if the ID is in use.
    */
-  public synchronized PlayerSession registerPlayer(
-      String id, String name, PrintWriter out) {
-    if (players.containsKey(id)) {
-      return null;
+  public PlayerSession registerPlayer(String id, String name, PrintWriter out) {
+    rwLock.writeLock().lock();
+    try {
+      if (players.containsKey(id)) {
+        return null;
+      }
+      PlayerSession player = new PlayerSession(id, name, out);
+      players.put(id, player);
+      return player;
+    } finally {
+      rwLock.writeLock().unlock();
     }
-    PlayerSession player = new PlayerSession(id, name, out);
-    players.put(id, player);
-    return player;
   }
 
   /**
@@ -52,77 +79,21 @@ public class GameRegistry {
    *
    * @param playerId the ID of the player to remove.
    */
-  public synchronized void removePlayer(String playerId) {
-    players.remove(playerId);
+  public void removePlayer(String playerId) {
+    rwLock.writeLock().lock();
+    try {
+      players.remove(playerId);
 
-    sessions.values().removeIf(
-        session -> {
-          if (session.hasPlayer(playerId) && session.isActive()) {
-            session.end(null);
-            return true;
-          }
-          return !session.isActive();
-        });
-  }
-
-  /**
-   * Looks up a player by ID.
-   *
-   * @param playerId the player's unique ID.
-   * @return the {@link PlayerSession}, or {@code null} if not found.
-   */
-  public PlayerSession getPlayer(String playerId) {
-    return players.get(playerId);
-  }
-
-  /**
-   * Returns a snapshot of all currently connected players.
-   *
-   * @return an unmodifiable collection of player sessions.
-   */
-  public Collection<PlayerSession> getAllPlayers() {
-    return List.copyOf(players.values());
-  }
-
-  /**
-   * Returns the number of connected players.
-   *
-   * @return the number of connected players
-   */
-  public int getPlayerCount() {
-    return players.size();
-  }
-
-  /**
-   * Returns a formatted multi-line string listing all connected players.
-   *
-   * <p>Each line follows the format produced by {@link PlayerSession#toString()}.
-   * Returns an empty string if no players are connected.
-   *
-   * @return formatted player list, ready to send to a client.
-   */
-  public String getPlayersFormatted() {
-    return players.values().stream()
-        .map(PlayerSession::toString)
-        .collect(Collectors.joining("\n"));
-  }
-
-  /**
-   * Returns a formatted scoreboard sorted by wins descending.
-   *
-   * <p>Each line follows the format produced by {@link PlayerSession#toString()}.
-   * Returns a placeholder string if no players are connected.
-   *
-   * @return formatted scoreboard, ready to send to a client.
-   */
-  public String getScoreboardFormatted() {
-    if (players.isEmpty()) {
-      return "No players connected.";
+      sessions.values().removeIf(session -> {
+        if (session.hasPlayer(playerId) && session.isActive()) {
+          session.end(null);
+          return true;
+        }
+        return !session.isActive();
+      });
+    } finally {
+      rwLock.writeLock().unlock();
     }
-    return players.values().stream()
-        .sorted(Comparator.comparingInt(PlayerSession::getWins).reversed())
-        .map(PlayerSession::toString)
-        .collect(Collectors.joining("\n"));
   }
 
   /**
@@ -134,11 +105,110 @@ public class GameRegistry {
    * @param controller the game controller that will handle move execution.
    * @return the newly created {@link GameSession}.
    */
-  public synchronized GameSession createSession(
-      List<PlayerSession> participants, GameController controller) {
-    GameSession session = new GameSession(participants, controller);
-    sessions.put(session.getSessionId(), session);
-    return session;
+  public GameSession createSession(List<PlayerSession> participants, GameController controller) {
+    rwLock.writeLock().lock();
+    try {
+      GameSession session = new GameSession(participants, controller);
+      sessions.put(session.getSessionId(), session);
+      return session;
+    } finally {
+      rwLock.writeLock().unlock();
+    }
+  }
+
+  /** Removes all sessions that have already ended. */
+  public void cleanupEndedSessions() {
+    rwLock.writeLock().lock();
+    try {
+      sessions.values().removeIf(s -> !s.isActive());
+    } finally {
+      rwLock.writeLock().unlock();
+    }
+  }
+
+  /**
+   * Looks up a player by ID.
+   *
+   * @param playerId the player's unique ID.
+   * @return the {@link PlayerSession}, or {@code null} if not found.
+   */
+  public PlayerSession getPlayer(String playerId) {
+    rwLock.readLock().lock();
+    try {
+      return players.get(playerId);
+    } finally {
+      rwLock.readLock().unlock();
+    }
+  }
+
+  /**
+   * Returns a snapshot of all currently connected players.
+   *
+   * @return an unmodifiable collection of player sessions.
+   */
+  public Collection<PlayerSession> getAllPlayers() {
+    rwLock.readLock().lock();
+    try {
+      return List.copyOf(players.values());
+    } finally {
+      rwLock.readLock().unlock();
+    }
+  }
+
+  /**
+   * Returns the number of connected players.
+   *
+   * @return the number of connected players
+   */
+  public int getPlayerCount() {
+    rwLock.readLock().lock();
+    try {
+      return players.size();
+    } finally {
+      rwLock.readLock().unlock();
+    }
+  }
+
+  /**
+   * Returns a formatted multi-line string listing all connected players.
+   *
+   * <p>Each line follows the format produced by {@link PlayerSession#toString()}.
+   * Returns an empty string if no players are connected.
+   *
+   * @return formatted player list, ready to send to a client.
+   */
+  public String getPlayersFormatted() {
+    rwLock.readLock().lock();
+    try {
+      return players.values().stream()
+          .map(PlayerSession::toString)
+          .collect(Collectors.joining("\n"));
+    } finally {
+      rwLock.readLock().unlock();
+    }
+  }
+
+  /**
+   * Returns a formatted scoreboard sorted by wins descending.
+   *
+   * <p>Each line follows the format produced by {@link PlayerSession#toString()}.
+   * Returns a placeholder string if no players are connected.
+   *
+   * @return formatted scoreboard, ready to send to a client.
+   */
+  public String getScoreboardFormatted() {
+    rwLock.readLock().lock();
+    try {
+      if (players.isEmpty()) {
+        return "No players connected.";
+      }
+      return players.values().stream()
+          .sorted(Comparator.comparingInt(PlayerSession::getWins).reversed())
+          .map(PlayerSession::toString)
+          .collect(Collectors.joining("\n"));
+    } finally {
+      rwLock.readLock().unlock();
+    }
   }
 
   /**
@@ -148,10 +218,15 @@ public class GameRegistry {
    * @return the active {@link GameSession}, or {@code null} if not in any.
    */
   public GameSession getSessionForPlayer(String playerId) {
-    return sessions.values().stream()
-        .filter(s -> s.isActive() && s.hasPlayer(playerId))
-        .findFirst()
-        .orElse(null);
+    rwLock.readLock().lock();
+    try {
+      return sessions.values().stream()
+          .filter(s -> s.isActive() && s.hasPlayer(playerId))
+          .findFirst()
+          .orElse(null);
+    } finally {
+      rwLock.readLock().unlock();
+    }
   }
 
   /**
@@ -160,7 +235,12 @@ public class GameRegistry {
    * @return an unmodifiable list of active sessions.
    */
   public Collection<GameSession> getActiveSessions() {
-    return sessions.values().stream().filter(GameSession::isActive).toList();
+    rwLock.readLock().lock();
+    try {
+      return sessions.values().stream().filter(GameSession::isActive).toList();
+    } finally {
+      rwLock.readLock().unlock();
+    }
   }
 
   /**
@@ -169,11 +249,11 @@ public class GameRegistry {
    * @return the number of currently active game sessions
    */
   public int getActiveSessionCount() {
-    return (int) sessions.values().stream().filter(GameSession::isActive).count();
-  }
-
-  /** Removes all sessions that have already ended. */
-  public synchronized void cleanupEndedSessions() {
-    sessions.values().removeIf(s -> !s.isActive());
+    rwLock.readLock().lock();
+    try {
+      return (int) sessions.values().stream().filter(GameSession::isActive).count();
+    } finally {
+      rwLock.readLock().unlock();
+    }
   }
 }

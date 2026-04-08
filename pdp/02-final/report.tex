@@ -1394,6 +1394,263 @@ void testEvaluateMlCalculation(@TempDir Path tempDir) throws Exception {
 \end{minted}
 }
 
+\subsection*{F39 : Intégration du réseau, des interfaces et de la synchronisation}
+
+\subsubsection{Objectif général de la fonctionnalité}
+
+La fonctionnalité F39 correspond à l'intégration complète de la couche réseau dans notre application de jeu de dames.
+Son objectif n'était pas uniquement de permettre à deux machines d'échanger des messages via TCP, 
+mais de faire en sorte que cette communication distante s'intègre proprement à l'architecture existante ,aux échange de coup  
+ du côté de l'interface en ligne de commande (CLI) que du côté de l'interface graphique (GUI). 
+Concrètement, il fallait que le même moteur de jeu puisse être piloté localement ou à distance, 
+sans dupliquer la logique métier, tout en ajoutant les commande demandées. Cette fonctionnalité relie 
+donc plusieurs composants centraux du projet : {\texttt{ClientSession}}, {\texttt{GameServer}}, 
+{\texttt{GameRegistry}},{\texttt{GameSession}} et {\texttt{PlayerSession}}. 
+
+\subsubsection{Articulation entre mode local, mode serveur et mode connecté}
+
+Pour rendre cette intégration cohérente, nous avons d'abord introduit une notion explicite de 
+\textbf{mode d'exécution} grâce à l'énumération {\texttt{ClientMode}}.
+Trois états ont été définis : {\texttt{LOCAL}}, 
+lorsque l'application fonctionne sans connexion réseau ; \underline{\texttt{SERVER}}, 
+lorsqu'un serveur est démarré localement ; et \underline{\texttt{CONNECTED}}, 
+lorsqu'un client est relié à un serveur distant. Cette séparation est essentielle, 
+car elle permet de contrôler quelles commandes sont autorisées selon le contexte. 
+Par exemple, un client déjà connecté ne doit pas pouvoir démarrer un serveur local, 
+tandis qu'une instance qui héberge déjà un serveur ne doit pas réutiliser certaines 
+commandes purement clientes.  
+Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSession}} via des méthodes comme 
+{\texttt{enterServerMode()}}, \underline{\texttt{exitServerMode()}} et \underline{\texttt{getMode()}}. 
+\subsubsection{Articulation entre mode local, mode serveur et mode connecté}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=2.8cm and 2.8cm,
+        state/.style={
+            rectangle,
+            rounded corners,
+            draw=black,
+            thick,
+            align=left,
+            minimum width=4.8cm,
+            minimum height=3.2cm,
+            fill=gray!8
+        },
+        arrow/.style={->, thick}
+    ]
+
+        \node[state] (local) {
+            \textbf{LOCAL}\\[0.2cm]
+            \textit{État par défaut}\\
+            \textbf{Commandes autorisées :}\\
+            \texttt{new}, \texttt{join}, \texttt{server start}, \texttt{help}, \dots
+        };
+
+        \node[state, right=of local] (server) {
+            \textbf{SERVER}\\[0.2cm]
+            \textit{Serveur lancé localement}\\
+            \textbf{Commandes autorisées :}\\
+            \texttt{server stop}\\
+            \texttt{server status}\\
+            \texttt{players}\\
+            \texttt{scoreboard}\\
+            \textbf{Bloquées :} \texttt{join}, \texttt{ping}
+        };
+
+        \node[state, below=of server] (connected) {
+            \textbf{CONNECTED}\\[0.2cm]
+            \textit{Connecté à un serveur distant}\\
+            \textbf{Commandes autorisées :}\\
+            \texttt{move}, \texttt{new}, \texttt{ping}, \texttt{quit}, \dots\\
+            \textbf{Bloquée :} \texttt{server start}
+        };
+
+        \draw[arrow] (local) -- node[above] {\texttt{server start}} (server);
+        \draw[arrow] (server) -- node[below] {\texttt{server stop}} (local);
+        \draw[arrow] (local) -- node[left] {\texttt{join}} (connected);
+        \draw[arrow] (connected) -- node[right] {\texttt{quit}} (local);
+
+    \end{tikzpicture}
+    \caption{Modes d'exécution du client et commandes autorisées selon \texttt{ClientMode}.}
+    \label{fig:clientmode}
+\end{figure}
+
+\subsubsection{Connexion réseau et intégration avec les interfaces CLI et GUI}
+
+La classe \underline{\texttt{ClientSession}} constitue le point d'entrée principal
+de la logique réseau côté client. Elle encapsule l'ensemble de l'état de
+connexion : le socket TCP (\underline{\texttt{socket}}), les flux d'entrée et de
+sortie (\underline{\texttt{in}} et \underline{\texttt{out}}), l'état booléen
+\underline{\texttt{connected}}, ainsi que l'adresse du serveur courant dans
+\underline{\texttt{currentServer}}. Elle fournit les opérations fondamentales
+\underline{\texttt{connect()}}, \underline{\texttt{disconnect()}} et
+\underline{\texttt{send()}}, qui permettent respectivement d'établir la
+connexion, de la fermer proprement et d'envoyer des commandes texte au serveur.
+Une fois connecté, le client lance un thread dédié par
+\underline{\texttt{startListenerThread()}}, chargé d'écouter en permanence les
+messages provenant du serveur. Cette architecture permet au client de rester
+interactif pendant que les mises à jour réseau arrivent en arrière-plan.
+
+L'intérêt principal de cette conception est qu'elle unifie le comportement entre
+le mode CLI et le mode GUI. En effet, les messages reçus du serveur, comme
+\underline{\texttt{GAME\_START}}, \underline{\texttt{MOVE\_OK}} ou
+\underline{\texttt{OPPONENT\_MOVE}}, sont tous interprétés dans
+\underline{\texttt{handleServerMessage()}} puis réinjectés dans le même
+\underline{\texttt{GameController}} local via
+\underline{\texttt{executeMove()}}. En mode CLI, cela se traduit par un
+affichage textuel immédiat dans le terminal ; en mode GUI, la même mise à jour
+du contrôleur entraîne naturellement le rafraîchissement de l'affichage
+graphique. Ainsi, le projet ne possède pas un moteur pour le terminal et un
+autre pour l'interface graphique : il possède un contrôleur unique, alimenté
+soit par des actions locales, soit par des événements réseau. Cette
+mutualisation garantit la cohérence fonctionnelle entre les deux interfaces et
+limite fortement la duplication de code.
+
+\subsubsection{Architecture serveur et isolation des sessions de jeu}
+
+Côté serveur, la classe \underline{\texttt{GameServer}} assure la gestion des
+connexions entrantes, la création des parties et la supervision globale du
+service. Elle ouvre un \underline{\texttt{ServerSocket}} sur un port TCP donné,
+puis accepte les connexions de plusieurs clients successifs. Chaque client est
+pris en charge dans un thread distinct grâce à un pool créé par
+\underline{\texttt{Executors.newCachedThreadPool()}}, ce qui permet au serveur
+de traiter plusieurs joueurs simultanément. Lorsqu'un client s'enregistre, il
+est représenté sous la forme d'un objet \underline{\texttt{PlayerSession}}
+conservé dans \underline{\texttt{GameRegistry}}, qui joue le rôle de registre
+partagé des joueurs connectés et des parties actives. Lorsqu'une partie est
+créée, le serveur construit un nouveau \underline{\texttt{GameController}} par
+l'intermédiaire de \underline{\texttt{GameControllerFactory}}. Cela garantit
+qu'une partie réseau possède son propre état de jeu, totalement indépendant des
+autres. Deux parties simultanées ne partagent donc ni le plateau, ni
+l'historique, ni le tour courant. Cette isolation était indispensable pour
+rendre possible un véritable serveur multi-clients.
+
+La classe \underline{\texttt{GameSession}} représente précisément une partie
+active. Elle centralise la logique d'une session multijoueur : ordre des tours,
+validation des coups, diffusion des notifications
+\underline{\texttt{OPPONENT\_MOVE}} et terminaison de la partie. La méthode
+\underline{\texttt{handleMove()}} vérifie qu'un joueur agit bien au bon moment,
+applique le coup via le contrôleur et en informe les autres participants. La
+méthode \underline{\texttt{end()}} clôt ensuite la session en mettant à jour les
+statistiques et en rétablissant les joueurs dans un état disponible. Cette
+structuration permet d'encapsuler clairement ce qui relève d'une partie
+particulière, sans polluer le serveur global avec des détails de jeu.
+
+\subsubsection{Commandes réseau et commandes d'administration ajoutées}
+
+F39 s'est également traduite par l'ajout ou la consolidation de plusieurs
+commandes réseau. Dans le flux de communication client--serveur, des commandes
+comme \underline{\texttt{REGISTER}}, \underline{\texttt{PING}},
+\underline{\texttt{STATUS}}, \underline{\texttt{PLAYERS}},
+\underline{\texttt{NEW}}, \underline{\texttt{MOVE}} ou
+\underline{\texttt{QUIT}} permettent respectivement d'enregistrer un joueur,
+mesurer la connectivité, consulter l'état du serveur, lister les joueurs
+présents, créer une nouvelle partie, envoyer un coup et fermer proprement la
+connexion. Ce protocole texte simple présente un double avantage : il est facile
+à déboguer et il reste compatible avec une interface CLI tout en étant
+suffisamment structuré pour piloter une interface graphique. Côté client,
+\underline{\texttt{ClientSession}} assure l'émission et l'interprétation de ces
+messages ; côté serveur, \underline{\texttt{GameServer}} les décode pour
+déclencher les actions appropriées.
+
+À cela s'ajoutent des commandes de gestion et d'observation du serveur. La
+commande \underline{\texttt{server status}}, implémentée dans
+\underline{\texttt{ServerStatusCommand}}, affiche le port d'écoute ainsi que le
+nombre de clients et de parties actives. La commande
+\underline{\texttt{scoreboard}}, implémentée dans
+\underline{\texttt{ScoreboardCommand}}, classe les joueurs selon leur nombre de
+victoires et affiche leurs statistiques globales. Ces commandes montrent que le
+réseau n'a pas été conçu uniquement comme un canal de transport des coups du
+jeu, mais aussi comme une infrastructure administrable, observable et
+exploitable en cours d'exécution. Elles participent donc pleinement à la valeur
+de F39, car elles rendent la couche réseau utilisable au quotidien, aussi bien
+pour jouer que pour surveiller le système.
+
+\subsubsection{Cohérence avec les options de lancement et la commande \texttt{new}}
+
+L'intégration réseau a également eu des conséquences sur le point d'entrée de
+l'application et sur la gestion des options. Dans notre architecture, le
+lancement du programme doit pouvoir distinguer plusieurs scénarios : démarrage
+en mode local, ouverture d'un serveur, connexion à un serveur distant, ou encore
+démarrage d'une partie paramétrée avec des options avancées. Cette cohérence est
+visible à travers la commande \underline{\texttt{new}}, implémentée par
+\underline{\texttt{NewCommand}}, qui permet déjà de configurer de manière fine
+une partie locale : mode blitz, taille du plateau, IA activées, temps de
+réflexion, profondeur Minimax, mode de sélection du MCTS et fonction
+d'évaluation. L'ajout du réseau devait donc rester compatible avec cette
+philosophie générale : le système ne devait pas opposer brutalement ``jeu
+local'' et ``jeu réseau'', mais prolonger la même logique de configuration dans
+de nouveaux contextes d'exécution. C'est dans ce cadre que les nouvelles options
+ajoutées au lancement via \underline{\texttt{App.java}} prennent tout leur sens
+: elles servent à choisir explicitement le mode d'utilisation de l'application,
+tout en conservant une cohérence avec les commandes déjà existantes dans le
+shell. Autrement dit, F39 ne modifie pas seulement le transport des données ;
+elle étend aussi la manière dont l'application est initialisée et pilotée par
+l'utilisateur.
+
+\subsubsection{Gestion de la concurrence et apport des mutex}
+
+L'un des aspects les plus techniques de F39 concerne la gestion de la
+concurrence. L'introduction du réseau fait apparaître plusieurs flux
+d'exécution simultanés. Côté client, on retrouve au minimum le thread
+principal, qui lit les commandes utilisateur, et le thread secondaire lancé par
+\underline{\texttt{startListenerThread()}}, qui écoute les messages entrants du
+serveur. Côté serveur, chaque connexion cliente est traitée dans un thread
+potentiellement distinct, ce qui implique des accès concurrents aux mêmes
+structures globales. Sans protection, plusieurs problèmes peuvent apparaître :
+lecture incohérente de l'état \underline{\texttt{connected}}, écriture sur un
+socket en cours de fermeture, double création de partie avec les mêmes joueurs,
+ou mise à jour concurrente des statistiques. C'est précisément pour corriger ces
+risques que nous avons introduit des \textbf{mutex} et des protections
+explicites sur les sections critiques.
+
+Dans la version améliorée de cette fonctionnalité, l'état de connexion du client
+a été protégé par un verrou dédié, afin de sérialiser les accès à
+\underline{\texttt{socket}}, \underline{\texttt{in}},
+\underline{\texttt{out}}, \underline{\texttt{connected}} et
+\underline{\texttt{currentServer}}. Ce verrou évite qu'un thread d'écoute ferme
+ou lise la connexion pendant qu'un autre thread tente simultanément d'envoyer un
+message ou d'interroger l'état courant de la session. Du côté serveur, nous
+avons renforcé la sûreté d'exécution en protégeant les structures partagées et
+les opérations de cycle de vie : le registre central
+\underline{\texttt{GameRegistry}} doit manipuler les collections de joueurs et
+de sessions de manière atomique, tandis que la logique des parties dans
+\underline{\texttt{GameSession}} doit empêcher qu'un même tour soit joué deux
+fois en parallèle. De même, \underline{\texttt{PlayerSession}} centralise l'état
+individuel des joueurs et leurs statistiques ; ces données doivent donc rester
+cohérentes malgré des accès depuis plusieurs threads. Le rôle des mutex n'est
+donc pas d'ajouter une nouvelle fonctionnalité visible, mais de garantir que
+toutes les fonctionnalités réseau précédemment décrites restent correctes, même
+en environnement multi-thread.
+
+\subsubsection{Découverte réseau et ergonomie d'utilisation}
+
+Enfin, F39 comprend aussi un aspect ergonomique avec les services de découverte
+réseau. La classe \underline{\texttt{DiscoveryService}} diffuse régulièrement la
+présence du serveur sur le réseau local via UDP, tandis que
+\underline{\texttt{ServerListService}} écoute ces annonces et construit une
+liste des serveurs actifs encore disponibles. Cette fonctionnalité améliore
+l'expérience utilisateur, car elle évite d'avoir à saisir manuellement toutes
+les informations de connexion. Elle montre également que l'intégration réseau a
+été pensée dans sa globalité : non seulement le système permet de jouer à
+distance, mais il aide aussi à découvrir automatiquement les serveurs présents
+dans l'environnement local.
+
+\subsubsection{Bilan de la fonctionnalité}
+
+En définitive, F39 représente une fonctionnalité transversale majeure du projet.
+Elle ne se réduit ni à l'ouverture d'un socket, ni à l'affichage d'un plateau
+graphique connecté. Elle articule la communication réseau, la compatibilité
+entre CLI et GUI, l'ajout de nouvelles commandes de jeu et d'administration,
+l'intégration avec les options de lancement, la création de sessions
+indépendantes et la sécurisation des accès concurrents par mutex et
+synchronisation. Cette fonctionnalité illustre donc un véritable travail
+d'architecture logicielle : nous avons transformé un moteur de jeu initialement
+local en un système multi-clients cohérent, extensible et robuste, capable de
+fonctionner correctement dans un environnement distribué et concurrent tout en
+restant fidèle à l'organisation générale du projet.
+
 % Je ne sais pas d'où ça sort
 % Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
 

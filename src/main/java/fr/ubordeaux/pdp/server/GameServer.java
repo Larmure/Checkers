@@ -10,13 +10,13 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -26,19 +26,29 @@ import java.util.stream.Collectors;
  * via the invitation system, and routes network commands to the appropriate
  * session.
  *
+ * <h2>Thread-safety</h2>
+ *
+ * <p>A {@link ReentrantLock} ({@code lifecycleLock}) makes {@link #start()} and
+ * {@link #stop()} mutually exclusive and atomic with respect to each other.
+ * Without this lock, two concurrent callers could both pass the
+ * {@code if (running)} guard and either double-bind the port or double-close
+ * the socket.
+ *
+ * <p>{@code running} is also declared {@code volatile} so the
+ * accept-loop thread sees the write from {@link #stop()} without holding the lock.
+ *
+ * <p>{@code connectedClients} uses a {@link ConcurrentHashMap}-backed set so
+ * {@link #stop()} can iterate and write to it concurrently with client handler
+ * threads that add/remove entries.
+ *
  * <h2>GUI-only mode</h2>
  *
- * <p>When {@code guiOnly} is {@code true} (started via {@code --gui --server}
- * in App):
+ * <p>When {@code guiOnly} is {@code true} (started via {@code --gui --server}):
  *
  * <ul>
- *   <li>Every {@code GAME_START} message carries {@code mode=GUI} so clients
- *       know they must render graphically.</li>
- *   <li>Cross-mode invitations (GUI ↔ CLI) are blocked at invitation time —
- *       not at connection time. All clients may connect regardless of
- *       interface.</li>
- *   <li>The {@code WELCOME} response carries {@code mode=GUI} so the client
- *       can warn the user immediately after connecting.</li>
+ *   <li>Every {@code GAME_START} message carries {@code mode=GUI}.</li>
+ *   <li>Cross-mode invitations (GUI ↔ CLI) are blocked at invitation time.</li>
+ *   <li>The {@code WELCOME} response carries {@code mode=GUI}.</li>
  * </ul>
  *
  * <h2>Lifecycle</h2>
@@ -51,41 +61,57 @@ public class GameServer {
 
   private static final int CLIENT_TIMEOUT_MS = 180_000;
 
+  // -------------------------------------------------------------------------
+  // Immutable configuration
+  // -------------------------------------------------------------------------
+
   private final int tcpPort;
   private final String serverName;
-
-  /**
-   * Reserved for server launch mode configuration.
-   * Kept because callers still pass it explicitly.
-   */
   private final boolean daemon;
+  private final boolean guiOnly;
+  private final GameControllerFactory controllerFactory;
+
+  // -------------------------------------------------------------------------
+  // Lifecycle lock
+  // -------------------------------------------------------------------------
 
   /**
-   * When {@code true}, all {@code GAME_START} messages carry {@code mode=GUI}.
+   * Ensures {@link #start()} and {@link #stop()} are mutually exclusive.
+   *
+   * <p>Both methods perform a check-then-act on {@code running}. Without this
+   * lock a concurrent pair of calls could both pass the guard, leading to a
+   * double-bind or a double-close.
    */
-  private final boolean guiOnly;
+  private final ReentrantLock lifecycleLock = new ReentrantLock();
 
-  private final GameControllerFactory controllerFactory;
+  // -------------------------------------------------------------------------
+  // Mutable server state (guarded by lifecycleLock or volatile)
+  // -------------------------------------------------------------------------
+
   private final GameRegistry registry = new GameRegistry();
   private final InvitationManager invitationManager = new InvitationManager();
 
   private Thread discoveryThread;
   private ServerSocket serverSocket;
   private ExecutorService clientPool;
+
+  /**
+   * Visible to the accept-loop thread without holding {@code lifecycleLock}.
+   * Writes are still performed under the lock to keep the check-then-act atomic.
+   */
   private volatile boolean running = false;
 
   private final Set<PrintWriter> connectedClients =
       Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   /**
-   * Unique constructor — all parameters are explicit to avoid boolean-argument
-   * confusion.
+   * Unique constructor — all parameters are explicit to avoid boolean-argument confusion.
    *
-   * @param serverName name broadcast over UDP discovery
-   * @param tcpPort TCP listening port
+   * @param serverName       name broadcast over UDP discovery
+   * @param tcpPort          TCP listening port
    * @param controllerFactory factory producing a fresh controller per game session
-   * @param daemon server daemon flag
-   * @param guiOnly {@code true} to tag all games with {@code mode=GUI}
+   * @param daemon           server daemon flag
+   * @param guiOnly          {@code true} to tag all games with {@code mode=GUI}
    */
   public GameServer(String serverName, int tcpPort,
                     GameControllerFactory controllerFactory, boolean daemon, boolean guiOnly) {
@@ -100,36 +126,48 @@ public class GameServer {
    * Binds the server socket, starts UDP discovery and the invitation sweeper,
    * then blocks accepting client connections until {@link #stop()} is called.
    *
+   * <p>The check on {@code running} and the subsequent assignment are performed
+   * under {@link #lifecycleLock} to prevent a concurrent {@link #stop()} from
+   * interleaving. The lock is released before blocking on {@code accept()} so
+   * that {@link #stop()} can proceed.
+   *
    * @throws IOException if the port is already in use or cannot be bound
    */
   public void start() throws IOException {
-    if (running) {
-      System.out.println("[server] Already running on port " + tcpPort + ".");
-      return;
-    }
-
+    lifecycleLock.lock();
     try {
-      serverSocket = new ServerSocket(tcpPort);
-    } catch (java.net.BindException e) {
-      throw new IOException(
-          "Port " + tcpPort + " is already in use. "
-              + "Stop the existing server or choose another port.", e);
+      if (running) {
+        System.out.println("[server] Already running on port " + tcpPort + ".");
+        return;
+      }
+
+      try {
+        serverSocket = new ServerSocket(tcpPort);
+      } catch (java.net.BindException e) {
+        throw new IOException(
+            "Port " + tcpPort + " is already in use. "
+                + "Stop the existing server or choose another port.", e);
+      }
+
+      running = true;
+      clientPool = Executors.newCachedThreadPool();
+
+      invitationManager.startSweeper(registry, this::handleInvitationExpiry);
+
+      DiscoveryService discovery = new DiscoveryService(serverName, tcpPort);
+      discoveryThread = new Thread(discovery, "discovery-thread");
+      discoveryThread.setDaemon(true);
+      discoveryThread.start();
+
+      System.out.println("[server] Started on port " + tcpPort
+          + (guiOnly ? " (GUI-only mode)" : "") + ".");
+      System.out.println("[server] Discovery broadcasting on UDP 12346.");
+
+    } finally {
+      lifecycleLock.unlock();
     }
 
-    running = true;
-    clientPool = Executors.newCachedThreadPool();
-
-    invitationManager.startSweeper(registry, this::handleInvitationExpiry);
-
-    DiscoveryService discovery = new DiscoveryService(serverName, tcpPort);
-    discoveryThread = new Thread(discovery, "discovery-thread");
-    discoveryThread.setDaemon(true);
-    discoveryThread.start();
-
-    System.out.println("[server] Started on port " + tcpPort
-        + (guiOnly ? " (GUI-only mode)" : "") + ".");
-    System.out.println("[server] Discovery broadcasting on UDP 12346.");
-
+    // Block outside the lock so stop() can close the socket from another thread.
     while (running) {
       try {
         Socket client = serverSocket.accept();
@@ -147,14 +185,24 @@ public class GameServer {
   /**
    * Stops the server: notifies all clients with {@code BYE}, closes the socket,
    * shuts down the thread pool, and stops the invitation sweeper.
+   *
+   * <p>Idempotent: a second call while the server is already stopped is a no-op,
+   * and the check-then-act is atomic under {@link #lifecycleLock}.
    */
   public void stop() {
-    if (!running) {
-      System.out.println("[server] Server is not running.");
-      return;
+    lifecycleLock.lock();
+    try {
+      if (!running) {
+        System.out.println("[server] Server is not running.");
+        return;
+      }
+      running = false;
+    } finally {
+      lifecycleLock.unlock();
     }
 
-    running = false;
+    // Performed outside the lock — these are I/O operations that should not
+    // hold the lifecycle lock longer than necessary.
     invitationManager.stopSweeper();
 
     for (PrintWriter out : connectedClients) {
@@ -205,14 +253,8 @@ public class GameServer {
    * <p>Expected first line from the client:
    *
    * <pre>
-   * REGISTER &lt;id&gt; &lt;name&gt; &lt;GUI|CLI&gt;
+   * REGISTER <id> <name>
    * </pre>
-   *
-   * <p>All clients are accepted regardless of interface mode. The
-   * {@code guiOnly} flag is communicated back in the {@code WELCOME} response
-   * and enforced later at invitation time — not here.
-   *
-   * @param client the newly accepted socket
    */
   private void handleClient(Socket client) {
     try (
@@ -236,96 +278,96 @@ public class GameServer {
       }
 
       String playerId = parts[1];
-      String playerName = parts[2].trim();
+      String playerName = parts[2].split("\\s+")[0];
 
       PlayerSession player = registry.registerPlayer(playerId, playerName, out);
       if (player == null) {
-        out.println("ERROR: Player ID '" + playerId + "' is already taken.");
+        out.println("ERROR: ID '" + playerId + "' is already taken. Choose another.");
         return;
       }
 
-      out.println("WELCOME " + playerId + (guiOnly ? " mode=GUI" : " mode=ANY"));
+      String modeTag = guiOnly ? " mode=GUI" : " mode=ANY";
+      out.println("WELCOME " + playerId + modeTag);
       System.out.println("[server] Registered: " + playerId + " (" + playerName + ")");
 
-      tryAutoStart();
-      processMessages(in, out, player);
 
-    } catch (SocketTimeoutException e) {
-      System.out.println("[server] Client timed out after 3 minutes of inactivity.");
+      tryAutoStart();
+
+      String line;
+      while ((line = in.readLine()) != null) {
+        handleCommand(out, player, line.trim());
+      }
+
+      System.out.println("[server] Client disconnected: " + playerId);
+      cleanupPlayerInvitations(player);
+      registry.removePlayer(playerId);
+
     } catch (IOException e) {
-      System.out.println("[server] Client disconnected: " + e.getMessage());
+      System.err.println("[server] Client I/O error: " + e.getMessage());
+    } finally {
+      try {
+        client.close();
+      } catch (IOException ignored) {
+        // Ignore close failure.
+      }
     }
   }
 
   /**
-   * Reads and dispatches commands from a registered player until they disconnect.
+   * Dispatches a single command received from a client.
    *
-   * @param in client input stream
-   * @param out client output stream
-   * @param player registered player
-   * @throws IOException if reading from the socket fails
+   * <p>For commands that involve a compound status check-then-set (e.g. {@code AWAY},
+   * {@code BACK}), the player's lock is held for the entire read-modify sequence to
+   * prevent a race with a concurrent game-end or invitation callback.
    */
-  private void processMessages(BufferedReader in, PrintWriter out, PlayerSession player)
-      throws IOException {
+  private void handleCommand(PrintWriter out, PlayerSession player, String line)  {
+    if (line.isBlank()) {
+      return;
+    }
 
-    String line;
-    while ((line = in.readLine()) != null) {
-      System.out.println("[" + player.getId() + "] " + line);
-      String[] tokens = line.trim().split("\\s+", 2);
-      String cmd = tokens[0].toUpperCase();
-      String rest = tokens.length > 1 ? tokens[1] : "";
+    String[] tokens = line.split("\\s+", 2);
+    String cmd = tokens[0].toUpperCase();
+    String rest = tokens.length > 1 ? tokens[1] : "";
 
-      switch (cmd) {
-        case "PING" -> {
-          long t0 = System.currentTimeMillis();
-          long elapsed = System.currentTimeMillis() - t0;
-          out.println("PONG TIME=" + elapsed + "ms");
-        }
+    switch (cmd) {
 
-        case "QUIT" -> {
-          out.println("BYE");
-          cleanupPlayerInvitations(player);
-          registry.removePlayer(player.getId());
-          connectedClients.remove(out);
-          System.out.println("[server] Player " + player.getId() + " disconnected.");
-          return;
-        }
+      case "PLAYERS" -> {
+        String formatted = registry.getPlayersFormatted();
+        out.println("PLAYERS\n" + (formatted.isBlank() ? "(none)" : formatted));
+      }
 
-        case "STATUS" -> out.println(
-            "STATUS port=" + tcpPort
-                + " players=" + registry.getPlayerCount()
-                + " sessions=" + registry.getActiveSessionCount()
-                + (guiOnly ? " mode=GUI" : ""));
-
-        case "PLAYERS" -> {
-          if (rest.isBlank()) {
-            String list = registry.getPlayersFormatted();
-            out.println(list.isEmpty() ? "PLAYERS none" : "PLAYERS\n" + list);
+      case "STATUS" -> {
+        String target = rest.trim();
+        if (target.isBlank()) {
+          out.println("PLAYER_INFO\n" + player);
+        } else {
+          PlayerSession targetPlayer = registry.getPlayer(target);
+          if (targetPlayer == null) {
+            out.println("ERROR: Player '" + target + "' not found.");
           } else {
-            PlayerSession target = registry.getPlayer(rest.trim());
-            if (target == null) {
-              out.println("ERROR: Player '" + rest.trim() + "' not found.");
-            } else {
-              out.println("PLAYER_INFO\n" + target.toString());
-            }
+            out.println("PLAYER_INFO\n" + targetPlayer);
           }
         }
+      }
 
-        case "SCOREBOARD" -> out.println("SCOREBOARD\n" + registry.getScoreboardFormatted());
+      case "SCOREBOARD" -> out.println("SCOREBOARD\n" + registry.getScoreboardFormatted());
 
-        case "NEW" -> {
-          if (rest.isBlank()) {
-            out.println("ERROR: Usage: NEW <player_id>");
-            break;
-          }
-          handleNewInvitation(out, player, rest.trim());
+      case "NEW" -> {
+        if (rest.isBlank()) {
+          out.println("ERROR: Usage: NEW <player_id>");
+          break;
         }
+        handleNewInvitation(out, player, rest.trim());
+      }
 
-        case "ACCEPT" -> handleAccept(out, player);
-        case "DECLINE" -> handleDecline(out, player);
-        case "CANCEL" -> handleCancel(out, player);
+      case "ACCEPT" -> handleAccept(out, player);
+      case "DECLINE" -> handleDecline(out, player);
+      case "CANCEL" -> handleCancel(out, player);
 
-        case "AWAY" -> {
+      case "AWAY" -> {
+        // Lock the player so that the check and the set are atomic.
+        player.lock();
+        try {
           if (player.getStatus() == PlayerSession.Status.INGAME) {
             out.println("ERROR: Cannot go away while in a game.");
           } else if (player.getStatus() == PlayerSession.Status.WAITGAME) {
@@ -334,46 +376,49 @@ public class GameServer {
             player.setStatus(PlayerSession.Status.AWAY);
             out.println("STATUS_CHANGED away");
           }
+        } finally {
+          player.unlock();
         }
+      }
 
-        case "BACK" -> {
+      case "BACK" -> {
+        player.lock();
+        try {
           if (player.getStatus() == PlayerSession.Status.INGAME) {
             out.println("ERROR: Cannot use BACK while in a game.");
           } else {
             player.setStatus(PlayerSession.Status.IDLE);
             out.println("STATUS_CHANGED idle");
           }
+        } finally {
+          player.unlock();
         }
+      }
 
-        case "MOVE" -> {
-          GameSession session = registry.getSessionForPlayer(player.getId());
-          if (session == null) {
-            out.println("ERROR: Not in a game. Use NEW to invite a player.");
+      case "MOVE" -> {
+        GameSession session = registry.getSessionForPlayer(player.getId());
+        if (session == null) {
+          out.println("ERROR: Not in a game. Use NEW to invite a player.");
+        } else {
+          String error = session.handleMove(player, rest);
+          if (error != null) {
+            out.println(error);
           } else {
-            String error = session.handleMove(player, rest);
-            if (error != null) {
-              out.println(error);
-            } else {
-              out.println("MOVE_OK " + rest);
-            }
+            out.println("MOVE_OK " + rest);
           }
         }
-
-        default -> out.println("ERROR: Unknown command '" + cmd + "'.");
       }
+
+      default -> out.println("ERROR: Unknown command '" + cmd + "'.");
     }
   }
 
   /**
    * Handles {@code NEW <target_id>}: creates and delivers an invitation.
    *
-   * <p>Invitations are only allowed between players using the same client type
-   * ({@code GUI} with {@code GUI}, or {@code CLI} with {@code CLI}) so both
-   * sides render the same kind of game session.
-   *
-   * @param out requester output stream
-   * @param sender inviting player
-   * @param toId target player id
+   * <p>The sender's idle check and the invitation creation are both performed inside
+   * {@link InvitationManager#createInvitation}, which is {@code synchronized},
+   * so no additional locking is needed here.
    */
   private void handleNewInvitation(PrintWriter out, PlayerSession sender, String toId) {
     if (!sender.isIdle()) {
@@ -388,7 +433,6 @@ public class GameServer {
       return;
     }
 
-
     InvitationManager.CreateResult result =
         invitationManager.createInvitation(sender, toId, registry);
 
@@ -401,7 +445,6 @@ public class GameServer {
 
     out.println("INVITATION_SENT PLAYER=" + invitee.getName()
         + " TIMEOUT=" + Invitation.TIMEOUT_SECONDS + "s");
-
     invitee.send("INVITATION_RECEIVED FROM=" + sender.getId()
         + " EXPIRES=" + Invitation.TIMEOUT_SECONDS + "s");
 
@@ -483,9 +526,9 @@ public class GameServer {
   }
 
   /** Called by the sweeper for each invitation that timed out. */
-  private void handleInvitationExpiry(Invitation inv, GameRegistry registry) {
-    PlayerSession inviter = registry.getPlayer(inv.getFromPlayerId());
-    PlayerSession invitee = registry.getPlayer(inv.getToPlayerId());
+  private void handleInvitationExpiry(Invitation inv, GameRegistry reg) {
+    PlayerSession inviter = reg.getPlayer(inv.getFromPlayerId());
+    PlayerSession invitee = reg.getPlayer(inv.getToPlayerId());
 
     if (invitee != null && invitee.getStatus() == PlayerSession.Status.WAITGAME) {
       invitee.setStatus(PlayerSession.Status.IDLE);
@@ -500,8 +543,9 @@ public class GameServer {
   /**
    * Starts a game session between two players who have agreed via invitation.
    *
-   * <p>Appends {@code mode=GUI} to {@code GAME_START} when {@link #guiOnly}
-   * is {@code true}.
+   * <p>{@code synchronized} ensures that two concurrent {@code ACCEPT} calls
+   * (theoretically possible if the invitation system is bypassed by a bug)
+   * cannot start two sessions for the same pair.
    */
   private synchronized void startInvitedGame(PlayerSession inviter, PlayerSession invitee) {
     List<PlayerSession> pair = List.of(inviter, invitee);
@@ -514,8 +558,8 @@ public class GameServer {
     String playerList = inviter.getId() + " " + invitee.getId();
     String modeTag = guiOnly ? " mode=GUI" : "";
 
-    for (PlayerSession player : pair) {
-      player.send("GAME_START session=" + session.getSessionId()
+    for (PlayerSession p : pair) {
+      p.send("GAME_START session=" + session.getSessionId()
           + " players=" + playerList
           + " first=" + inviter.getId()
           + modeTag);
@@ -527,7 +571,6 @@ public class GameServer {
 
   /**
    * Notifies the sole connected idle player that they are waiting for an opponent.
-   * Auto-matching is disabled; players use {@code NEW <id>} to invite each other.
    */
   private synchronized void tryAutoStart() {
     List<PlayerSession> idlePlayers = registry.getAllPlayers().stream()
