@@ -12,11 +12,9 @@ import fr.ubordeaux.pdp.model.player.AiPlayer;
 import fr.ubordeaux.pdp.model.player.HumanPlayer;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javafx.application.Platform;
-import javafx.scene.layout.GridPane;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -533,6 +531,51 @@ class BoardViewTest {
     }
   }
 
+  @Nested
+  @DisplayName("getPieceChar mapping")
+  class PieceCharMapping {
+
+    private BoardView boardView;
+    private Board board;
+    private GameCheckers game;
+
+    @BeforeEach
+    void setUp() {
+      GameController controller = mock(GameController.class);
+      board = mock(Board.class);
+      game = mock(GameCheckers.class);
+
+      when(game.getBoard()).thenReturn(board);
+      when(board.getSizeBoard()).thenReturn(8);
+
+      boardView = new BoardView(controller);
+      boardView.refresh(game);
+    }
+
+    @Test
+    @DisplayName("getPieceChar should return O for white checker")
+    void testGetPieceCharReturnsWhiteChecker() throws Exception {
+      when(board.isBitWhiteChecker(0)).thenReturn(true);
+
+      char piece = invokeGetPieceChar(boardView, 0, 0);
+
+      assertEquals('O', piece);
+    }
+
+    @Test
+    @DisplayName("getPieceChar should return x for black pawn")
+    void testGetPieceCharReturnsBlackPawn() throws Exception {
+      when(board.isBitWhiteChecker(0)).thenReturn(false);
+      when(board.isBitWhitePawn(0)).thenReturn(false);
+      when(board.isBitBlackChecker(0)).thenReturn(false);
+      when(board.isBitBlackPawn(0)).thenReturn(true);
+
+      char piece = invokeGetPieceChar(boardView, 0, 0);
+
+      assertEquals('x', piece);
+    }
+  }
+
   // ========== Helper Methods ==========
 
   /**
@@ -546,6 +589,14 @@ class BoardViewTest {
         "handleClick", int.class, int.class, int.class, int.class);
     method.setAccessible(true);
     method.invoke(boardView, gridRow, gridCol, modelRow, modelCol);
+  }
+
+  /** Invokes the private {@code getPieceChar} method using reflection. */
+  private static char invokeGetPieceChar(BoardView boardView, int modelRow, int modelCol)
+      throws Exception {
+    var method = BoardView.class.getDeclaredMethod("getPieceChar", int.class, int.class);
+    method.setAccessible(true);
+    return (char) method.invoke(boardView, modelRow, modelCol);
   }
 
   /** Retrieves the current selection row using reflection. */
