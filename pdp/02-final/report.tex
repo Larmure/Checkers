@@ -378,13 +378,17 @@ adversariale, richesse algorithmique de l'IA, et protocole réseau adapté
 
 \subsection{Bitboard}
 
-Nous utilisons des bitboards pour représenter l'état du plateau. Cette approche permet de représenter l'état du plateau sous forme d'entiers primitifs et de calculer les coups de manière globale via des opérations bit à bit, offrant des performances bien supérieures aux matrices 2D classiques.
+Nous utilisons des bitboards pour représenter l'état du plateau. Cette approche permet de représenter l'état du plateau sous forme d'entiers primitifs et de calculer les 
+coups de manière globale via des opérations bit à bit, offrant des performances bien supérieures aux matrices 2D classiques.
 
 \subsubsection{Représentation et Numérotation des cases}
 
-Sur les \(100\) cases d'un plateau standard (\(10 \times 10\)), seules les 50 cases noires sont utilisées. Nous utilisons la \textbf{notation de Manoury} pour numéroter ces cases actives de 0 à 49, de bas en haut et de gauche à droite.
+Sur les \(100\) cases d'un plateau standard (\(10 \times 10\)), seules les 50 cases noires sont utilisées. Nous utilisons la \textbf{notation de Manoury} pour numéroter 
+ces cases actives de 0 à 49, de bas en haut et de gauche à droite.
 
-L'état complet du jeu est encodé sur quelques entiers de 64 bits (\texttt{long} en Java), où chaque bit correspond à une case active (1 si la case est occupée, 0 si elle est vide). Cela nous évite d'écrire des formules mathématiques complexes pour définir l'état du plateau : tout repose sur l'indexation binaire.
+L'état complet du jeu est encodé sur quatre entiers de 64 bits (\texttt{long} en Java), où chaque bit correspond à une case active (1 si la case est occupée, 0 si elle est vide). 
+Cette représentation permet de s'affranchir de la gestion itérative d'un tableau à deux dimensions. L'état du plateau n'est plus une collection d'objets ou d'entiers dispersés,
+ mais un vecteur binaire unique permettant d'évaluer la légalité des coups par de simples masquages logiques plutôt que par des parcours de boucles imbriquées.
 
 \[
 \begin{array}{cccccccccc}
@@ -446,11 +450,34 @@ temporelle des bits.
     \end{tabular}
 \end{table}
 
+Le tableau \ref{tab:comparaison-offsets} synthétise les constantes de décalage utilisées par notre moteur de jeu. La manipulation de l'état du plateau via les bitboards 
+repose sur une propriété géométrique fondamentale : un déplacement diagonal correspond à une translation d'index fixe, à la condition de prendre en compte la parité de la 
+ligne d'origine (notée \textbf{P} pour Paire et \textbf{I} pour Impaire). 
+
+En effet, dans notre représentation compressée où seules les cases sombres sont indexées, le damier forme un motif en quinconce. Par conséquent, une pièce située sur 
+une ligne paire n'a pas le même décalage numérique avec ses voisins diagonaux qu'une pièce située sur une ligne impaire.
+
+Pour illustrer avec le plateau standard $10 \times 10$ (où chaque ligne contient 5 cases actives) : un déplacement vers le Haut-Gauche depuis une ligne paire 
+(\textbf{P $\to$ I}) nécessite d'ajouter $+4$ à l'index binaire, tandis que le même mouvement depuis une ligne impaire (\textbf{I $\to$ P}) nécessite d'ajouter $+5$.
+
+
 \subsubsection{Déplacement et prise par un pion}
 
-Lorsqu'un pion se déplace, on décale l'ensemble de son bitboard d'une direction donnée. 
-Si le bit "atterrit" sur une position valide (une case vide, vérifiée via une opération \(\land\) 
-sur le bitboard inversé \(\lnot(\text{Occupées})\)), le coup est légal.
+Pour déterminer si un pion peut se déplacer, le moteur doit avant tout s'assurer que la case de destination est libre. Au lieu de maintenir 
+une structure de données lourde et redondante pour pister les cases vides, notre implémentation calcule cette information à la volée. Nous 
+fusionnons instantanément les quatre \textit{bitboards} (les pions et dames de chaque joueur) au moyen d'une simple opération logique "OU"
+ ($\lor$). Cette fusion crée une carte virtuelle regroupant toutes les pièces présentes sur le damier :
+
+\[
+\text{Occupées} = \text{PionsBlancs} \lor \text{DamesBlanches} \lor \text{PionsNoirs} \lor \text{DamesNoires}
+\]
+
+Grâce à ce masque global, la méthode \texttt{isOccupied(i)} de notre classe \texttt{Board} est capable de vérifier l'état de n'importe 
+quelle case en temps constant. 
+
+La génération des mouvements d'un pion est ensuite confiée à la méthode \texttt{pawnSimpleTargets(...)}. Son fonctionnement est très 
+intuitif : elle teste les diagonales adjacentes à la pièce, écarte naturellement les directions illégales (comme le fait d'avancer vers
+ le bas pour un pion blanc), puis valide les trajectoires dont la case d'arrivée n'est pas marquée dans notre masque des cases occupées.
 
 \paragraph{Exemple concret de prise :}
 Pour qu'une capture soit possible, un pion doit sauter par-dessus un pion adverse et atterrir sur une case vide. 
@@ -459,8 +486,8 @@ S'il veut capturer un pion noir situé en haut à gauche (case 27, ligne impaire
 le décalage pour atteindre le pion noir est de \(+5\). Pour atterrir derrière ce pion, 
 le saut continue vers la case 21 (ligne paire), nécessitant un nouveau décalage de \(+6\).
 
-Le décalage total pour cette prise est donc constant : \(5 + 6 = 11\) bits. 
-L'opération binaire simplifiée de cette validation ressemble à cela :
+Le décalage total pour cette prise est donc de \(5 + 6 = 11\) cases indexées.
+La validation logique peut se lire ainsi :
 
 \[
 \text{CibleSaut} = (\text{PionBlanc} \gg 5) \land \text{PionNoir}
@@ -469,13 +496,23 @@ L'opération binaire simplifiée de cette validation ressemble à cela :
 \text{AtterrissageValide} = (\text{CibleSaut} \gg 6) \land \lnot(\text{Occupées})
 \]
 
-% TODO : insérer ici une capture d'écran illustrant cette prise spécifique (de 32 vers 21 en passant par 27) pour satisfaire le correcteur!!!!
-% \begin{figure}[!ht]
-%   \centering
-%   \includegraphics[width=0.6\textwidth]{votre_image_prise.png}
-%   \caption{Exemple d'une prise de la case 32 vers la case 21.}
-%   \label{fig:exemple_prise}
-% \end{figure}
+Dans le code, les prises de pion sont générées par \texttt{getBestPawnCaptures(...)} et
+\texttt{pawnMultiCaptures(...)} (DFS). Le coût structurel d'un test local reste en \(O(1)\),
+mais l'exploration de toutes les rafles possibles est exponentielle dans le pire cas :
+\(O(B^k)\), avec \(B\) le facteur de branchement des captures et \(k\) la profondeur
+maximale de rafle.
+
+\paragraph{Autres algorithmes bitboard présents dans le code.}
+Les deux algorithmes présentés ici ne sont pas les seuls. Le module \texttt{Board} utilise
+également des opérations bitboard pour :
+\begin{itemize}
+  \item la génération des coups simples de dame (\texttt{checkerSimpleTargets});
+  \item la génération des prises multiples de dame par DFS (\texttt{checkerMultiCaptures});
+  \item la sélection des coups légaux avec priorité aux prises majoritaires
+  (\texttt{getValidMoves}, \texttt{getBestPawnCaptures}, \texttt{getBestCheckerCaptures});
+  \item l'application d'un coup, la suppression des pièces capturées et la promotion
+  (\texttt{applyMove}, \texttt{promoteBit}).
+\end{itemize}
 
 \subsubsection{Déplacement et prise par une dame}
 
@@ -508,6 +545,140 @@ Fonction GenererCoupsDame(bitboard_dame, direction):
 
 \FloatBarrier
 
+\subsection{Complexité du Board}
+
+\subsubsection{Hypothèses et notations}
+
+Dans cette partie, nous analysons la classe \texttt{Board}, qui constitue le moteur de génération et d'application des coups.
+On note $n$ le nombre de cases actives (\(32\), \(50\) ou \(72\) selon la variante), $p$ le nombre de pièces présentes
+sur le plateau, et $c$ le nombre de pièces capturées par un coup donné. Les opérations bit-à-bit de base
+(tests, \texttt{OR}, \texttt{AND}, décalages, \texttt{bitCount}) sont considérées en temps constant sur mot machine.
+
+\subsubsection{Accès, comptage et conversion}
+
+Les requêtes élémentaires de présence, comme \texttt{isBitWhitePawn(int)}, \texttt{isBitBlackPawn(int)},
+\texttt{isBitWhiteChecker(int)} et \texttt{isBitBlackChecker(int)}, reposent sur un test de bit unique ; elles sont donc
+en $O(1)$. Les vérifications de bord \texttt{onLeftEdge(int)} et \texttt{onRightEdge(int)} sont également en $O(1)$.
+
+Les conversions d'indices (\texttt{indexToSquare(int)} et \texttt{boardToBitIndex(int,int)}) sont arithmétiques et valent $O(1)$.
+La méthode \texttt{squareToIndex(String)} reste $O(1)$ du point de vue asymptotique, car la longueur des coordonnées
+est bornée par la taille du plateau supportée (8, 10, 12).
+
+Les compteurs \texttt{whitePawnsCount()}, \texttt{blackPawnsCount()}, \texttt{whiteCheckersCount()} et
+\texttt{blackCheckersCount()} utilisent \texttt{Long.bitCount} sur deux mots 64 bits ; ils s'exécutent donc en $O(1)$.
+
+\subsubsection{Application d'un coup et mutations locales}
+
+La méthode \texttt{applyMove(Move)} comporte trois étapes : déplacement de la pièce, suppression des captures,
+et promotion éventuelle. Le déplacement et la promotion sont en $O(1)$, tandis que la suppression des captures parcourt
+la liste \texttt{move.getCaptured()} ; le coût est donc $O(c)$. On obtient ainsi :
+$$T(\texttt{applyMove}) = O(1 + c) = O(c).$$
+
+Les helpers de mutation ciblée (\texttt{addWhitePawn}, \texttt{removeWhitePawn}, \texttt{addBlackChecker}, etc.)
+ne modifient qu'un bit et restent en $O(1)$. Les méthodes utilitaires de test
+(\texttt{restorePiece}, \texttt{demoteBit}, \texttt{remove}, \texttt{addWhite}, \texttt{addBlack}, \texttt{clearBoard})
+sont donc toutes en $O(1)$ dans ce modèle borné.
+
+\subsubsection{Génération des coups}
+
+La génération globale \texttt{getValidMoves(boolean)} effectue un balayage des cases actives puis appelle des routines
+de coups simples et de prises. Le coût structurel de ce balayage est $O(n)$, mais le coût dominant provient des DFS
+de captures : \texttt{dfsPawn(...)} et \texttt{dfsChecker(...)}.
+
+Pour les coups simples, \texttt{pawnSimpleTargets(int, boolean)} teste un nombre constant de directions et reste en $O(1)$.
+\texttt{checkerSimpleTargets(int)} parcourt des rayons diagonaux, donc $O(n)$ dans le pire cas (plateau très dégagé).
+
+Pour les prises, \texttt{pawnMultiCaptures(...)} et \texttt{checkerMultiCaptures(...)} explorent un arbre de séquences
+de capture. Leur pire cas est exponentiel en profondeur de capture $k$ (en pratique bornée par le plateau), ce que l'on note
+$O(B^k)$, où $B$ est le facteur de branchement effectif des continuations de prise. Par conséquent, la complexité de
+\texttt{getWhiteValidMoves()} / \texttt{getBlackValidMoves()} s'écrit :
+$$O\bigl(n + \text{coût DFS captures}\bigr),$$
+et est dominée, dans les positions tactiques, par l'exploration des chaînes de captures.
+
+\subsubsection{Copie de plateau}
+
+La méthode \texttt{copy()} alloue un nouvel objet puis recopie un nombre constant de champs primitifs
+(huit bitboards + métadonnées). Elle est donc en $O(1)$, ce qui est un point clé pour les algorithmes de recherche.
+
+\subsubsection{Synthèse Board}
+
+{\footnotesize
+\begin{longtable}{|p{4.0cm}|p{4.1cm}|p{2.0cm}|p{5.2cm}|}
+\caption{Complexité des principales méthodes de \texttt{Board}}\label{tab:board-complexite} \\
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endhead
+
+\hline
+\multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
+\endfoot
+
+\hline
+\endlastfoot
+
+Accès bitboard
+& \texttt{isBit*}, \texttt{onLeftEdge}, \texttt{onRightEdge}
+& $O(1)$
+& Un nombre constant de tests/logiques binaires sur un ou deux mots 64 bits. \\
+\hline
+
+Conversion
+& \texttt{indexToSquare}, \texttt{boardToBitIndex}, \texttt{squareToIndex}
+& $O(1)$
+& Calculs arithmétiques et parsing de coordonnées de taille bornée. \\
+\hline
+
+Mutation locale
+& \texttt{add*}, \texttt{remove*}, \texttt{promoteBit}, \texttt{demoteBit}, \texttt{restorePiece}
+& $O(1)$
+& Modification d'un nombre constant de bits/champs. \\
+\hline
+
+Application d'un coup
+& \texttt{applyMove(Move)}
+& $O(c)$
+& Parcours des pièces capturées (taille $c$), le reste en temps constant. \\
+\hline
+
+Coups simples pion
+& \texttt{pawnSimpleTargets}
+& $O(1)$
+& Nombre fixe de directions testées, sans parcours global. \\
+\hline
+
+Coups simples dame
+& \texttt{checkerSimpleTargets}
+& $O(n)$ (pire cas)
+& Exploration potentielle de rayons diagonaux longs sur plateau dégagé. \\
+\hline
+
+Prises pion/dame
+& \texttt{pawnMultiCaptures}, \texttt{checkerMultiCaptures}, \texttt{dfsPawn}, \texttt{dfsChecker}
+& $O(B^k)$ (pire cas)
+& Exploration récursive d'un arbre de séquences de capture. \\
+\hline
+
+Génération globale
+& \texttt{getWhiteValidMoves}, \texttt{getBlackValidMoves}
+& $O(n + \text{DFS captures})$
+& Balayage des cases + génération des prises (coût dominant selon la position). \\
+\hline
+
+Copie
+& \texttt{copy}
+& $O(1)$
+& Recopie d'un nombre constant de champs primitifs. \\
+\hline
+\end{longtable}
+}
+
+
 % ============================================================
 %  Section 3 — Architecture du projet
 % ============================================================
@@ -538,7 +709,7 @@ Ses responsabilités sont réparties entre deux classes majeures. D'un côté, l
 
 Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{GameCheckers} expose une interface de communication claire basée sur des actions d'entrée et des notifications de sortie.
 
-En entrée, l'interface graphique ou textuelle ne modifie jamais le plateau directement. Elle passe par le \texttt{GameController} qui interroge d'abord le moteur via \texttt{getPossibleMoves(player)} pour s'assurer qu'une action est légale, puis lui demande de l'exécuter avec la méthode \texttt{applyMove(from, to)}.
+\sloppy En entrée, l'interface graphique ou textuelle ne modifie jamais le plateau directement. Elle passe par le \texttt{GameController} qui interroge d'abord le moteur via \texttt{getPossibleMoves(player)} pour s'assurer qu'une action est légale, puis lui demande de l'exécuter avec la méthode \texttt{applyMove(from, to)}.
 
 En sortie, le moteur dicte le rythme grâce au patron de conception Observateur. Au lieu de forcer l'interface graphique à vérifier constamment si quelque chose a changé, le moteur travaille en silence et émet un signal de mise à jour via \texttt{notifyObservers()} uniquement lorsqu'un mouvement valide vient de modifier l'état du jeu.
 
@@ -591,15 +762,76 @@ Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vé
 
 \subsection{Module affichage}
 
-Le module d'affichage correspond à la couche Vue de notre architecture MVC. Dans la pratique, il repose sur une base commune, \texttt{GameView}, puis sur trois implémentations adaptées au contexte d'exécution : \texttt{CommandLineInterface} pour le terminal, \texttt{GraphicalUserInterface} pour JavaFX, et \texttt{HeadlessView} côté serveur lorsque l'on veut exécuter une partie sans affichage. Ce découpage a été choisi très tôt pour éviter de mélanger logique d'interaction, rendu visuel et règles du jeu.
+Le module d'affichage correspond à la couche Vue de notre architecture MVC. Dans la pratique, il repose sur une base commune, \texttt{GameView}, puis sur trois 
+implémentations adaptées au contexte d'exécution : \texttt{CommandLineInterface} pour le terminal, \texttt{GraphicalUserInterface} pour JavaFX, et \texttt{HeadlessView}
+ côté serveur lorsque l'on veut exécuter une partie sans affichage. Ce découpage a été choisi très tôt pour éviter de mélanger logique d'interaction, rendu visuel et règles du jeu.
 
-Le point important est que le contrôleur ne connaît que l'abstraction \texttt{GameView}. Quand un joueur agit, la vue transforme cette action en appel contrôleur (commande ou déplacement), puis le moteur met à jour l'état de jeu. La vue n'écrit jamais directement dans le modèle. Une fois le coup traité, le mécanisme d'observation notifie les vues, qui se contentent de se rafraîchir. Ce fonctionnement paraît simple, mais c'est ce qui nous a permis de garder exactement les mêmes règles en CLI, en GUI et en mode headless.
+Le point important est que le contrôleur ne connaît que l'abstraction \texttt{GameView}. Quand un joueur agit, la vue transforme cette action en appel contrôleur 
+(commande ou déplacement), puis le moteur met à jour l'état de jeu. La vue n'écrit jamais directement dans le modèle. Une fois le coup traité, le mécanisme d'observation 
+notifie les vues, qui se contentent de se rafraîchir. Ce fonctionnement paraît simple, mais c'est ce qui nous a permis de garder exactement les mêmes règles en CLI,
+ en GUI et en mode headless.
 
-En CLI, nous avons utilisé JLine pour ne pas nous limiter à un \texttt{Scanner} minimaliste. On bénéficie ainsi d'une saisie plus robuste (édition de ligne, complétion, gestion propre des interruptions) et d'un comportement plus stable pendant les tests. Nous avons aussi séparé volontairement la lecture d'entrée du routage des commandes : \texttt{CommandLineInterface} lit et affiche, tandis que \texttt{ShellCommandRouter} décide quoi faire de la commande. Cette séparation nous a évité une classe trop chargée et a rendu les tests de parsing beaucoup plus simples.
+% Couleurs (nommé avec pdp- pour éviter les conflits)
+\definecolor{pdp-teal50}  {HTML}{E1F5EE}
+\definecolor{pdp-teal600} {HTML}{0F6E56}
+\definecolor{pdp-teal800} {HTML}{085041}
+\definecolor{pdp-purple50} {HTML}{EEEDFE}
+\definecolor{pdp-purple600}{HTML}{534AB7}
+\definecolor{pdp-purple800}{HTML}{3C3489}
+\definecolor{pdp-gray50}  {HTML}{F1EFE8}
+\definecolor{pdp-gray600} {HTML}{5F5E5A}
+\definecolor{pdp-blue50}  {HTML}{E6F1FB}
+\definecolor{pdp-blue600} {HTML}{185FA5}
+\definecolor{pdp-blue800} {HTML}{0C447C}
+\definecolor{pdp-border}  {HTML}{C4C2B8}
 
-En GUI, la même logique a été conservée, avec une organisation en sous-vues (\texttt{MainView}, \texttt{PlayView}, \texttt{BoardView}, \texttt{LogView}) pour garder du code lisible. Le principal choix technique ici concerne les threads : une mise à jour visuelle doit toujours passer par \texttt{Platform.runLater(...)}. Sans cela, les notifications venant du timer blitz ou d'un calcul d'IA peuvent provoquer des erreurs JavaFX difficiles à reproduire. Nous avons également lié la taille des cases à la taille de la fenêtre via des bindings, pour conserver un damier correct sur les trois formats de plateau pris en charge.
+\tikzset{
+  pdp base/.style={
+    draw, rounded corners=5pt,
+    minimum width=3.6cm, minimum height=1.0cm,
+    align=center, font=\small\bfseries,
+    inner sep=5pt, line width=0.4pt
+  },
+  pdp teal/.style={pdp base,
+    fill=pdp-teal50, draw=pdp-teal600, text=pdp-teal800},
+  pdp purple/.style={pdp base,
+    fill=pdp-purple50, draw=pdp-purple600, text=pdp-purple800},
+  pdp blue/.style={pdp base,
+    fill=pdp-blue50, draw=pdp-blue600, text=pdp-blue800},
+  pdp gray/.style={pdp base,
+    fill=pdp-gray50, draw=pdp-gray600, text=pdp-gray600},
+  pdp zone/.style={
+    draw=pdp-border, dashed, rounded corners=8pt,
+    line width=0.5pt, inner sep=10pt
+  },
+  pdp rel/.style={
+    -{Stealth[length=4.5pt]}, line width=0.6pt, color=pdp-gray600
+  },
+  pdp lbl/.style={font=\scriptsize\itshape, color=pdp-gray600},
+}
 
-Avec le recul, ce module fonctionne surtout parce qu'il reste discipliné : l'affichage reste un adaptateur, pas un second moteur de jeu. C'est ce qui nous permet d'ajouter des fonctionnalités d'interface sans toucher aux règles, et d'exécuter les mêmes scénarios de jeu dans des environnements très différents.
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/affichage.png}
+        \caption{Architecture des modules Model-View}
+    \end{minipage}
+\end{figure}
+\FloatBarrier
+
+\paragraph{En Interface en ligne de commande (CLI),} nous avons utilisé JLine pour ne pas nous limiter à un \texttt{Scanner} minimaliste. On bénéficie ainsi d'une saisie plus robuste (édition de ligne, complétion,
+ gestion propre des interruptions) et d'un comportement plus stable pendant les tests. Nous avons aussi séparé volontairement la lecture d'entrée du routage des commandes :
+  \texttt{CommandLineInterface} lit et affiche, tandis que \texttt{ShellCommandRouter} décide quoi faire de la commande. Cette séparation nous a évité une classe trop
+   chargée et a rendu les tests de parsing beaucoup plus simples.
+
+\paragraph{En Interface graphique utilisateur (GUI),} la même logique a été conservée, avec une organisation en sous-vues (\texttt{MainView}, \texttt{PlayView}, \texttt{BoardView}, \texttt{LogView}) pour garder du 
+code lisible. Le principal choix technique ici concerne les threads : une mise à jour visuelle doit toujours passer par \texttt{Platform.runLater(...)}. Sans cela, les
+ notifications venant du timer blitz ou d'un calcul d'IA peuvent provoquer des erreurs JavaFX difficiles à reproduire. Nous avons également lié la taille des cases à
+  la taille de la fenêtre via des bindings, pour conserver un damier correct sur les trois formats de plateau pris en charge.
+
+Avec le recul, ce module fonctionne surtout parce qu'il reste discipliné : l'affichage reste un adaptateur, pas un second moteur de jeu. C'est ce qui nous permet
+ d'ajouter des fonctionnalités d'interface sans toucher aux règles, et d'exécuter les mêmes scénarios de jeu dans des environnements très différents.
 
 \subsubsection{Architecture interne de la GUI}
 
@@ -703,48 +935,7 @@ TCP, basant principalement sur le package
 \texttt{fr.ubordeaux.pdp.server}.
 La figure~\ref{fig:architecture-serveur} en présente les composants principaux
 ainsi que leurs interactions.
- 
-% ----------------------------------------------------------------
-%  Couleurs (nommer avec pdp- pour éviter les conflits)
-% ----------------------------------------------------------------
-\definecolor{pdp-teal50}  {HTML}{E1F5EE}
-\definecolor{pdp-teal600} {HTML}{0F6E56}
-\definecolor{pdp-teal800} {HTML}{085041}
-\definecolor{pdp-purple50} {HTML}{EEEDFE}
-\definecolor{pdp-purple600}{HTML}{534AB7}
-\definecolor{pdp-purple800}{HTML}{3C3489}
-\definecolor{pdp-gray50}  {HTML}{F1EFE8}
-\definecolor{pdp-gray600} {HTML}{5F5E5A}
-\definecolor{pdp-blue50}  {HTML}{E6F1FB}
-\definecolor{pdp-blue600} {HTML}{185FA5}
-\definecolor{pdp-blue800} {HTML}{0C447C}
-\definecolor{pdp-border}  {HTML}{C4C2B8}
- 
-\tikzset{
-  pdp base/.style={
-    draw, rounded corners=5pt,
-    minimum width=3.6cm, minimum height=1.0cm,
-    align=center, font=\small\bfseries,
-    inner sep=5pt, line width=0.4pt
-  },
-  pdp teal/.style={pdp base,
-    fill=pdp-teal50, draw=pdp-teal600, text=pdp-teal800},
-  pdp purple/.style={pdp base,
-    fill=pdp-purple50, draw=pdp-purple600, text=pdp-purple800},
-  pdp gray/.style={pdp base,
-    fill=pdp-gray50, draw=pdp-gray600, text=pdp-gray600},
-  pdp blue/.style={pdp base,
-    fill=pdp-blue50, draw=pdp-blue600, text=pdp-blue800},
-  pdp zone/.style={
-    draw=pdp-border, dashed, rounded corners=8pt,
-    line width=0.5pt, inner sep=10pt
-  },
-  pdp rel/.style={
-    -{Stealth[length=4.5pt]}, line width=0.6pt, color=pdp-gray600
-  },
-  pdp lbl/.style={font=\scriptsize\itshape, color=pdp-gray600},
-}
- 
+
 \begin{figure}[ht]
 \centering
 \begin{tikzpicture}[node distance=0.5cm and 0.8cm]
@@ -1133,139 +1324,6 @@ Pire : $O(b^d)$
 & \texttt{checkTime(long)}
 & $O(1)$
 & Test constant, puis levée d'exception interne si le temps est dépassé. \\
-\hline
-\end{longtable}
-}
-
-\subsection{Complexité du Board}
-
-\subsubsection{Hypothèses et notations}
-
-Dans cette partie, nous analysons la classe \texttt{Board}, qui constitue le moteur de génération et d'application des coups.
-On note $n$ le nombre de cases actives (\(32\), \(50\) ou \(72\) selon la variante), $p$ le nombre de pièces présentes
-sur le plateau, et $c$ le nombre de pièces capturées par un coup donné. Les opérations bit-à-bit de base
-(tests, \texttt{OR}, \texttt{AND}, décalages, \texttt{bitCount}) sont considérées en temps constant sur mot machine.
-
-\subsubsection{Accès, comptage et conversion}
-
-Les requêtes élémentaires de présence, comme \texttt{isBitWhitePawn(int)}, \texttt{isBitBlackPawn(int)},
-\texttt{isBitWhiteChecker(int)} et \texttt{isBitBlackChecker(int)}, reposent sur un test de bit unique ; elles sont donc
-en $O(1)$. Les vérifications de bord \texttt{onLeftEdge(int)} et \texttt{onRightEdge(int)} sont également en $O(1)$.
-
-Les conversions d'indices (\texttt{indexToSquare(int)} et \texttt{boardToBitIndex(int,int)}) sont arithmétiques et valent $O(1)$.
-La méthode \texttt{squareToIndex(String)} reste $O(1)$ du point de vue asymptotique, car la longueur des coordonnées
-est bornée par la taille du plateau supportée (8, 10, 12).
-
-Les compteurs \texttt{whitePawnsCount()}, \texttt{blackPawnsCount()}, \texttt{whiteCheckersCount()} et
-\texttt{blackCheckersCount()} utilisent \texttt{Long.bitCount} sur deux mots 64 bits ; ils s'exécutent donc en $O(1)$.
-
-\subsubsection{Application d'un coup et mutations locales}
-
-La méthode \texttt{applyMove(Move)} comporte trois étapes : déplacement de la pièce, suppression des captures,
-et promotion éventuelle. Le déplacement et la promotion sont en $O(1)$, tandis que la suppression des captures parcourt
-la liste \texttt{move.getCaptured()} ; le coût est donc $O(c)$. On obtient ainsi :
-$$T(\texttt{applyMove}) = O(1 + c) = O(c).$$
-
-Les helpers de mutation ciblée (\texttt{addWhitePawn}, \texttt{removeWhitePawn}, \texttt{addBlackChecker}, etc.)
-ne modifient qu'un bit et restent en $O(1)$. Les méthodes utilitaires de test
-(\texttt{restorePiece}, \texttt{demoteBit}, \texttt{remove}, \texttt{addWhite}, \texttt{addBlack}, \texttt{clearBoard})
-sont donc toutes en $O(1)$ dans ce modèle borné.
-
-\subsubsection{Génération des coups}
-
-La génération globale \texttt{getValidMoves(boolean)} effectue un balayage des cases actives puis appelle des routines
-de coups simples et de prises. Le coût structurel de ce balayage est $O(n)$, mais le coût dominant provient des DFS
-de captures : \texttt{dfsPawn(...)} et \texttt{dfsChecker(...)}.
-
-Pour les coups simples, \texttt{pawnSimpleTargets(int, boolean)} teste un nombre constant de directions et reste en $O(1)$.
-\texttt{checkerSimpleTargets(int)} parcourt des rayons diagonaux, donc $O(n)$ dans le pire cas (plateau très dégagé).
-
-Pour les prises, \texttt{pawnMultiCaptures(...)} et \texttt{checkerMultiCaptures(...)} explorent un arbre de séquences
-de capture. Leur pire cas est exponentiel en profondeur de capture $k$ (en pratique bornée par le plateau), ce que l'on note
-$O(B^k)$, où $B$ est le facteur de branchement effectif des continuations de prise. Par conséquent, la complexité de
-\texttt{getWhiteValidMoves()} / \texttt{getBlackValidMoves()} s'écrit :
-$$O\bigl(n + \text{coût DFS captures}\bigr),$$
-et est dominée, dans les positions tactiques, par l'exploration des chaînes de captures.
-
-\subsubsection{Copie de plateau}
-
-La méthode \texttt{copy()} alloue un nouvel objet puis recopie un nombre constant de champs primitifs
-(huit bitboards + métadonnées). Elle est donc en $O(1)$, ce qui est un point clé pour les algorithmes de recherche.
-
-\subsubsection{Synthèse Board}
-
-{\footnotesize
-\begin{longtable}{|p{4.0cm}|p{4.1cm}|p{2.0cm}|p{5.2cm}|}
-\caption{Complexité des principales méthodes de \texttt{Board}}\label{tab:board-complexite} \\
-\hline
-\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
-\hline
-\endfirsthead
-
-\hline
-\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
-\hline
-\endhead
-
-\hline
-\multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
-\endfoot
-
-\hline
-\endlastfoot
-
-Accès bitboard
-& \texttt{isBit*}, \texttt{onLeftEdge}, \texttt{onRightEdge}
-& $O(1)$
-& Un nombre constant de tests/logiques binaires sur un ou deux mots 64 bits. \\
-\hline
-
-Conversion
-& \texttt{indexToSquare}, \texttt{boardToBitIndex}, \texttt{squareToIndex}
-& $O(1)$
-& Calculs arithmétiques et parsing de coordonnées de taille bornée. \\
-\hline
-
-Mutation locale
-& \texttt{add*}, \texttt{remove*}, \texttt{promoteBit}, \texttt{demoteBit}, \texttt{restorePiece}
-& $O(1)$
-& Modification d'un nombre constant de bits/champs. \\
-\hline
-
-Application d'un coup
-& \texttt{applyMove(Move)}
-& $O(c)$
-& Parcours des pièces capturées (taille $c$), le reste en temps constant. \\
-\hline
-
-Coups simples pion
-& \texttt{pawnSimpleTargets}
-& $O(1)$
-& Nombre fixe de directions testées, sans parcours global. \\
-\hline
-
-Coups simples dame
-& \texttt{checkerSimpleTargets}
-& $O(n)$ (pire cas)
-& Exploration potentielle de rayons diagonaux longs sur plateau dégagé. \\
-\hline
-
-Prises pion/dame
-& \texttt{pawnMultiCaptures}, \texttt{checkerMultiCaptures}, \texttt{dfsPawn}, \texttt{dfsChecker}
-& $O(B^k)$ (pire cas)
-& Exploration récursive d'un arbre de séquences de capture. \\
-\hline
-
-Génération globale
-& \texttt{getWhiteValidMoves}, \texttt{getBlackValidMoves}
-& $O(n + \text{DFS captures})$
-& Balayage des cases + génération des prises (coût dominant selon la position). \\
-\hline
-
-Copie
-& \texttt{copy}
-& $O(1)$
-& Recopie d'un nombre constant de champs primitifs. \\
 \hline
 \end{longtable}
 }

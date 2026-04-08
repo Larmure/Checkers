@@ -1,9 +1,0 @@
-\begin{MintedVerbatim}[commandchars=\\\{\}]
-\PYG{n}{List}\PYG{o}{\PYGZlt{}}\PYG{n}{Move}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{n}{possibleMoves}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{game}\PYG{p}{.}\PYG{n+na}{getPossibleMoves}\PYG{p}{(}\PYG{n}{game}\PYG{p}{.}\PYG{n+na}{getCurrentPlayer}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
-
-\PYG{k}{for}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{Move}\PYG{+w}{ }\PYG{n}{m}\PYG{+w}{ }\PYG{p}{:}\PYG{+w}{ }\PYG{n}{possibleMoves}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
-\PYG{+w}{  }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{m}\PYG{p}{.}\PYG{n+na}{getFrom}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{=}\PYG{o}{=}\PYG{+w}{ }\PYG{n}{selectedIndex}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
-\PYG{+w}{    }\PYG{n}{validDestinationSquares}\PYG{p}{.}\PYG{n+na}{add}\PYG{p}{(}\PYG{n}{board}\PYG{p}{.}\PYG{n+na}{indexToSquare}\PYG{p}{(}\PYG{n}{m}\PYG{p}{.}\PYG{n+na}{getTo}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}\PYG{p}{)}\PYG{p}{;}
-\PYG{+w}{  }\PYG{p}{\PYGZcb{}}
-\PYG{p}{\PYGZcb{}}
-\end{MintedVerbatim}
