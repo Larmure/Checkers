@@ -48,8 +48,10 @@
 
 \subsection{Historique}
 
-Le jeu de dames est l'un des plus anciens jeux de plateau stratégiques, dont les origines remontent à plusieurs millénaires dans les civilisations méditerranéennes. 
-Perfectionné au fil des siècles, il a acquis ses règles modernes en Europe au cours du Moyen-Âge et fait aujourd'hui l'objet de compétitions internationales officielles régies par la Fédération Mondiale du Jeu de Dames (FMJD).
+Le jeu de dames est l'un des plus anciens jeux de plateau stratégiques, dont les origines remontent à plusieurs millénaires dans 
+les civilisations méditerranéennes. 
+Perfectionné au fil des siècles, il a acquis ses règles modernes en Europe au cours du Moyen-Âge et fait aujourd'hui l'objet de 
+compétitions internationales officielles régies par la Fédération Mondiale du Jeu de Dames (FMJD)~\cite{fmjd}.
 
 \subsection{Présentation du jeu}
 Le jeu de dames est un jeu de stratégie abstraite opposant deux joueurs sur un plateau quadrillé. 
@@ -101,6 +103,8 @@ portant le nombre de pions à 30 par joueur.
 \FloatBarrier
 
 \subsection{Règles du jeu}
+
+Les règles présentées dans cette section s'appuient sur les ressources de la FFJD et d'un guide de règles grand public~\cite{ffjd_regles,comptoir_regles_dames}.
 
 \subsubsection{Mise en place et déroulement}
 
@@ -312,6 +316,48 @@ et d'identifier les lacunes à combler~: gestion du temps dans la recherche
 adversariale, richesse algorithmique de l'IA, et protocole réseau adapté
 à un client Java interactif.
 
+\subsection{Complexité du jeu}
+
+Le but de cette section est de chiffrer l'espace d'états du jeu et la complexité inhérente à ses règles, sans la confondre avec la 
+complexité des algorithmes de recherche employés. Une telle analyse est indispensable pour justifier nos choix d'architecture, notamment 
+l'utilisation des bitboards et des heuristiques de recherche.
+
+\paragraph{Analyse de l'espace d'états}
+
+L'espace d'états représente le nombre de configurations légales possibles du plateau. Pour comprendre 
+comment ces nombres astronomiques sont calculés, il faut se pencher sur la combinatoire du damier.
+
+Sur un plateau de taille $T \times T$, le jeu se déroule exclusivement sur les cases sombres. Le nombre de cases actives est donc $N = T^2 / 2$.
+ À tout instant, chacune de ces cases peut se trouver dans l'un des 5 états suivants : Vide, Pion Blanc, Pion Noir, Dame Blanche ou Dame Noire. 
+
+Mathématiquement, une borne supérieure naïve de l'espace d'états serait de $5^N$ configurations possibles. Cependant, cette valeur théorique 
+est drastiquement réduite par les contraintes strictes imposées par les règles du jeu. Le calcul analytique réel s'obtient en sommant les 
+combinaisons de placement de $b$ pièces blanches et $n$ pièces noires parmi les $N$ cases, tout en prenant en compte le nombre maximal de pièces 
+initiales par joueur et les impossibilités géométriques (par exemple, l'absence de pions sur la première rangée de leur propre camp). 
+
+Les recherches scientifiques en intelligence artificielle, basées sur ces dénombrements combinatoires et le parcours de l'arbre de jeu par des
+ supercalculateurs, ont permis de chiffrer précisément cet espace. Le tableau \ref{tab:state-space} synthétise ces ordres de grandeur en fonction 
+ de la variante jouée.
+
+\begin{table}[!ht]
+    \centering
+    \caption{Évolution de l'espace d'états en fonction de la variante du jeu}
+    \label{tab:state-space}
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Variante} & \textbf{Taille ($T \times T$)} & \textbf{Cases actives ($N$)} & \textbf{Pièces/Joueur} & \textbf{Espace d'états} \\ \hline
+        Anglaises / Brésiliennes & $8 \times 8$ & 32 & 12 & $5 \times 10^{20}$ \\ \hline
+        Internationales & $10 \times 10$ & 50 & 20 & $\approx 10^{30}$ \\ \hline
+        Canadiennes & $12 \times 12$ & 72 & 30 & $\approx 10^{40}$ \\ \hline
+    \end{tabular}
+\end{table}
+
+À titre de comparaison, si la variante $8 \times 8$ a pu être entièrement résolue en 2007 par le programme Chinook (prouvant qu'une partie parfaite mène inexorablement
+ à l'égalité~\cite{checkers_solved}), le passage au format $10 \times 10$ ou $12 \times 12$ rend toute
+  tentative de résolution exhaustive informatiquement impossible. Pour la variante internationale, la taille de l'arbre de jeu (nombre total de parties possibles
+   de bout en bout) est même estimée à $10^{54}$, justifiant ainsi le recours à des algorithmes d'élagage stricts ou des sélections probabilistes (MCTS).
+
 \section{Algorithme et Structure de données}
 \label{sec:algo}
 
@@ -330,17 +376,18 @@ Cette représentation permet de s'affranchir de la gestion itérative d'un table
  mais un vecteur binaire unique permettant d'évaluer la légalité des coups par de simples masquages logiques plutôt que par des parcours de boucles imbriquées.
 
 \[
+\setlength{\arraycolsep}{3pt}
 \begin{array}{cccccccccc}
-\cdot & 45 & \cdot & 46 & \cdot & 47 & \cdot & 48 & \cdot & 49 \\
-40 & \cdot & 41 & \cdot & 42 & \cdot & 43 & \cdot & 44 & \cdot \\
-\cdot & 35 & \cdot & 36 & \cdot & 37 & \cdot & 38 & \cdot & 39 \\
-30 & \cdot & 31 & \cdot & 32 & \cdot & 33 & \cdot & 34 & \cdot \\
-\cdot & 25 & \cdot & 26 & \cdot & 27 & \cdot & 28 & \cdot & 29 \\
-20 & \cdot & 21 & \cdot & 22 & \cdot & 23 & \cdot & 24 & \cdot \\
-\cdot & 15 & \cdot & 16 & \cdot & 17 & \cdot & 18 & \cdot & 19 \\
-10 & \cdot & 11 & \cdot & 12 & \cdot & 13 & \cdot & 14 & \cdot \\
-\cdot & 5 & \cdot & 6 & \cdot & 7 & \cdot & 8 & \cdot & 9 \\
-0 & \cdot & 1 & \cdot & 2 & \cdot & 3 & \cdot & 4 & \cdot
+\cdot&45&\cdot&46&\cdot&47&\cdot&48&\cdot&49\\
+40&\cdot&41&\cdot&42&\cdot&43&\cdot&44&\cdot\\
+\cdot&35&\cdot&36&\cdot&37&\cdot&38&\cdot&39\\
+30&\cdot&31&\cdot&32&\cdot&33&\cdot&34&\cdot\\
+\cdot&25&\cdot&26&\cdot&27&\cdot&28&\cdot&29\\
+20&\cdot&21&\cdot&22&\cdot&23&\cdot&24&\cdot\\
+\cdot&15&\cdot&16&\cdot&17&\cdot&18&\cdot&19\\
+10&\cdot&11&\cdot&12&\cdot&13&\cdot&14&\cdot\\
+\cdot&5&\cdot&6&\cdot&7&\cdot&8&\cdot&9\\
+0&\cdot&1&\cdot&2&\cdot&3&\cdot&4&\cdot
 \end{array}
 \]
 
@@ -1453,7 +1500,7 @@ Pire : $O(b^d)$
 \subsubsection{Logique théorique de l'algorithme}
 
 Contrairement à l'algorithme Minimax qui tente d'évaluer exhaustivement toutes les branches jusqu'à une profondeur donnée, 
-le MCTS repose sur des simulations statistiques probabilistes. La recherche s'effectue en répétant une boucle de quatre phases fondamentales
+le MCTS repose sur des simulations statistiques probabilistes~\cite{wikipedia_mcts,geeksforgeeks_mcts}. La recherche s'effectue en répétant une boucle de quatre phases fondamentales
  jusqu'à épuisement du temps de réflexion imparti :
 
 \paragraph{Sélection}
