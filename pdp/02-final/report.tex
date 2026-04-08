@@ -1589,97 +1589,41 @@ Avec le recul, ce module fonctionne surtout parce qu'il reste discipliné : l'af
 
 \subsubsection{Architecture interne de la GUI}
 
-L'implémentation de la GUI repose sur javafx et une décomposition en plusieurs composants spécialisés :
+L'architecture interne de la GUI repose sur JavaFX et sur une séparation stricte des responsabilités entre orchestration, composition visuelle et interaction utilisateur.
 
-\paragraph{GraphicalUserInterface et le pattern Observer}
+La figure~\ref{fig:gui-uml} présente les relations principales entre les composants GUI.
 
-La classe \texttt{GraphicalUserInterface} étend \texttt{GameView}, ce qui lui permet de s'intégrer directement au pattern Observer 
-déjà utilisé par le projet. Quand le modèle change, la GUI reçoit l'information via la méthode \texttt{update(GameCheckers)} 
-et redirige la mise à jour vers les composants visuels.
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.42\textwidth]{img_report/gui.png}
+  \caption{Architecture interne de la GUI.}
+  \label{fig:gui-uml}
+\end{figure}
+\FloatBarrier
 
-Le point central ici est la gestion du thread JavaFX. Comme JavaFX impose que toute modification de l'interface passe par son 
-thread dédié (Application Thread), les mises à jour sont dispatchées via \texttt{Platform.runLater(...)} :
+\paragraph{GraphicalUserInterface : orchestration et cycle de vie}
 
-\begin{minted}{java}
-@Override
-public void update(GameCheckers game) {
-  Platform.runLater(() -> {
-    if (mainView != null) {
-      mainView.update(game);
-    }
-  });
-}
-\end{minted}
+La classe \texttt{GraphicalUserInterface} reste le point d'entrée de la vue graphique. Elle implémente le contrat \texttt{GameView}, reçoit les notifications du modèle via le pattern Observer et orchestre la propagation des mises à jour vers les composants visuels.
 
-Ce pattern de thread est \textbf{central} : sans lui, toute mise à jour du modèle provenant d'un autre thread provoque une exception \texttt{IllegalStateException}. La classe gère aussi 
-l'initialisation de la fenêtre principale, l'application de la feuille de style CSS 
-et la fermeture contrôlée avec vérification des sauvegardes avant quitter.
+Le point technique structurant est la gestion du thread JavaFX : toute mise à jour d'interface est redirigée vers l'Application Thread afin de garantir un rafraîchissement sûr, même lorsque les notifications proviennent d'un timer blitz ou d'un calcul d'IA exécuté en arrière-plan. La classe centralise également l'initialisation de la fenêtre, l'application du style et la fermeture contrôlée (avec vérification des sauvegardes en cours).
 
-\paragraph{MainView et organisation visuelle}
+\paragraph{MainView et composition de l'interface}
 
-La fenêtre principale est construite par \texttt{MainView}, qui hérite de \texttt{BorderPane}. Ce choix permet de séparer 
-proprement l'interface en trois zones : le menu en haut, le jeu au centre et la barre d'actions en bas. 
+\texttt{MainView} construit la structure globale de la fenêtre (barre d'outils, zone de jeu, historique et actions), tandis que le rendu du plateau est délégué à des sous-composants spécialisés. Cette composition évite d'accumuler toute la logique de présentation dans une classe unique et facilite l'évolution indépendante de chaque zone de l'interface.
 
-\texttt{MainView} ne redessine pas le plateau lui-même ; ce rôle est délégué à \texttt{PlayView}, ce qui évite de concentrer 
-la logique d'affichage dans une seule classe. Cette délégation renforce la maintenabilité et facilite les tests unitaires de chaque 
-composant.
+\paragraph{BoardView : interaction sans logique métier}
 
-\paragraph{BoardView et rendu interactif}
+\texttt{BoardView} gère l'affichage du damier, la sélection des pièces, la mise en évidence des destinations valides et les interactions utilisateur (clics et glisser-déposer). En revanche, il ne calcule jamais les règles du jeu : les coups autorisés sont fournis par le moteur via le contrôleur. La vue reste donc un adaptateur d'interaction et de rendu, sans duplication de logique métier.
 
-\texttt{BoardView} est le compasant qui affiche réellement le damier, les pièces, les sélections, 
-les coups suggérés et les mouvements possibles. Le composant repose sur un \texttt{GridPane}, reconstruit visuellement à chaque 
-redraw. L'interaction suit un schéma à deux clics : au premier clic, la pièce est sélectionnée et surlignée en bleu ; au second clic, 
-la destination est envoyée au contrôleur pour exécution du coup.
+\paragraph{Stabilité visuelle et compatibilité d'exécution}
 
-Un point crucial est que la GUI \textbf{ne recalcule pas} les règles de dames. Elle demande directement au modèle quels coups sont légaux, 
-puis ne garde que ceux qui concernent la pièce sélectionnée :
+Le redimensionnement manuel de la fenêtre est volontairement verrouillé afin de garantir la stabilité de l'affichage. Cette architecture responsive initiale assure que le plateau et l'interface (barre d'outils, historique, chronomètres) restent proportionnés et lisibles sur différentes machines.
 
-\begin{minted}{java}
-List<Move> possibleMoves = game.getPossibleMoves(game.getCurrentPlayer());
+Pour la sauvegarde et le chargement, nous avons choisi de développer des boîtes de dialogue applicatives plutôt que d'utiliser l'explorateur de fichiers natif du système d'exploitation. Ce choix réduit les écarts de comportement entre environnements et contourne les problèmes de compatibilité de chemins observés sous WSL2.
 
-for (Move m : possibleMoves) {
-  if (m.getFrom() == selectedIndex) {
-    validDestinationSquares.add(board.indexToSquare(m.getTo()));
-  }
-}
-\end{minted}
+\paragraph{ConfigDialog : traduction des choix UI vers la configuration moteur}
 
-L'interface ne décide pas ce qui est légal ou non ; elle se contente d'afficher proprement ce que le moteur autorise. 
-Ce choix architectural évite de dupliquer la logique métier dans la vue et garantit la cohérence globale : une règle modifiée 
-dans le moteur s'applique immédiatement sans changement de code GUI.
-
-Le drag and drop a également été implémenté. Quand l'utilisateur commence à faire glisser une pièce, la case de départ est stockée 
-dans le \texttt{Dragboard} JavaFX. Au dépôt, la vue reconstruit simplement le déplacement et l'envoie au contrôleur sans validation locale. 
-Encore une fois, la vue gère l'interaction (UX), mais pas les règles.
-
-\paragraph{ConfigDialog et interactions complexes}
-
-Le dialogue de configuration \texttt{ConfigDialog} va au-delà d'une simple présentation de cases à cocher. Les composants réagissent 
-entre eux : si le mode blitz est désactivé, le spinner de temps l'est aussi. Si aucune IA n'est active, les options liées aux IA 
-sont désactivées automatiquement. Ces dépendances sont gérées via des listeners JavaFX sur les propriétés des contrôles.
-
-Plus important encore, le dialogue reconstruit un objet \texttt{Configuration} exploitable directement par le moteur. Il ne renvoie pas 
-juste des valeurs d'interface brutes : il normalise les choix, convertit les unités (par exemple, les secondes en millisecondes pour 
-l'IA) et prépare les bons formats.
-
-\paragraph{Tests de la GUI}
-
-Exemple : \texttt{ConfigDialog}. Les tests utilisent JUnit 5, TestFX 
-(framework pour tester JavaFX) et Mockito (pour simuler le contrôleur). Les composants JavaFX sont créés sur le bon thread 
-à l'aide de \texttt{Platform.runLater(...)}, puis les interactions utilisateur sont simulées avec \texttt{FxRobot}. 
-
-Par exemple, un test vérifie que cocher ou décocher le mode blitz active ou désactive correctement le spinner de temps :
-
-\begin{minted}{java}
-robot.interact(() -> blitzCheck.setSelected(false));
-assertTrue(timeSpinner.isDisabled());
-
-robot.interact(() -> blitzCheck.setSelected(true));
-assertFalse(timeSpinner.isDisabled());
-\end{minted}
-
-Cette approche garantit que le comportement du dialogue reste stable lors des refactorisations futures et valide que les interactions 
-entre composants restent cohérentes.
+\texttt{ConfigDialog} ne se limite pas à collecter des valeurs d'interface. Il applique des règles de cohérence entre contrôles, normalise les paramètres saisis et produit directement un objet \texttt{Configuration} exploitable par le moteur de jeu.
 
 \subsection{Module Réseau}
 \label{sec:reseau}
