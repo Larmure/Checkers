@@ -1,11 +1,16 @@
 package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.controller.commands.*;
+import fr.ubordeaux.pdp.controller.commands.JoinCommand;
+import fr.ubordeaux.pdp.controller.commands.PingCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStatusCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
-import fr.ubordeaux.pdp.server.GameServer;
-
 import java.util.Arrays;
 
 /**
@@ -28,12 +33,12 @@ public class ShellCommandRouter {
 
   private final GameController controller;
   private final ClientSession session;
+  
   /**
    * Creates a router for shell commands.
    *
    * @param controller the local game controller.
    * @param session the current client session.
-   * @param
    */
   public ShellCommandRouter(GameController controller, ClientSession session) {
     this.controller = controller;

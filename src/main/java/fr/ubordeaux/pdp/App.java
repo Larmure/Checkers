@@ -1,6 +1,5 @@
 package fr.ubordeaux.pdp;
 
-import fr.ubordeaux.pdp.controller.commands.JoinCommand;
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.controller.ShellCommandRouter;
 import fr.ubordeaux.pdp.controller.bridge.ContestAnalysisBridge;

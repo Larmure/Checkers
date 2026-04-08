@@ -73,7 +73,7 @@ public class GraphicalUserInterface extends GameView {
    * Creates the GUI with default configuration values.
    */
   public GraphicalUserInterface(boolean serverMode, ClientSession session) {
-    this(null, serverMode,session);
+    this(null, serverMode, session);
   }
 
   /**

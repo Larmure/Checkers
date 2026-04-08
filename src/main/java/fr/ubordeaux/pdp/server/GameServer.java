@@ -219,29 +219,13 @@ public class GameServer {
     System.out.println("[server] Server stopped.");
   }
 
-  /** @return {@code true} if the server is currently running */
-  public boolean isRunning() {
-    return running;
-  }
-
-  /** @return the TCP port the server is listening on */
-  public int getPort() {
-    return tcpPort;
-  }
-
-  /** @return {@code true} if this server tags all games as {@code mode=GUI} */
-  public boolean isGuiOnly() {
-    return guiOnly;
-  }
 
   /**
-   * Handles a newly connected client socket end-to-end: handshake → message loop.
+   * Handles the NEW invitation command and delivers an invitation to a target player.
    *
-   * <p>Expected first line from the client:
-   *
-   * <pre>
-   * REGISTER <id> <name>
-   * </pre>
+   * <p>The sender's idle check and the invitation creation are both performed inside
+   * {@link InvitationManager#createInvitation}, which is {@code synchronized},
+   * so no additional locking is needed here.
    */
   private void handleClient(Socket client) {
     try (
@@ -571,11 +555,50 @@ public class GameServer {
     }
   }
 
+  /**
+   * Indicates whether the server is currently running.
+   *
+   * @return {@code true} if the server is currently running
+   */
+  public boolean isRunning() {
+    return running;
+  }
+
+  /**
+   * Returns the TCP port the server is listening on.
+   *
+   * @return the listening TCP port
+   */
+  public int getPort() {
+    return tcpPort;
+  }
+
+  /**
+   * Indicates whether this server accepts only GUI clients.
+   *
+   * @return {@code true} if this server tags all games as {@code mode=GUI}
+   */
+  public boolean isGuiOnly() {
+    return guiOnly;
+  }
+
+  /**
+   * Returns the TCP listening port of this server.
+   *
+   * @return the TCP listening port
+   */
   public int getTcpPort() {
     return tcpPort;
   }
 
+  /**
+   * Returns the shared game registry used by this server.
+   *
+   * @return the server game registry
+   */
   public GameRegistry getRegistry() {
     return registry;
   }
+
+
 }
