@@ -7,7 +7,7 @@
 \usepackage{caption}
 \usepackage{placeins}
 
-\usetikzlibrary{positioning,fit,backgrounds,arrows.meta,babel}
+\usetikzlibrary{positioning,fit,backgrounds,arrows.meta,babel,shapes.geometric}
 \pgfdeclarelayer{background}
 \pgfsetlayers{background,main}
 
@@ -622,11 +622,70 @@ Copie
 %  Section 3 — Architecture du projet
 % ============================================================
 
-\section{Architecture du projet}
-
 \subsection{Le Moteur de Jeu}
 
-L'architecture de notre application repose sur le patron Modèle-Vue-Contrôleur (MVC). Cette section détaille la conception de notre moteur de jeu (qui incarne le Modèle) et la façon dont il interagit avec le reste du programme pour assurer le bon déroulement d'une partie.
+L'architecture de notre application repose sur le patron Modèle-Vue-Contrôleur (MVC). 
+Cette section détaille la conception de notre moteur de jeu (qui incarne le Modèle) et 
+la façon dont il interagit avec le reste du programme pour assurer le bon déroulement d'une partie.
+
+\begin{figure}[ht]
+\centering
+\makebox[\textwidth][c]{ 
+\begin{tikzpicture}[
+  mod/.style={draw, rounded corners=3pt, minimum width=3.2cm, minimum height=1.0cm, align=center, font=\footnotesize\bfseries},
+  flow/.style={-{Stealth[length=3.5pt]}, line width=0.5pt},
+  node distance=1.5cm and 1.8cm % Espacement augmenté pour plus de clarté
+]
+  % --- NOEUDS ---
+  \node[mod, fill=Honeydew!65] (entry) {Entrées utilisateur\\{\scriptsize CLI / GUI}};
+  \node[mod, fill=Lavender!45, right=of entry] (controller) {Contrôle applicatif\\{\scriptsize GameController / Router}};
+  \node[mod, fill=LightSteelBlue!35, right=of controller] (model) {Moteur de jeu\\{\footnotesize model : Board, GameCheckers}};
+
+  \node[mod, fill=MistyRose!45, below=1.8cm of model, xshift=0.35cm] (ai) {Module IA\\{\scriptsize MinMax, AlphaBeta, MCTS}};
+  \node[mod, fill=Thistle!35, above=of model] (network) {Module Réseau\\{\scriptsize TCP client/serveur}};
+  \node[mod, fill=LemonChiffon!55, below=1.8cm of controller, xshift=-0.35cm] (persist) {Persistance\\{\scriptsize save/load, historique}};
+
+  % --- FLUX ---
+  \draw[flow] (entry.east) -- node[above, font=\tiny]{actions} (controller.west);
+  \draw[flow] (controller.east) -- node[above, font=\tiny]{commandes} (model.west);
+  
+  % Notification : on descend plus bas pour éviter le bloc Persistance
+  \draw[flow] (model.south) -- ++(0,-1.4) -| node[pos=0.2, below, font=\tiny]{notifications} (entry.south);
+
+  \draw[flow] (model.south) -- node[right, font=\tiny]{évaluation/recherche} (ai.north);
+  
+  % Parties distantes : décalage horizontal plus grand vers la droite pour éviter Module Réseau
+  \draw[flow] (controller.north) -- ++(0,0.8) -| node[pos=0.75, above, font=\tiny, xshift=-0.8cm]{parties distantes} (network.west);
+  
+  \draw[flow] (controller.south) -- ++(-0.15,-0.65) -- node[left, font=\tiny]{lecture/écriture} (persist.north);
+\end{tikzpicture}
+}
+\caption{Diagramme simplifié de l'architecture globale du projet}
+\label{fig:architecture-globale-projet}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+% scale=0.85 réduit la taille de 15%
+\begin{tikzpicture}[
+  scale=0.85, transform shape, 
+  pack/.style={draw, rounded corners=4pt, minimum width=3.8cm, minimum height=1.2cm, align=center, font=\small\bfseries},
+  dep/.style={-{Stealth[length=3.5pt]}, line width=0.55pt},
+  node distance=1.0cm and 1.5cm
+]
+  \node[pack, fill=LightSteelBlue!35] (model) {Package \texttt{model}\\{\footnotesize Board, GameCheckers, Move}};
+  \node[pack, fill=Lavender!45, above left=of model] (controller) {Package \texttt{controller}\\{\footnotesize GameController}};
+  \node[pack, fill=Honeydew!60, below left=of model] (view) {Package \texttt{view}\\{\footnotesize CLI, GUI, HeadlessView}};
+  \node[pack, fill=MistyRose!45, right=of model] (ai) {Package \texttt{ai}\\{\footnotesize Ai, MinMax, Mcts, Evaluator}};
+
+  \draw[dep] (controller.east) -- node[above, font=\scriptsize, sloped]{orchestre} (model.west);
+  \draw[dep] (view.north east) -- node[below, font=\scriptsize, sloped]{observe} (model.south west);
+  \draw[dep] (model.east) -- node[above, font=\scriptsize]{appelle} (ai.west);
+  \draw[dep, dashed] (controller.south) -- node[left, font=\scriptsize]{met à jour} (view.north);
+\end{tikzpicture}
+\caption{Diagramme de packages simplifié (vue d'ensemble MVC + IA)}
+\label{fig:packages-moteur}
+\end{figure}
 
 \subsubsection{Rôle et responsabilités}
 
@@ -634,13 +693,56 @@ Le moteur de jeu, regroupé dans le package \texttt{model}, a pour unique missio
 
 Ses responsabilités sont réparties entre deux classes majeures. D'un côté, la classe \texttt{Board} agit comme le moteur physique du damier : elle manipule les pièces, valide si un coup respecte la géométrie du plateau et applique les règles de prises obligatoires. De l'autre, la classe \texttt{GameCheckers} incarne l'arbitre de la partie. C'est elle qui maintient l'état global du système. Elle garde la trace du joueur actif, stocke l'historique des mouvements pour permettre les retours en arrière (undo/redo), et détecte les conditions de fin de partie (victoire, blocage, ou match nul par répétition).
 
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.5\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/modele.png}
-        \caption{Architecture du Modèle}
-    \end{minipage}
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  umlclass/.style={draw, rounded corners=3pt, align=left, font=\footnotesize, inner sep=4pt, minimum width=4.0cm},
+  umllink/.style={-{Stealth[length=3.5pt]}, line width=0.5pt}
+]
+  \node[umlclass, fill=LightSteelBlue!35] (gc) {
+    \textbf{GameCheckers}\\
+    - board : Board\\
+    - managerUndoRedo : ManagerUndoRedo\\
+    - isWhiteTurn : boolean\\
+    \rule{3.8cm}{0.4pt}\\
+    + getPossibleMoves(player) : \texttt{List\textless Move\textgreater}\\
+    + applyMove(from, to) : void\\
+    + notifyObservers() : void
+  };
+
+  \node[umlclass, fill=Honeydew!60, right=1.6cm of gc] (board) {
+    \textbf{Board}\\
+    - whitePawns, blackPawns : long\\
+    - whiteCheckers, blackCheckers : long\\
+    \rule{3.8cm}{0.4pt}\\
+    + getValidMoves(color) : \texttt{List\textless Move\textgreater}\\
+    + applyMove(move) : void\\
+    + copy() : Board
+  };
+
+  \node[umlclass, fill=MistyRose!45, below=1.2cm of gc] (undo) {
+    \textbf{ManagerUndoRedo}\\
+    - undoStack, redoStack\\
+    \rule{3.8cm}{0.4pt}\\
+    + registerMove(color, move) : void\\
+    + undo(isWhiteTurn) : void\\
+    + redo(isWhiteTurn) : void
+  };
+
+  \node[umlclass, fill=LemonChiffon!55, below=1.2cm of board] (move) {
+    \textbf{Move}\\
+    - from : int\\
+    - to : int\\
+    - captured : \texttt{List\textless Integer\textgreater}
+  };
+
+  \draw[umllink] (gc.east) -- node[above, font=\scriptsize]{utilise} (board.west);
+  \draw[umllink] (gc.south) -- node[left, font=\scriptsize]{gère} (undo.north);
+  \draw[umllink] (board.south) -- node[right, font=\scriptsize]{produit/applique} (move.north);
+  \draw[umllink, dashed] (gc.south east) -- node[below right, font=\scriptsize]{consomme} (move.north west);
+\end{tikzpicture}
+\caption{Diagramme de classes UML simplifié du moteur de jeu}
+\label{fig:uml-moteur}
 \end{figure}
 \FloatBarrier
 
@@ -650,25 +752,97 @@ Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{Game
 
 \sloppy En entrée, l'interface graphique ou textuelle ne modifie jamais le plateau directement. Elle passe par le \texttt{GameController} qui interroge d'abord le moteur via \texttt{getPossibleMoves(player)} pour s'assurer qu'une action est légale, puis lui demande de l'exécuter avec la méthode \texttt{applyMove(from, to)}.
 
-En sortie, le moteur dicte le rythme grâce au patron de conception Observateur. Au lieu de forcer l'interface graphique à vérifier constamment si quelque chose a changé, le moteur travaille en silence et émet un signal de mise à jour via \texttt{notifyObservers()} uniquement lorsqu'un mouvement valide vient de modifier l'état du jeu.
+En sortie, le moteur notifie le reste de l'application grâce au patron de conception 
+Observateur. Au lieu de forcer l'interface graphique à vérifier constamment si quelque 
+chose a changé, le moteur travaille en silence et émet un signal de mise à jour via 
+\texttt{notifyObservers()} uniquement lorsqu'un mouvement valide vient de modifier 
+l'état du jeu.
 
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.5\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/MVC.png}
-        \caption{Interaction entre le moteur et la vue via le contrôleur}
-    \end{minipage}
+\definecolor{coulOrange}{RGB}{230,143,50}
+\definecolor{coulTeal}{RGB}{38,166,154}
+\definecolor{coulRed}{RGB}{180,30,30}
+
+\begin{figure}[h]
+\centering
+\resizebox{0.9\textwidth}{!}{%
+\begin{tikzpicture}[
+  scale=0.8, transform shape,
+  comp/.style={rectangle, rounded corners=4pt, fill=coulOrange, text=white,
+               font=\bfseries\small, minimum width=2.6cm, minimum height=0.7cm, align=center},
+  meth/.style={rectangle, rounded corners=6pt, fill=coulTeal, text=white,
+               font=\small, minimum width=2.4cm, minimum height=0.6cm, align=center},
+  mode/.style={ellipse, fill=coulTeal, text=white,
+               font=\small, minimum width=1.8cm, minimum height=0.6cm, align=center},
+  dot/.style={circle, fill=coulRed, minimum size=8pt, inner sep=0pt},
+  arr/.style={-{Stealth[length=5pt]}, dashed, thick},
+  label/.style={font=\footnotesize, align=center},
+]
+
+% Espacements réduits entre les colonnes
+\def\colA{0}
+\def\colB{3.0}
+\def\colC{6.5}
+\def\colD{10.5}
+
+\node[comp] (gc)   at (\colA, 0) {GameCheckers};
+\node[comp] (ctrl) at (\colB, 0) {GameController};
+\node[comp] (scr)  at (\colC, 0) {ShellCommandRouter};
+\node[comp] (gv)   at (\colD, 0) {GameView};
+
+% --- Lignes verticales supprimées ici ---
+
+\node[dot] (start) at (\colD, 0.8) {};
+\node[label, right=2pt of start] {\footnotesize coup reçu};
+\draw[arr] (start) -- (gv.north);
+
+\node[meth] (hi) at (\colD, -1.2)
+  {\texttt{<<CLI>>} handleInput() \\ : \texttt{<<GUI>>} EventListener};
+\draw[arr] (gv.south) -- (hi.north);
+
+\node[meth] (route) at (\colC, -2.0) {\texttt{route()}};
+\node[label, above=2pt of route, xshift=0.4cm] {\footnotesize redirection de l'entrée};
+\draw[arr] (hi.west) -- (route.east);
+
+\node[mode] (local) at (\colC, -3.0) {LOCAL};
+\draw[arr] (route.south) -- (local.north);
+
+\node[meth] (em) at (\colB, -2.5) {\texttt{executeMove()}};
+\node[label, above=2pt of em] {\footnotesize envoi d'un coup à jouer};
+\draw[arr] (local.west) -- (em.east);
+
+\node[meth] (ecom) at (\colB, -3.8) {\texttt{executeCommand()}};
+\node[label, above=2pt of ecom] {\footnotesize gestion d'une commande};
+\draw[arr] (local.south west) -- (ecom.east);
+
+\node[meth] (am) at (\colA, -2.5) {\texttt{applyMove()}};
+\node[label, above=2pt of am] {\footnotesize vérification\&application\\du coup};
+\draw[arr] (em.west) -- (am.east);
+
+\node[mode] (conn) at (\colC, -4.6) {CONNECTED\\[-2pt]/SERVER};
+\draw[arr] (local.south) -- (conn.north);
+
+\node[meth] (upd) at (\colD, -5.8) {\texttt{update}};
+
+\draw[arr] (am.south) -- (\colA,-5.8) -- node[above, font=\tiny, pos=0.5] {notifie l'observateur} (upd.west);
+
+\node[label, anchor=south west, font=\tiny, xshift=-0.1cm, yshift=-0.1cm] at (upd.north east) {mise à jour de la vue};
+
+\node[dot] (stop) at (\colD, -7.0) {};
+\draw[arr] (upd.south) -- (stop.north);
+
+\end{tikzpicture}%
+}
+\caption{Interaction entre le moteur et la vue via le contrôleur}
+\label{fig:mvc}
 \end{figure}
-\FloatBarrier
 
 \noindent\textit{Note : La bulle « CONNECTED/SERVER » visible sur ce schéma représente le point d'entrée vers les fonctionnalités réseaux. Le fonctionnement détaillé de ce module (protocole TCP, sockets et gestion du serveur) est traité spécifiquement dans la section \ref{sec:reseau}.}
 
 \subsubsection{Choix techniques et boucle de contrôle}
 
-D'un point de vue technique, la représentation du plateau ne repose pas sur un simple tableau à deux dimensions, mais sur des \textit{bitboards} (comme détaillé dans la section algorithmique \ref{sec:algo}). Ce choix garantit un accès et une manipulation en temps $O(1)$ via des opérations binaires.
-
-Concernant la dynamique, le jeu s'exécute au tour par tour, géré par une machine à états simple définie par l'énumération \texttt{State} (\texttt{IN\_GAME}, \texttt{PAUSE}, \texttt{FINISHED}). L'évolution du système lors de l'application d'un coup suit toujours la même séquence logique stricte :
+Concernant la dynamique, le jeu s'exécute au tour par tour, géré par une machine 
+à états simple définie par l'énumération \texttt{State} (\texttt{IN\_GAME}, 
+\texttt{PAUSE}, \texttt{FINISHED}).
 
 {\small
 \begin{minted}[frame=single]{java}
