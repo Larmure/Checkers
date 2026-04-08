@@ -1093,11 +1093,9 @@ La figure~\ref{fig:ia-dependencies} résume le chemin suivi lors d'une décision
 
 Le cas MCTS introduit une chaîne de dépendances supplémentaire : la sélection \texttt{ML} lit les poids produits par \texttt{LogisticRegressionTrainer}, lesquels sont sauvegardés dans \texttt{ml\_weights.txt} après l'entraînement supervisé. Le module d'apprentissage reste donc découplé du moteur de recherche : l'entraînement écrit un fichier de paramètres, et MCTS le charge uniquement lorsqu'on active ce mode de sélection.
 
-\section{Complexité}
+\subsubsection{Complexité de l'IA}
 
-\subsection{Complexité de l'IA}
-
-\subsubsection{Hypothèses et notations}
+\paragraph{Hypothèses et notations}
 
 Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA fournies\ref{sec:ai}.
 La variable $n$ désigne le nombre de cases actives du plateau (typiquement \(32\), \(50\) ou \(72\)), $b$ représente
@@ -1105,7 +1103,7 @@ le facteur de branchement moyen (nombre de coups légaux par position), et $d$ l
 Nous distinguons la complexité \textit{propre} d'une méthode de recherche (nombre de n\oe{}uds explorés) du coût réel,
 qui inclut aussi la génération des coups par le moteur via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
 
-\subsubsection{Complexité des fonctions d'évaluation}
+\paragraph{Complexité des fonctions d'évaluation}
 
 \paragraph{SimpleEvaluator}
 La méthode \texttt{evaluate(Board)} réalise un parcours linéaire de l'ensemble des cases actives,
@@ -1123,7 +1121,7 @@ Sa complexité globale s'écrit donc $O(n + M_{w} + M_{b})$, où $M_{w}$ et $M_{
 de génération des coups blancs et noirs. La méthode \texttt{isInCenter(int, int, int)} elle-même ne fait
 que des comparaisons arithmétiques constantes et s'exécute en $O(1)$.
 
-\subsubsection{Complexité des algorithmes de recherche adversariale}
+\paragraph{Complexité des algorithmes de recherche adversariale}
 
 \paragraph{MinMax}
 La méthode \texttt{calculateBestMove(...)} lance une recherche complète jusqu'à \texttt{maxDepth} et hérite donc
@@ -1148,7 +1146,7 @@ En pratique, le surcoût par rapport à une unique recherche à profondeur $d$ e
 et il est compensé par la robustesse de la stratégie : en cas d'interruption temporelle,
 le meilleur coup d'une profondeur entièrement terminée est déjà disponible.
 
-\subsubsection{Synthèse}
+\paragraph{Synthèse}
 
 {\footnotesize
 \begin{longtable}{|p{3.4cm}|p{4.9cm}|p{2.2cm}|p{4.8cm}|}
