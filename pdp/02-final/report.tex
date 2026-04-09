@@ -991,6 +991,17 @@ La figure~\ref{fig:gui-uml} présente les relations principales entre les compos
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.85\textwidth]{img_report/gui.png}
+  
+  \vspace{0.5cm}
+  
+  \begin{tikzpicture}[
+    leg/.style={rectangle, draw, rounded corners=4pt, font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center}
+  ]
+    \node[leg, fill=model_color] (legModel) at (0, 0) {Model};
+    \node[leg, fill=controller_color] (legController) at (3.1, 0) {Controller};
+    \node[leg, fill=view_color] (legView) at (6.2, 0) {View};
+  \end{tikzpicture}
+  
   \caption{Architecture interne de la GUI.}
   \label{fig:gui-uml}
 \end{figure}
@@ -2055,13 +2066,15 @@ la profondeur 4, ce qui le rend vulnérable dès qu'une combinaison nécessite u
 Lors des tests et du développement, plusieurs anomalies ont été identifiées :
 
 \begin{enumerate}
-    \item \textbf{Mode serveur -- Acceptation de commandes limitée}
+    \item \textbf{Mode serveur -- Restrictions sur les commandes}
     
-    Le mode serveur (option \texttt{---server}) n'accepte pas les commandes interactives après son lancement initial. 
-    Une fois que le serveur est démarré, l'architecture réseau n'accepte plus l'ensemble 
+    Le mode serveur (option \texttt{---server}) une fois démarré, n'accepte plus l'ensemble 
     des commandes disponibles défini dans l'interface de contrôle. 
-    (par ex., la commande \texttt{players}, ne s'affiche pas proprement.)
     
+    \item \textbf{Commande \texttt{players} -- Affichage défectueux en mode serveur}
+    
+    La commande \texttt{players} ne retourne pas les informations des joueurs de manière correcte, rendant le suivi de l'état des joueurs difficile.
+
     \item \textbf{Absence de vérification d'intégrité de l'historique lors de la sauvegarde}
     
     Le système de sauvegarde ne valide pas l'intégrité de l'historique du jeu avant de procéder à la sauvegarde. 
@@ -2137,11 +2150,11 @@ F17 & Édition de la commande en cours & Fait \\ \hline
 F18 & Historique des commandes tapées & Fait \\ \hline
 F19 & Complétion des commandes & Fait \\ \hline
 F20 & Notation des coups & Fait \\ \hline
-F21 & Sauvegarde et restauration d’une partie & Fait\\ \hline
+F21 & Sauvegarde et restauration d’une partie & Fait \\ \hline
 F22 & Commentaires dans la sauvegarde & Fait \\ \hline
 F23 & Format des paramètres du jeu & Fait\\ \hline
 F24 & Format du damier & Fait \\ \hline
-F25 & Format de l’historique & Fait \\ \hline
+F25 & Format de l’historique & Partiel \\ \hline
 F26 & Module bitboard & Fait \\ \hline
 F27 & Algorithmes de manipulation des bitboards & Fait \\ \hline
 F28 & Menus de l’application & Fait \\ \hline
