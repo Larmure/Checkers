@@ -673,9 +673,12 @@ Copie
 
 \subsection{Le Moteur de Jeu}
 
-L'architecture de notre application repose sur le patron Modèle-Vue-Contrôleur (MVC). 
-Cette section détaille la conception de notre moteur de jeu (qui incarne le Modèle) et 
-la façon dont il interagit avec le reste du programme pour assurer le bon déroulement d'une partie.
+La figure~\ref{fig:architecture-globale-projet} présente la vue d'ensemble de notre architecture MVC. La 
+Vue (entrées utilisateur CLI/GUI) envoie les actions au Contrôleur, qui traduit 
+ces actions en commandes métier vers le Modèle (moteur de jeu). Le Modèle 
+retourne ensuite des notifications vers la Vue pour rafraîchir l'état affiché. 
+Le schéma met également en évidence les modules transverses (IA, réseau, 
+persistance) et leurs points d'intégration avec le cœur MVC.
 
 \definecolor{view_color}{HTML}{B5FFE2}
 \definecolor{controller_color}{HTML}{FFBD59}
@@ -733,9 +736,9 @@ la façon dont il interagit avec le reste du programme pour assurer le bon déro
 
 \subsubsection{Rôle et responsabilités}
 
-Le moteur de jeu, regroupé dans le package \texttt{model}, a pour unique mission de simuler et de faire tourner la partie de dames. Il se concentre purement sur la logique mathématique et les règles officielles : il ne gère absolument pas les clics de souris, la saisie clavier ou l'affichage graphique. 
+La figure~\ref{fig:uml-moteur} illustre l'architecture interne du moteur de jeu, regroupé dans le package \texttt{model}. Ce moteur est volontairement centré sur la logique métier : il simule la partie, applique les règles officielles et reste indépendant de la saisie utilisateur comme de l'affichage.
 
-Ses responsabilités sont réparties entre deux classes majeures. D'un côté, la classe \texttt{Board} agit comme le moteur physique du damier : elle manipule les pièces, valide si un coup respecte la géométrie du plateau et applique les règles de prises obligatoires. De l'autre, la classe \texttt{GameCheckers} incarne l'arbitre de la partie. C'est elle qui maintient l'état global du système. Elle garde la trace du joueur actif, stocke l'historique des mouvements pour permettre les retours en arrière (undo/redo), et détecte les conditions de fin de partie (victoire, blocage, ou match nul par répétition).
+Le diagramme met en évidence la répartition des responsabilités entre les classes principales : \texttt{Board} gère l'état du damier et les transformations locales des pièces, \texttt{GameCheckers} orchestre l'état global de la partie, et \texttt{ManagerUndoRedo} prend en charge l'historique pour les retours en arrière. La classe \texttt{Move} sert d'objet d'échange pour représenter les coups produits et appliqués par le moteur.
 
 \begin{figure}[h]
 \centering
@@ -802,17 +805,13 @@ Ses responsabilités sont réparties entre deux classes majeures. D'un côté, l
 \end{figure}
 \FloatBarrier
 
-\subsubsection{Interface de communication (API)}
+\subsubsection{Interface de communication}
 
-Pour que le reste de l'application puisse interagir avec ce moteur, \texttt{GameCheckers} expose une interface de communication claire basée sur des actions d'entrée et des notifications de sortie.
+La figure~\ref{fig:mvc} décrit le contrat d'échange entre le moteur et les interfaces. \texttt{GameCheckers} y apparaît comme point de passage central entre les actions utilisateur et les mises à jour d'état.
 
-\sloppy En entrée, l'interface graphique ou textuelle ne modifie jamais le plateau directement. Elle passe par le \texttt{GameController} qui interroge d'abord le moteur via \texttt{getPossibleMoves(player)} pour s'assurer qu'une action est légale, puis lui demande de l'exécuter avec la méthode \texttt{applyMove(from, to)}.
+\sloppy En entrée, la vue (graphique ou textuelle) ne modifie jamais directement le plateau : elle passe par le \texttt{GameController}, qui consulte d'abord le moteur via \texttt{getPossibleMoves(player)} pour valider la légalité de l'action, puis déclenche l'exécution avec \texttt{applyMove(from, to)}.
 
-En sortie, le moteur notifie le reste de l'application grâce au patron de conception 
-Observateur. Au lieu de forcer l'interface graphique à vérifier constamment si quelque 
-chose a changé, le moteur travaille en silence et émet un signal de mise à jour via 
-\texttt{notifyObservers()} uniquement lorsqu'un mouvement valide vient de modifier 
-l'état du jeu.
+En sortie, le moteur diffuse les changements via le patron Observateur. Plutôt que d'imposer un polling côté interface, il émet une notification \texttt{notifyObservers()} uniquement lorsqu'un coup valide modifie effectivement l'état de la partie.
 
 \FloatBarrier
 
