@@ -95,7 +95,7 @@ public class SaveBoard {
     boolean blackIsAi = game.getBlackPlayer() instanceof AiPlayer;
 
     String aiMode = "none";
-    String aiDepth = "0";
+    String aiDepth = "1";
 
     if (whiteIsAi && blackIsAi) {
       throw new IOException("Saving with two AI players is not supported.");
@@ -115,6 +115,8 @@ public class SaveBoard {
         algorithm = "alphabeta";
       } else if ("Mcts".equals(algorithmName)) {
         algorithm = "mcts";
+      } else if ("IterativeDeepening".equals(algorithmName)) {
+        algorithm = "iterativedeepening";
       } else {
         throw new IOException("Unknown AI algorithm: " + algorithmName);
       }

@@ -1,6 +1,8 @@
 package fr.ubordeaux.pdp;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.controller.ShellCommandRouter;
+import fr.ubordeaux.pdp.controller.bridge.ContestAnalysisBridge;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.player.ai.Ai;
 import fr.ubordeaux.pdp.model.player.ai.LogisticRegressionTrainer;
@@ -10,10 +12,14 @@ import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import fr.ubordeaux.pdp.server.ClientMode;
 import fr.ubordeaux.pdp.server.ClientSession;
-import fr.ubordeaux.pdp.server.ShellCommandRouter;
+import fr.ubordeaux.pdp.server.GameControllerFactory;
+import fr.ubordeaux.pdp.server.GameServer;
 import fr.ubordeaux.pdp.view.CommandLineInterface;
 import fr.ubordeaux.pdp.view.GameView;
+import fr.ubordeaux.pdp.view.HeadlessView;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
+import java.io.IOException;
+import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -75,7 +81,13 @@ public class App {
   private static long aiTime = Ai.DEFAULT_MAX_TIME_MS;
 
   /** Flag to set the AI mode. */
-  public static String aiMode = Utils.DEFAULT_AI_MODE;
+  private static String aiMode = Utils.DEFAULT_AI_MODE;
+
+  /** Flag to set the white AI mode. */
+  private static String whiteAiMode = Utils.DEFAULT_AI_MODE;
+
+  /** Flag to set the black AI mode. */
+  private static String blackAiMode = Utils.DEFAULT_AI_MODE;
 
   /** Flag to set the AI search depth. */
   private static int aiDepth = Ai.DEFAULT_DEPTH;
@@ -83,11 +95,25 @@ public class App {
   /** Flag to set the selection mode for MCTS. */
   private static SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
 
+  /** Flag to set the evaluation function for Minimax-family AI. */
+  private static String minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
+
   /** Flag indicating whether GUI mode was requested on the CLI. */
   private static boolean guiMode = false;
+  /** Flag to start in server mode. */
+  private static boolean serverMode = false;
+
+  /** TCP port for server mode. */
+  private static int serverPort = 12345;
+
+  /** Flag to start server in daemon mode. */
+  private static boolean daemonMode = false;
 
   /** Flag to set the number of games for training. */
   private static int numGames = LogisticRegressionTrainer.DEFAULT_NUM_GAMES;
+
+  /** Optional save file path provided as positional CLI argument. */
+  private static String startupSaveFile = null;
 
   /**
    * Entry point of the application. Delegates logic to run() and handles exit
@@ -113,17 +139,69 @@ public class App {
         break;
     }
 
+    if (serverMode) {
+      GameControllerFactory factory = () -> new GameController(new HeadlessView());
+      GameServer server = new GameServer("GameServer", serverPort, factory, daemonMode, guiMode);
+
+      Runtime.getRuntime().addShutdownHook(
+          new Thread(
+              () -> {
+                System.out.println("\nShutting down server...");
+                server.stop();
+              }));
+
+      if (daemonMode) {
+        System.out.println("Server running in daemon mode.");
+      } else {
+        System.out.println("Server running in server mode.");
+      }
+
+      Thread serverThread = new Thread(
+          () -> {
+            try {
+              server.start();
+            } catch (IOException e) {
+              System.err.println("Failed to start server: " + e.getMessage());
+            }
+          },
+          "game-server-main");
+      serverThread.setDaemon(false);
+      serverThread.start();
+      return;
+    }
+
+    if (status == EXIT_SUCCESS && ContestAnalysisBridge.runIfRequested(contest, startupSaveFile)) {
+      return;
+    }
+
     GameView view;
 
+    ClientSession session = new ClientSession();
+    session.setGuiMode(guiMode);
     if (status == EXIT_GUI) {
       view = new GraphicalUserInterface(new Configuration(blitz, time, contest,
-          size, verbose, debug, whiteAi, blackAi, aiTime, aiMode, aiDepth, selectionMode));
+          size, verbose, debug, whiteAi, blackAi, aiTime,
+          whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring), serverMode, session);
+      view = new GraphicalUserInterface(
+          new Configuration(
+              blitz,
+              time,
+              contest,
+              size,
+              verbose,
+              debug,
+              whiteAi,
+              blackAi,
+              aiTime,
+              aiMode,
+              aiDepth,
+              selectionMode),
+          serverMode,
+          session);
     } else {
       view = new CommandLineInterface(verbose, debug);
     }
     GameController controller = new GameController(view);
-
-    ClientSession session = new ClientSession();
 
     session.setController(controller);
     ShellCommandRouter router = new ShellCommandRouter(controller, session);
@@ -146,10 +224,18 @@ public class App {
 
     controller.start();
 
+    boolean loadedFromCliArg = false;
+    if (startupSaveFile != null && !startupSaveFile.isBlank()) {
+      controller.executeCommand("load", new String[] { startupSaveFile });
+      loadedFromCliArg = controller.getGame() != null;
+    }
+
     if (status != EXIT_GUI) {
-      controller.startNewGame(new Configuration(blitz, time, contest,
-          size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
-          aiMode, aiDepth, selectionMode));
+      if (!loadedFromCliArg) {
+        controller.startNewGame(new Configuration(blitz, time, contest,
+            size, verbose, debug, effectiveWhiteAi, effectiveBlackAi, aiTime,
+            whiteAiMode, blackAiMode, aiDepth, selectionMode, minimaxScoring));
+      }
       try {
         controller.joinGameLoop();
       } catch (InterruptedException ex) {
@@ -179,6 +265,15 @@ public class App {
     contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();
+    whiteAi = configManager.isWhiteAi();
+    blackAi = configManager.isBlackAi();
+    aiTime = configManager.getAiTime();
+    whiteAiMode = configManager.getWhiteAiMode();
+    blackAiMode = configManager.getBlackAiMode();
+    aiDepth = configManager.getAiDepth();
+    selectionMode = configManager.getSelectionMode();
+    minimaxScoring = configManager.getMinimaxScoring();
+    startupSaveFile = null;
 
     // Options definition
     Options options = new Options();
@@ -190,6 +285,20 @@ public class App {
     options.addOption("t", "time", true, Internationalization.get("opt.time"));
     options.addOption("g", "gui", false, Internationalization.get("opt.gui"));
     // options.addOption("a", "ai", true, Internationalization.get("opt.ai"));
+    Option serverOption = Option.builder()
+        .longOpt("server")
+        .hasArg()
+        .optionalArg(true)
+        .desc("start server on optional port")
+        .build();
+
+    Option daemonOption = Option.builder()
+        .longOpt("daemon")
+        .desc("start server in headless mode")
+        .build();
+
+    options.addOption(serverOption);
+    options.addOption(daemonOption);
     Option aiOption = Option.builder("a")
         .longOpt("ai")
         .desc(Internationalization.get("opt.ai"))
@@ -197,23 +306,57 @@ public class App {
         .optionalArg(true)
         .build();
     options.addOption(aiOption);
-    options.addOption("c", "contest", true, "enable contest mode");
+    Option contestOption = Option.builder("c")
+        .longOpt("contest")
+        .desc("enable contest mode")
+        .hasArg()
+        .optionalArg(true)
+        .build();
+    options.addOption(contestOption);
     options.addOption("s", "size", true, "set board size (8|10|12)");
     options.addOption("at", "ai-time", true, "set AI time limit in seconds");
     options.addOption("am", "ai-mode", true, "set AI mode (minimax|alphabeta|iterative|mcts)");
-    options.addOption("ad", "ai-depth", true, "set AI search depth");
+    options.addOption("wam", "white-ai-mode", true,
+        "set white AI mode (minimax|alphabeta|iterative|mcts)");
+    options.addOption("bam", "black-ai-mode", true,
+        "set black AI mode (minimax|alphabeta|iterative|mcts)");
+    options.addOption("ad", "ai-minimax-depth", true,
+        "set Minimax search depth (if omitted, depth is auto-selected from ai-time)");
     options.addOption("as", "ai-mcts-selection", true, "set MCTS selection mode (uct|ml)");
+    options.addOption("ams", "ai-minimax-scoring", true,
+        "set Minimax scoring (simple|advanced|max)");
     options.addOption("tr", "train", true, "train a ML selection function");
 
     CommandLineParser parser = new DefaultParser();
     try {
-      CommandLine cmd = parser.parse(options, args);
+      CommandLine cmd = parser.parse(options, normalizeArgs(args));
 
-      if (!cmd.getArgList().isEmpty()) {
+      List<String> positionalArgs = cmd.getArgList();
+      if (positionalArgs.size() > 1) {
         throw new ParseException(Internationalization.get("app.error.unrecognized_arg")
-            + cmd.getArgList());
+            + positionalArgs);
+      }
+      if (positionalArgs.size() == 1) {
+        startupSaveFile = positionalArgs.get(0).trim();
       }
 
+      if (cmd.hasOption("server")) {
+        serverMode = true;
+        String portValue = cmd.getOptionValue("server");
+        if (portValue != null) {
+          try {
+            serverPort = Integer.parseInt(portValue);
+          } catch (NumberFormatException e) {
+            System.err.println("Invalid server port: " + portValue);
+            return EXIT_ERROR;
+          }
+        }
+      }
+
+      if (cmd.hasOption("daemon")) {
+        daemonMode = true;
+        serverMode = true;
+      }
       if (cmd.hasOption("h")) {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("checkers", options);
@@ -238,6 +381,11 @@ public class App {
       if (cmd.hasOption("g")) {
         System.out.println(Internationalization.get("app.gui.launch"));
         guiMode = true;
+        if (!serverMode) {
+          System.out.println(Internationalization.get("app.gui.launch"));
+        } else {
+          System.out.println("Server will host GUI-only games.");
+        }
       }
 
       if (cmd.hasOption("b")) {
@@ -262,6 +410,14 @@ public class App {
       if (cmd.hasOption("c")) {
         System.out.println(Internationalization.get("opt.contest.status"));
         contest = true;
+
+        String contestArg = cmd.getOptionValue("c");
+        if (contestArg != null && !contestArg.isBlank()) {
+          String value = contestArg.trim();
+          if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
+            startupSaveFile = value;
+          }
+        }
       }
 
       if (cmd.hasOption("s")) {
@@ -320,19 +476,50 @@ public class App {
 
       if (cmd.hasOption("am")) {
         aiMode = cmd.getOptionValue("am");
+        whiteAiMode = aiMode;
+        blackAiMode = aiMode;
         System.out.println(Internationalization.get("opt.ai.mode.status", aiMode));
       }
 
-      if (cmd.hasOption("ad")) {
+      if (cmd.hasOption("wam")) {
+        whiteAiMode = cmd.getOptionValue("wam");
+        System.out.println("White AI mode set to " + whiteAiMode + ".");
+      }
+
+      if (cmd.hasOption("bam")) {
+        blackAiMode = cmd.getOptionValue("bam");
+        System.out.println("Black AI mode set to " + blackAiMode + ".");
+      }
+
+      if (cmd.hasOption("ad") || cmd.hasOption("ai-minimax-depth")) {
+        String depthArg = cmd.getOptionValue("ad");
+        if (depthArg == null) {
+          depthArg = cmd.getOptionValue("ai-minimax-depth");
+        }
         try {
-          aiDepth = Integer.parseInt(cmd.getOptionValue("ad"));
+          aiDepth = Integer.parseInt(depthArg);
           System.out.println(Internationalization.get("opt.ai.depth.status", aiDepth));
         } catch (NumberFormatException e) {
           System.out.println(Internationalization.get("app.warn.invalid_number",
-              cmd.getOptionValue("ad")));
+              depthArg));
           System.out.println(Internationalization.get("app.warn.changed",
               "AI depth", Ai.DEFAULT_DEPTH));
           aiDepth = Ai.DEFAULT_DEPTH;
+        }
+      } else {
+        aiDepth = Ai.suggestDepthFromTime(aiTime);
+      }
+
+      if (cmd.hasOption("ai-minimax-scoring")) {
+        String scoring = cmd.getOptionValue("ai-minimax-scoring").toLowerCase();
+        if (Utils.VALID_MINIMAX_SCORINGS.contains(scoring)) {
+          minimaxScoring = scoring;
+          System.out.println("Minimax scoring set to " + minimaxScoring + ".");
+        } else {
+          System.out.println("Warning: Invalid Minimax scoring: " + scoring);
+          System.out.println("Value of minimax scoring changed to: "
+              + Utils.DEFAULT_MINIMAX_SCORING);
+          minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
         }
       }
 
@@ -363,6 +550,9 @@ public class App {
       }
 
       System.out.println(Internationalization.get("app.welcome"));
+      if (serverMode) {
+        return EXIT_SUCCESS;
+      }
       return guiMode ? EXIT_GUI : EXIT_SUCCESS;
 
     } catch (ParseException e) {
@@ -454,7 +644,120 @@ public class App {
     blackAi = false;
     aiTime = Ai.DEFAULT_MAX_TIME_MS;
     aiMode = Utils.DEFAULT_AI_MODE;
+    whiteAiMode = Utils.DEFAULT_AI_MODE;
+    blackAiMode = Utils.DEFAULT_AI_MODE;
     aiDepth = Ai.DEFAULT_DEPTH;
     selectionMode = Mcts.DEFAULT_SELECTION_MODE;
+    minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
+    startupSaveFile = null;
+    serverMode = false;
+    serverPort = 12345;
+    daemonMode = false;
+  }
+
+  /**
+   * Returns the save file provided as positional startup argument, if any.
+   *
+   * @return startup save file path or null
+   */
+  public static String getStartupSaveFile() {
+    return startupSaveFile;
+  }
+
+  /**
+   * Returns the maximum time allowed for AI moves.
+   *
+   * @return AI time limit in milliseconds.
+   */
+  public static long getAiTime() {
+    return aiTime;
+  }
+
+  /**
+   * Returns the configured search depth for AI algorithms.
+   *
+   * @return AI search depth.
+   */
+  public static int getAiDepth() {
+    return aiDepth;
+  }
+
+  /**
+   * Checks whether white is controlled by an AI player.
+   *
+   * @return true if white AI is enabled.
+   */
+  public static boolean isWhiteAi() {
+    return whiteAi;
+  }
+
+  /**
+   * Checks whether black is controlled by an AI player.
+   *
+   * @return true if black AI is enabled.
+   */
+  public static boolean isBlackAi() {
+    return blackAi;
+  }
+
+  /**
+   * Returns the configured Minimax scoring function.
+   *
+   * @return Minimax scoring function name.
+   */
+  public static String getMinimaxScoring() {
+    return minimaxScoring;
+  }
+
+  /**
+   * Returns the selection strategy used by the MCTS AI.
+   *
+   * @return active MCTS selection mode.
+   */
+  public static SelectionMode getSelectionMode() {
+    return selectionMode;
+  }
+
+  /**
+   * Normalizes legacy CLI aliases before parsing options.
+   *
+   * @param args original command line arguments
+   * @return normalized arguments compatible with Commons CLI
+   */
+  private static String[] normalizeArgs(String[] args) {
+    String[] normalized = args.clone();
+    for (int i = 0; i < normalized.length; i++) {
+      if ("-contest".equals(normalized[i])) {
+        normalized[i] = "--contest";
+      }
+    }
+    return normalized;
+  }
+
+  /**
+   * Returns the configured AI mode for white player.
+   *
+   * @return white AI mode.
+   */
+  public static String getWhiteAiMode() {
+    return whiteAiMode;
+  }
+
+  /**
+   * Returns the configured AI mode for black player.
+   *
+   * @return black AI mode.
+   */
+  public static String getBlackAiMode() {
+    return blackAiMode;
+  }
+
+  /**
+   * Returns the configured AI mode for both players (if set via --ai) or the default AI mode.  
+   *
+   * @return AI mode.
+   */
+  public static String getAiMode() {
+    return aiMode;
   }
 }

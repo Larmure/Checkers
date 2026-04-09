@@ -38,8 +38,8 @@ class GameCheckersTest {
     void whitePlayerGoesFirst() {
         // At the start of a game, it should be White's turn.
         Player currentPlayer = game.getCurrentPlayer();
-        /*assertEquals("White Player", currentPlayer.toString(),
-                "At the start, the White Player should play first.");*/
+        assertSame(game.getWhitePlayer(), currentPlayer,
+                "At the start, the White Player should play first.");
     }
 
     // =========================================================================
@@ -55,8 +55,8 @@ class GameCheckersTest {
 
         // Now, the current player should be Black.
         Player currentPlayer = game.getCurrentPlayer();
-        /*assertEquals("Black Player", currentPlayer.toString(),
-                "When isWhiteTurn is false, the current player should be Black.");*/
+        assertSame(game.getBlackPlayer(), currentPlayer,
+                "When isWhiteTurn is false, the current player should be Black.");
     }
 
     // =========================================================================
@@ -144,11 +144,11 @@ class GameCheckersTest {
     @Test
     void gameIsNotFinishedAtStart() {
         // At the start, both sides have pieces and available moves.
-        // So checkGameOver() should return the current state (InGameState), not FinishedState.
+        // So checkGameOver() should return the current state, not FINISHED.
         State returnedState = game.checkGameOver();
 
-        /*assertFalse(returnedState instanceof FinishedState,
-                "The game should not be finished on the very first turn.");*/
+        assertNotEquals(State.FINISHED, returnedState,
+                "The game should not be finished on the very first turn.");
 
         assertSame(game.getState(), returnedState,
                 "checkGameOver() should return the current state as long as the game continues.");
@@ -162,13 +162,13 @@ class GameCheckersTest {
         // Check that the initial state exists.
         assertNotNull(game.getState(), "The initial state should not be null.");
 
-        // Create a "Game Over" state and force it into the game.
-        /*State finishedState = new FinishedState();
-        game.setState(finishedState);*/
+        // Force the game state to FINISHED.
+        State finishedState = State.FINISHED;
+        game.setState(finishedState);
 
         // The game state should now be the one we just set.
-        /*assertSame(finishedState, game.getState(),
-                "setState() should correctly replace the current state.");*/
+        assertSame(finishedState, game.getState(),
+                "setState() should correctly replace the current state.");
     }
 
     // =========================================================================
@@ -189,7 +189,7 @@ class GameCheckersTest {
         game.applyMove(fromSquare, toSquare, false);
 
         // After White plays, it should no longer be White's turn.
-        assertNotEquals("White Player", game.getCurrentPlayer().toString(),
+        assertSame(game.getBlackPlayer(), game.getCurrentPlayer(),
                 "After White plays, it should be Black's turn.");
     }
 
@@ -217,11 +217,11 @@ class GameCheckersTest {
         boardField.set(game, fakeBoard);
 
         // Now checkGameOver() should detect that no moves are possible
-        // and return a FinishedState.
+        // and return FINISHED.
         State finalState = game.checkGameOver();
 
-        /*assertTrue(finalState instanceof FinishedState,
-                "If no moves are possible, the game should transition to FinishedState.");*/
+        assertEquals(State.FINISHED, finalState,
+                "If no moves are possible, the game should transition to FINISHED.");
     }
 
     // =========================================================================
@@ -259,8 +259,8 @@ class GameCheckersTest {
                 false);
 
         // After White's move, it should be Black's turn.
-        /*assertEquals("Black Player", game.getCurrentPlayer().toString(),
-                "After White plays, it should be Black's turn.");*/
+        assertSame(game.getBlackPlayer(), game.getCurrentPlayer(),
+                "After White plays, it should be Black's turn.");
 
         // --- Turn 1: Black plays ---
         List<Move> blackMoves = game.getPossibleMoves(game.getCurrentPlayer());
@@ -273,8 +273,8 @@ class GameCheckersTest {
                 false);
 
         // After Black's move, it should be White's turn again.
-        /*assertEquals("White Player", game.getCurrentPlayer().toString(),
-                "After Black plays, it should be White's turn again.");*/
+        assertSame(game.getWhitePlayer(), game.getCurrentPlayer(),
+                "After Black plays, it should be White's turn again.");
     }
 
     @Test

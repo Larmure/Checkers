@@ -9,18 +9,20 @@ import fr.ubordeaux.pdp.controller.commands.LoadCommand;
 import fr.ubordeaux.pdp.controller.commands.NewCommand;
 import fr.ubordeaux.pdp.controller.commands.PauseCommand;
 import fr.ubordeaux.pdp.controller.commands.PingCommand;
+import fr.ubordeaux.pdp.controller.commands.PlayersCommand;
 import fr.ubordeaux.pdp.controller.commands.QuitCommand;
 import fr.ubordeaux.pdp.controller.commands.RedoCommand;
 import fr.ubordeaux.pdp.controller.commands.SaveCommand;
+import fr.ubordeaux.pdp.controller.commands.ScoreboardCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStatusCommand;
 import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.controller.commands.SetCommand;
 import fr.ubordeaux.pdp.controller.commands.ShowCommand;
 import fr.ubordeaux.pdp.controller.commands.UndoCommand;
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * Global utility class containing game constants and the command registry.
@@ -59,7 +61,8 @@ public class Utils {
   public static final boolean DEFAULT_BLACK_AI = false;
   /** The default AI mode. */
   public static final String DEFAULT_AI_MODE = "minimax";
-
+  /** The default Minimax scoring function. */
+  public static final String DEFAULT_MINIMAX_SCORING = "max";
   /** The default keyboard shortcut for starting a new game. */
   public static final String DEFAULT_SHORTCUT_NEW_GAME = "Ctrl+N";
   /** The default keyboard shortcut for loading a saved game. */
@@ -110,11 +113,14 @@ public class Utils {
       Map.entry("set", new SetCommand(null, null)),
       Map.entry("server list", new ServerListCommand()),
       Map.entry("server start", new ServerStartCommand(null, null, null)),
+      Map.entry("server status", new ServerStatusCommand()),
       Map.entry("ping", new PingCommand(null)),
       Map.entry("server stop", new ServerStopCommand(null)),
       Map.entry("continue", new ContinueCommand(null)),
+      Map.entry("score", new ScoreboardCommand(null)),
+      Map.entry("players", new PlayersCommand(null)),
       Map.entry("join", new JoinCommand(null, null)));
-  
+
   /**
    * A formatted list of all available commands and their expected syntax.
    * This array is used to display the global help menu to the user.
@@ -131,13 +137,21 @@ public class Utils {
       "redo [N]",
       "show board|history|time|configuration",
       "set PARAM=VALUE",
+      "online mode",
       "server list",
       "server start [PORT]",
-      "server stop"
+      "server stop",
+      "server status",
+      "players",
+      "score",
+      "join [IP[:PORT]]"
   };
 
   /** Set of valid AI modes for the game. */
   public static final Set<String> VALID_AI_MODES = Set.of(
       "minimax", "alphabeta", "mcts", "iterative");
-}
 
+  /** Set of valid Minimax scoring functions. */
+  public static final Set<String> VALID_MINIMAX_SCORINGS = Set.of(
+      "simple", "advanced", "max");
+}

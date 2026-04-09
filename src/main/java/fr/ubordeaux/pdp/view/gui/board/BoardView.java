@@ -187,7 +187,7 @@ public class BoardView extends GridPane {
    *
    * @param size the number of rows/columns (typically 8, 10, or 12)
    */
-  public void drawEmpty(int size) {
+  public final void drawEmpty(int size) {
     this.board = null;
     this.size = size;
     validDestinationSquares.clear();

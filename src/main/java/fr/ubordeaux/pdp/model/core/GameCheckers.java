@@ -11,6 +11,7 @@ import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import fr.ubordeaux.pdp.view.GameView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
@@ -41,8 +42,18 @@ public class GameCheckers implements Subject {
   private int noProgressCount = 0;
   /** Counts turns since the last capture. */
   private int endGameCount = 0;
+  /** Stack of previous no-progress counter values for undo. */
+  private Stack<Integer> noProgressUndoStack = new Stack<>();
+  /** Stack of previous endgame counter values for undo. */
+  private Stack<Integer> endGameUndoStack = new Stack<>();
+  /** Stack of no-progress counter values for redo. */
+  private Stack<Integer> noProgressRedoStack = new Stack<>();
+  /** Stack of endgame counter values for redo. */
+  private Stack<Integer> endGameRedoStack = new Stack<>();
   /** Stores the history of board positions. */
   private List<String> positionHistory = new ArrayList<>();
+  /** Indicates whether the game ended in a draw. */
+  private boolean draw = false;
 
   /**
    * Initializes a new game instance with the specified configuration.
@@ -60,20 +71,22 @@ public class GameCheckers implements Subject {
 
     if (cfg.iswhiteAi()) {
       this.whitePlayer = new AiPlayer(Internationalization.get("game.white_ai_player"));
-      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg));
+      ((AiPlayer) this.whitePlayer).setAlgorithm(Ai.buildAi(cfg, true));
+      ((AiPlayer) this.whitePlayer).setEvaluator(Ai.buildEvaluator(cfg));
     } else {
       this.whitePlayer = new HumanPlayer(Internationalization.get("game.white_player"));
     }
 
     if (cfg.isblackAi()) {
       this.blackPlayer = new AiPlayer(Internationalization.get("game.black_ai_player"));
-      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg));
+      ((AiPlayer) this.blackPlayer).setAlgorithm(Ai.buildAi(cfg, false));
+      ((AiPlayer) this.blackPlayer).setEvaluator(Ai.buildEvaluator(cfg));
     } else {
       this.blackPlayer = new HumanPlayer(Internationalization.get("game.black_player"));
     }
 
     // MODE BLITZ
-    if (cfg.isBlitz() == true) {
+    if (cfg.isBlitz()) {
       int timeInSeconds = cfg.getTime() * 60;
 
       this.whitePlayer.setPlayTime(timeInSeconds);
@@ -175,7 +188,7 @@ public class GameCheckers implements Subject {
    */
   public void applyMove(String fromS, String toS, boolean isManoury) {
     Move move = null;
-    int from = -1;
+    int from = 1;
     int to = 1;
     PlayerColor currentColor;
 
@@ -245,11 +258,18 @@ public class GameCheckers implements Subject {
       return;
     }
 
-    boolean isPawnMove = board.isBitWhitePawn(from) || board.isBitBlackPawn(from);
-    boolean isCapture = move.isCapture();
-
     board.applyMove(move);
     managerUndoRedo.registerMove(currentColor, move);
+
+    // Record counters before applying updates, and invalidate redo snapshots on
+    // every new move.
+    noProgressUndoStack.push(noProgressCount);
+    endGameUndoStack.push(endGameCount);
+    noProgressRedoStack.clear();
+    endGameRedoStack.clear();
+
+    boolean isPawnMove = board.isBitWhitePawn(from) || board.isBitBlackPawn(from);
+    boolean isCapture = move.isCapture();
 
     if (isCapture || isPawnMove) {
       noProgressCount = 0;
@@ -272,9 +292,8 @@ public class GameCheckers implements Subject {
   /**
    * Evaluates if the game has reached an end condition.
    *
-   * 
-   * <p>Currently checks if the active player has any legal moves remaining.
-   * If not, the game transitions to FinishedState.
+   * <p>If a terminal condition is reached, the game transitions to
+   * {@link State#FINISHED} and the draw flag is updated accordingly.
    *
    * @return The new state if the game is over, otherwise the current state.
    */
@@ -286,14 +305,7 @@ public class GameCheckers implements Subject {
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(Internationalization.get("game.game_winner") + " "
           + (isWhiteTurn ? blackPlayer.getName() : whitePlayer.getName()));
-      setState(State.FINISHED);
-      return this.state;
-    }
-
-    // If both players have no moves, the game is also finished (draw).
-    if (getPossibleMoves(whitePlayer).isEmpty() && getPossibleMoves(blackPlayer).isEmpty()) {
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(Internationalization.get("game.game_draw"));
+      draw = false;
       setState(State.FINISHED);
       return this.state;
     }
@@ -304,6 +316,7 @@ public class GameCheckers implements Subject {
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(Internationalization.get("game.game_draw"));
       System.out.println(Internationalization.get("game.game_over_no_progress"));
+      draw = true;
       setState(State.FINISHED);
       return this.state;
     }
@@ -314,6 +327,7 @@ public class GameCheckers implements Subject {
       System.out.println(Internationalization.get("game.game_over"));
       System.out.println(Internationalization.get("game.game_draw"));
       System.out.println(Internationalization.get("game.game_over_endgame"));
+      draw = true;
       setState(State.FINISHED);
       return this.state;
     }
@@ -328,12 +342,26 @@ public class GameCheckers implements Subject {
         System.out.println(Internationalization.get("game.game_over"));
         System.out.println(Internationalization.get("game.game_draw"));
         System.out.println(Internationalization.get("game.game_over_repetition"));
+        draw = true;
         setState(State.FINISHED);
         return this.state;
       }
     }
 
+    draw = false;
     return this.state;
+  }
+
+  /**
+   * Returns whether the current game result is a draw.
+   *
+   * <p>This flag is updated by {@link #checkGameOver()} whenever a terminal
+   * condition is evaluated.
+   *
+   * @return {@code true} if the game ended in a draw; {@code false} otherwise.
+   */
+  public boolean isDraw() {
+    return draw;
   }
 
   /**
@@ -431,10 +459,21 @@ public class GameCheckers implements Subject {
   public void undoManage() {
     if (managerUndoRedo.undo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-    }
 
-    if (!positionHistory.isEmpty()) {
-      positionHistory.remove(positionHistory.size() - 1);
+      // Save current counters for redo, then restore the exact pre-move values.
+      noProgressRedoStack.push(noProgressCount);
+      endGameRedoStack.push(endGameCount);
+
+      if (!noProgressUndoStack.isEmpty()) {
+        noProgressCount = noProgressUndoStack.pop();
+      }
+      if (!endGameUndoStack.isEmpty()) {
+        endGameCount = endGameUndoStack.pop();
+      }
+
+      if (!positionHistory.isEmpty()) {
+        positionHistory.remove(positionHistory.size() - 1);
+      }
     }
 
     notifyObservers();
@@ -447,9 +486,20 @@ public class GameCheckers implements Subject {
   public void redoManage() {
     if (managerUndoRedo.redo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-    }
 
-    positionHistory.add(board.boardString());
+      // Save current counters for a potential undo, then restore redone values.
+      noProgressUndoStack.push(noProgressCount);
+      endGameUndoStack.push(endGameCount);
+
+      if (!noProgressRedoStack.isEmpty()) {
+        noProgressCount = noProgressRedoStack.pop();
+      }
+      if (!endGameRedoStack.isEmpty()) {
+        endGameCount = endGameRedoStack.pop();
+      }
+
+      positionHistory.add(board.boardString());
+    }
     notifyObservers();
   }
 
@@ -515,6 +565,32 @@ public class GameCheckers implements Subject {
         && whitePawns == 0);
 
     return whiteAdvantage || blackAdvantage;
+  }
+
+  /**
+   * Calculates the current score for the white player based on the number of pawns and checkers 
+   * they have on the board.
+   *
+   * @return The total score for the white player, where pawns are worth 1 point and checkers 
+    *     are worth 3 points.
+   */
+  public int getWhiteScore() {
+    int pawnValue = 1;
+    int checkerValue = 3;
+    return (board.whitePawnsCount() * pawnValue) + (board.whiteCheckersCount() * checkerValue);
+  }
+
+  /**
+   * Calculates the current score for the black player based on the number of pawns and checkers 
+   * they have on the board.
+   *
+   * @return The total score for the black player, where pawns are worth 1 point and checkers 
+    *     are worth 3 points.
+   */
+  public int getBlackScore() {
+    int pawnValue = 1;
+    int checkerValue = 3;
+    return (board.blackPawnsCount() * pawnValue) + (board.blackCheckersCount() * checkerValue);
   }
 
 }

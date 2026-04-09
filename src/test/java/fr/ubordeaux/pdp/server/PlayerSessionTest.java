@@ -7,9 +7,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
 
-/**
- * Tests for {@link PlayerSession}.
- */
+/** Tests for {@link PlayerSession}. */
 class PlayerSessionTest {
 
   @Test
@@ -106,18 +104,39 @@ class PlayerSessionTest {
   }
 
   @Test
+  void isAway_returnsTrueOnlyWhenAway() {
+    PrintWriter out = new PrintWriter(new StringWriter(), true);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+
+    session.setStatus(PlayerSession.Status.AWAY);
+
+    assertTrue(session.isAway());
+  }
+
+  @Test
+  void isWaitingForInvitation_returnsTrueOnlyWhenWaitGame() {
+    PrintWriter out = new PrintWriter(new StringWriter(), true);
+    PlayerSession session = new PlayerSession("p1", "Daniel", out);
+
+    session.setStatus(PlayerSession.Status.WAITGAME);
+
+    assertTrue(session.isWaitingForInvitation());
+  }
+
+  @Test
   void toString_containsMainSessionInformationWhenIdle() {
     PrintWriter out = new PrintWriter(new StringWriter(), true);
 
     PlayerSession session = new PlayerSession("p1", "Daniel", out);
     String text = session.toString();
 
-    assertTrue(text.contains("p1"));
-    assertTrue(text.contains("Daniel"));
-    assertTrue(text.contains("idle"));
-    assertTrue(text.contains("W:0"));
-    assertTrue(text.contains("L:0"));
-    assertTrue(text.contains("D:0"));
+    assertTrue(text.contains("ID       : p1"));
+    assertTrue(text.contains("Name     : Daniel"));
+    assertTrue(text.contains("Status   : idle"));
+    assertTrue(text.contains("Games    : 0"));
+    assertTrue(text.contains("Wins     : 0"));
+    assertTrue(text.contains("Losses   : 0"));
+    assertTrue(text.contains("Draws    : 0"));
   }
 
   @Test
@@ -131,11 +150,12 @@ class PlayerSessionTest {
 
     String text = session.toString();
 
-    assertTrue(text.contains("p1"));
-    assertTrue(text.contains("Daniel"));
-    assertTrue(text.contains("ingame"));
-    assertTrue(text.contains("W:1"));
-    assertTrue(text.contains("L:0"));
-    assertTrue(text.contains("D:1"));
+    assertTrue(text.contains("ID       : p1"));
+    assertTrue(text.contains("Name     : Daniel"));
+    assertTrue(text.contains("Status   : ingame"));
+    assertTrue(text.contains("Games    : 2"));
+    assertTrue(text.contains("Wins     : 1"));
+    assertTrue(text.contains("Losses   : 0"));
+    assertTrue(text.contains("Draws    : 1"));
   }
 }

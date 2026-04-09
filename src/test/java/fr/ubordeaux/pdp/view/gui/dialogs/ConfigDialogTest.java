@@ -39,8 +39,8 @@ class ConfigDialogTest {
   private final ShortcutManager mockShortcutManager = new ShortcutManager(mockConfig);
 
   /**
-   * Nécessaire pour initialiser le Toolkit JavaFX en mode "headless" (sans fenêtre visible)
-   * Très utile si vous faites tourner les tests sur un serveur d'intégration (CI/CD).
+   * Configure JavaFX en mode "headless" (sans fenêtre visible) si nécessaire.
+   * TestFX avec @ExtendWith(ApplicationExtension.class) gère l'initialisation du toolkit.
    */
   @BeforeAll
   static void setupSpec() {
@@ -50,9 +50,6 @@ class ConfigDialogTest {
       System.setProperty("prism.order", "sw");
       System.setProperty("prism.text", "t2k");
     }
-    // Force l'initialisation du toolkit
-    Platform.startup(() -> {
-    });
   }
 
   @Test
@@ -84,7 +81,7 @@ class ConfigDialogTest {
 
   @Test
   @DisplayName("Cocher Blitz active le spinner de temps")
-  void testBlitzTogglesTimeSpinner(FxRobot robot) throws InterruptedException {
+  void testBlitzTogglesTimeSpinner(FxRobot robot) throws InterruptedException, Exception {
     AtomicReference<ConfigDialog> dialogRef = new AtomicReference<>();
     CountDownLatch latch = new CountDownLatch(1);
 
@@ -95,10 +92,17 @@ class ConfigDialogTest {
     });
     latch.await();
 
-    CheckBox blitzCheck = robot.lookup("Blitz mode").queryAs(CheckBox.class);
+    ConfigDialog dialog = dialogRef.get();
 
-    // On récupère le Spinner (adaptez cette ligne si vous avez utilisé les IDs #timeSpinner)
-    Spinner<Integer> timeSpinner = robot.lookup(".spinner").queryAllAs(Spinner.class).iterator().next();
+    // Récupération des champs via réflexion
+    Field blitzCheckField = ConfigDialog.class.getDeclaredField("blitzCheck");
+    blitzCheckField.setAccessible(true);
+    CheckBox blitzCheck = (CheckBox) blitzCheckField.get(dialog);
+
+    Field timeSpinnerField = ConfigDialog.class.getDeclaredField("timeSpinner");
+    timeSpinnerField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    Spinner<Integer> timeSpinner = (Spinner<Integer>) timeSpinnerField.get(dialog);
 
     // 1. On utilise interact() pour forcer le décochage de manière 100% fiable
     robot.interact(() -> blitzCheck.setSelected(false));
@@ -113,7 +117,7 @@ class ConfigDialogTest {
 
   @Test
   @DisplayName("L'état des contrôles AI se met à jour correctement")
-  void testAiControlsStateUpdate(FxRobot robot) throws InterruptedException {
+  void testAiControlsStateUpdate(FxRobot robot) throws Exception {
     AtomicReference<ConfigDialog> dialogRef = new AtomicReference<>();
     CountDownLatch latch = new CountDownLatch(1);
 
@@ -124,28 +128,39 @@ class ConfigDialogTest {
     });
     latch.await();
 
-    CheckBox whiteAiCheck = robot.lookup("White player (AI)").queryAs(CheckBox.class);
-    CheckBox blackAiCheck = robot.lookup("Black player (AI)").queryAs(CheckBox.class);
+    ConfigDialog dialog = dialogRef.get();
 
-    // On récupère la bonne ComboBox (celle de l'IA)
+    // Récupération des champs via réflexion
+    Field whiteAiCheckField = ConfigDialog.class.getDeclaredField("whiteAiCheck");
+    whiteAiCheckField.setAccessible(true);
+    CheckBox whiteAiCheck = (CheckBox) whiteAiCheckField.get(dialog);
+
+    Field blackAiCheckField = ConfigDialog.class.getDeclaredField("blackAiCheck");
+    blackAiCheckField.setAccessible(true);
+    CheckBox blackAiCheck = (CheckBox) blackAiCheckField.get(dialog);
+
+    Field whiteAiModeComboField = ConfigDialog.class.getDeclaredField("whiteAiModeCombo");
+    whiteAiModeComboField.setAccessible(true);
     @SuppressWarnings("unchecked")
-    ComboBox<String> aiCombo = robot.lookup(".combo-box")
-        .queryAllAs(ComboBox.class)
-        .stream()
-        .filter(cb -> cb.getItems().contains("Minimax"))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("aiCombo introuvable"));
+    ComboBox<String> whiteAiModeCombo = (ComboBox<String>) whiteAiModeComboField.get(dialog);
+
+    Field blackAiModeComboField = ConfigDialog.class.getDeclaredField("blackAiModeCombo");
+    blackAiModeComboField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    ComboBox<String> blackAiModeCombo = (ComboBox<String>) blackAiModeComboField.get(dialog);
 
     // 1. On désactive les deux IA
     robot.interact(() -> {
       whiteAiCheck.setSelected(false);
       blackAiCheck.setSelected(false);
     });
-    assertTrue(aiCombo.isDisabled());
+    assertTrue(whiteAiModeCombo.isDisabled());
+    assertTrue(blackAiModeCombo.isDisabled());
 
     // 2. On active au moins une IA
     robot.interact(() -> whiteAiCheck.setSelected(true));
-    assertFalse(aiCombo.isDisabled());
+    assertFalse(whiteAiModeCombo.isDisabled());
+    assertTrue(blackAiModeCombo.isDisabled());
   }
 
   @Test
@@ -172,26 +187,43 @@ class ConfigDialogTest {
     @SuppressWarnings("unchecked")
     Spinner<Integer> timeSpinner = (Spinner<Integer>) timeSpinnerField.get(dialog);
 
-    Field aiComboField = ConfigDialog.class.getDeclaredField("aiCombo");
-    aiComboField.setAccessible(true);
+    Field whiteAiModeComboField = ConfigDialog.class.getDeclaredField("whiteAiModeCombo");
+    whiteAiModeComboField.setAccessible(true);
     @SuppressWarnings("unchecked")
-    ComboBox<String> aiCombo = (ComboBox<String>) aiComboField.get(dialog);
+    ComboBox<String> whiteAiModeCombo = (ComboBox<String>) whiteAiModeComboField.get(dialog);
+
+    Field blackAiModeComboField = ConfigDialog.class.getDeclaredField("blackAiModeCombo");
+    blackAiModeComboField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    ComboBox<String> blackAiModeCombo = (ComboBox<String>) blackAiModeComboField.get(dialog);
 
     Field aiTimeSpinnerField = ConfigDialog.class.getDeclaredField("aiTimeSpinner");
     aiTimeSpinnerField.setAccessible(true);
     @SuppressWarnings("unchecked")
     Spinner<Integer> aiTimeSpinner = (Spinner<Integer>) aiTimeSpinnerField.get(dialog);
 
+    Field minimaxScoringComboField = ConfigDialog.class.getDeclaredField("minimaxScoringCombo");
+    minimaxScoringComboField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    ComboBox<String> minimaxScoringCombo = (ComboBox<String>) minimaxScoringComboField.get(dialog);
+
     Field whiteAiCheckField = ConfigDialog.class.getDeclaredField("whiteAiCheck");
     whiteAiCheckField.setAccessible(true);
     CheckBox whiteAiCheck = (CheckBox) whiteAiCheckField.get(dialog);
+
+    Field blackAiCheckField = ConfigDialog.class.getDeclaredField("blackAiCheck");
+    blackAiCheckField.setAccessible(true);
+    CheckBox blackAiCheck = (CheckBox) blackAiCheckField.get(dialog);
 
     // 2. Modification des valeurs de l'interface (Simulation des actions de l'utilisateur)
     robot.interact(() -> {
       blitzCheck.setSelected(true);
       timeSpinner.getValueFactory().setValue(42); // 42 minutes
       whiteAiCheck.setSelected(true);
-      aiCombo.setValue("MCTS"); // Choix du mode IA
+      blackAiCheck.setSelected(true);
+      whiteAiModeCombo.setValue("MCTS");
+      blackAiModeCombo.setValue("Alpha-Beta");
+      minimaxScoringCombo.setValue("Advanced");
       aiTimeSpinner.getValueFactory().setValue(15); // 15 secondes
     });
 
@@ -209,7 +241,11 @@ class ConfigDialogTest {
     assertTrue(config.isBlitz());
     assertEquals(42, config.getTime()); // Le spinner de temps a été lu correctement
     assertTrue(config.iswhiteAi());
-    assertEquals("mcts", config.getAiMode()); // normalizeAiMode a mis en minuscules "mcts"
+    assertTrue(config.isblackAi());
+    assertEquals("mcts", config.getWhiteAiMode());
+    assertEquals("alphabeta", config.getBlackAiMode());
+    assertEquals("mcts", config.getAiMode());
+    assertEquals("advanced", config.getMinimaxScoring());
     assertEquals(15000, config.getAiTime()); // L'IA time (15) a bien été multiplié par 1000 pour les millisecondes
   }
 }

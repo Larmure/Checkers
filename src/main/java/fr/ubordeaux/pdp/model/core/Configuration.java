@@ -38,10 +38,16 @@ public class Configuration {
   private final long aiTime;
   /** The mode for the AI. */
   private final String aiMode;
+  /** The mode for the white AI. */
+  private final String whiteAiMode;
+  /** The mode for the black AI. */
+  private final String blackAiMode;
   /** The search depth for the AI. */
   private final int aiDepth;
   /** The selection function used in MCTS. */
   private final SelectionMode selectionMode;
+  /** The evaluation function used by Minimax-family AIs. */
+  private final String minimaxScoring;
 
   /**
    * Constructs a Configuration object with the specified settings. It validates
@@ -72,32 +78,110 @@ public class Configuration {
    * @param selectionMode The selection function used in MCTS.
    */
   public Configuration(boolean blitz, int time, boolean contest, int size,
-      boolean verbose, boolean debug, boolean whiteAi, boolean blackAi, long aiTime,
+      boolean verbose, boolean debug, boolean whiteAi,
+      boolean blackAi, long aiTime,
       String aiMode, int aiDepth, SelectionMode selectionMode) {
+
+    this(blitz, time, contest, size, verbose, debug, whiteAi, blackAi,
+        aiTime, aiMode, aiMode, aiDepth, selectionMode,
+        Utils.DEFAULT_MINIMAX_SCORING);
+  }
+
+  /**
+   * Constructs a Configuration object with dedicated AI modes for white and
+   * black players.
+   *
+   * @param blitz   Indicates whether the game is in blitz mode.
+   * @param time    The time limit for each player in seconds.
+   * @param contest Indicates whether the game is in contest mode.
+   * @param size    The size of the game board.
+   * @param verbose Indicates whether verbose output is enabled.
+   * @param debug   Indicates whether debug mode is enabled.
+   * @param whiteAi Indicates whether the white player is controlled by AI.
+   * @param blackAi Indicates whether the black player is controlled by AI.
+   * @param aiTime  The time limit for AI moves in milliseconds.
+   * @param whiteAiMode The mode for the white AI.
+   * @param blackAiMode The mode for the black AI.
+   * @param aiDepth The search depth for the AI.
+   * @param selectionMode The selection function used in MCTS.
+   */
+  public Configuration(boolean blitz, int time, boolean contest, int size,
+      boolean verbose, boolean debug, boolean whiteAi,
+      boolean blackAi, long aiTime,
+      String whiteAiMode, String blackAiMode,
+      int aiDepth, SelectionMode selectionMode) {
+
+    this(blitz, time, contest, size, verbose, debug, whiteAi, blackAi,
+        aiTime, whiteAiMode, blackAiMode, aiDepth, selectionMode,
+        Utils.DEFAULT_MINIMAX_SCORING);
+  }
+
+  /**
+   * Constructs a Configuration object with dedicated AI modes and Minimax scoring.
+   *
+   * @param blitz   Indicates whether the game is in blitz mode.
+   * @param time    The time limit for each player in seconds.
+   * @param contest Indicates whether the game is in contest mode.
+   * @param size    The size of the game board.
+   * @param verbose Indicates whether verbose output is enabled.
+   * @param debug   Indicates whether debug mode is enabled.
+   * @param whiteAi Indicates whether the white player is controlled by AI.
+   * @param blackAi Indicates whether the black player is controlled by AI.
+   * @param aiTime  The time limit for AI moves in milliseconds.
+   * @param whiteAiMode The mode for the white AI.
+   * @param blackAiMode The mode for the black AI.
+   * @param aiDepth The search depth for the AI.
+   * @param selectionMode The selection function used in MCTS.
+   * @param minimaxScoring The evaluation function used for Minimax-family AIs.
+   */
+  public Configuration(boolean blitz, int time, boolean contest, int size,
+      boolean verbose, boolean debug, boolean whiteAi,
+      boolean blackAi, long aiTime,
+      String whiteAiMode, String blackAiMode,
+      int aiDepth, SelectionMode selectionMode,
+      String minimaxScoring) {
+
     if (!blitz && time != Utils.DEFAULT_TIME) {
       System.out.println("Warning: time option used without blitz option.");
       blitz = Utils.DEFAULT_BLITZ;
       time = Utils.DEFAULT_TIME;
     }
+
     if (!Utils.VALID_SIZES.contains(size)) {
       System.out.println("Warning: Invalid board size, changed to "
           + Utils.DEFAULT_BOARD_SIZE + ".");
       size = Utils.DEFAULT_BOARD_SIZE;
     }
-    if (!Utils.VALID_AI_MODES.contains(aiMode)) {
+
+    if (!Utils.VALID_AI_MODES.contains(whiteAiMode)) {
       System.out.println("Warning: Invalid AI mode, changed to "
           + Utils.DEFAULT_AI_MODE + ".");
-      aiMode = Utils.DEFAULT_AI_MODE;
+      whiteAiMode = Utils.DEFAULT_AI_MODE;
     }
+
+    if (!Utils.VALID_AI_MODES.contains(blackAiMode)) {
+      System.out.println("Warning: Invalid AI mode, changed to "
+          + Utils.DEFAULT_AI_MODE + ".");
+      blackAiMode = Utils.DEFAULT_AI_MODE;
+    }
+
     if (aiTime <= Ai.MIN_TIME_MS || aiTime > Ai.MAX_TIME_MS) {
       System.out.println("Warning: Invalid AI time, changed to "
           + Ai.DEFAULT_MAX_TIME_MS + " ms.");
       aiTime = Ai.DEFAULT_MAX_TIME_MS;
     }
-    if (aiDepth <= 0) {
+
+    if (aiDepth <= 0 || aiDepth > Ai.MAX_SAFE_DEPTH) {
       System.out.println("Warning: Invalid AI depth, changed to "
           + Ai.DEFAULT_DEPTH + ".");
       aiDepth = Ai.DEFAULT_DEPTH;
+    }
+
+    if (minimaxScoring == null
+        || !Utils.VALID_MINIMAX_SCORINGS.contains(minimaxScoring.toLowerCase())) {
+      System.out.println("Warning: Invalid Minimax scoring, changed to "
+          + Utils.DEFAULT_MINIMAX_SCORING + ".");
+      minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
     }
 
     this.blitz = blitz;
@@ -109,9 +193,20 @@ public class Configuration {
     this.whiteAi = whiteAi;
     this.blackAi = blackAi;
     this.aiTime = aiTime;
-    this.aiMode = aiMode;
+    this.whiteAiMode = whiteAiMode;
+    this.blackAiMode = blackAiMode;
+    if (whiteAiMode.equals(blackAiMode)) {
+      this.aiMode = whiteAiMode;
+    } else if (whiteAi) {
+      this.aiMode = whiteAiMode;
+    } else if (blackAi) {
+      this.aiMode = blackAiMode;
+    } else {
+      this.aiMode = Utils.DEFAULT_AI_MODE;
+    }
     this.aiDepth = aiDepth;
     this.selectionMode = selectionMode;
+    this.minimaxScoring = minimaxScoring.toLowerCase();
   }
 
   /**
@@ -135,8 +230,11 @@ public class Configuration {
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
+    this.whiteAiMode = other.whiteAiMode;
+    this.blackAiMode = other.blackAiMode;
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
+    this.minimaxScoring = other.minimaxScoring;
   }
 
   /**
@@ -158,8 +256,11 @@ public class Configuration {
     this.blackAi = other.blackAi;
     this.aiTime = other.aiTime;
     this.aiMode = other.aiMode;
+    this.whiteAiMode = other.whiteAiMode;
+    this.blackAiMode = other.blackAiMode;
     this.aiDepth = other.aiDepth;
     this.selectionMode = other.selectionMode;
+    this.minimaxScoring = other.minimaxScoring;
   }
 
   /**
@@ -188,10 +289,10 @@ public class Configuration {
   }
 
   /**
-   * Returns the time limit for each player in seconds, applicable only if blitz
+   * Returns the time limit for each player in minutes, applicable only if blitz
    * mode is enabled.
    *
-   * @return the time limit for each player in seconds.
+   * @return the time limit for each player in minutes.
    */
   public int getTime() {
     return time;
@@ -273,6 +374,24 @@ public class Configuration {
   }
 
   /**
+   * Returns the mode for the white AI.
+   *
+   * @return the mode for the white AI.
+   */
+  public String getWhiteAiMode() {
+    return whiteAiMode;
+  }
+
+  /**
+   * Returns the mode for the black AI.
+   *
+   * @return the mode for the black AI.
+   */
+  public String getBlackAiMode() {
+    return blackAiMode;
+  }
+
+  /**
   * Returns the search depth for the AI.
   *
   * @return the search depth for the AI.
@@ -291,6 +410,15 @@ public class Configuration {
   }
 
   /**
+   * Returns the evaluation function used by Minimax-family AIs.
+   *
+   * @return the minimax scoring function name.
+   */
+  public String getMinimaxScoring() {
+    return minimaxScoring;
+  }
+
+  /**
    * Returns a string representation of the Configuration object, including all
    * the settings and their current values. This method is useful for debugging
    * and logging purposes, allowing developers to easily see the configuration
@@ -302,7 +430,9 @@ public class Configuration {
   public String toString() {
     return "blitz=" + blitz + ", time=" + time + ", contest=" + contest
         + ", size=" + size + ", verbose=" + verbose + ", debug=" + debug
-        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi + ", aiTime=" + aiTime + ", aiMode="
-        + aiMode + ", aiDepth=" + aiDepth + ", selectionMode=" + selectionMode;
+        + ", whiteAi=" + whiteAi + ", blackAi=" + blackAi
+        + ", whiteAiMode=" + whiteAiMode + ", blackAiMode=" + blackAiMode
+        + ", aiTime=" + aiTime + ", aiMode=" + aiMode + ", aiDepth=" + aiDepth
+        + ", selectionMode=" + selectionMode + ", minimaxScoring=" + minimaxScoring;
   }
 }

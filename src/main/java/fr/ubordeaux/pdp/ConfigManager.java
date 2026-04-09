@@ -1,5 +1,8 @@
 package fr.ubordeaux.pdp;
 
+import fr.ubordeaux.pdp.model.player.ai.Ai;
+import fr.ubordeaux.pdp.model.player.ai.Mcts;
+import fr.ubordeaux.pdp.model.player.ai.SelectionMode;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.model.tools.Utils;
 import java.io.IOException;
@@ -46,6 +49,16 @@ public class ConfigManager {
   private String shortcutRedo = Utils.DEFAULT_SHORTCUT_REDO;
   private String shortcutPause = Utils.DEFAULT_SHORTCUT_PAUSE;
   private String shortcutHint = Utils.DEFAULT_SHORTCUT_HINT;
+
+  /** AI configuration settings. */
+  private boolean whiteAi = Utils.DEFAULT_WHITE_AI;
+  private boolean blackAi = Utils.DEFAULT_BLACK_AI;
+  private long aiTime = Ai.DEFAULT_MAX_TIME_MS;
+  private String whiteAiMode = Utils.DEFAULT_AI_MODE;
+  private String blackAiMode = Utils.DEFAULT_AI_MODE;
+  private int aiDepth = Ai.DEFAULT_DEPTH;
+  private SelectionMode selectionMode = Mcts.DEFAULT_SELECTION_MODE;
+  private String minimaxScoring = Utils.DEFAULT_MINIMAX_SCORING;
 
   /**
    * Loads configuration settings from the {@code .checkersrc} file.
@@ -170,6 +183,68 @@ public class ConfigManager {
               }
               break;
 
+            case "white-ai":
+              if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                this.whiteAi = Boolean.parseBoolean(value);
+              } else {
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "white-ai", value));
+                this.whiteAi = Utils.DEFAULT_WHITE_AI;
+              }
+              break;
+
+            case "black-ai":
+              if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                this.blackAi = Boolean.parseBoolean(value);
+              } else {
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "black-ai", value));
+                this.blackAi = Utils.DEFAULT_BLACK_AI;
+              }
+              break;
+
+            case "ai-time":
+              try {
+                this.aiTime = Long.parseLong(value) * 1000; // Convert seconds to milliseconds
+              } catch (NumberFormatException e) {
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "ai-time", value));
+                this.aiTime = Ai.DEFAULT_MAX_TIME_MS;
+              }
+              break;
+
+            case "white-ai-mode":
+              this.whiteAiMode = value;
+              break;
+
+            case "black-ai-mode":
+              this.blackAiMode = value;
+              break;
+
+            case "ai-depth":
+              try {
+                this.aiDepth = Integer.parseInt(value);
+              } catch (NumberFormatException e) {
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "ai-depth", value));
+                this.aiDepth = Ai.DEFAULT_DEPTH;
+              }
+              break;
+
+            case "ai-selection-mode":
+              try {
+                this.selectionMode = SelectionMode.valueOf(value.toUpperCase());
+              } catch (IllegalArgumentException e) {
+                System.err.println(Internationalization.get("config.warn.invalid_generic",
+                    "ai-selection-mode", value));
+                this.selectionMode = Mcts.DEFAULT_SELECTION_MODE;
+              }
+              break;
+
+            case "minimax-scoring":
+              this.minimaxScoring = value;
+              break;
+
             default:
               System.err.println(Internationalization.get("config.warn.unknown_key") + key);
               break;
@@ -259,6 +334,14 @@ public class ConfigManager {
       writer.println("contest = " + Utils.DEFAULT_CONTEST);
       writer.println("size = " + Utils.DEFAULT_BOARD_SIZE);
       writer.println("debug = " + Utils.DEFAULT_DEBUG);
+      writer.println("white-ai = " + Utils.DEFAULT_WHITE_AI);
+      writer.println("black-ai = " + Utils.DEFAULT_BLACK_AI);
+      writer.println("ai-time = " + (Ai.DEFAULT_MAX_TIME_MS / 1000));
+      writer.println("white-ai-mode = " + Utils.DEFAULT_AI_MODE);
+      writer.println("black-ai-mode = " + Utils.DEFAULT_AI_MODE);
+      writer.println("ai-depth = " + Ai.DEFAULT_DEPTH);
+      writer.println("ai-selection-mode = " + Mcts.DEFAULT_SELECTION_MODE);
+      writer.println("minimax-scoring = " + Utils.DEFAULT_MINIMAX_SCORING);
       writer.println("");
       writer.println("[shortcuts]");
       writer.println("new-game = " + Utils.DEFAULT_SHORTCUT_NEW_GAME);
@@ -431,5 +514,77 @@ public class ConfigManager {
       case "hint" -> shortcutHint = value;
       default -> System.err.println("ConfigManager: unknown shortcut: " + action);
     }
+  }
+
+  /**
+   * Checks if white AI is enabled.
+   *
+   * @return true if white AI is active, false otherwise.
+   */
+  public boolean isWhiteAi() {
+    return this.whiteAi;
+  }
+
+  /**
+   * Checks if black AI is enabled.
+   *
+   * @return true if black AI is active, false otherwise.
+   */
+  public boolean isBlackAi() {
+    return this.blackAi;
+  }
+
+  /**
+   * Returns the configured AI time limit.
+   *
+   * @return the AI time limit in milliseconds.
+   */
+  public long getAiTime() {
+    return this.aiTime;
+  }
+
+  /**
+   * Returns the configured white AI mode.
+   *
+   * @return the white AI mode (e.g., "minimax", "alphabeta", "mcts").
+   */
+  public String getWhiteAiMode() {
+    return this.whiteAiMode;
+  }
+
+  /**
+   * Returns the configured black AI mode.
+   *
+   * @return the black AI mode (e.g., "minimax", "alphabeta", "mcts").
+   */
+  public String getBlackAiMode() {
+    return this.blackAiMode;
+  }
+
+  /**
+   * Returns the configured AI search depth.
+   *
+   * @return the AI search depth.
+   */
+  public int getAiDepth() {
+    return this.aiDepth;
+  }
+
+  /**
+   * Returns the configured MCTS selection mode.
+   *
+   * @return the selection mode.
+   */
+  public SelectionMode getSelectionMode() {
+    return this.selectionMode;
+  }
+
+  /**
+   * Returns the configured Minimax scoring function.
+   *
+   * @return the scoring function (e.g., "simple", "advanced", "max").
+   */
+  public String getMinimaxScoring() {
+    return this.minimaxScoring;
   }
 }

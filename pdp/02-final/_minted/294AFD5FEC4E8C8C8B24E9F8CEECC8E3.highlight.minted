@@ -1,0 +1,17 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+Fonction GenererCoupsDame(bitboard\PYGZus{}dame, direction):
+    coups\PYGZus{}possibles = 0
+    // Premier decalage dans la direction souhaitee
+    rayons = decaler(bitboard\PYGZus{}dame, direction)
+
+    // Tant qu\PYGZsq{}on se deplace sur des cases vides
+    Tant que rayons != 0:
+        // On valide les cases vides rencontrees comme coups possibles
+        coups\PYGZus{}possibles = coups\PYGZus{}possibles OU (rayons ET cases\PYGZus{}vides)
+
+        // On continue la propagation uniquement depuis les cases vides
+        // La propagation s\PYGZsq{}arrete si on touche une piece ou le bord
+        rayons = decaler(rayons ET cases\PYGZus{}vides, direction)
+
+    Retourner coups\PYGZus{}possibles
+\end{MintedVerbatim}

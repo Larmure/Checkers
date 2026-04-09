@@ -4,10 +4,14 @@ import fr.ubordeaux.pdp.ConfigManager;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.GameCheckers;
 import fr.ubordeaux.pdp.model.core.State;
+import fr.ubordeaux.pdp.model.player.Player;
 import fr.ubordeaux.pdp.model.tools.Internationalization;
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import fr.ubordeaux.pdp.view.GameView;
 import fr.ubordeaux.pdp.view.gui.layout.MainView;
 import fr.ubordeaux.pdp.view.gui.layout.MenuView;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -60,21 +64,34 @@ public class GraphicalUserInterface extends GameView {
   /** Optional configuration provided by CLI flags at startup. */
   private final Configuration cliConfig;
 
+  /** Flag indicating whether the GUI is running in server mode. */
+  private final boolean serverMode;
+
+  private final ClientSession session;
+
   /**
    * Creates the GUI with default configuration values.
+   *
+   * @param serverMode {@code true} if the GUI runs in server mode
+   * @param session shared client session
    */
-  public GraphicalUserInterface() {
-    this(null);
+  public GraphicalUserInterface(boolean serverMode, ClientSession session) {
+    this(null, serverMode, session);
   }
 
   /**
    * Creates the GUI with an optional preloaded CLI configuration.
    *
    * @param cliConfig configuration forwarded to prefill the GUI configuration
-   *                  dialog; may be {@code null}
+   *     dialog; may be {@code null}
+   * @param serverMode {@code true} if the GUI runs in server mode
+   * @param session shared client session
    */
-  public GraphicalUserInterface(Configuration cliConfig) {
+  public GraphicalUserInterface(
+      Configuration cliConfig, boolean serverMode, ClientSession session) {
     this.cliConfig = cliConfig;
+    this.serverMode = serverMode;
+    this.session = session;
   }
 
   /**
@@ -93,7 +110,7 @@ public class GraphicalUserInterface extends GameView {
       stage = new Stage();
       ConfigManager configManager = new ConfigManager();
       configManager.load();
-      mainView = new MainView(controller, configManager, cliConfig);
+      mainView = new MainView(controller, configManager, cliConfig, serverMode, session);
 
       final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
       double initW = 1200;
@@ -121,7 +138,11 @@ public class GraphicalUserInterface extends GameView {
       mainView.passStageToMenu(stage);
       mainView.passGuiToMenu(this);
 
-      showInitialConfigDialog();
+      if (session == null
+          || session.getMode() != ClientMode.CONNECTED
+          || !session.isServerRequiresGui()) {
+        showInitialConfigDialog();
+      }
       // Intercept the window close button (X) — same logic as the Quit menu item.
       stage.setOnCloseRequest(e -> {
         e.consume(); // prevent immediate close
@@ -134,6 +155,9 @@ public class GraphicalUserInterface extends GameView {
    * Displays a game over alert with the winner.
    * Should be called after the FINISHED state is set in the model.
    *
+   * <p>The alert can show one of three outcomes: time expiration winner,
+   * regular winner, or draw.
+   *
    * @param game the current game state; must not be {@code null}
    * @param timeExpired true if the game ended due to time expiration, false otherwise
    */
@@ -143,10 +167,6 @@ public class GraphicalUserInterface extends GameView {
     }
     gameOverAlert = true;
 
-    String winnerName = game.isWhiteTurn()
-        ? game.getBlackPlayer().getName()
-        : game.getWhitePlayer().getName();
-
     Platform.runLater(() -> {
       Alert alert = new Alert(Alert.AlertType.INFORMATION);
       alert.initOwner(stage);
@@ -154,12 +174,29 @@ public class GraphicalUserInterface extends GameView {
 
       String headerText;
       if (timeExpired) {
-        headerText = Internationalization.get("gui.gameover.time_expired");
+        Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
+        headerText = String.format(
+            Internationalization.get("gui.gameover.time_expired"),
+            winner.getName());
+      } else if (game.isDraw()) {
+        headerText = Internationalization.get("gui.gameover.draw");
       } else {
-        headerText = Internationalization.get("gui.gameover.winner");
+        Player winner = game.isWhiteTurn() ? game.getBlackPlayer() : game.getWhitePlayer();
+        headerText = String.format(
+            Internationalization.get("gui.gameover.winner"),
+            winner.getName());
       }
 
-      alert.setHeaderText(String.format(headerText, winnerName));
+      alert.setHeaderText(headerText);
+
+      // -----DISPLAY SCORES IN GAME OVER ALERT-----
+      String scoreText = String.format(Internationalization.get("game.white_score") + " : %d\n"
+          + Internationalization.get("game.black_score") + " : %d",
+          game.getWhiteScore(),
+          game.getBlackScore());
+      alert.setContentText(scoreText);
+      // ------------------------------------------
+
       alert.showAndWait();
     });
   }
@@ -209,15 +246,19 @@ public class GraphicalUserInterface extends GameView {
   }
 
   /**
-   * Opens the configuration dialog after the primary stage is visible.
+   * Starts a new game with the CLI configuration (if provided) or the default configuration
+   * after the primary stage is visible.
    *
-   * <p>The dialog is scheduled with {@link Platform#runLater} to ensure it is shown
+   * <p>The game is scheduled with {@link Platform#runLater} to ensure it starts
    * once the first JavaFX pulse has completed and the window is fully initialized.
    */
   private void showInitialConfigDialog() {
     Platform.runLater(() -> {
       if (controller.getGame() == null) {
-        mainView.openConfigDialog();
+        Configuration cfg = (cliConfig != null)
+            ? cliConfig
+            : Configuration.getDefaultConfiguration();
+        controller.startNewGame(cfg);
       }
     });
   }
@@ -233,18 +274,38 @@ public class GraphicalUserInterface extends GameView {
    * <p>Must be called on the JavaFX Application Thread.
    */
   public void requestQuit() {
-    if (controller.getGame() != null && controller.getGame().getState() == State.IN_GAME) {
+    if (session != null && session.getMode() == ClientMode.CONNECTED) {
+      Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+      confirm.setTitle(Internationalization.get("gui.quit.title"));
+      confirm.setHeaderText("Disconnect from online game?");
+      confirm.setContentText("You are currently connected to a server. "
+          + "Do you want to disconnect and quit?");
+      confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+
+      confirm.showAndWait().ifPresent(response -> {
+        if (response == ButtonType.YES) {
+          session.send("QUIT");
+          session.disconnect();
+          doQuit();
+        }
+      });
+      return;
+    }
+
+    GameCheckers game = controller.getGame();
+    if (game != null && game.getState() == State.IN_GAME) {
       // If the game is currently in progress, pause it before showing the quit confirmation dialog.
       controller.executeCommand("pause", new String[0]);
     }
-    if (controller.getGame() != null && controller.hasUnsavedChanges()) {
+    if (game != null && controller.hasUnsavedChanges()) {
       Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
       confirm.setTitle(Internationalization.get("gui.quit.title"));
       confirm.setHeaderText(Internationalization.get("gui.quit.unsaved_changes"));
       confirm.setContentText(Internationalization.get("gui.quit.save_prompt"));
       confirm.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
 
-      confirm.showAndWait().ifPresent(response -> {
+      Optional<ButtonType> result = confirm.showAndWait();
+      result.ifPresent(response -> {
         if (response == ButtonType.YES) {
           mainView.openSaveDialog(); // delegate to MenuView's save dialog
           doQuit();
@@ -265,6 +326,5 @@ public class GraphicalUserInterface extends GameView {
    */
   private void doQuit() {
     Platform.exit();
-    System.exit(0);
   }
 }

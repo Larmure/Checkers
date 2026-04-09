@@ -1,6 +1,16 @@
 @Daniel
 Le load ne marche plus: erreur au niveau du chargement la profondeur 5-5
 Load de l'historique des coup ne marche pas, surtout au niveau des captures, multiple ou pas
+écrire ces commandes dans le cli pas en mode réseau provoque commande inconnue alors qu'elles sont dans le help :
+- online mode
+- server list
+- server start [PORT]
+- server stop
+- server status
+- players
+- score
+- join [IP[:PORT]]
+
 
 @Linda
 Fenêtre de reprise après pause
@@ -8,7 +18,7 @@ Il faudrait que quand on clique sur sur sauvegarde le jeu se met automatiquement
 en pause en ia vs ia, non?
 
 @
-Chargement avec deux ia non fonctionnelle, les deux ia ne joue plus après chargement
+les deux ia ne joue plus après chargement
 On dervrait peut être rajouter un paramètre pour enregistrer la langue du jeu et pour pouvoir la modifier
 
 
@@ -18,33 +28,39 @@ Toujours en rapport à la question précédente, est ce que si la profondeur est
 temps est grand, est ce que l'ia va faire des recherches plus profondes que la profondeur donnée
 jusqu'à ce que le temps soit écoulé ou est ce que l'ia va s'arrêter à la profondeur donnée ? 
 
+Bug: 
+Lorsqu'on quitte et q'il demande sauveagrder, la fenêtre de sauvegarde freeze
+alt+f4 pour fermer la fenêtre de sauvegarde
+Shell interactif: set Param=value, ne gère pas tous les paramètres
+Règles des jeu dans l'interactif, à mettre  
 
 
-F01: erreur sur sortie erreur
+
+F01: c'est ok?
 F02: fichier à mettre à jour
 F03: à finir
-F04: ./checkers Sauvegarde/fandu.txt (non fonctionnelle)
+F04: nickel
 F05: nickel
-F06: option reconnue mais non implémentée
-F07: partielement, une partie par défaut durectement sur le gui
+F06: nickel
+F07: nickel
 F08: nickel
 F09: nickel
-F10: score non fait 
+F10: nickel 
 F11: nickel avec un point d'interrogation
-F12: undo 3 contre une ia alors on peut tomber sur le tour de l'ia
+F12: nickel
 F13: nickel
 F14: nickel
-F15: help serveur affiché au lieu du vrai Daaaaaaaanieeeeeel
-F16: non fonctionnel Daniel?
+F15: nickel ?
+F16: nickel
 F17: nickel
 F18: nickel
 F19: nickel
 F20: nickel
-F21: signaler les erreurs + lignes manquantes 
-F22: {} noin fonctionnel en cas de saut de ligne
+F21: nickel, à vérifié
+F22: nickel
 F23: nickel
-F24: préciser la ligne d'erreur et le programme doit s'arrêter
-F25: {} pour promotion
+F24: nickel
+F25: nickel
 F26: nickel
 F27: nickel
 F28: nickel
@@ -52,11 +68,11 @@ F29: nickel
 F30: nickel
 F31: nickel
 F32: nickel
-F33: evaluation implémenter mais non branché et rajouter --ai-minimax-scoring [SCORING]’ 
+F33: nickel
 F34: pas par rapport au temps dispo si on est en mode blitz
-F35: rajouter --ai-minimax-depth +gerer no arg
+F35: nickel
 F36: fonctionnel
 F37: nickel
-F38: exeption dans dicovery service + indiquer port 
-F39: option daemon pas encore gerer + MUTEX + -s ne peut pas fonctionner + server status marche pas
-F40: non
+F38: nickel
+F39: option daemon pas encore gerer
+F40: nickel

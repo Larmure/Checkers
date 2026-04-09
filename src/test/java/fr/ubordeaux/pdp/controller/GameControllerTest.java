@@ -152,6 +152,80 @@ class GameControllerTest {
     System.setOut(System.out);
   }
 
+  @Test
+  void testDisplayBoard_whenGameIsNull_printsNoGameMessage() throws Exception {
+    setFieldNull("game");
+
+    ByteArrayOutputStream out = captureOutput();
+    controller.displayBoard();
+    restoreOutput();
+
+    assertTrue(out.toString().contains("No game is currently running."));
+  }
+
+  @Test
+  void testDisplayHistory_whenGameIsNull_printsNoHistoryMessage() throws Exception {
+    setFieldNull("game");
+
+    ByteArrayOutputStream out = captureOutput();
+    controller.displayHistory();
+    restoreOutput();
+
+    assertTrue(out.toString().contains("No game history available."));
+  }
+
+  @Test
+  void testDisplayConfiguration_whenConfigurationIsNull_printsNoConfigurationMessage()
+      throws Exception {
+    setFieldNull("configuration");
+
+    ByteArrayOutputStream out = captureOutput();
+    controller.displayConfiguration();
+    restoreOutput();
+
+    assertTrue(out.toString().contains("No configuration available."));
+  }
+
+  @Test
+  void testSetDebug_whenConfigurationIsNull_doesNothing() throws Exception {
+    setFieldNull("configuration");
+
+    assertDoesNotThrow(() -> controller.setDebug(true));
+    assertFalse(controller.isDebug(),
+        "Debug should remain disabled when configuration is null.");
+  }
+
+  @Test
+  void testSetVerbose_whenConfigurationIsNull_doesNothing() throws Exception {
+    setFieldNull("configuration");
+
+    assertDoesNotThrow(() -> controller.setVerbose(true));
+    assertFalse(controller.isVerbose(),
+        "Verbose should remain disabled when configuration is null.");
+  }
+
+  @Test
+  void testStartBlitzTimer_whenGameIsNull_keepsTimerNull() throws Exception {
+    setFieldNull("game");
+
+    controller.startBlitzTimer();
+
+    Field timerField = GameController.class.getDeclaredField("blitzTimer");
+    timerField.setAccessible(true);
+    assertNull(timerField.get(controller),
+        "No timer should be started when game is null.");
+  }
+
+  @Test
+  void testStopBlitzTimer_whenAlreadyNull_doesNotThrow() {
+    assertDoesNotThrow(() -> controller.stopBlitzTimer());
+  }
+
+  @Test
+  void testJoinGameLoop_withoutStartedLoop_doesNotThrow() {
+    assertDoesNotThrow(() -> controller.joinGameLoop());
+  }
+
   // =========================================================
   // executeMove
   // =========================================================
@@ -302,7 +376,6 @@ class GameControllerTest {
     assertFalse(controller.isWhiteAi());
     assertFalse(controller.isBlackAi());
   }
-
   // =========================================================
   // undo / redo
   // =========================================================
@@ -739,5 +812,63 @@ class GameControllerTest {
 
     assertFalse(out.toString().trim().isEmpty(),
         "An error message must be displayed when the game is finished.");
+  }
+
+  // test buildCommand
+
+  @Test
+  void testBuildCommand_allValidCommands() throws Exception {
+    // 1. Accéder à la méthode privée
+    java.lang.reflect.Method method = GameController.class.getDeclaredMethod("buildCommand", String.class,
+        String[].class);
+    method.setAccessible(true);
+
+    String[] dummyArgs = new String[] { "dummy" };
+
+    // 2. Tester chaque branche du switch en vérifiant le nom de la classe retournée
+    assertEquals("NewCommand", method.invoke(controller, "new", dummyArgs).getClass().getSimpleName());
+    assertEquals("HelpCommand", method.invoke(controller, "help", dummyArgs).getClass().getSimpleName());
+    assertEquals("QuitCommand", method.invoke(controller, "quit", dummyArgs).getClass().getSimpleName());
+    assertEquals("PauseCommand", method.invoke(controller, "pause", dummyArgs).getClass().getSimpleName());
+    assertEquals("LoadCommand", method.invoke(controller, "load", dummyArgs).getClass().getSimpleName());
+    assertEquals("SaveCommand", method.invoke(controller, "save", dummyArgs).getClass().getSimpleName());
+    assertEquals("HintCommand", method.invoke(controller, "hint", dummyArgs).getClass().getSimpleName());
+    assertEquals("UndoCommand", method.invoke(controller, "undo", dummyArgs).getClass().getSimpleName());
+    assertEquals("RedoCommand", method.invoke(controller, "redo", dummyArgs).getClass().getSimpleName());
+    assertEquals("ShowCommand", method.invoke(controller, "show", dummyArgs).getClass().getSimpleName());
+    assertEquals("SetCommand", method.invoke(controller, "set", dummyArgs).getClass().getSimpleName());
+    assertEquals("ContinueCommand", method.invoke(controller, "continue", dummyArgs).getClass().getSimpleName());
+  }
+
+  @Test
+  void testUndoGame_whileAiPlayer_coversAllBranches() throws Exception {
+    GameCheckers mockGame = Mockito.mock(GameCheckers.class, Mockito.RETURNS_DEEP_STUBS);
+    AiPlayer mockAi = Mockito.mock(AiPlayer.class);
+
+    Mockito.when(mockGame.getState()).thenReturn(State.IN_GAME);
+    Mockito.when(mockGame.getCurrentPlayer()).thenReturn(mockAi);
+    Mockito.when(mockGame.getHistory().getSize()).thenReturn(3, 2, 2, 1, 1, 1);
+
+    Field gameField = GameController.class.getDeclaredField("game");
+    gameField.setAccessible(true);
+    gameField.set(controller, mockGame);
+
+    assertDoesNotThrow(() -> controller.undoGame(1));
+  }
+
+  @Test
+  void testRedoGame_whileAiPlayer_coversAllBranches() throws Exception {
+    GameCheckers mockGame = Mockito.mock(GameCheckers.class, Mockito.RETURNS_DEEP_STUBS);
+    AiPlayer mockAi = Mockito.mock(AiPlayer.class);
+
+    Mockito.when(mockGame.getState()).thenReturn(State.IN_GAME);
+    Mockito.when(mockGame.getCurrentPlayer()).thenReturn(mockAi);
+    Mockito.when(mockGame.getHistory().getSize()).thenReturn(1, 2, 2, 3, 3, 3);
+
+    Field gameField = GameController.class.getDeclaredField("game");
+    gameField.setAccessible(true);
+    gameField.set(controller, mockGame);
+
+    assertDoesNotThrow(() -> controller.redoGame(1));
   }
 }

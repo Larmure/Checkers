@@ -1,11 +1,27 @@
 \documentclass[a4paper]{article}
 
-\usepackage[svgnames]{xcolor}
+\usepackage[svgnames, x11names, table]{xcolor}
 \usepackage{pdp}
 \usepackage{longtable}
 \usepackage{amsmath}
 \usepackage{caption}
 \usepackage{placeins}
+\usepackage{comment}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,backgrounds,arrows.meta,babel,shapes.geometric}
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
+
+%B5FFE2 VIEW
+%FFBD59 CONTROLLER
+%F19C99 MODEL
+%0097b2 méthode
+%b694cf mode
+%7ed957 IA
+%ff66c4 condition de boucle
+%d9d9d9 shell
+
 \captionsetup[figure]{justification=centering, singlelinecheck=false}
 
 %------------------------------------------------------------------------------
@@ -41,13 +57,20 @@
 
 \section{Contexte et objectifs du projet}
 
-Le projet a pour objectif de concevoir et développer un logiciel permettant de jouer au jeu de
-dames conformément aux règles officielles. Le programme doit permettre à deux joueurs de
-s'affronter sur un damier, soit en mode local, soit à distance via un réseau.
+\subsection{Historique}
 
-Le logiciel garantit le respect strict des règles du jeu tout en proposant une expérience
-utilisateur claire, robuste et extensible. Il s'inscrit dans une démarche de développement
-logiciel complète, intégrant la qualité du code, la documentation, les tests et les performances.
+Le jeu de dames est l'un des plus anciens jeux de plateau stratégiques, dont les origines remontent à plusieurs millénaires dans 
+les civilisations méditerranéennes. 
+Perfectionné au fil des siècles, il a acquis ses règles modernes en Europe au cours du Moyen-Âge et fait aujourd'hui l'objet de 
+compétitions internationales officielles régies par la Fédération Mondiale du Jeu de Dames (FMJD)~\cite{fmjd}.
+
+\subsection{Présentation du jeu}
+Le jeu de dames est un jeu de stratégie abstraite opposant deux joueurs sur un plateau quadrillé. 
+Chaque joueur manœuvre ses pièces en diagonale dans le but de capturer l'intégralité des pièces 
+adverses ou de les immobiliser. Sa simplicité d'accès contraste avec la profondeur tactique qu'il 
+offre : la gestion des prises obligatoires, les enchaînements de captures multiples et la promotion 
+des pions en dames confèrent au jeu une richesse stratégique appréciée aussi bien des joueurs 
+occasionnels que des compétiteurs de haut niveau.
 
 \subsection{Variantes supportées}
 \label{sec:variantes}
@@ -57,6 +80,8 @@ une option de configuration du plateau. Le style anglo-saxon, appelé Draughts, 
 chaque joueur disposant de 12 pions. Le jeu de dames international adopte quant à lui un plateau de 10×10, 
 avec 20 pions par joueur. Enfin, les dames canadiennes étendent encore la surface de jeu avec un plateau de 12×12, 
 portant le nombre de pions à 30 par joueur.
+
+\noindent\textit{Les images suivantes ont été obtenues à l'aide de notre implémentation. }
 
 \begin{figure}[h]
     \centering
@@ -81,6 +106,8 @@ portant le nombre de pions à 30 par joueur.
 \FloatBarrier
 
 \subsection{Règles du jeu}
+
+Les règles présentées dans cette section s'appuient sur les ressources de la FFJD et d'un guide de règles grand public~\cite{ffjd_regles,comptoir_regles_dames}.
 
 \subsubsection{Mise en place et déroulement}
 
@@ -111,75 +138,80 @@ aussi bien vers l'avant que vers l'arrière.
 \end{figure}
 \FloatBarrier
 
+\begin{center}
+\textit{Les cases surlignées en bleu indiquent les déplacements possibles de la pièce sélectionnée. }
+\end{center}
+
 \subsubsection{La prise par un pion}
 \label{sec:prise-pion}
-
 Un pion capture un pion adverse en sautant par-dessus lui pour se poser sur la case vide
 située immédiatement derrière. La prise peut s'effectuer vers l'avant comme vers l'arrière.
-
 \textbf{La prise est obligatoire.} De plus, si après une capture le pion se retrouve à nouveau
 en position de prise, il doit continuer jusqu'à épuisement des captures possibles (rafle). Les
 pions capturés sont retirés du plateau uniquement à l'issue complète de la rafle, et non au fur
-et à mesure.
+et à mesure. La figure~\ref{fig:prise-pion} illustre le mécanisme de prise simple, tandis que 
+la figure~\ref{fig:rafle} montre un exemple de rafle enchaînant plusieurs captures successives.
 
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/pawn_capture.png}
-        \caption{Prise d'un pion}
-    \end{minipage}
-    \hspace{1cm}
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/rafle.png}
-        \caption{Rafle}
-    \end{minipage}
+\begin{figure}[h]
+\centering
+  \begin{minipage}{0.3\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{img_report/pawn_capture.png}
+  \caption{Prise d'un pion}
+  \label{fig:prise-pion}
+  \end{minipage}
+\hspace{1cm}
+  \begin{minipage}{0.3\textwidth}
+  \centering
+  \includegraphics[width=\textwidth]{img_report/rafle.png}
+  \caption{Rafle}
+  \label{fig:rafle}
+  \end{minipage}
 \end{figure}
 \FloatBarrier
 
 \subsubsection{La prise majoritaire}
 \label{sec:prise-majoritaire}
-
 Lorsque plusieurs séquences de capture sont possibles, le joueur est tenu de choisir celle qui
-capture le plus grand nombre de pièces, quel que soit leur rang. Ainsi, une séquence permettant
-de prendre deux pions est prioritaire sur la prise d'une dame isolée.
-
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/majority_capture.png}
-        \caption{Prise majoritaire~: 2 pions vs 1 dame}
-    \end{minipage}
-\end{figure}
-\FloatBarrier
+capture le plus grand nombre de pièces, quel que soit leur rang. Ainsi, comme l'illustre la 
+figure~\ref{fig:prise-majoritaire}, une séquence permettant de prendre deux pions est prioritaire 
+sur la prise d'une dame isolée.
 
 \subsubsection{La prise par la dame}
 \label{sec:prise-dame}
-
 Grâce à son amplitude de mouvement, la dame dispose de capacités de capture étendues. Elle doit
 prendre tout pion situé sur sa diagonale dès lors qu'une case libre est disponible
-immédiatement après. On ne peut passer qu'une seule fois sur un même pion, mais on peut traverser deux
-fois la même case.
+immédiatement après. On ne peut passer qu'une seule fois sur un même pion, mais on peut traverser 
+deux fois la même case. La figure~\ref{fig:prise-dame} présente un exemple de prise par la dame, 
+et la figure~\ref{fig:prise-dame-case} illustre le cas particulier où la dame repasse sur une 
+case déjà traversée au cours de sa rafle.
 
-\begin{figure} [h]
-    \centering
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/capture_checker.png}
-        \caption{Prise par la dame}
-    \end{minipage}
-    \hspace{1cm}
-    \begin{minipage}{0.3\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img_report/capture_checker_2.png}
-        \caption{Prise par la dame avec passage sur une même case}
-    \end{minipage}
+\begin{figure}[h]
+\centering
+  \begin{minipage}{0.3\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{img_report/capture_checker.png}
+    \caption{Prise par la dame}
+    \label{fig:prise-dame}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.3\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{img_report/capture_checker_2.png}
+    \caption{Prise par la dame avec passage sur une même case}
+    \label{fig:prise-dame-case}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.3\textwidth}
+  \centering
+    \includegraphics[width=\textwidth]{img_report/majority_capture.png}
+    \caption{Prise majoritaire~: 2 pions vs 1 dame}
+    \label{fig:prise-majoritaire}
+  \end{minipage}
 \end{figure}
 \FloatBarrier
 
-\subsection{Conditions de fin de partie}
+\subsubsection{Conditions de fin de partie}
 
 Une partie prend fin dans l'un des cas suivants :
 
@@ -206,10 +238,9 @@ Une partie prend fin dans l'un des cas suivants :
 
 % ============================================================
 %  Section 1.6 — Versions existantes
-%  À inclure dans le rapport principal avec \input{versions_existantes}
 % ============================================================
 
-\subsection{Versions existantes}
+\subsection{Étude de l'existant}
 
 Dans le cadre de notre phase d'analyse, nous avons étudié deux projets open-source
 de jeu de dames afin d'identifier des approches architecturales et algorithmiques
@@ -220,93 +251,33 @@ pertinentes pour notre développement.
 % -----------------------------------------------------------
 
 \textbf{AwsDame}~\cite{awsdame} est une plateforme de jeu de dames multijoueur
-en temps réel développée dans un environnement JavaScript/Node.js.
+en temps réel développée en JavaScript/Node.js, distribuée sous licence MIT.
 Bien que la pile technologique diffère de la nôtre (Java), son architecture
 réseau orientée événements offre des points de comparaison instructifs.
 
 En particulier, ce projet adopte une logique de \emph{matchmaking automatique}
-entre joueurs connectés, une idée que nous avons reprise dans notre propre
-serveur TCP. Notre classe \texttt{GameServer} implémente en effet une méthode
-\texttt{tryAutoStart()} qui détecte automatiquement la disponibilité de deux
-joueurs inactifs et déclenche une session sans intervention manuelle~:
-
-{\large
-  \begin{minted}[frame=single]{java}
-// GameServer.java — démarrage automatique d'une partie
-List<PlayerSession> idlePlayers = registry.getAllPlayers().stream()
-    .filter(PlayerSession::isIdle)
-    .collect(Collectors.toList());
-
-if (idlePlayers.size() >= 2) {
-    List<PlayerSession> pair = idlePlayers.subList(0, 2);
-    GameSession session = registry.createSession(pair, sessionController);
-    // notification GAME_START envoyée aux deux joueurs
-}
-  \end{minted}
-}
-
-Contrairement à AwsDame qui s'appuie sur WebSockets, notre solution repose sur
-des sockets TCP bruts avec un protocole textuel simple (\texttt{REGISTER},
-\texttt{MOVE}, \texttt{GAME\_OVER}, etc.), ce qui facilite les tests en ligne
-de commande et l'intégration avec un client Java natif.
+entre joueurs connectés : dès que deux joueurs sont disponibles, une session de
+jeu est lancée sans intervention manuelle. Contrairement à AwsDame qui s'appuie
+sur WebSockets, le cahier des charges de notre projet impose l'utilisation de
+sockets TCP, dont la mise en œuvre est détaillée dans la
+section~\ref{sec:reseau}.
 
 % -----------------------------------------------------------
 \subsubsection*{Raven Checkers}
 % -----------------------------------------------------------
 
 \textbf{Raven Checkers}~\cite{ravencheckers} est un programme de dames
-open-source développé en Python, conçu à des fins pédagogiques pour l'étude
-des tactiques de jeu et des algorithmes d'intelligence artificielle.
+open-source développé en Python sous licence GPL, conçu à des fins pédagogiques
+pour l'étude des tactiques de jeu et des algorithmes d'intelligence artificielle.
 Il couple la fonction d'évaluation de \emph{Simple Checkers} aux algorithmes
 de recherche du projet AIMA~\cite{aima}.
 
-L'analyse de ce projet a principalement influencé notre implémentation
-des algorithmes d'IA. Raven Checkers propose un MinMax classique sans
-gestion du temps, ce qui le rend peu adapté à des contraintes de jeu réel.
-Notre implémentation y répond de trois façons~:
-
-\begin{enumerate}
-
-  \item \textbf{Approfondissement itératif.} Plutôt que de fixer une
-  profondeur statique, nos classes \texttt{MinMax} et \texttt{MinMaxAlphaBeta}
-  explorent l'arbre niveau par niveau, de la profondeur~1 jusqu'à
-  \texttt{maxDepth}, et conservent uniquement le résultat du dernier
-  niveau entièrement exploré. Si le budget temps expire en cours de niveau,
-  l'exploration partielle est abandonnée via une exception interne
-  \texttt{TimeExceededException}, garantissant qu'aucun résultat
-  incomplet n'est retenu.
-
-  \item \textbf{Élagage alpha-bêta.} La classe \texttt{MinMaxAlphaBeta}
-  maintient deux bornes $\alpha$ (meilleur score garanti pour le maximisant)
-  et $\beta$ (meilleur score garanti pour le minimisant). Dès que
-  $\beta \leq \alpha$, les branches restantes sont élagées, réduisant
-  significativement le nombre de n\oe{}uds évalués par rapport au MinMax pur.
-
-  \item \textbf{MCTS avec mode de sélection configurable.} Au-delà du MinMax,
-  notre classe \texttt{Mcts} implémente la méthode de Monte Carlo Tree Search,
-  avec un mode de sélection paramétrable (\texttt{UCT} ou \texttt{ML}) défini
-  par l'énumération \texttt{SelectionMode}. Cette flexibilité est absente
-  de Raven Checkers, qui ne propose qu'un seul algorithme de recherche.
-
-\end{enumerate}
-
-La fabrique \texttt{Ai.buildAi(Configuration)} centralise le choix
-de l'algorithme à l'exécution~:
-
-{\large
-  \begin{minted}[frame=single]{java}
-// Ai.java — sélection de l'algorithme via la configuration
-switch (aiMode.toLowerCase()) {
-    case "minimax"   -> return new MinMax(depth, timeMs);
-    case "alphabeta" -> return new MinMaxAlphaBeta(depth, timeMs);
-    case "mcts"      -> {
-        Mcts mcts = new Mcts(depth, timeMs);
-        mcts.setSelectionMode(cfg.getSelectionMode());
-        return mcts;
-    }
-}
-\end{minted}
-}
+L'analyse de ce projet a principalement influencé notre réflexion sur les
+algorithmes d'IA. Raven Checkers propose un MinMax classique sans gestion du
+temps, ce qui le rend peu adapté à des contraintes de jeu réel. Cette lacune
+nous a conduits à étudier des approches plus robustes : approfondissement
+itératif, élagage alpha-bêta et Monte Carlo Tree Search (MCTS). Ces choix
+algorithmiques sont présentés en détail dans la section~\ref{sec:algo}.
 
 % -----------------------------------------------------------
 \subsubsection*{Bilan comparatif}
@@ -350,30 +321,78 @@ et d'identifier les lacunes à combler~: gestion du temps dans la recherche
 adversariale, richesse algorithmique de l'IA, et protocole réseau adapté
 à un client Java interactif.
 
+\subsection{Complexité du jeu}
+
+Le but de cette section est de chiffrer l'espace d'états du jeu et la complexité inhérente à ses règles, sans la confondre avec la 
+complexité des algorithmes de recherche employés. Une telle analyse est indispensable pour justifier nos choix d'architecture, notamment 
+l'utilisation des bitboards et des heuristiques de recherche.
+
+\paragraph{Analyse de l'espace d'états}
+
+L'espace d'états représente le nombre de configurations légales possibles du plateau. Pour comprendre 
+comment ces nombres astronomiques sont calculés, il faut se pencher sur la combinatoire du damier.
+
+Sur un plateau de taille $T \times T$, le jeu se déroule exclusivement sur les cases sombres. Le nombre de cases actives est donc $N = T^2 / 2$.
+ À tout instant, chacune de ces cases peut se trouver dans l'un des 5 états suivants : Vide, Pion Blanc, Pion Noir, Dame Blanche ou Dame Noire. 
+
+Mathématiquement, une borne supérieure naïve de l'espace d'états serait de $5^N$ configurations possibles. Cependant, cette valeur théorique 
+est drastiquement réduite par les contraintes strictes imposées par les règles du jeu. Le calcul analytique réel s'obtient en sommant les 
+combinaisons de placement de $b$ pièces blanches et $n$ pièces noires parmi les $N$ cases, tout en prenant en compte le nombre maximal de pièces 
+initiales par joueur et les impossibilités géométriques (par exemple, l'absence de pions sur la première rangée de leur propre camp). 
+
+Les recherches scientifiques en intelligence artificielle, basées sur ces dénombrements combinatoires et le parcours de l'arbre de jeu par des
+ supercalculateurs, ont permis de chiffrer précisément cet espace. Le tableau \ref{tab:state-space} synthétise ces ordres de grandeur en fonction 
+ de la variante jouée.
+
+\begin{table}[!ht]
+    \centering
+    \caption{Évolution de l'espace d'états en fonction de la variante du jeu}
+    \label{tab:state-space}
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Variante} & \textbf{Taille ($T \times T$)} & \textbf{Cases actives ($N$)} & \textbf{Pièces/Joueur} & \textbf{Espace d'états} \\ \hline
+        Anglaises / Brésiliennes & $8 \times 8$ & 32 & 12 & $5 \times 10^{20}$ \\ \hline
+        Internationales & $10 \times 10$ & 50 & 20 & $\approx 10^{30}$ \\ \hline
+        Canadiennes & $12 \times 12$ & 72 & 30 & $\approx 10^{40}$ \\ \hline
+    \end{tabular}
+\end{table}
+
+À titre de comparaison, si la variante $8 \times 8$ a pu être entièrement résolue en 2007 par le programme Chinook (prouvant qu'une partie parfaite mène inexorablement
+ à l'égalité~\cite{checkers_solved}), le passage au format $10 \times 10$ ou $12 \times 12$ rend toute
+  tentative de résolution exhaustive informatiquement impossible. Pour la variante internationale, la taille de l'arbre de jeu (nombre total de parties possibles
+   de bout en bout) est même estimée à $10^{54}$, justifiant ainsi le recours à des algorithmes d'élagage stricts ou des sélections probabilistes (MCTS).
+
 \section{Algorithme et Structure de données}
+\label{sec:algo}
 
 \subsection{Bitboard}
 
-Nous utilisons des bitboards pour représenter l'état du plateau. Cette approche permet de représenter l'état du plateau sous forme d'entiers primitifs et de calculer les coups de manière globale via des opérations bit à bit, offrant des performances bien supérieures aux matrices 2D classiques.
+Nous utilisons des bitboards pour représenter l'état du plateau. Cette approche permet de représenter l'état du plateau sous forme d'entiers primitifs et de calculer les 
+coups de manière globale via des opérations bit à bit, offrant des performances bien supérieures aux matrices 2D classiques.
 
 \subsubsection{Représentation et Numérotation des cases}
 
-Sur les \(100\) cases d'un plateau standard (\(10 \times 10\)), seules les 50 cases noires sont utilisées. Nous utilisons la \textbf{notation de Manoury} pour numéroter ces cases actives de 0 à 49, de bas en haut et de gauche à droite.
+Sur les \(100\) cases d'un plateau standard (\(10 \times 10\)), seules les 50 cases noires sont utilisées. Nous utilisons la \textbf{notation de Manoury} pour numéroter 
+ces cases actives de 0 à 49, de bas en haut et de gauche à droite.
 
-L'état complet du jeu est encodé sur quelques entiers de 64 bits (\texttt{long} en Java), où chaque bit correspond à une case active (1 si la case est occupée, 0 si elle est vide). Cela nous évite d'écrire des formules mathématiques complexes pour définir l'état du plateau : tout repose sur l'indexation binaire.
+L'état complet du jeu est encodé sur quatre entiers de 64 bits (\texttt{long} en Java), où chaque bit correspond à une case active (1 si la case est occupée, 0 si elle est vide). 
+Cette représentation permet de s'affranchir de la gestion itérative d'un tableau à deux dimensions. L'état du plateau n'est plus une collection d'objets ou d'entiers dispersés,
+ mais un vecteur binaire unique permettant d'évaluer la légalité des coups par de simples masquages logiques plutôt que par des parcours de boucles imbriquées.
 
 \[
+\setlength{\arraycolsep}{3pt}
 \begin{array}{cccccccccc}
-\cdot & 45 & \cdot & 46 & \cdot & 47 & \cdot & 48 & \cdot & 49 \\
-40 & \cdot & 41 & \cdot & 42 & \cdot & 43 & \cdot & 44 & \cdot \\
-\cdot & 35 & \cdot & 36 & \cdot & 37 & \cdot & 38 & \cdot & 39 \\
-30 & \cdot & 31 & \cdot & 32 & \cdot & 33 & \cdot & 34 & \cdot \\
-\cdot & 25 & \cdot & 26 & \cdot & 27 & \cdot & 28 & \cdot & 29 \\
-20 & \cdot & 21 & \cdot & 22 & \cdot & 23 & \cdot & 24 & \cdot \\
-\cdot & 15 & \cdot & 16 & \cdot & 17 & \cdot & 18 & \cdot & 19 \\
-10 & \cdot & 11 & \cdot & 12 & \cdot & 13 & \cdot & 14 & \cdot \\
-\cdot & 5 & \cdot & 6 & \cdot & 7 & \cdot & 8 & \cdot & 9 \\
-0 & \cdot & 1 & \cdot & 2 & \cdot & 3 & \cdot & 4 & \cdot
+\cdot&45&\cdot&46&\cdot&47&\cdot&48&\cdot&49\\
+40&\cdot&41&\cdot&42&\cdot&43&\cdot&44&\cdot\\
+\cdot&35&\cdot&36&\cdot&37&\cdot&38&\cdot&39\\
+30&\cdot&31&\cdot&32&\cdot&33&\cdot&34&\cdot\\
+\cdot&25&\cdot&26&\cdot&27&\cdot&28&\cdot&29\\
+20&\cdot&21&\cdot&22&\cdot&23&\cdot&24&\cdot\\
+\cdot&15&\cdot&16&\cdot&17&\cdot&18&\cdot&19\\
+10&\cdot&11&\cdot&12&\cdot&13&\cdot&14&\cdot\\
+\cdot&5&\cdot&6&\cdot&7&\cdot&8&\cdot&9\\
+0&\cdot&1&\cdot&2&\cdot&3&\cdot&4&\cdot
 \end{array}
 \]
 
@@ -388,18 +407,24 @@ Le gain en mémoire vive est d'un facteur 12, ce qui accélère drastiquement le
 
 \subsubsection{Application des opérations binaires}
 
-L'avantage majeur du bitboard n'est pas seulement le stockage, mais la manipulation du plateau via le processeur. Au lieu de parcourir le plateau case par case, nous utilisons :
+L'avantage majeur du bitboard n'est pas seulement le stockage, mais la manipulation du plateau via le processeur. 
+Au lieu de parcourir le plateau case par case, nous utilisons :
 \begin{itemize}
-  \item \textbf{ET logique} (\(\land\)) : Pour détecter les collisions (ex : croiser un masque de déplacement avec le bitboard des pièces adverses).
-  \item \textbf{OU logique} (\(\lor\)) : Pour fusionner les bitboards (ex : \(\text{Blancs} \lor \text{Noirs}\)) et obtenir la carte de toutes les cases occupées.
-  \item \textbf{NON logique} (\(\lnot\)) : Pour inverser la carte d'occupation et isoler instantanément toutes les cases vides du damier.
-  \item \textbf{Décalage binaire} (\(\ll\), \(\gg\)) : Pour translater toutes les pièces d'un joueur dans une direction donnée en une seule instruction d'horloge.
+  \item \textbf{ET logique} (\(\land\)) : Pour détecter les collisions (ex : croiser un masque de déplacement 
+  avec le bitboard des pièces adverses).
+  \item \textbf{OU logique} (\(\lor\)) : Pour fusionner les bitboards (ex : \(\text{Blancs} \lor \text{Noirs}\)) 
+  et obtenir la carte de toutes les cases occupées.
+  \item \textbf{NON logique} (\(\lnot\)) : Pour inverser la carte d'occupation et isoler instantanément toutes les 
+  cases vides du damier.
+  \item \textbf{Décalage binaire} (\(\ll\), \(\gg\)) : Pour translater toutes les pièces d'un joueur dans 
+  une direction donnée en une seule instruction d'horloge.
 \end{itemize}
 
 
 \subsection{Algorithmes de manipulation}
 
-L'intérêt de la section précédente prend tout son sens ici : la génération des coups légaux repose sur la translation temporelle des bits.
+L'intérêt de la section précédente prend tout son sens ici : la génération des coups légaux repose sur la translation 
+temporelle des bits.
 
 \begin{table}[!ht]
     \centering
@@ -416,14 +441,44 @@ L'intérêt de la section précédente prend tout son sens ici : la génération
     \end{tabular}
 \end{table}
 
+Le tableau \ref{tab:comparaison-offsets} synthétise les constantes de décalage utilisées par notre moteur de jeu. La manipulation de l'état du plateau via les bitboards 
+repose sur une propriété géométrique fondamentale : un déplacement diagonal correspond à une translation d'index fixe, à la condition de prendre en compte la parité de la 
+ligne d'origine (notée \textbf{P} pour Paire et \textbf{I} pour Impaire). 
+
+En effet, dans notre représentation compressée où seules les cases sombres sont indexées, le damier forme un motif en quinconce. Par conséquent, une pièce située sur 
+une ligne paire n'a pas le même décalage numérique avec ses voisins diagonaux qu'une pièce située sur une ligne impaire.
+
+Pour illustrer avec le plateau standard $10 \times 10$ (où chaque ligne contient 5 cases actives) : un déplacement vers le Haut-Gauche depuis une ligne paire 
+(\textbf{P $\to$ I}) nécessite d'ajouter $+4$ à l'index binaire, tandis que le même mouvement depuis une ligne impaire (\textbf{I $\to$ P}) nécessite d'ajouter $+5$.
+
+
 \subsubsection{Déplacement et prise par un pion}
 
-Lorsqu'un pion se déplace, on décale l'ensemble de son bitboard d'une direction donnée. Si le bit "atterrit" sur une position valide (une case vide, vérifiée via une opération \(\land\) sur le bitboard inversé \(\lnot(\text{Occupées})\)), le coup est légal.
+Pour déterminer si un pion peut se déplacer, le moteur doit avant tout s'assurer que la case de destination est libre. Au lieu de maintenir 
+une structure de données lourde et redondante pour pister les cases vides, notre implémentation calcule cette information à la volée. Nous 
+fusionnons instantanément les quatre \textit{bitboards} (les pions et dames de chaque joueur) au moyen d'une simple opération logique "OU"
+ ($\lor$). Cette fusion crée une carte virtuelle regroupant toutes les pièces présentes sur le damier :
+
+\[
+\text{Occupées} = \text{PionsBlancs} \lor \text{DamesBlanches} \lor \text{PionsNoirs} \lor \text{DamesNoires}
+\]
+
+Grâce à ce masque global, la méthode \texttt{isOccupied(i)} de notre classe \texttt{Board} est capable de vérifier l'état de n'importe 
+quelle case en temps constant. 
+
+La génération des mouvements d'un pion est ensuite confiée à la méthode \texttt{pawnSimpleTargets(...)}. Son fonctionnement est très 
+intuitif : elle teste les diagonales adjacentes à la pièce, écarte naturellement les directions illégales (comme le fait d'avancer vers
+ le bas pour un pion blanc), puis valide les trajectoires dont la case d'arrivée n'est pas marquée dans notre masque des cases occupées.
 
 \paragraph{Exemple concret de prise :}
-Pour qu'une capture soit possible, un pion doit sauter par-dessus un pion adverse et atterrir sur une case vide. Sur un plateau \(10 \times 10\), supposons un pion blanc en case 32 (ligne paire). S'il veut capturer un pion noir situé en haut à gauche (case 27, ligne impaire), le décalage pour atteindre le pion noir est de \(+5\). Pour atterrir derrière ce pion, le saut continue vers la case 21 (ligne paire), nécessitant un nouveau décalage de \(+6\).
+Pour qu'une capture soit possible, un pion doit sauter par-dessus un pion adverse et atterrir sur une case vide. 
+Sur un plateau \(10 \times 10\), supposons un pion blanc en case 32 (ligne paire). 
+S'il veut capturer un pion noir situé en haut à gauche (case 27, ligne impaire), 
+le décalage pour atteindre le pion noir est de \(+5\). Pour atterrir derrière ce pion, 
+le saut continue vers la case 21 (ligne paire), nécessitant un nouveau décalage de \(+6\).
 
-Le décalage total pour cette prise est donc constant : \(5 + 6 = 11\) bits. L'opération binaire simplifiée de cette validation ressemble à cela :
+Le décalage total pour cette prise est donc de \(5 + 6 = 11\) cases indexées.
+La validation logique peut se lire ainsi :
 
 \[
 \text{CibleSaut} = (\text{PionBlanc} \gg 5) \land \text{PionNoir}
@@ -432,20 +487,33 @@ Le décalage total pour cette prise est donc constant : \(5 + 6 = 11\) bits. L'o
 \text{AtterrissageValide} = (\text{CibleSaut} \gg 6) \land \lnot(\text{Occupées})
 \]
 
-% TODO : insérer ici une capture d'écran illustrant cette prise spécifique (de 32 vers 21 en passant par 27) pour satisfaire le correcteur!!!!
-% \begin{figure}[!ht]
-%   \centering
-%   \includegraphics[width=0.6\textwidth]{votre_image_prise.png}
-%   \caption{Exemple d'une prise de la case 32 vers la case 21.}
-%   \label{fig:exemple_prise}
-% \end{figure}
+Dans le code, les prises de pion sont générées par \texttt{getBestPawnCaptures(...)} et
+\texttt{pawnMultiCaptures(...)} (DFS). Le coût structurel d'un test local reste en \(O(1)\),
+mais l'exploration de toutes les rafles possibles est exponentielle dans le pire cas :
+\(O(B^k)\), avec \(B\) le facteur de branchement des captures et \(k\) la profondeur
+maximale de rafle.
+
+\paragraph{Autres algorithmes bitboard présents dans le code.}
+Les deux algorithmes présentés ici ne sont pas les seuls. Le module \texttt{Board} utilise
+également des opérations bitboard pour :
+\begin{itemize}
+  \item la génération des coups simples de dame (\texttt{checkerSimpleTargets});
+  \item la génération des prises multiples de dame par DFS (\texttt{checkerMultiCaptures});
+  \item la sélection des coups légaux avec priorité aux prises majoritaires
+  (\texttt{getValidMoves}, \texttt{getBestPawnCaptures}, \texttt{getBestCheckerCaptures});
+  \item l'application d'un coup, la suppression des pièces capturées et la promotion
+  (\texttt{applyMove}, \texttt{promoteBit}).
+\end{itemize}
 
 \subsubsection{Déplacement et prise par une dame}
 
-Contrairement au pion, la dame peut parcourir un nombre illimité de cases vides sur une diagonale. D'un point de vue binaire, un simple décalage ne suffit pas : il faut propager le bit sur toute la diagonale jusqu'à rencontrer un obstacle. C'est la technique du \textit{sliding piece generation}.
+Contrairement au pion, la dame peut parcourir un nombre illimité de cases vides sur une diagonale. 
+D'un point de vue binaire, un simple décalage ne suffit pas : il faut propager le bit sur toute la diagonale 
+jusqu'à rencontrer un obstacle. C'est la technique du \textit{sliding piece generation}.
 
 Voici le pseudo-code illustrant la génération des coups possibles pour une dame :
 
+{ \small
 \begin{minted}[frame=single]{text}
 Fonction GenererCoupsDame(bitboard_dame, direction):
     coups_possibles = 0
@@ -463,37 +531,1611 @@ Fonction GenererCoupsDame(bitboard_dame, direction):
         
     Retourner coups_possibles
 \end{minted}
+}
+\FloatBarrier
+
+\subsection{Complexité du Board}
+
+\subsubsection{Hypothèses et notations}
+
+Dans cette partie, nous analysons la classe \texttt{Board}, qui constitue le moteur de génération et d'application des coups.
+On note $n$ le nombre de cases actives (\(32\), \(50\) ou \(72\) selon la variante), $p$ le nombre de pièces présentes
+sur le plateau, et $c$ le nombre de pièces capturées par un coup donné. Les opérations bit-à-bit de base
+(tests, \texttt{OR}, \texttt{AND}, décalages, \texttt{bitCount}) sont considérées en temps constant sur mot machine.
+
+\subsubsection{Accès, comptage et conversion}
+
+Les requêtes élémentaires de présence, comme \texttt{isBitWhitePawn(int)}, \texttt{isBitBlackPawn(int)},
+\texttt{isBitWhiteChecker(int)} et \texttt{isBitBlackChecker(int)}, reposent sur un test de bit unique ; elles sont donc
+en $O(1)$. Les vérifications de bord \texttt{onLeftEdge(int)} et \texttt{onRightEdge(int)} sont également en $O(1)$.
+
+Les conversions d'indices (\texttt{indexToSquare(int)} et \texttt{boardToBitIndex(int,int)}) sont arithmétiques et valent $O(1)$.
+La méthode \texttt{squareToIndex(String)} reste $O(1)$ du point de vue asymptotique, car la longueur des coordonnées
+est bornée par la taille du plateau supportée (8, 10, 12).
+
+Les compteurs \texttt{whitePawnsCount()}, \texttt{blackPawnsCount()}, \texttt{whiteCheckersCount()} et
+\texttt{blackCheckersCount()} utilisent \texttt{Long.bitCount} sur deux mots 64 bits ; ils s'exécutent donc en $O(1)$.
+
+\subsubsection{Application d'un coup et mutations locales}
+
+La méthode \texttt{applyMove(Move)} comporte trois étapes : déplacement de la pièce, suppression des captures,
+et promotion éventuelle. Le déplacement et la promotion sont en $O(1)$, tandis que la suppression des captures parcourt
+la liste \texttt{move.getCaptured()} ; le coût est donc $O(c)$. On obtient ainsi :
+$$T(\texttt{applyMove}) = O(1 + c) = O(c).$$
+
+Les helpers de mutation ciblée (\texttt{addWhitePawn}, \texttt{removeWhitePawn}, \texttt{addBlackChecker}, etc.)
+ne modifient qu'un bit et restent en $O(1)$. Les méthodes utilitaires de test
+(\texttt{restorePiece}, \texttt{demoteBit}, \texttt{remove}, \texttt{addWhite}, \texttt{addBlack}, \texttt{clearBoard})
+sont donc toutes en $O(1)$ dans ce modèle borné.
+
+
+\subsubsection{Génération des coups}
+
+La génération globale \texttt{getValidMoves(boolean)} effectue un balayage des cases actives puis appelle des routines
+de coups simples et de prises. Le coût structurel de ce balayage est $O(n)$, mais le coût dominant provient des DFS
+de captures : \texttt{dfsPawn(...)} et \texttt{dfsChecker(...)}.
+
+Pour les coups simples, \texttt{pawnSimpleTargets(int, boolean)} teste un nombre constant de directions et reste en $O(1)$.
+\texttt{checkerSimpleTargets(int)} parcourt des rayons diagonaux, donc $O(n)$ dans le pire cas (plateau très dégagé).
+
+Pour les prises, \texttt{pawnMultiCaptures(...)} et \texttt{checkerMultiCaptures(...)} explorent un arbre de séquences
+de capture. Leur pire cas est exponentiel en profondeur de capture $k$ (en pratique bornée par le plateau), ce que l'on note
+$O(B^k)$, où $B$ est le facteur de branchement effectif des continuations de prise. Par conséquent, la complexité de
+\texttt{getWhiteValidMoves()} / \texttt{getBlackValidMoves()} s'écrit :
+$$O\bigl(n + \text{coût DFS captures}\bigr),$$
+et est dominée, dans les positions tactiques, par l'exploration des chaînes de captures.
+
+\subsubsection{Copie de plateau}
+
+La méthode \texttt{copy()} alloue un nouvel objet puis recopie un nombre constant de champs primitifs
+(huit bitboards + métadonnées). Elle est donc en $O(1)$, ce qui est un point clé pour les algorithmes de recherche.
+
+\subsubsection{Synthèse Board}
+
+{\footnotesize
+\begin{longtable}{|p{4.0cm}|p{4.1cm}|p{2.0cm}|p{5.2cm}|}
+\caption{Complexité des principales méthodes de \texttt{Board}}\label{tab:board-complexite} \\
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Famille} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Justification} \\
+\hline
+\endhead
+
+\hline
+\multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
+\endfoot
+
+\hline
+\endlastfoot
+
+Accès bitboard
+& \texttt{isBit*}, \texttt{onLeftEdge}, \texttt{onRightEdge}
+& $O(1)$
+& Un nombre constant de tests/logiques binaires sur un ou deux mots 64 bits. \\
+\hline
+
+Conversion
+& \texttt{indexToSquare}, \texttt{boardToBitIndex}, \texttt{squareToIndex}
+& $O(1)$
+& Calculs arithmétiques et parsing de coordonnées de taille bornée. \\
+\hline
+
+Mutation locale
+& \texttt{add*}, \texttt{remove*}, \texttt{promoteBit}, \texttt{demoteBit}, \texttt{restorePiece}
+& $O(1)$
+& Modification d'un nombre constant de bits/champs. \\
+\hline
+
+Application d'un coup
+& \texttt{applyMove(Move)}
+& $O(c)$
+& Parcours des pièces capturées (taille $c$), le reste en temps constant. \\
+\hline
+
+Coups simples pion
+& \texttt{pawnSimpleTargets}
+& $O(1)$
+& Nombre fixe de directions testées, sans parcours global. \\
+\hline
+
+Coups simples dame
+& \texttt{checkerSimpleTargets}
+& $O(n)$ (pire cas)
+& Exploration potentielle de rayons diagonaux longs sur plateau dégagé. \\
+\hline
+
+Prises pion/dame
+& \texttt{pawnMultiCaptures}, \texttt{checkerMultiCaptures}, \texttt{dfsPawn}, \texttt{dfsChecker}
+& $O(B^k)$ (pire cas)
+& Exploration récursive d'un arbre de séquences de capture. \\
+\hline
+
+Génération globale
+& \texttt{getWhiteValidMoves}, \texttt{getBlackValidMoves}
+& $O(n + \text{DFS captures})$
+& Balayage des cases + génération des prises (coût dominant selon la position). \\
+\hline
+
+Copie
+& \texttt{copy}
+& $O(1)$
+& Recopie d'un nombre constant de champs primitifs. \\
+\hline
+\end{longtable}
+}
+
+\subsection{Algorithmes d'intelligence artificielle}
+
+\subsubsection{SimpleEvaluator}
+
+\texttt{SimpleEvaluator} est l'heuristique la plus légère du module. Son implémentation parcourt toutes les cases actives du plateau via \texttt{board.getIndexMax()} et interroge directement les bitboards avec \texttt{isBitWhitePawn}, \texttt{isBitBlackPawn}, \texttt{isBitWhiteChecker} et \texttt{isBitBlackChecker}. Chaque pion vaut 100 points et chaque dame 350 points ; le score final est positif si la position favorise les blancs et négatif si elle favorise les noirs\cite{windames_evaluation}.
+
+\subsubsection{AdvancedEvaluator}
+
+\texttt{AdvancedEvaluator} reprend la logique matérielle de \texttt{SimpleEvaluator}, mais ajoute un bonus de progression pour les pions. Pour calculer ce bonus, la classe reconstruit la ligne de chaque case à partir de l'indice courant et de la taille du plateau, puis ajoute ou retire un bonus d'avancement proportionnel à la distance parcourue vers la promotion. Les dames gardent leur valeur fixe, ce qui permet de conserver une heuristique lisible tout en intégrant une notion de dynamique de partie \cite{windames_evaluation}.
+
+\subsubsection{MaxEvaluator}
+
+\texttt{MaxEvaluator} est l'heuristique la plus coûteuse du trio. Elle combine d'abord le comptage matériel et le bonus d'avancement, puis ajoute deux critères stratégiques supplémentaires : le contrôle du centre et la mobilité. Le centre est détecté par la méthode privée \texttt{isInCenter(...)} à partir des coordonnées ligne/colonne, tandis que la mobilité est évaluée en appelant \texttt{board.getWhiteValidMoves()} et \texttt{board.getBlackValidMoves()} \cite{windames_evaluation}.
+
+\subsubsection{MinMax}
+
+\texttt{MinMax} implémente la stratégie classique de recherche adversariale. Le point d'entrée réel passe par \texttt{Ai.getBestMove(...)}, qui travaille sur une copie du plateau et crée un \texttt{ManagerUndoRedo} dédié à l'exploration. L'algorithme parcourt ensuite l'arbre de jeu en alternant les fonctions \texttt{minMax(...)} et \texttt{maxMin(...)} : chaque coup est appliqué avec \texttt{board.applyMove(move)}, enregistré dans \texttt{undo.registerMove(...)} puis annulé immédiatement après l'évaluation de la branche.
+
+La classe dépend donc à la fois de \texttt{Board} pour générer les coups légaux, de \texttt{ManagerUndoRedo} pour revenir en arrière, et de \texttt{Evaluator} pour scorer les feuilles. La gestion du temps repose sur une exception interne \texttt{TimeExceededException} qui interrompt proprement la récursion si le budget est dépassé. Le résultat est ensuite renvoyé sous forme d'un \texttt{Move} détaché de l'arbre de recherche afin de ne pas propager d'état interne vers la partie réelle.
+
+\subsubsection{MinMaxAlphaBeta}
+
+\texttt{MinMaxAlphaBeta} reprend exactement le même contrat que \texttt{MinMax}, mais ajoute deux bornes locales, \(\alpha\) et \(\beta\), dans les méthodes \texttt{maxValue(...)} et \texttt{minValue(...)}. Après chaque enfant évalué, la borne adaptée est mise à jour ; dès que \(\beta \leq \alpha\), la boucle est interrompue et les frères restants sont ignorés. La qualité du résultat reste identique à celle de MinMax, mais l'arbre visité peut être très réduit lorsque l'ordre des coups est favorable.
+
+Du point de vue des dépendances, la classe reste branchée sur les mêmes briques que \texttt{MinMax} : \texttt{Board}, \texttt{ManagerUndoRedo}, \texttt{Evaluator} et \texttt{PlayerColor}. La différence est purement algorithmique, ce qui permet à \texttt{GameCheckers} de la substituer à MinMax sans changer le reste du moteur.
+
+\subsubsection{IterativeDeepening}
+
+\texttt{IterativeDeepening} n'implémente pas son propre arbre de recherche ; elle encapsule un \texttt{MinMax} interne et relance le calcul pour des profondeurs croissantes, de 1 jusqu'à \texttt{maxDepth}. À chaque itération terminée, le meilleur coup courant remplace le précédent. Si le temps expire au milieu d'une profondeur, la classe conserve simplement le dernier coup entièrement validé.
+
+Cette organisation fait de la classe un adaptateur temporel plutôt qu'un nouvel algorithme de décision. Sa dépendance principale est donc le \texttt{MinMax} embarqué, auquel elle délègue toute l'exploration. Le bénéfice est double : on garantit toujours une réponse jouable et on améliore progressivement la qualité de la décision tant que le budget temps le permet.
+
+% ============================================================
+%  Section 3 — Architecture du projet
+% ============================================================
+\section{Architecture du projet}
+
+\subsection{Le Moteur de Jeu}
+
+La figure~\ref{fig:architecture-globale-projet} présente la vue d'ensemble de notre architecture MVC. La 
+Vue (entrées utilisateur CLI/GUI) envoie les actions au Contrôleur, qui traduit 
+ces actions en commandes métier vers le Modèle (moteur de jeu). Le Modèle 
+retourne ensuite des notifications vers la Vue pour rafraîchir l'état affiché. 
+Le schéma met également en évidence les modules transverses (IA, réseau, 
+persistance) et leurs points d'intégration avec le cœur MVC.
+
+\definecolor{view_color}{HTML}{B5FFE2}
+\definecolor{controller_color}{HTML}{FFBD59}
+\definecolor{model_color}{HTML}{F19C99}
+\definecolor{method_color}{HTML}{0097b2}
+\definecolor{mode_color}{HTML}{b694cf}
+\definecolor{ai_color}{HTML}{7ed957}
+\definecolor{loop_color}{HTML}{ff66c4}
+\definecolor{shell_network_color}{HTML}{d9d9d9}
+\definecolor{persist_color}{HTML}{ff3131}
+
+\begin{figure}[ht]
+\centering
+\makebox[\textwidth][c]{
+\begin{tikzpicture}[
+  scale=0.8, transform shape,
+  mod/.style={draw, rounded corners=3pt, minimum width=3.1cm, minimum height=0.95cm, align=center, font=\footnotesize\bfseries},
+  flow/.style={-{Stealth[length=3.5pt]}, line width=0.5pt},
+  leg/.style={draw, rounded corners=3pt, minimum width=3.0cm, minimum height=0.7cm, align=center, font=\scriptsize\bfseries}
+]
+  % ============================
+  % Niveau 1 : vue globale
+  % ============================
+  \node[mod, fill={view_color}] (entry) at (-8.1, 2.9) {Entrées utilisateur\\{\scriptsize CLI / GUI}};
+  \node[mod, fill={controller_color}] (controllerTop) at (-2.8, 2.9) {Contrôle applicatif\\{\scriptsize GameController / Router}};
+  \node[mod, fill={model_color}] (modelTop) at (2.5, 2.9) {Moteur de jeu\\{\footnotesize model : Board, GameCheckers}};
+
+  \node[mod, fill={shell_network_color}] (networkTop) at (2.5, 5.0) {Module Réseau\\{\scriptsize TCP client/serveur}};
+  \node[mod, fill={ai_color}] (aiTop) at (2.5, 0.45) {Module IA\\{\scriptsize MinMax, AlphaBeta, MCTS}};
+  \node[mod, fill={persist_color}, text=white] (persistTop) at (-2.8, 0.45) {Persistance\\{\scriptsize save/load, historique}};
+
+  \draw[flow] (entry.east) -- node[above, font=\tiny]{actions} (controllerTop.west);
+  \draw[flow] (controllerTop.east) -- node[above, font=\tiny]{commandes} (modelTop.west);
+  \draw[flow] (modelTop.south) -- ++(0,-1.25) -| node[pos=0.42, below, font=\tiny]{notifications} (entry.south);
+  \draw[flow] ([xshift=0.18cm]modelTop.south) -- node[right, font=\tiny]{évaluation/recherche} ([xshift=0.18cm]aiTop.north);
+  \draw[flow] (controllerTop.north) -- ++(0,1.0) -| node[pos=0.6, above, xshift=-1.5cm, font=\tiny, fill=white, inner sep=1pt]{parties distantes} (networkTop.west);
+  \draw[flow] (controllerTop.south) -- ++(0,-0.9) -- node[pos=0.001, left, font=\tiny]{lecture/écriture} (persistTop.north);
+
+  % ============================
+  % Légende couleurs -> packages
+  % ============================
+  \node[font=\scriptsize\bfseries] at (0, -1.0) {Légende des couleurs (packages)};
+
+  \node[leg, fill={view_color}] (legView) at (-9.0, -2.1) {Package \texttt{view}};
+  \node[leg, fill={controller_color}] (legController) at (-5.4, -2.1) {Package \texttt{controller}};
+  \node[leg, fill={model_color}] (legModel) at (-1.8, -2.1) {Package \texttt{model}};
+  \node[leg, fill={ai_color}] (legAi) at (1.8, -2.1) {Package \texttt{ai}};
+  \node[leg, fill={shell_network_color}] (legNetwork) at (5.4, -2.1) {Package \texttt{server} / réseau};
+  \node[leg, fill={persist_color}, text=white] (legPersist) at (9.0, -2.1) {Persistance (save/load)};
+\end{tikzpicture}
+}
+\caption{Architecture globale du projet : interactions MVC et légende des couleurs par package}
+\label{fig:architecture-globale-projet}
+\end{figure}
+
+\subsubsection{Rôle et responsabilités}
+
+La figure~\ref{fig:uml-moteur} illustre l'architecture interne du moteur de jeu, regroupé dans le package \texttt{model}. Ce moteur est volontairement centré sur la logique métier : il simule la partie, applique les règles officielles et reste indépendant de la saisie utilisateur comme de l'affichage.
+
+Le diagramme met en évidence la répartition des responsabilités entre les classes principales : \texttt{Board} gère l'état du damier et les transformations locales des pièces, \texttt{GameCheckers} orchestre l'état global de la partie, et \texttt{ManagerUndoRedo} prend en charge l'historique pour les retours en arrière. La classe \texttt{Move} sert d'objet d'échange pour représenter les coups produits et appliqués par le moteur.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  scale=0.8, transform shape,
+  umlclass/.style={draw, rounded corners=3pt, align=left, font=\footnotesize, inner sep=4pt, minimum width=4.0cm},
+  umllink/.style={-{Stealth[length=3.5pt]}, line width=0.5pt}
+]
+  \node[umlclass, fill=model_color] (gc) {
+    \textbf{GameCheckers}\\
+    - board : Board\\
+    - managerUndoRedo : ManagerUndoRedo\\
+    - isWhiteTurn : boolean\\
+    \rule{3.8cm}{0.4pt}\\
+    + getPossibleMoves(player) : \texttt{List\textless Move\textgreater}\\
+    + applyMove(from, to) : void\\
+    + notifyObservers() : void
+  };
+
+  \node[umlclass, fill=model_color, right=1.6cm of gc] (board) {
+    \textbf{Board}\\
+    - whitePawns, blackPawns : long\\
+    - whiteCheckers, blackCheckers : long\\
+    \rule{3.8cm}{0.4pt}\\
+    + getValidMoves(color) : \texttt{List\textless Move\textgreater}\\
+    + applyMove(move) : void\\
+    + copy() : Board
+  };
+
+  \node[umlclass, fill=model_color, below=1.2cm of gc] (undo) {
+    \textbf{ManagerUndoRedo}\\
+    - undoStack, redoStack\\
+    \rule{3.8cm}{0.4pt}\\
+    + registerMove(color, move) : void\\
+    + undo(isWhiteTurn) : void\\
+    + redo(isWhiteTurn) : void
+  };
+
+  \node[umlclass, fill=model_color, below=1.2cm of board] (move) {
+    \textbf{Move}\\
+    - from : int\\
+    - to : int\\
+    - captured : \texttt{List\textless Integer\textgreater}
+  };
+
+  \draw[umllink] (gc.east) -- node[above, font=\scriptsize]{utilise} (board.west);
+  \draw[umllink] (gc.south) -- node[left, font=\scriptsize]{gère} (undo.north);
+  \draw[umllink] (board.south) -- node[right, font=\scriptsize]{produit/applique} (move.north);
+  \draw[umllink, dashed] (gc.south east) -- node[below right, font=\scriptsize]{consomme} (move.north west);
+
+  \node[
+    draw,
+    rounded corners=3pt,
+    fill=model_color,
+    font=\scriptsize\bfseries,
+    minimum width=3.0cm,
+    minimum height=0.7cm,
+    below=1.0cm of move,
+    xshift=-2.8cm
+  ] (legendModel) {Model};
+\end{tikzpicture}
+\caption{Diagramme de classes UML simplifié du moteur de jeu}
+\label{fig:uml-moteur}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Interface de communication}
+
+La figure~\ref{fig:mvc} décrit le contrat d'échange entre le moteur et les interfaces. \texttt{GameCheckers} y apparaît comme point de passage central entre les actions utilisateur et les mises à jour d'état.
+
+\sloppy En entrée, la vue (graphique ou textuelle) ne modifie jamais directement le plateau : elle passe par le \texttt{GameController}, qui consulte d'abord le moteur via \texttt{getPossibleMoves(player)} pour valider la légalité de l'action, puis déclenche l'exécution avec \texttt{applyMove(from, to)}.
+
+En sortie, le moteur diffuse les changements via le patron Observateur. Plutôt que d'imposer un polling côté interface, il émet une notification \texttt{notifyObservers()} uniquement lorsqu'un coup valide modifie effectivement l'état de la partie.
 
 \FloatBarrier
 
+\definecolor{coulOrange}{RGB}{230,143,50}
+\definecolor{coulTeal}{RGB}{38,166,154}
+\definecolor{coulRed}{RGB}{180,30,30}
 
-\section{Architecture du projet}
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.2]{img_report/MVC.png}
 
-Voici un exemple de code en Python :
+\vspace{0.35cm}
 
-{\large
-  \begin{minted}[frame=single]{python}
-def hello_world():
-    print("Hello, World!")
-hello_world()
-  \end{minted}
+\begin{tikzpicture}[
+  scale=0.8, transform shape,
+  leg/.style={rectangle, draw, rounded corners=4pt,
+              font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
+  dot/.style={circle, fill=coulRed, minimum size=7pt, inner sep=0pt},
+  arr/.style={-{Stealth[length=5pt]}, dashed, thick},
+  label/.style={font=\scriptsize, align=center},
+]
+  \node[label, font=\scriptsize\bfseries] at (0, 0.8) {Légende};
+
+  \node[leg, fill=model_color] (legModel) at (-8.8, 0) {Model};
+  \node[leg, fill=controller_color] (legController) at (-6.2, 0) {Controller};
+  \node[leg, fill=shell_network_color] (legShell) at (-3.6, 0) {Réseau};
+  \node[leg, fill=view_color] (legView) at (-1.0, 0) {View};
+  \node[leg, fill=method_color, text=white] (legMethod) at (1.6, 0) {Méthode};
+  \node[leg, fill=mode_color, text=white] (legMode) at (4.2, 0) {Mode};
+
+  \node[dot] (legDot) at (6.8, 0) {};
+  \node[label, right=3pt of legDot] {Événement};
+
+  \draw[arr] (8.8, 0) -- (10.3, 0);
+  \node[label, above=1pt] at (9.55, 0) {Route/flux};
+\end{tikzpicture}
+\caption{Interaction entre le moteur et la vue via le contrôleur}
+\label{fig:mvc}
+\end{figure}
+
+\noindent\textit{Note : La bulle « CONNECTED/SERVER » visible sur ce schéma représente le point d'entrée vers les fonctionnalités réseaux. Le fonctionnement détaillé de ce module (protocole TCP, sockets et gestion du serveur) est traité spécifiquement dans la section \ref{sec:reseau}.}
+
+\subsubsection{Choix techniques et boucle de contrôle}
+
+Concernant la dynamique, le jeu s'exécute au tour par tour, géré par une machine 
+à états simple définie par l'énumération \texttt{State} (\texttt{IN\_GAME}, 
+\texttt{PAUSE}, \texttt{FINISHED}).
+
+Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vérifie si la partie est terminée. Si le jeu continue, il oriente le flux vers une attente de saisie utilisateur, ou lance immédiatement la réflexion de l'algorithme si le joueur suivant est une intelligence artificielle.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{img_report/controller.png}
+
+\vspace{0.35cm}
+
+\begin{tikzpicture}[
+  scale=0.8, transform shape,
+  leg/.style={rectangle, draw, rounded corners=4pt,
+              font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
+  dot/.style={circle, fill=coulRed, minimum size=7pt, inner sep=0pt},
+  arr/.style={-{Stealth[length=5pt]}, dashed, thick},
+  label/.style={font=\scriptsize, align=center},
+]
+  \node[label, font=\scriptsize\bfseries] at (0, 0.8) {Légende};
+
+  \node[leg, fill=controller_color] (legController) at (-9.0, 0) {Controller};
+  \node[leg, fill=ai_color] (legAi) at (-6.4, 0) {Ai};
+  \node[leg, fill=view_color] (legView) at (-3.8, 0) {View};
+  \node[leg, fill=method_color, text=white] (legMethod) at (1.4, 0) {Méthode};
+  \node[leg, fill=mode_color, text=white] (legCondition) at (-1.2, 0) {Condition};
+  \node[leg, fill=loop_color, text=white] (legLoop) at (4.0, 0) {Boucle};
+
+  \node[dot] (legDot) at (6.8, 0) {};
+  \node[label, right=3pt of legDot] {Événement};
+
+  \draw[arr] (8.6, 0) -- (10.1, 0);
+  \node[label, above=1pt] at (9.35, 0) {Route/flux};
+\end{tikzpicture}
+\caption{Boucle de contrôle du jeu}
+\label{fig:controller-loop}
+\end{figure}
+\FloatBarrier
+
+\subsection{Module affichage}
+
+Le module d'affichage correspond à la couche Vue de notre architecture MVC. Dans la pratique, il repose sur une base commune, \texttt{GameView}, puis sur trois 
+implémentations adaptées au contexte d'exécution : \texttt{CommandLineInterface} pour le terminal, \texttt{GraphicalUserInterface} pour JavaFX, et \texttt{HeadlessView}
+ côté serveur lorsque l'on veut exécuter une partie sans affichage. Ce découpage a été choisi très tôt pour éviter de mélanger logique d'interaction, rendu visuel et règles du jeu.
+
+Le point important est que le contrôleur ne connaît que l'abstraction \texttt{GameView}. Quand un joueur agit, la vue transforme cette action en appel contrôleur 
+(commande ou déplacement), puis le moteur met à jour l'état de jeu. La vue n'écrit jamais directement dans le modèle. Une fois le coup traité, le mécanisme d'observation 
+notifie les vues, qui se contentent de se rafraîchir. Ce fonctionnement paraît simple, mais c'est ce qui nous a permis de garder exactement les mêmes règles en CLI,
+ en GUI et en mode headless.
+
+% Couleurs (nommé avec pdp- pour éviter les conflits)
+\definecolor{pdp-teal50}  {HTML}{E1F5EE}
+\definecolor{pdp-teal600} {HTML}{0F6E56}
+\definecolor{pdp-teal800} {HTML}{085041}
+\definecolor{pdp-purple50} {HTML}{EEEDFE}
+\definecolor{pdp-purple600}{HTML}{534AB7}
+\definecolor{pdp-purple800}{HTML}{3C3489}
+\definecolor{pdp-gray50}  {HTML}{F1EFE8}
+\definecolor{pdp-gray600} {HTML}{5F5E5A}
+\definecolor{pdp-blue50}  {HTML}{E6F1FB}
+\definecolor{pdp-blue600} {HTML}{185FA5}
+\definecolor{pdp-blue800} {HTML}{0C447C}
+\definecolor{pdp-border}  {HTML}{C4C2B8}
+
+\tikzset{
+  pdp base/.style={
+    draw, rounded corners=5pt,
+    minimum width=3.6cm, minimum height=1.0cm,
+    align=center, font=\small\bfseries,
+    inner sep=5pt, line width=0.4pt
+  },
+  pdp teal/.style={pdp base,
+    fill=pdp-teal50, draw=pdp-teal600, text=pdp-teal800},
+  pdp purple/.style={pdp base,
+    fill=pdp-purple50, draw=pdp-purple600, text=pdp-purple800},
+  pdp blue/.style={pdp base,
+    fill=pdp-blue50, draw=pdp-blue600, text=pdp-blue800},
+  pdp gray/.style={pdp base,
+    fill=pdp-gray50, draw=pdp-gray600, text=pdp-gray600},
+  pdp zone/.style={
+    draw=pdp-border, dashed, rounded corners=8pt,
+    line width=0.5pt, inner sep=10pt
+  },
+  pdp rel/.style={
+    -{Stealth[length=4.5pt]}, line width=0.6pt, color=pdp-gray600
+  },
+  pdp lbl/.style={font=\scriptsize\itshape, color=pdp-gray600},
 }
 
-Un exemple d'image flottante (Fig.~\ref{fig:example}).
-
-\begin{figure}[!ht]
-  \centering
-  \frame{\includegraphics[width=.85\textwidth]{layered_architectures.png}}
-  \caption{Une architecture en couches}\label{fig:example}
+\begin{figure} [h]
+    \centering
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img_report/affichage.png}
+        \\
+        \vspace{0.25cm}
+        \begin{tikzpicture}[
+          scale=0.62, transform shape,
+          leg/.style={rectangle, draw, rounded corners=4pt,
+                      font=\bfseries\footnotesize, minimum width=2.2cm,
+                      minimum height=0.55cm, align=center}
+        ]
+          \node[leg, fill=model_color] (legModel) at (0, 0) {Model};
+          \node[leg, fill=controller_color] (legController) at (3.1, 0) {Controller};
+          \node[leg, fill=view_color] (legView) at (6.2, 0) {View};
+        \end{tikzpicture}
+        \caption{Architecture des modules Model-View}
+    \end{minipage}
 \end{figure}
+\FloatBarrier
+
+\paragraph{En Interface en ligne de commande (CLI),} nous avons utilisé JLine pour ne pas nous limiter à un \texttt{Scanner} minimaliste. On bénéficie ainsi d'une saisie plus robuste (édition de ligne, complétion,
+ gestion propre des interruptions) et d'un comportement plus stable pendant les tests. Nous avons aussi séparé volontairement la lecture d'entrée du routage des commandes :
+  \texttt{CommandLineInterface} lit et affiche, tandis que \texttt{ShellCommandRouter} décide quoi faire de la commande. Cette séparation nous a évité une classe trop
+   chargée et a rendu les tests de parsing beaucoup plus simples.
+
+\paragraph{En Interface graphique utilisateur (GUI),} la même logique a été conservée, avec une organisation en sous-vues (\texttt{MainView}, \texttt{PlayView}, \texttt{BoardView}, \texttt{LogView}) pour garder du 
+code lisible. Le principal choix technique ici concerne les threads : une mise à jour visuelle doit toujours passer par \texttt{Platform.runLater(...)}. Sans cela, les
+ notifications venant du timer blitz ou d'un calcul d'IA peuvent provoquer des erreurs JavaFX difficiles à reproduire. Nous avons également lié la taille des cases à
+  la taille de la fenêtre via des bindings, pour conserver un damier correct sur les trois formats de plateau pris en charge.
+
+Avec le recul, ce module fonctionne surtout parce qu'il reste discipliné : l'affichage reste un adaptateur, pas un second moteur de jeu. C'est ce qui nous permet
+ d'ajouter des fonctionnalités d'interface sans toucher aux règles, et d'exécuter les mêmes scénarios de jeu dans des environnements très différents.
+
+\subsubsection{Architecture interne de la GUI}
+
+L'architecture interne de la GUI repose sur JavaFX et sur une séparation stricte des responsabilités entre orchestration, composition visuelle et interaction utilisateur.
+
+La figure~\ref{fig:gui-uml} présente les relations principales entre les composants GUI.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\textwidth]{img_report/gui.png}
+  
+  \vspace{0.5cm}
+  
+  \begin{tikzpicture}[
+    leg/.style={rectangle, draw, rounded corners=4pt, font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center}
+  ]
+    \node[leg, fill=model_color] (legModel) at (0, 0) {Model};
+    \node[leg, fill=controller_color] (legController) at (3.1, 0) {Controller};
+    \node[leg, fill=view_color] (legView) at (6.2, 0) {View};
+  \end{tikzpicture}
+  
+  \caption{Architecture interne de la GUI.}
+  \label{fig:gui-uml}
+\end{figure}
+\FloatBarrier
+
+\paragraph{GraphicalUserInterface : orchestration et cycle de vie}
+
+La classe \texttt{GraphicalUserInterface} reste le point d'entrée de la vue graphique. Elle hérite de \texttt{GameView}, reçoit les notifications du modèle via le pattern Observer et orchestre la propagation des mises à jour vers les composants visuels.
+
+Le point technique structurant est la gestion du thread JavaFX : toute mise à jour d'interface est redirigée vers l'Application Thread afin de garantir un rafraîchissement sûr, même lorsque les notifications proviennent d'un timer blitz ou d'un calcul d'IA exécuté en arrière-plan. La classe centralise également l'initialisation de la fenêtre, l'application du style et la fermeture contrôlée (avec vérification des sauvegardes en cours).
+
+\paragraph{MainView et composition de l'interface}
+
+\texttt{MainView} construit la structure globale de la fenêtre (barre d'outils, zone de jeu, historique et actions), tandis que le rendu du plateau est délégué à des sous-composants spécialisés. Cette composition évite d'accumuler toute la logique de présentation dans une classe unique et facilite l'évolution indépendante de chaque zone de l'interface.
+
+\paragraph{BoardView : interaction sans logique métier}
+
+\texttt{BoardView} gère l'affichage du damier, la sélection des pièces, la mise en évidence des destinations valides et les interactions utilisateur (clics et glisser-déposer). En revanche, il ne calcule jamais les règles du jeu : les coups autorisés sont fournis par le moteur via le contrôleur. La vue reste donc un adaptateur d'interaction et de rendu, sans duplication de logique métier.
+
+\paragraph{Stabilité visuelle et compatibilité d'exécution}
+
+Le redimensionnement manuel de la fenêtre est volontairement verrouillé afin de garantir la stabilité de l'affichage. Cette architecture responsive initiale assure que le plateau et l'interface (barre d'outils, historique, chronomètres) restent proportionnés et lisibles sur différentes machines.
+
+Pour la sauvegarde et le chargement, nous avons choisi de développer des boîtes de dialogue applicatives plutôt que d'utiliser l'explorateur de fichiers natif du système d'exploitation. Ce choix réduit les écarts de comportement entre environnements et contourne les problèmes de compatibilité de chemins observés sous WSL2.
+
+\paragraph{ConfigDialog : traduction des choix UI vers la configuration moteur}
+
+\texttt{ConfigDialog} ne se limite pas à collecter des valeurs d'interface. Il applique des règles de cohérence entre contrôles, normalise les paramètres saisis et produit directement un objet \texttt{Configuration} exploitable par le moteur de jeu.
+
+\subsection{Module Réseau}
+\label{sec:reseau}
+ 
+La couche réseau de l'application s'appuie sur une architecture client-serveur
+TCP, basant principalement sur le package
+\texttt{server}.
+La figure~\ref{fig:architecture-serveur} en présente les composants principaux
+ainsi que leurs interactions.
+
+% ─── Nouvelles couleurs (préfixe net-, sans conflit avec le rapport) ─────────
+\definecolor{net-indigo50}{HTML}{EEF2FF}
+\definecolor{net-indigo600}{HTML}{4F46E5}
+\definecolor{net-indigo800}{HTML}{3730A3}
+\definecolor{net-amber50}{HTML}{FFFBEB}
+\definecolor{net-amber600}{HTML}{D97706}
+\definecolor{net-amber800}{HTML}{92400E}
+\definecolor{net-rose50}{HTML}{FFF1F2}
+\definecolor{net-rose600}{HTML}{BE123C}
+\definecolor{net-rose800}{HTML}{9F1239}
+\definecolor{net-slate50}{HTML}{F8FAFC}
+\definecolor{net-slate500}{HTML}{64748B}
+\definecolor{net-slate800}{HTML}{1E293B}
+
+\begin{figure}[ht]
+    \centering
+    \begin{tikzpicture}[
+        nbox/.style={
+            draw, rounded corners=5pt,
+            minimum width=3.6cm, minimum height=0.95cm,
+            align=center, font=\small\bfseries,
+            inner sep=5pt, line width=0.55pt
+        },
+        narr/.style={-{Stealth[length=4pt,width=3.5pt]}, line width=0.65pt},
+        nlbl/.style={font=\scriptsize\itshape, fill=white, inner sep=1.5pt},
+        nzone/.style={draw, dashed, rounded corners=8pt, line width=0.5pt, inner sep=10pt},
+    ]
+
+% ─── Grille de coordonnées ────────────────────────────────────────────────────
+%  x : 0 (client)   5.8 (serveur-gauche)   11.2 (serveur-droite)
+%  y : 3.5  2.0  0.5  -1.0
+
+% ─── CLIENT ──────────────────────────────────────────────────────────────────
+        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        (SCR) at (0, 3.5)
+            {PlayerSession\\[-2pt]{\footnotesize\normalfont Score des joueurs}};
+
+        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        (CS) at (0, 2.0)
+            {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
+
+        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        (CM) at (0, 0.5)
+            {ClientMode\\[-2pt]{\footnotesize\normalfont\textit{«enum»}}};
+
+        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        (SLS) at (0, -1.0)
+            {ServerListService\\[-2pt]{\footnotesize\normalfont Découverte UDP}};
+
+% ─── SERVEUR — colonne centrale (registre & sessions) ────────────────────────
+        \node[nbox, fill=net-amber50, draw=net-amber600, text=net-amber800]
+        (GR) at (5.8, 3.5)
+            {GameRegistry\\[-2pt]{\footnotesize\normalfont Registre thread-safe}};
+
+        \node[nbox, fill=net-amber50, draw=net-amber600, text=net-amber800]
+        (PS) at (5.8, 2.0)
+            {PlayerSession};
+
+        \node[nbox, fill=net-amber50, draw=net-amber600, text=net-amber800]
+        (GS) at (5.8, 0.5)
+            {GameSession};
+
+        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        (DS) at (5.8, -1.0)
+            {DiscoveryService\\[-2pt]{\footnotesize\normalfont Broadcast UDP}};
+
+% ─── SERVEUR — colonne droite (invitations & factory) ────────────────────────
+        \node[nbox, fill=net-rose50, draw=net-rose600, text=net-rose800]
+        (IM) at (11.2, 3.5)
+            {InvitationManager\\[-2pt]{\footnotesize\normalfont Cycle de vie des invitations}};
+
+        \node[nbox, fill=net-rose50, draw=net-rose600, text=net-rose800]
+        (INV) at (11.2, 2.0)
+            {Invitation};
+
+        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        (GCF) at (11.2, 0.5)
+            {GameControllerFactory\\[-2pt]{\footnotesize\normalfont\textit{«interface fonctionnelle»}}};
+
+% ─── ZONES ───────────────────────────────────────────────────────────────────
+        \begin{pgfonlayer}{background}
+            \node[nzone, draw=net-slate500,
+                fit=(SCR)(CS)(CM)(SLS),
+                label={[font=\small\bfseries, text=net-slate800, yshift=2pt]above:Client}]
+            (clientZone) {};
+            \node[nzone, draw=net-amber600,
+                fit=(GR)(PS)(GS)(DS)(IM)(INV)(GCF),
+                label={[font=\small\bfseries, text=net-amber800, yshift=2pt]above:%
+                Serveur }]
+            (serverZone) {};
+        \end{pgfonlayer}
+
+% ─── SÉPARATEUR INFRASTRUCTURE ───────────────────────────────────────────────
+        \draw[dashed, color=net-slate500, line width=0.4pt]
+        ([yshift=-0.42cm] GS.south -| serverZone.west) --
+        ([yshift=-0.42cm] GS.south -| serverZone.east)
+        node[midway, above, font=\scriptsize\itshape, color=net-slate500]{infrastructure};
+
+% ─── FLÈCHES ─────────────────────────────────────────────────────────────────
+% 1. ClientSession → GameRegistry : TCP
+%    Sort par l'est, monte horizontalement puis rejoint GR par l'ouest
+        \draw[narr]
+        (CS.east) -- ++(0.9,0)
+        |- node[nlbl, pos=0.25, above]{TCP}
+        (GR.west);
+
+% 2. ServerListService → DiscoveryService : UDP — ligne horizontale pure
+        \draw[narr]
+        (SLS.east) --
+        node[nlbl, above]{UDP}
+        (DS.west);
+
+% 3. GameRegistry → PlayerSession : descente verticale directe
+        \draw[narr] (GR.south) -- (PS.north);
+
+% 4. GameRegistry → GameSession : contournement par la droite,
+%    arrive par le nord de GS (évite de traverser PS)
+        \draw[narr]
+        (GR.east) -- ++(0.55,0)
+        |- node[nlbl, pos=0.30, right]{gère}
+        (GS.east);
+
+% 5. InvitationManager → Invitation : descente verticale directe
+        \draw[narr]
+        (IM.south) --
+        node[nlbl, right]{crée}
+        (INV.north);
+
+% 6. GameSession → GameControllerFactory : horizontale pure (même ordonnée y=0.5)
+        \draw[narr]
+        (GS.east) -- ++(0.55,0) --
+        node[nlbl, above]{utilise}
+        (GCF.west);
+
+% ─── LÉGENDE ─────────────────────────────────────────────────────────────────
+        \matrix [below=0.7cm of serverZone.south,
+            column sep=1.2cm,
+            nodes={anchor=west, font=\small}] {
+            \node[nbox, fill=net-amber50, draw=net-amber600,
+                minimum width=0.9cm, minimum height=0.35cm, inner sep=2pt] {};
+            & \node {Registre \& sessions (données de jeu)}; \\[4pt]
+            \node[nbox, fill=net-rose50, draw=net-rose600,
+                minimum width=0.9cm, minimum height=0.35cm, inner sep=2pt] {};
+            & \node {Système d'invitations}; \\[4pt]
+            \node[nbox, fill=net-slate50, draw=net-slate500,
+                minimum width=0.9cm, minimum height=0.35cm, inner sep=2pt] {};
+            & \node {Infrastructure \& client}; \\
+        };
+
+    \end{tikzpicture}
+    \caption{Architecture structurelle de la couche réseau}
+    \label{fig:architecture-serveur}
+\end{figure}
+ 
+% ---- Description textuelle des composants ------------------
+ 
+\paragraph{Côté client.}
+Le \texttt{ShellCommandRouter} constitue le point d'entrée unique pour toute
+saisie utilisateur. Il consulte l'énumération \texttt{ClientMode}
+(\texttt{LOCAL}, \texttt{CONNECTED}, \texttt{SERVER}) pour aiguiller chaque
+commande vers le bon gestionnaire, évitant ainsi les états incohérents
+(par exemple, démarrer un serveur alors qu'une connexion est déjà ouverte).
+La \texttt{ClientSession} encapsule la socket TCP, le fil d'écoute
+(\textit{listener thread}) et le protocole de \textit{handshake}
+(\texttt{REGISTER} / \texttt{WELCOME}). Le \texttt{ServerListService} écoute
+les annonces UDP diffusées par \texttt{DiscoveryService} afin de présenter
+la liste des serveurs disponibles sur le réseau local.
+ 
+\paragraph{Côté serveur.}
+Le \texttt{GameRegistry} centralise, de façon thread-safe, l'ensemble des
+\texttt{PlayerSession} et des \texttt{GameSession} actives. Il constitue
+la source de vérité pour l'état de chaque joueur connecté. L'\texttt{InvitationManager}
+orchestre le cycle de vie complet des invitations — de leur création jusqu'à
+l'acceptation, au refus ou à l'expiration automatique par un fil démon
+(\textit{sweeper}) — en s'appuyant sur les objets \texttt{Invitation}
+immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
+permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
+l'indépendance des états de parties concurrentes.
+
+\paragraph
+ Pour une description plus détaillée du rôle de chaque classe et de leur
+articulation dans l'architecture réseau, on pourra se référer à la
+section~\ref{sec:archi-serveur-detail}.
+
+\subsection{Module Intelligence Artificielle}
+\label{sec:ai}
+
+\sloppy Le module IA repose sur une séparation nette entre trois responsabilités. D'abord, la classe abstraite \texttt{Ai} fournit l'ossature commune : elle valide les paramètres, crée une copie du plateau de recherche, instancie un \texttt{ManagerUndoRedo} dédié et délègue le calcul du meilleur coup aux algorithmes concrets. Ensuite, \texttt{GameCheckers} agit comme point d'assemblage en appelant \texttt{Ai.buildAi(cfg, ...)} et \texttt{Ai.buildEvaluator(cfg)} à partir de la configuration courante. Enfin, \texttt{AiPlayer} encapsule l'algorithme et l'évaluateur pour exposer une seule méthode \texttt{getBestMove(...)}, ce qui évite de disperser la logique de décision dans le reste du moteur.
+
+Les classes d'évaluation \texttt{SimpleEvaluator}, \texttt{AdvancedEvaluator} et \texttt{MaxEvaluator} implémentent la même interface \texttt{Evaluator} mais avec des heuristiques de coût croissant. Elles sont consommées par les algorithmes de recherche pour donner une valeur aux feuilles de l'arbre. Les trois évaluateurs se basent sur le site WinDames~\cite{windames_evaluation}. De son côté, \texttt{Mcts} n'utilise pas cette heuristique dans sa sélection principale, mais il reste compatible avec la même signature afin de pouvoir être instancié par le même pipeline que les autres IA.
+
+Le détail des algorithmes IA (évaluateurs, MinMax, AlphaBeta et IterativeDeepening) est désormais présenté dans la section~\ref{sec:algo}, sous-partie \textit{Algorithmes d'intelligence artificielle}.
+
+\begin{figure}[h]
+  \centering
+  \makebox[\textwidth][c]{
+    \begin{tikzpicture}[scale=0.8, transform shape, node distance=1.1cm and 1.4cm, >=Stealth]
+      \node[draw, rounded corners, align=center, fill=gray!10, minimum width=3.2cm] (cfg)
+      {Configuration\\\scriptsize modes, profondeur, temps, scoring};
+
+      \node[draw, rounded corners, align=center, fill=blue!10, right=of cfg, minimum width=3.0cm] (game)
+      {GameCheckers\\\scriptsize instanciation};
+
+      \node[draw, rounded corners, align=center, fill=blue!10, right=of game, minimum width=2.8cm] (player)
+      {AiPlayer\\\scriptsize delegation};
+
+      \node[draw, rounded corners, align=center, fill=green!12, below=of player, minimum width=2.8cm] (ai)
+      {Ai\\\scriptsize getBestMove()};
+
+      \node[draw, rounded corners, align=center, fill=orange!14, right=of ai, minimum width=3.4cm] (search)
+      {MinMax / AlphaBeta\\IterativeDeepening / Mcts};
+
+      \node[draw, rounded corners, align=center, fill=yellow!18, below=of search, minimum width=3.4cm] (eval)
+      {Evaluator\\\scriptsize Simple / Advanced / Max};
+
+      \node[draw, rounded corners, align=center, fill=red!12, right=of search, minimum width=3.6cm] (ml)
+      {SelectionMode\\\scriptsize UCT / ML\\LogisticRegressionTrainer};
+
+      \draw[-{Stealth}] (cfg) -- (game);
+      
+      % On trace la flèche normalement
+      \draw[-{Stealth}] (game) -- (player);
+      
+      % On ajoute le texte spécifiquement à droite du noeud player
+      \node[right=0.2cm of player, font=\scriptsize, align=left, text=pdp-teal800] {setAlgorithm /\\ setEvaluator};
+      
+      \draw[-{Stealth}] (player) -- node[right, font=\scriptsize]{d\'el\'egation} (ai);
+      \draw[-{Stealth}] (ai) -- (search);
+      \draw[-{Stealth}, dashed] (search) -- node[right, font=\scriptsize]{heuristique} (eval);
+      \draw[-{Stealth}] (search) -- (ml);
+    \end{tikzpicture}
+  }
+  \caption{Cha\^ine de d\'ependance du module Intelligence Artificielle}
+  \label{fig:ia-dependencies}
+\end{figure}
+
+\subsubsection{Relations entre les classes}
+
+La figure~\ref{fig:ia-dependencies} résume le chemin suivi lors d'une décision. \texttt{GameCheckers} choisit l'algorithme et l'évaluateur à partir de la configuration, \texttt{AiPlayer} les encapsule, puis \texttt{Ai} orchestre la recherche sur une copie du plateau. Les algorithmes MinMax dérivés consomment ensuite l'évaluateur choisi, tandis que \texttt{Mcts} conserve la même interface mais s'appuie sur \texttt{SelectionMode} pour basculer entre UCT et la sélection guidée par apprentissage automatique.
+
+Le cas MCTS introduit une chaîne de dépendances supplémentaire : la sélection \texttt{ML} lit les poids produits par \texttt{LogisticRegressionTrainer}, lesquels sont sauvegardés dans \texttt{ml\_weights.txt} après l'entraînement supervisé. Le module d'apprentissage reste donc découplé du moteur de recherche : l'entraînement écrit un fichier de paramètres, et MCTS le charge uniquement lorsqu'on active ce mode de sélection.
+
+\subsubsection{Complexité de l'IA}
+
+\paragraph{Hypothèses et notations}
+
+Dans cette section, nous analysons la complexité temporelle des méthodes principales des classes IA présentées en section~\ref{sec:ai}.
+La variable $n$ désigne le nombre de cases actives du plateau (typiquement \(32\), \(50\) ou \(72\)), $b$ représente
+le facteur de branchement moyen (nombre de coups légaux par position), et $d$ la profondeur maximale de recherche.
+Nous distinguons la complexité \textit{propre} d'une méthode de recherche (nombre de n\oe{}uds explorés) du coût réel,
+qui inclut aussi la génération des coups par le moteur via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
+Les résultats sont récapitulés dans le tableau~\ref{tab:ai-complexite-detaillee}, qui sert de référence de correspondance méthode par méthode.
+
+\paragraph{Complexité des fonctions d'évaluation}
+
+\paragraph{SimpleEvaluator}
+La méthode \texttt{evaluate(Board)} réalise un parcours linéaire de l'ensemble des cases actives,
+avec uniquement des tests bit-à-bit en temps constant à chaque itération. Sa complexité est donc $O(n)$.
+Cette analyse correspond à l'entrée \texttt{SimpleEvaluator::evaluate(Board)} du tableau~\ref{tab:ai-complexite-detaillee}.
+
+\paragraph{AdvancedEvaluator}
+La méthode \texttt{evaluate(Board)} suit le même schéma que \texttt{SimpleEvaluator} : un balayage linéaire des cases
+et un calcul de bonus d'avancement en temps constant par case. La complexité reste donc $O(n)$.
+Voir l'entrée \texttt{AdvancedEvaluator::evaluate(Board)} dans le tableau~\ref{tab:ai-complexite-detaillee}.
+
+\paragraph{MaxEvaluator}
+La méthode \texttt{evaluate(Board)} combine trois contributions : un parcours principal en $O(n)$,
+un test de centralité en $O(1)$ par case, puis une évaluation de mobilité.
+Sa complexité globale s'écrit donc $O(n + M_{w} + M_{b})$, où $M_{w}$ et $M_{b}$ représentent les coûts
+de génération des coups blancs et noirs.
+Dans cette explication, on retient uniquement la méthode principale \texttt{evaluate(Board)}.
+
+\paragraph{Complexité des algorithmes de recherche adversariale}
+
+\paragraph{MinMax}
+La méthode \texttt{calculateBestMove(...)} lance une recherche complète jusqu'à \texttt{maxDepth} et hérite donc
+d'une complexité asymptotique en $O(b^d)$, hors coût exact de génération des coups.
+Pour éviter la redondance, l'analyse se limite ici à cette méthode principale,
+sans détailler les méthodes internes récursives.
+
+\paragraph{MinMaxAlphaBeta}
+La méthode principale \texttt{calculateBestMove(...)} suit la même logique que MinMax,
+mais ajoute les bornes $\alpha$ et $\beta$ pour couper des sous-arbres.
+Sa complexité reste en $O(b^d)$ dans le pire cas (ordre des coups défavorable),
+et peut atteindre $O(b^{d/2})$ dans le meilleur cas théorique avec un ordre des coups optimal.
+
+\paragraph{IterativeDeepening}
+La méthode \texttt{calculateBestMove(...)} enchaîne des recherches successives de profondeur
+$1,2,\dots,d$ tant que le budget temps n'est pas épuisé. Son coût total théorique est
+$$\sum_{k=1}^{d} O(b^k) = O(b^d).$$
+En pratique, le surcoût par rapport à une unique recherche à profondeur $d$ est modéré,
+et il est compensé par la robustesse de la stratégie : en cas d'interruption temporelle,
+le meilleur coup d'une profondeur entièrement terminée est déjà disponible.
+Cette complexité correspond à l'entrée \texttt{IterativeDeepening::calculateBestMove(...)} du tableau~\ref{tab:ai-complexite-detaillee}.
+
+\paragraph{Synthèse}
+
+{\footnotesize
+\begin{longtable}{|p{3.4cm}|p{4.9cm}|p{2.2cm}|p{4.8cm}|}
+\caption{Complexité détaillée, méthode par méthode, des classes IA}\label{tab:ai-complexite-detaillee} \\
+\hline
+\textbf{Classe} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Indice dans le code} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Classe} & \textbf{Méthode} & \textbf{Complexité} & \textbf{Indice dans le code} \\
+\hline
+\endhead
+
+\hline
+\multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
+\endfoot
+
+\hline
+\endlastfoot
+
+\texttt{SimpleEvaluator}
+& \texttt{evaluate(Board)}
+& $O(n)$
+& Une boucle unique parcourt les cases actives de \texttt{0} à \texttt{board.getIndexMax()-1}, avec tests de bits en temps constant. \\
+\hline
+
+\texttt{AdvancedEvaluator}
+& \texttt{evaluate(Board)}
+& $O(n)$
+& Même schéma que \texttt{SimpleEvaluator} : boucle linéaire + calcul arithmétique constant du bonus d'avancement. \\
+\hline
+
+\texttt{MaxEvaluator}
+& \texttt{evaluate(Board)}
+& $O(n + M_w + M_b)$
+& Boucle principale en \(n\), appel de \texttt{isInCenter(...)} en temps constant, puis coût de mobilité via \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}. \\
+\hline
+
+\texttt{MaxEvaluator}
+& \texttt{isInCenter(int,int,int)}
+& $O(1)$
+& Seulement des bornes calculées et des comparaisons. \\
+\hline
+
+
+\texttt{IterativeDeepening}
+& \texttt{calculateBestMove(...)}
+& $\sum_{k=1}^{d} O(b^k)=O(b^d)$
+& Boucle sur les profondeurs \(1\) à \(d\), chaque itération appelant \texttt{MinMax} avec profondeur courante. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{calculateBestMove(...)}
+& $O(b^d)$
+& Un appel principal à \texttt{findBestMoveAtDepth(...)} à profondeur \texttt{maxDepth}. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{findBestMoveAtDepth(...)}
+& $O(b^d)$
+& Boucle sur les coups racines puis descente récursive dans l'arbre de jeu sans élagage. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{minMax(...)}
+& $O(b^k)$
+& Pour profondeur restante \(k\), exploration de tous les coups noirs puis appel récursif \texttt{maxMin(...)}. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{maxMin(...)}
+& $O(b^k)$
+& Symétrique de \texttt{minMax(...)} pour les coups blancs, sans coupure. \\
+\hline
+
+\texttt{MinMax}
+& \texttt{checkTime(long)}
+& $O(1)$
+& Un seul test booléen via \texttt{isTimeExceeded(startTime)}. \\
+\hline
+
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{calculateBestMove(...)}
+& Pire : $O(b^d)$
+& Lance \texttt{findBestMoveAtDepth(...)} ; l'élagage dépend de l'ordre des coups. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{findBestMoveAtDepth(...)}
+& Meilleur : $O(b^{d/2})$\newline
+Pire : $O(b^d)$
+& Mise à jour de $\alpha$ et $\beta$ à chaque enfant ; coupures quand $\beta \leq \alpha$. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{maxValue(...)}
+& Meilleur : $O(b^{d/2})$\newline
+Pire : $O(b^d)$
+& Exploration récursive avec arrêt anticipé dès qu'une coupure $\beta \leq \alpha$ est détectée. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{minValue(...)}
+& Meilleur : $O(b^{d/2})$\newline
+Pire : $O(b^d)$
+& Symétrique de \texttt{maxValue(...)} avec bornes inversées et mêmes règles de coupure. \\
+\hline
+
+\texttt{MinMaxAlphaBeta}
+& \texttt{checkTime(long)}
+& $O(1)$
+& Test constant, puis levée d'exception interne si le temps est dépassé. \\
+\hline
+\end{longtable}
+}
 
 \section{Explication approfondie}
 
+\subsection{F36 : Monte Carlo Tree Search (MCTS)}
+
+\subsubsection{Logique théorique de l'algorithme}
+
+Contrairement à l'algorithme Minimax qui tente d'évaluer exhaustivement toutes les branches jusqu'à une profondeur donnée, 
+le MCTS repose sur des simulations statistiques probabilistes~\cite{wikipedia_mcts,geeksforgeeks_mcts}. La recherche s'effectue en répétant une boucle de quatre phases fondamentales
+ jusqu'à épuisement du temps de réflexion imparti :
+
+\paragraph{Sélection}
+À chaque itération, l'algorithme part de la racine de l'arbre (l'état actuel du damier) et descend vers les feuilles. 
+Pour choisir quel chemin emprunter, il utilise la formule UCT (Upper Confidence Bound applied to Trees):
+$$UCT_{j} = \frac{w_{j}}{n_{j}} + C \sqrt{\frac{\ln n}{n_{j}}}$$
+
+Où :
+\begin{itemize}
+    \item $w_j$ représente le nombre de victoires accumulées par les simulations passant par le nœud enfant $j$.
+    \item $n_j$ est le nombre total de simulations ayant traversé ce nœud $j$.
+    \item $n$ est le nombre total de visites du nœud parent.
+    \item $C$ est la constante d'exploration.
+\end{itemize}
+
+\textit{Concrètement :} Cette formule résout le dilemme "Exploration vs Exploitation". Le terme de gauche 
+favorise les coups ayant un fort taux de victoire (exploitation), tandis que le terme de droite grandit pour les coups peu testés
+ (exploration). Si un nœud enfant n'a jamais été visité, sa valeur est considérée comme infinie pour forcer l'algorithme à tester chaque
+  coup légal au moins une fois.
+
+\paragraph{Expansion}
+Une fois arrivé sur un nœud dont tous les coups possibles n'ont pas encore été explorés, l'algorithme choisit un de ces mouvements
+ non testés, crée un nouveau nœud dans l'arbre pour représenter ce nouvel état, et passe à la phase suivante.
+
+\paragraph{Simulation}
+Depuis ce nœud nouvellement créé, l'algorithme lance une partie virtuelle. Il joue des coups totalement aléatoires pour les deux 
+joueurs jusqu'à atteindre un état final (victoire, défaite ou égalité).
+\paragraph{Rétropropagation}
+Une fois la partie simulée terminée, le résultat (victoire, défaite ou nul) est remonté le long de l'arbre en suivant
+ le chemin exact pris lors de la phase de sélection. Tous les nœuds ancêtres traversés voient leurs statistiques mises à jour :
+  incrémentation de leur compteur de visites, et ajustement de leur score de victoire selon le camp gagnant.
+
+% ----------------------------------------------------------------------
+
+% ----------------------------------------------------------------------
+
+\subsubsection{Implémentation et optimisations dans notre projet}
+
+Notre classe \texttt{Mcts} gère cette recherche de manière optimisée en traduisant cette théorie à travers des choix d'architecture précis.
+
+\paragraph{Traduction des phases en code}
+La boucle principale est gérée par la méthode \texttt{calculateBestMove()}, qui s'exécute tant que la limite de temps (\texttt{isTimeExceeded}) n'est pas atteinte. 
+
+Lors de la phase de \textbf{sélection}, la formule UCT est appliquée par \texttt{bestChildByUcb1()}. Si $n_j = 0$, la méthode renvoie 
+\texttt{Double.MAX\_VALUE} pour assurer l'exploration initiale :
+
+\begin{minted}[frame=single, fontsize=\small]{java}
+double score = child.visits == 0
+    ? Double.MAX_VALUE
+    : child.winRate() + explorationConstant * Math.sqrt(logVisits / child.visits);
+\end{minted}
+
+Lors de la \textbf{simulation} (\texttt{simulate()}), pour éviter des parties virtuelles infinies sur des situations bloquées, nous avons 
+introduit une limite stricte de profondeur (\texttt{SIMULATION\_DEPTH = 60}). Si cette limite est atteinte sans vainqueur, la partie rapporte 
+un score de parité (\texttt{DRAW\_SCORE = 0.5}), contre \texttt{WIN\_SCORE = 1.0} pour une victoire.
+
+\paragraph{Optimisation mémoire (ManagerUndoRedo)}
+L'un des plus grands défis du MCTS est la gestion de la mémoire. Au lieu de cloner l'objet \texttt{Board} des milliers de fois pour
+ chaque nœud et simulation (ce qui saturerait la RAM et ralentirait drastiquement l'exécution), nous utilisons une instance unique 
+ du plateau couplée à un \texttt{ManagerUndoRedo}. Chaque coup testé lors de la sélection, de l'expansion et de la simulation est 
+ appliqué physiquement sur le plateau, puis proprement annulé lors de la phase de \texttt{backpropagate} :
+
+\begin{minted}[frame=single, fontsize=\small]{java}
+// Rétropropagation : on remonte jusqu'à la racine en annulant les coups joués
+while (current != null) {
+    current.visits++;
+    // Mise à jour des scores...
+    
+    // Annulation physique du coup sur le plateau unique
+    if (current.move != null) {
+        undo.undo(current.player == PlayerColor.WHITE);
+    }
+    current = current.parent;
+}
+\end{minted}
+
+\paragraph{Guidage par Machine Learning}
+
+Le détail opérationnel de l'entraînement (commande, collecte des données et format des poids) est présenté en annexe, section~\ref{sec:annexe-procedure-entrainement}.
+
+\paragraph{Pipeline d'entraînement du modèle}
+Pour générer les poids (\texttt{mlWeights}) et le biais (\texttt{mlBias}) utilisés par cette fonction, nous avons implémenté un pipeline
+ d'apprentissage supervisé autonome dans la classe \texttt{LogisticRegressionTrainer}. L'entraînement s'effectue via l'option en ligne de 
+ commande \texttt{-tr}. Le processus se divise en trois grandes étapes :
+
+\begin{enumerate}
+    \item \textbf{Génération des données par Self-Play :} L'application fait s'affronter deux instances de l'IA (MCTS pur) l'une 
+    contre l'autre. Pour éviter les parties infinies, une limite stricte de 100 coups est fixée (\texttt{MAX\_MOVES}). À chaque demi-coup,
+     un vecteur de 6 caractéristiques (\textit{features}) est extrait du plateau :
+    \begin{itemize}
+        \item Nombre de pions blancs et noirs.
+        \item Nombre de dames blanches et noires.
+        \item Différentiel de pions (Blancs - Noirs).
+        \item Différentiel de dames (Blancs - Noirs).
+    \end{itemize}
+    Si la partie aboutit à une victoire, tous les vecteurs de cette partie sont étiquetés avec le résultat réel 
+    ($1.0$ pour une victoire des blancs, $0.0$ pour les noirs). Les parties nulles sont ignorées pour ne pas bruiter le modèle.
+
+    \item \textbf{Optimisation par descente de gradient :} Une fois les données collectées (par défaut sur 10 parties), 
+    la méthode \texttt{train()} ajuste les poids itérativement sur 1000 \textit{epochs}. À chaque étape, pour chaque vecteur d'état,
+     le modèle effectue une prédiction. L'erreur par rapport au résultat réel (\textit{label}) est calculée, et les poids sont mis à 
+     jour selon un taux d'apprentissage (\texttt{learningRate = 0.01}) :
+    $$W_{j} = W_{j} - \alpha \times \text{erreur} \times X_{j}$$
+    Où $\alpha$ est le taux d'apprentissage, $W_j$ le poids de la caractéristique $j$, et $X_j$ la valeur de la caractéristique.
+
+    \item \textbf{Sauvegarde et chargement :} À l'issue de l'entraînement, les poids finaux et le biais sont sauvegardés dans un 
+    fichier texte (\texttt{ml\_weights.txt}). Ce fichier est ensuite chargé dynamiquement par \texttt{Mcts} lors de son 
+    instanciation, garantissant une séparation propre entre la phase d'entraînement et la phase d'inférence (jeu).
+\end{enumerate}
+
+\subsubsection{Bilan de l'approche}
+Bien évidemment, ce mode de sélection par apprentissage automatique n'a pas démontré de gain significatif en termes de 
+performance ou de qualité de jeu par rapport à l'UCT classique. Cela s'explique par la simplicité de notre modèle : 
+la régression logistique est un modèle linéaire, et nos 6 \textit{features} mathématiques (uniquement basées sur le comptage matériel)
+ ne capturent pas les subtilités positionnelles du jeu de dames. 
+
+Cependant, cette implémentation robuste démontre l'extensibilité de notre architecture. Le pipeline de génération de données, 
+d'entraînement et d'inférence est pleinement fonctionnel, ce qui ouvre la porte à des améliorations futures plus sophistiquées 
+(comme le remplacement de la régression logistique par un réseau de neurones profond évaluant des motifs complexes) pour renforcer drastiquement 
+l'intelligence de notre agent.
+
+\subsubsection{Détermination du meilleur coup final}
+
+À l'épuisement du temps de réflexion imparti, l'arbre cesse de croître. Quelle que soit l'heuristique de sélection utilisée durant la recherche 
+(la formule UCT classique ou les prédictions du modèle de Machine Learning), la décision finale ne se base pas sur ces scores d'évaluation. 
+
+L'IA fait appel à la méthode \texttt{mostVisitedChild()}, qui sélectionne le nœud enfant de la racine possédant le 
+\textbf{plus grand nombre de visites}. Ce critère est privilégié car il est statistiquement le plus robuste : une branche très visitée 
+signifie qu'elle a continuellement été considérée comme la plus prometteuse par l'algorithme, et qu'elle a survécu à un grand nombre de
+ simulations face aux meilleures réponses possibles de l'adversaire.
+
+\subsubsection{Stratégie de validation et de tests}
+
+Afin de garantir la robustesse de notre implémentation du MCTS, nous avons organisé la validation autour de la classe
+\texttt{MctsTest}. Les tests ne cherchent pas à démontrer la supériorité stratégique de l'algorithme, mais à vérifier qu'il se
+comporte correctement dans les situations représentatives et dans les cas limites.
+
+La première famille de tests vérifie la configuration de base de l'IA. Nous contrôlons que le constructeur par défaut initialise
+bien la constante d'exploration à sa valeur théorique \(\sqrt{2}\), et que les variantes avec paramètres personnalisés
+conservent les valeurs attendues. Nous validons également le rejet des constantes d'exploration non positives, afin de prévenir
+une configuration mathématiquement incohérente dès l'instanciation. \\
+
+La deuxième famille de tests couvre le comportement opérationnel de la recherche. Nous vérifions que \texttt{getBestMove(...)}
+retourne effectivement un coup valide lorsque des mouvements sont possibles, et qu'elle renvoie \texttt{null} lorsqu'aucun coup
+légal n'existe. Cette vérification est importante parce qu'elle garantit que l'algorithme reste stable jusqu'aux positions de fin
+de partie, sans lever d'exception ni produire de résultat invalide. \\
+
+La troisième famille se concentre sur le mode de sélection \texttt{ML}. Comme cette branche manipule des éléments internes privés
+et dépend d'un fichier de poids externe, les tests utilisent la réflexion Java pour isoler les points sensibles : chargement des
+poids, gestion des fichiers mal formés, calcul d'une probabilité d'évaluation bornée entre 0 et 1, et sélection correcte du
+nœud enfant lorsque le mode ML est activé. Cette approche permet de valider la chaîne complète, depuis l'entrée des paramètres
+jusqu'à la décision finale de sélection. \\
+
+Enfin, les tests jouent aussi un rôle de garde-fou sur la logique de l'UCT. Ils vérifient notamment que les nœuds encore non
+explorés sont priorisés de manière absolue, ce qui force l'algorithme à tester chaque coup légal au moins une fois avant de se
+concentrer sur l'exploitation des branches les plus prometteuses. Autrement dit, la suite de tests ne se limite pas à des
+vérifications techniques : elle protège directement les invariants qui fondent le comportement attendu du MCTS.
+
+\subsection{F39 : Intégration du réseau, des interfaces et de la synchronisation}
+
+\subsubsection{Objectif général de la fonctionnalité}
+
+La fonctionnalité F39 correspond à l'intégration complète de la couche réseau dans notre application de jeu de dames.
+Son objectif n'était pas uniquement de permettre à deux machines d'échanger des messages via TCP, 
+mais de faire en sorte que cette communication distante s'intègre proprement à l'architecture existante ,aux échange de coup  
+ du côté de l'interface en ligne de commande (CLI) que du côté de l'interface graphique (GUI). 
+Concrètement, il fallait que le même moteur de jeu puisse être piloté localement ou à distance, 
+sans dupliquer la logique métier, tout en ajoutant les commande demandées. Cette fonctionnalité relie 
+donc plusieurs composants centraux du projet : {\texttt{ClientSession}}, {\texttt{GameServer}}, 
+{\texttt{GameRegistry}},{\texttt{GameSession}} et {\texttt{PlayerSession}}.
+
+\subsubsection{Articulation entre mode local, mode serveur et mode connecté}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+      scale=0.8,
+        state/.style={
+            rectangle,
+            rounded corners,
+            draw=black,
+            thick,
+            align=left,
+            font=\footnotesize,
+            minimum width=4.0cm,
+            minimum height=2.6cm,
+            fill=gray!8
+        },
+        arrow/.style={->, thick}
+    ]
+        % Disposition en triangle isocèle
+        \node[state] (local) at (0, 0) {
+          \textbf{LOCAL}\\[0.12cm]
+            \textit{État par défaut}\\
+            \textbf{Commandes autorisées :}\\
+            \texttt{new}, \texttt{join},\\
+            \texttt{server start}, \texttt{help}, \dots
+        };
+        \node[state] (server) at (8.2, 0) {
+          \textbf{SERVER}\\[0.12cm]
+            \textit{Serveur lancé localement}\\
+            \textbf{Commandes autorisées :}\\
+            \texttt{server stop}\\
+            \texttt{server status}\\
+            \texttt{players}\\
+            \texttt{scoreboard}\\
+            \textbf{Bloquées :} \texttt{join}, \texttt{ping}
+        };
+        \node[state] (connected) at (4.1, -6.1) {
+          \textbf{CONNECTED}\\[0.12cm]
+            \textit{Connecté à un serveur distant}\\
+            \textbf{Commandes autorisées :}\\
+            \texttt{move}, \texttt{new}, \texttt{ping}, \texttt{quit}, \dots\\
+            \textbf{Bloquée :} \texttt{server start}
+        };
+
+        % LOCAL <-> SERVER
+        \draw[arrow] ([yshift= 4pt]local.east) --
+        node[above, font=\scriptsize\ttfamily] {server start}
+        ([yshift= 4pt]server.west);
+        \draw[arrow] ([yshift=-4pt]server.west) --
+        node[below, font=\scriptsize\ttfamily] {server stop}
+        ([yshift=-4pt]local.east);
+
+        % LOCAL <-> CONNECTED
+        \draw[arrow] ([xshift=-4pt]local.south) --
+        node[left, font=\scriptsize\ttfamily] {join}
+        ([xshift=-4pt]connected.north west);
+        \draw[arrow] ([xshift= 4pt]connected.north west) --
+        node[right, font=\scriptsize\ttfamily] {quit}
+        ([xshift= 4pt]local.south);
+
+        % SERVER <-> CONNECTED
+        \draw[arrow] ([xshift= 4pt]server.south) --
+        node[right, font=\scriptsize\ttfamily] {server stop / join}
+        ([xshift= 4pt]connected.north east);
+        \draw[arrow] ([xshift=-4pt]connected.north east) --
+        node[left, font=\scriptsize\ttfamily] {quit / server start}
+        ([xshift=-4pt]server.south);
+
+    \end{tikzpicture}
+    \caption{Modes d'exécution du client et commandes autorisées selon \texttt{ClientMode}.}
+    \label{fig:clientmode}
+\end{figure}
+
+
+Pour rendre cette intégration cohérente, nous avons d'abord introduit une notion explicite de
+\textbf{mode d'exécution} grâce à l'énumération \texttt{ClientMode}.
+Trois états ont été définis : \texttt{LOCAL},
+lorsque l'application fonctionne sans connexion réseau ; \texttt{SERVER},
+lorsqu'un serveur est démarré localement ; et \texttt{CONNECTED},
+lorsqu'un client est relié à un serveur distant. Cette séparation est essentielle,
+car elle permet de contrôler quelles commandes sont autorisées selon le contexte.
+Par exemple, un client déjà connecté ne doit pas pouvoir démarrer un serveur local,
+tandis qu'une instance qui héberge déjà un serveur ne doit pas réutiliser certaines
+commandes purement clientes.
+Les transitions entre ces états sont gérées dans \texttt{ClientSession} via des méthodes comme
+\texttt{enterServerMode()}, \texttt{exitServerMode()} et \texttt{getMode()}.
+
+
+\subsubsection{Commandes réseau et commandes d'administration ajoutées}
+
+F39 a conduit à distinguer deux niveaux dans l'architecture réseau : les
+messages du protocole TCP, d'une part, et les commandes utilisateur ou
+d'administration, d'autre part.
+
+\medskip
+\noindent\textbf{Messages du protocole TCP}
+
+Les messages \texttt{REGISTER}, \texttt{NEW} et \texttt{MOVE} relèvent
+directement du protocole TCP mis en place entre le client et le serveur.
+\texttt{REGISTER} est envoyé lors de la connexion initiale afin d'enregistrer
+un joueur auprès du serveur. \texttt{NEW} permet d'initier une invitation de
+partie, tandis que \texttt{MOVE} sert à transmettre un coup au cours d'une
+partie déjà en cours. Ces messages sont émis par \texttt{ClientSession},
+décodés par \texttt{GameServer}, puis relayés vers les composants métier
+appropriés : \texttt{GameRegistry} pour la gestion des joueurs et
+\texttt{GameSession} pour le traitement des coups et de la logique de partie.
+
+\medskip
+\noindent\textbf{Commandes utilisateur et d'administration}
+
+Certaines fonctionnalités sont exposées sous forme de commandes utilisateur ou
+d'administration. La commande \texttt{server status}, implémentée dans
+\texttt{ServerStatusCommand}, affiche le port d'écoute du serveur, le nombre de
+clients connectés et le nombre de parties actives. La commande
+\texttt{scoreboard}, implémentée dans \texttt{ScoreboardCommand}, consulte
+\texttt{GameRegistry} pour classer les joueurs selon leur nombre de victoires
+et afficher leurs statistiques globales.
+
+\medskip
+\noindent\textbf{Routage des commandes}
+
+Les commandes saisies par l'utilisateur passent par
+\texttt{ShellCommandRouter}, qui décide si elles doivent être exécutées
+localement, transmises au serveur ou bloquées selon le mode courant.
+
+\subsubsection{Architecture serveur et isolation des sessions de jeu}
+\label{sec:archi-serveur-detail}
+
+Cette partie décrit deux niveaux complémentaires de l'architecture réseau :
+le serveur global, qui gère les connexions et les sessions, et les sessions de
+jeu elles-mêmes, qui encapsulent la logique d'une partie particulière.
+
+\medskip
+\noindent\textbf{GameServer}
+
+La classe \texttt{GameServer} constitue le point central du mode serveur. Elle
+ouvre un \texttt{ServerSocket} sur un port TCP donné, accepte les connexions
+entrantes et supervise l'ensemble du service réseau. Elle reçoit ainsi les
+connexions de plusieurs clients, délègue leur traitement à des threads distincts
+via \texttt{Executors.newCachedThreadPool()}, enregistre les joueurs connectés
+et orchestre la création de nouvelles parties.
+
+\medskip
+\noindent\textbf{GameRegistry}
+
+La classe \texttt{GameRegistry} joue le rôle de registre central. Elle conserve
+les joueurs actuellement connectés ainsi que les sessions de jeu actives, ce qui
+fournit au serveur une vue globale de l'état courant du système. Elle constitue
+ainsi le point de coordination entre les joueurs présents sur le serveur et les
+parties en cours.
+
+\medskip
+\noindent\textbf{GameControllerFactory et isolation des parties}
+
+Lorsqu'une nouvelle partie est lancée, le serveur crée un nouveau
+\texttt{GameController} à l'aide de \texttt{GameControllerFactory}. Ce point est
+essentiel, car il garantit qu'une partie réseau possède son propre état de jeu.
+Chaque session dispose ainsi de son propre plateau, de son propre historique, de
+son propre tour courant et de sa propre évolution jusqu'à la fin de la partie.
+Deux parties simultanées restent donc totalement indépendantes l'une de l'autre,
+ce qui était indispensable pour permettre un véritable mode multi-clients.
+
+\medskip
+\noindent\textbf{GameSession}
+
+La classe \texttt{GameSession} représente une partie active. Elle encapsule
+toute la logique locale à cette partie, sans surcharger le serveur global avec
+des détails de gameplay. Elle gère l'ordre des tours, la validation des coups,
+l'application des actions via le contrôleur, la diffusion des notifications
+comme \texttt{OPPONENT\_MOVE}, ainsi que la terminaison propre de la session. La
+méthode \texttt{handleMove()} vérifie qu'un joueur agit au bon moment, applique
+le coup puis informe les autres participants, tandis que la méthode
+\texttt{end()} clôt la partie, met à jour les statistiques et rétablit les
+joueurs dans un état disponible.
+
+\medskip
+\noindent\textbf{Bilan architectural}
+
+L'architecture distingue donc clairement :
+\begin{itemize}
+    \item un niveau global, assuré par \texttt{GameServer}, pour la gestion du
+    service réseau ;
+    \item un niveau intermédiaire, assuré par \texttt{GameRegistry}, pour le
+    suivi des joueurs et des sessions ;
+    \item un niveau local, assuré par \texttt{GameSession}, pour la gestion
+    d'une partie donnée.
+\end{itemize}
+
+Cette séparation améliore la lisibilité de l'architecture, limite les
+interférences entre parties simultanées et rend possible un fonctionnement
+serveur réellement concurrent.
+
+\subsubsection{Connexion réseau et intégration avec les interfaces CLI et GUI}
+
+La classe \underline{\texttt{ClientSession}} constitue le point d'entrée principal
+de la logique réseau côté client. Elle encapsule l'ensemble de l'état de
+connexion : le socket TCP (\underline{\texttt{socket}}), les flux d'entrée et de
+sortie (\underline{\texttt{in}} et \underline{\texttt{out}}), l'état booléen
+\underline{\texttt{connected}}, ainsi que l'adresse du serveur courant dans
+\underline{\texttt{currentServer}}. Elle fournit les opérations fondamentales
+\underline{\texttt{connect()}}, \underline{\texttt{disconnect()}} et
+\underline{\texttt{send()}}, qui permettent respectivement d'établir la
+connexion, de la fermer proprement et d'envoyer des commandes texte au serveur.
+Une fois connecté, le client lance un thread dédié par
+\underline{\texttt{startListenerThread()}}, chargé d'écouter en permanence les
+messages provenant du serveur. Cette architecture permet au client de rester
+interactif pendant que les mises à jour réseau arrivent en arrière-plan.
+
+L'intérêt principal de cette conception est qu'elle unifie le comportement entre
+le mode CLI et le mode GUI. En effet, les messages reçus du serveur, comme
+\underline{\texttt{GAME\_START}}, \underline{\texttt{MOVE\_OK}} ou
+\underline{\texttt{OPPONENT\_MOVE}}, sont tous interprétés dans
+\underline{\texttt{handleServerMessage()}} puis réinjectés dans le même
+\underline{\texttt{GameController}} local via
+\underline{\texttt{executeMove()}}. En mode CLI, cela se traduit par un
+affichage textuel immédiat dans le terminal ; en mode GUI, la même mise à jour
+du contrôleur entraîne naturellement le rafraîchissement de l'affichage
+graphique. Ainsi, le projet ne possède pas un moteur pour le terminal et un
+autre pour l'interface graphique : il possède un contrôleur unique, alimenté
+soit par des actions locales, soit par des événements réseau. Cette
+mutualisation garantit la cohérence fonctionnelle entre les deux interfaces et
+limite fortement la duplication de code.
+
+
+\subsubsection{Cohérence avec les options de lancement}
+
+L’intégration réseau a également nécessité une évolution de \texttt{App.java}.
+Le point d’entrée du programme a été adapté pour reconnaître les nouveaux modes
+de lancement, notamment le démarrage d’un serveur, le mode démon et
+l’utilisation conjointe du réseau avec l’interface graphique.
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[
+        term/.style={
+            draw,
+            rounded corners,
+            minimum width=4.2cm,
+            minimum height=2.5cm,
+            align=left,
+            fill=gray!8
+        },
+        arrow/.style={->, thick}
+    ]
+        \node[term] (server) at (0,0) {
+            \textbf{Terminal 1}\\
+            \texttt{./checkers --server}\\
+            \textit{Démarrage du serveur}
+        };
+
+        \node[term] (client1) at (-5,-4) {
+            \textbf{Terminal 2}\\
+            \texttt{./checkers}\\
+            \texttt{join IP:port}\\
+            \textit{Client 1}
+        };
+
+        \node[term] (client2) at (5,-4) {
+            \textbf{Terminal 3}\\
+            \texttt{./checkers}\\
+            \texttt{join IP:port}\\
+            \textit{Client 2}
+        };
+
+        \draw[arrow] (client1.north) -- node[left] {\texttt{TCP}} (server.south west);
+        \draw[arrow] (client2.north) -- node[right] {\texttt{TCP}} (server.south east);
+    \end{tikzpicture}
+    \caption{Exemple minimal de lancement d’une partie en ligne : un serveur et deux clients sur trois terminaux distincts.}
+    \label{fig:lancement-online}
+\end{figure}
+
+\FloatBarrier
+
+Autrement dit, F39 ne modifie pas seulement le transport des données :
+elle étend aussi la manière dont l’application est initialisée et pilotée par
+l’utilisateur.
+
+\subsubsection{Gestion de la concurrence et apport des mutex}
+
+L'introduction du réseau a rendu nécessaire la protection de plusieurs ressources
+partagées, afin d'éviter les accès concurrents incohérents entre le client et le
+serveur. Nous avons donc introduit des mutex et des sections synchronisées dans
+les classes modifiées, de manière à garantir qu'une opération critique soit
+traitée de façon exclusive avant qu'une autre ne puisse intervenir sur la même
+ressource. Le principe général adopté dans notre architecture peut être résumé
+par l'algorithme suivant.
+
+
+    {\small
+\begin{minted}[frame=single]{text}
+Algorithme ProtectionParMutex
+
+Pour chaque ressource partagée faire
+
+    si ressource = connexion client alors
+        lock(connectionLock)
+        effectuer connect / send / disconnect
+        unlock(connectionLock)
+    fin si
+
+    si ressource = cycle de vie du serveur alors
+        lock(lifecycleLock)
+        effectuer start / stop
+        unlock(lifecycleLock)
+    fin si
+
+    si ressource = session de jeu alors
+        entrer dans section synchronisée
+        traiter handleMove / end
+        sortir de la section synchronisée
+    fin si
+
+    si ressource = état d'un joueur alors
+        lock(playerLock)
+        lire ou modifier status et statistiques
+        unlock(playerLock)
+    fin si
+
+FinPour
+\end{minted}
+}
+
+\subsubsection{Bilan de la fonctionnalité}
+
+En définitive, F39 représente une fonctionnalité transversale majeure du projet.
+Elle ne se réduit ni à l'ouverture d'un socket, ni à l'affichage d'un plateau
+graphique connecté. Elle articule la communication réseau, la compatibilité
+entre CLI et GUI, l'ajout de nouvelles commandes de jeu et d'administration,
+l'intégration avec les options de lancement, la création de sessions
+indépendantes et la sécurisation des accès concurrents par mutex et
+synchronisation. Cette fonctionnalité illustre donc un véritable travail
+d'architecture logicielle : nous avons transformé un moteur de jeu initialement
+local en un système multi-clients cohérent, extensible et robuste, capable de
+fonctionner correctement dans un environnement distribué et concurrent tout en
+restant fidèle à l'organisation générale du projet.
+
+% Je ne sais pas d'où ça sort
+% Cette séparation stricte des responsabilités rend le moteur de jeu totalement agnostique vis-à-vis de l'environnement extérieur. La classe \texttt{GameCheckers} ignore complètement si le joueur tape ses commandes dans une console Linux ou s'il déplace une image de pion sur une fenêtre JavaFX. 
+
+% Ce choix de conception a été décisif pour notre flux de travail. Il nous a permis de développer, de faire tourner et de tester massivement l'intégralité du moteur de jeu et de l'IA via une interface textuelle simple, avant même de commencer à coder l'interface graphique. Remplacer le terminal par la vue JavaFX n'a nécessité aucune modification des classes du moteur.
+
 \section{Revue critique de projet}
 
-\subsection{Bug}
+\subsection{Benchmark et performances de l'IA}
+
+Afin d'évaluer objectivement l'efficacité de nos différents algorithmes et heuristiques, nous avons mis en place un protocole de test automatisé 
+(via les tests, voir annexe~\ref{sec:annexe-lancement-benchmarks} pour les commandes de lancement). 
+
+\paragraph{Protocole expérimental :}
+Toutes les parties de ce benchmark ont ete jouees sur un plateau standard de 8 x 8. Pour chaque duel, une serie de 12 parties (par defaut) a 
+ete simulee, en alternant l affectation des IA aux couleurs blanc/noir pour lisser l avantage du trait, les blancs commencant toujours. Le temps de réflexion est
+le même pour tous les agents mais varie en fonction de l'experience.
+
+\subsubsection{Résultats globaux}
+
+Le tableau \ref{tab:benchmark-ia} synthétise les taux de victoire, de défaite et de nullité pour les confrontations majeures de notre moteur.
+
+\begin{table}[!ht]
+    \centering
+    \caption{Résultats des affrontements entre les différents agents IA (Série de 12 parties)}
+    \label{tab:benchmark-ia}
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+      \textbf{Affiche (IA 1 vs IA 2)} & \textbf{Victoires IA 1} & \textbf{Victoires IA 2} & \textbf{Nuls} & \textbf{Profondeur} & \textbf{Temps de réflexion} \\ \hline
+      MinMax vs AlphaBeta & 50 \% & 50 \% & 0 \% & 3 vs 4  & 250 ms \\ \hline
+      MCTS-UCT vs MCTS-ML & 100 \% & 0 \% & 0 \% & N/A & 250 ms \\ \hline
+      MinMax vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A & 250 ms \\ \hline
+      AlphaBeta vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A & 250 ms \\ \hline
+      MinMax vs MinMax & 0 \% & 100 \% & 0 \% & 3 vs 5  & 250 ms \\ \hline
+      MinMax vs MCTS-UCT & 6 \% & 94 \% & 0 \% & 7 vs N/A  & 500 ms \\ \hline
+      AlphaBeta vs MCTS-UCT & 16.67 \% & 75 \% & 8.33 \% & 7 vs N/A  & 500 ms \\ \hline
+      MinMax vs MCTS-ML & 100 \% & 0 \% & 0 \% & 3 vs N/A  & 250 ms \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Analyse des confrontations}
+
+\paragraph{MinMax vs AlphaBeta :}
+Théoriquement, à profondeur d'exploration égale, MinMax et AlphaBeta renvoient exactement le même coup. Avec une contrainte 
+temporelle très stricte de 250 millisecondes, l'élagage opéré par AlphaBeta lui permet d'atteindre une profondeur moyenne de 
+4 niveaux, contre seulement 3 pour le MinMax classique. De manière surprenante, ce duel se solde par une égalité parfaite (50 \% - 50 \%). 
+Cela s'explique par le fait qu'à cette cadence ultra-rapide, la différence entre une profondeur 3 et 4 n'est pas suffisante pour créer une 
+fracture stratégique décisive sur un plateau $8 \times 8$. Les deux algorithmes souffrent d'un horizon de calcul trop court ("effet d'horizon") 
+pour anticiper les rafles complexes.
+
+\paragraph{MCTS-UCT vs MCTS-ML :}
+Ce duel oppose l'approche statistique classique guidée par la formule UCB1 à notre modèle orienté par les poids issus de l'apprentissage automatique. 
+Les résultats montrent une domination absolue du MCTS-UCT (100 \% de victoires). Cette écrasante victoire confirme l'hypothèse soulevée lors de l'entraînement 
+du modèle : la régression logistique employée est trop basique. En se focalisant sur des statistiques matérielles via un calcul qui ralentit le nombre de 
+simulations par seconde, le mode ML passe à côté des subtilités positionnelles. L'UCT standard s'impose grâce à sa vitesse d'itération brute et sa capacité 
+à explorer naturellement les branches tactiques prometteuses.
+
+\noindent\textit{Note : le modèle de Machine Learning a été entraîné sur un dataset de 50 parties jouées par l'IA UCT classique contre elle-même, ce qui est 
+très limité pour apprendre des patterns complexes.}
+
+
+\paragraph{MinMax vs MCTS-UCT :}
+Cette confrontation met en lumière l'opposition entre une recherche exhaustive (MinMax) et une recherche probabiliste asymétrique (MCTS). Dans le temps 
+imparti de 250 ms, la très faible profondeur atteinte par MinMax (3 coups d'anticipation) le rend complètement aveugle aux tactiques à moyen terme. Le 
+MCTS, en revanche, tire pleinement parti de ce quart de seconde pour effectuer des milliers de simulations aléatoires, lui permettant d'évaluer les 
+positions avec une bien meilleure fiabilité. Cette différence fondamentale de fonctionnement se traduit par un taux de victoire de 100 \% en faveur du MCTS-UCT.
+
+\paragraph{AlphaBeta vs MCTS-UCT :}
+Il s'agit du véritable affrontement de notre moteur sous contrainte de temps réel (cadence Blitz extrême). D'un côté, AlphaBeta peine à dépasser 
+la profondeur 4, ce qui le rend vulnérable dès qu'une combinaison nécessite une lecture plus lointaine. De l'autre, le MCTS-UCT excelle dans l'évaluation
+ stratégique asymétrique. Les résultats finaux (100 \% de victoires pour le MCTS-UCT) démontrent de manière irréfutable qu'avec des budgets de temps 
+ très limités, la flexibilité et la profondeur asymétrique des simulations de Monte Carlo surpassent largement la recherche exhaustive en largeur, 
+ même lorsqu'elle est optimisée par l'élagage $\alpha-\beta$.
+
+\paragraph{MinMax-d3 vs MinMax-d5 :}
+Ce duel compare deux configurations du même algorithme MinMax, l'une limitée à une profondeur de 3, l'autre à une profondeur de 5. 
+Avec un temps de réflexion de seulement 200 ms. La version à profondeur 5 est systématiquement plus performante que celle à profondeur 3,
+ ce qui confirme que même une augmentation modeste de la profondeur d'exploration peut faire une différence significative dans la qualité 
+ des décisions prises par MinMax, à condition que le temps de calcul le permette.
+
+\paragraph{MinMax-d7 vs MCTS-UCT :}
+Le temps de réflexion a été augmenté à 500 ms mais malgré une profondeur de 7, le MinMax ne parvient pas à rivaliser avec le MCTS-UCT. 
+Cela s'explique par le fait que, même à profondeur 7, 
+MinMax reste limité dans sa capacité à anticiper les rafles complexes et les positions tactiques critiques qui peuvent survenir dans les 
+parties de dames. En revanche, le MCTS-UCT, grâce à sa nature probabiliste et à sa capacité à explorer un grand nombre de positions en
+ peu de temps, continue de surpasser le MinMax, même lorsque ce dernier est configuré pour une profondeur relativement élevée.
+
+\paragraph{AlphaBeta-d7 vs MCTS-UCT :}
+Malgré une profondeur de 7, AlphaBeta ne parvient pas à rivaliser avec le MCTS-UCT, même avec un temps de réflexion de 500 ms. Cela souligne que,
+bien que l'élagage $\alpha-\beta$ permette d'explorer plus profondément que le MinMax classique, il reste fondamentalement limité par sa 
+nature exhaustive. 
+
+\paragraph{MinMax-d3 vs MCTS-ML :}
+Ce duel met en lumière les limites de notre approche de Machine Learning. Malgré une profondeur de 3, le MinMax classique surpasse totalement 
+le MCTS-ML (100 \% de victoires). Cela confirme que le modèle de régression logistique utilisé pour guider les simulations du MCTS n'est pas
+ suffisamment puissant pour capturer les subtilités stratégiques du jeu de dames. En se basant uniquement sur des statistiques matérielles, 
+ il manque des éléments clés de l'évaluation positionnelle, ce qui conduit à des choix de simulation moins pertinents et à une performance 
+ globalement médiocre.
+
+\subsection{Bugs}
+
+Lors des tests et du développement, plusieurs anomalies ont été identifiées :
+
+\begin{enumerate}
+    \item \textbf{Mode serveur -- Restrictions sur les commandes}
+    
+    Le mode serveur (option \texttt{---server}) une fois démarré, n'accepte plus l'ensemble 
+    des commandes disponibles défini dans l'interface de contrôle. 
+    
+    \item \textbf{Commande \texttt{players} -- Affichage défectueux en mode serveur}
+    
+    La commande \texttt{players} ne retourne pas les informations des joueurs de manière correcte, rendant le suivi de l'état des joueurs difficile.
+
+    \item \textbf{Absence de vérification d'intégrité de l'historique lors de la sauvegarde}
+    
+    Le système de sauvegarde ne valide pas l'intégrité de l'historique du jeu avant de procéder à la sauvegarde. 
+    Cette absence de vérification peut conduire à la sauvegarde d'états de jeu corrompus ou incohérents.
+    
+    \item \textbf{Blocage de la fenêtre de sauvegarde lors de la fermeture}
+    
+    Lorsque l'utilisateur quitte l'application et que le système demande une confirmation de sauvegarde, 
+    la fenêtre de dialogue peut se bloquer (freeze) et devenir non-réactive. L'utilisateur ne peut alors sortir 
+    de cette situation que par des moyens externes (raccourci Alt+F4).
+    
+    \item \textbf{Shell interactif -- Gestion incomplète des paramètres}
+    
+    La commande \texttt{set Param=value} du shell interactif ne gère pas l'ensemble des paramètres configurables du système. 
+    Certains paramètres ne sont pas reconnus ou acceptés, limitant la flexibilité de configuration en temps réel.
+
+\end{enumerate}
 
 \subsection{Axes d'amélioration}
+
 
 \section*{Conclusion}
 
@@ -512,67 +2154,153 @@ Un exemple d'image flottante (Fig.~\ref{fig:example}).
 
 \section{Liste des 40 besoins}
 
-\begin{longtable}{|c|p{8cm}|c|}
+\begin{longtable}{|c|p{7.3cm}|c|p{5.2cm}|}
 \caption{État d'avancement des besoins fonctionnels} \label{tab:besoins} \\
 
 \hline 
-\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} \\ \hline
+\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} & \textbf{Erreur (si Partiel)} \\ \hline
 \endfirsthead
 
 \hline
-\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} \\ \hline
+\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} & \textbf{Erreur (si Partiel)} \\ \hline
 \endhead
 
-\hline \multicolumn{3}{r}{\textit{Suite à la page suivante...}} \\
+\hline \multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
 \endfoot
 
 \hline
 \endlastfoot
 
-F1 & Lancement du programme & \\ \hline
-F2 & Fichier de configuration & \\ \hline
-F3 & Internationalisation (i18n) & \\ \hline
-F4 & Interface en ligne de commande & \\ \hline
-F5 & Mode blitz & \\ \hline
-F6 & Mode contest & \\ \hline
-F7 & Interface graphique & \\ \hline
-F8 & Mode IA & \\ \hline
-F9 & Taille du damier & \\ \hline
-F10 & Gestion des règles & \\ \hline
-F11 & Gestion des erreurs de l’utilisateur & \\ \hline
-F12 & Gestion du undo/redo & \\ \hline
-F13 & Gestion des conseils & \\ \hline
-F14 & Gestion du blitz & \\ \hline
-F15 & Shell interactif & \\ \hline
-F16 & Proposer de sauvegarder avant de quitter & \\ \hline
-F17 & Édition de la commande en cours & \\ \hline
-F18 & Historique des commandes tapées & \\ \hline
-F19 & Complétion des commandes & \\ \hline
-F20 & Notation des coups & \\ \hline
-F21 & Sauvegarde et restauration d’une partie & \\ \hline
-F22 & Commentaires dans la sauvegarde & \\ \hline
-F23 & Format des paramètres du jeu & \\ \hline
-F24 & Format du damier & \\ \hline
-F25 & Format de l’historique & \\ \hline
-F26 & Module bitboard & \\ \hline
-F27 & Algorithmes de manipulation des bitboards & \\ \hline
-F28 & Menus de l’application & \\ \hline
-F29 & Raccourcis clavier & \\ \hline
-F30 & Drag’n’Drop & \\ \hline
-F31 & Temps de réflexion borné & \\ \hline
-F32 & Minimax avec $\alpha\beta$-pruning & \\ \hline
-F33 & Fonctions d’évaluation pour Minimax & \\ \hline
-F34 & Approfondissement itératif de Minimax & \\ \hline
-F35 & Profondeur de recherche de Minimax & \\ \hline
-F36 & Monte Carlo Tree Search (MCTS) & \\ \hline
-F37 & Fonction de sélection par Machine Learning & \\ \hline
-F38 & Découverte de serveurs et connexion client-serveur basique & \\ \hline
-F39 & Serveur multi-clients et gestion de parties & \\ \hline
-F40 & Système d’invitations et gestion avancée des joueurs & \\ \hline
+F1 & Lancement du programme & Fait & --- \\ \hline
+F2 & Fichier de configuration & Fait & --- \\ \hline
+F3 & Internationalisation (i18n) & Partiel & Traductions incomplètes \\ \hline
+F4 & Interface en ligne de commande & Fait & --- \\ \hline
+F5 & Mode blitz & Fait & --- \\ \hline
+F6 & Mode contest & Fait & --- \\ \hline
+F7 & Interface graphique & Fait & --- \\ \hline
+F8 & Mode IA & Fait & --- \\ \hline
+F9 & Taille du damier & Fait & --- \\ \hline
+F10 & Gestion des règles & Fait & --- \\ \hline
+F11 & Gestion des erreurs de l’utilisateur & Fait & --- \\ \hline
+F12 & Gestion du undo/redo & Fait & --- \\ \hline
+F13 & Gestion des conseils & Fait & --- \\ \hline
+F14 & Gestion du blitz & Fait & --- \\ \hline
+F15 & Shell interactif & Partiel & set Param=value, ne gère pas tous les paramètres. \\ \hline
+F16 & Proposer de sauvegarder avant de quitter & Fait & --- \\ \hline
+F17 & Édition de la commande en cours & Fait & --- \\ \hline
+F18 & Historique des commandes tapées & Fait & --- \\ \hline
+F19 & Complétion des commandes & Fait & --- \\ \hline
+F20 & Notation des coups & Fait & --- \\ \hline
+F21 & Sauvegarde et restauration d’une partie & Partiel & Le chargement d'un fichier ne vérifie pas la validité de l'historique par rapport aux bord. \\ \hline
+F22 & Commentaires dans la sauvegarde & Fait & --- \\ \hline
+F23 & Format des paramètres du jeu & Fait & --- \\ \hline
+F24 & Format du damier & Fait & --- \\ \hline
+F25 & Format de l’historique & Fait &  \\ \hline
+F26 & Module bitboard & Fait & --- \\ \hline
+F27 & Algorithmes de manipulation des bitboards & Fait & --- \\ \hline
+F28 & Menus de l’application & Fait & --- \\ \hline
+F29 & Raccourcis clavier & Fait & --- \\ \hline
+F30 & Drag’n’Drop & Fait & --- \\ \hline
+F31 & Temps de réflexion borné & Fait & --- \\ \hline
+F32 & Minimax avec $\alpha\beta$-pruning & Fait & --- \\ \hline
+F33 & Fonctions d’évaluation pour Minimax & Fait & --- \\ \hline
+F34 & Approfondissement itératif de Minimax & Partiel & Pas par rapport au temps dispo si on est en mode blitz. \\ \hline
+F35 & Profondeur de recherche de Minimax & Fait & --- \\ \hline
+F36 & Monte Carlo Tree Search (MCTS) & Fait & --- \\ \hline
+F37 & Fonction de sélection par Machine Learning & Fait & --- \\ \hline
+F38 & Découverte de serveurs et connexion client-serveur basique & Fait & --- \\ \hline
+F39 & Serveur multi-clients et gestion de parties & Partiel & Synchronisation incomplète dans certains scénarios multi-clients. \\ \hline
+F40 & Système d’invitations et gestion avancée des joueurs & Fait & --- \\ \hline
 \end{longtable} 
 
+\section{Procédure d'entraînement du modèle}
+\label{sec:annexe-procedure-entrainement}
 
+Le modèle de sélection par apprentissage automatique s'appuie sur une phase d'entraînement préalable, indispensable pour générer
+ le fichier de poids exploité par l'algorithme MCTS. Cette phase est automatisée et peut être déclenchée via l'exécutable du projet, avec l'option
+ \texttt{-tr} (pour \textit{train}), suivie du nombre de parties de simulation souhaitées.
 
+\paragraph{Exécution de l'entraînement}
+Pour lancer un cycle d'apprentissage, l'utilisateur doit exécuter la commande suivante depuis le terminal :
+\begin{minted}[frame=single]{bash}
+./checkers -tr 50
+\end{minted}
+Dans cet exemple, le programme lance 50 parties en mode \textit{self-play} (MCTS contre MCTS). La collecte est faite directement dans
+\texttt{LogisticRegressionTrainer} via des objets \texttt{Board}, \texttt{AiPlayer} et \texttt{ManagerUndoRedo}, sans dépendre du rendu GUI.
+
+\paragraph{Processus de collecte et d'optimisation}
+À chaque mouvement effectué lors de ces parties, le système extrait un vecteur de caractéristiques décrivant l'état du plateau, notamment le nombre et le
+ différentiel de pièces. Concrètement, la classe extrait 6 variables : pions blancs, pions noirs, dames blanches, dames noires,
+ différentiel de pions, différentiel de dames. Les parties sont bornées à 100 coups maximum (\texttt{MAX\_MOVES = 100}).
+ Une fois la collecte terminée, \texttt{train()} applique une descente de gradient pendant 1000 \textit{epochs} avec
+ \texttt{learningRate = 0.01}. Les parties nulles sont comptabilisées dans le bilan, mais ne sont pas ajoutées au dataset supervisé
+ (seules les parties avec vainqueur produisent des exemples étiquetés).
+
+Les paramètres optimisés sont ensuite sauvegardés dans \texttt{ml\_weights.txt}
+(première ligne : poids séparés par des virgules, deuxième ligne : biais). Ce fichier est lu ensuite par MCTS lorsque
+le mode de sélection \texttt{ML} est activé (option \texttt{-as ml}).
+
+\section{Lancement des benchmarks}
+\label{sec:annexe-lancement-benchmarks}
+
+Pour exécuter les séries de benchmarks depuis la racine du projet, plusieurs commandes Maven sont à disposition. Ces commandes 
+permettent de cibler spécifiquement les scénarios à évaluer et d'en ajuster finement les paramètres.
+
+\paragraph{Lancer l'intégralité des benchmarks}
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest test
+\end{minted}
+
+\paragraph{Lancer uniquement les duels classiques (MinMax / AlphaBeta / MCTS-UCT)}
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkAiVsAi test
+\end{minted}
+
+\paragraph{Lancer spécifiquement le duel MCTS-UCT contre MCTS-ML}
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMctsUctVsMl test
+\end{minted}
+
+\paragraph{Exécution avec des paramètres personnalisés}
+Il est possible de surcharger les paramètres par défaut en modifiant le nombre de parties, le temps de réflexion alloué ou 
+encore la profondeur de recherche des algorithmes. Voici un exemple d'exécution personnalisée :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest test -Dbenchmark.games=20 -Dbenchmark.aiTimeMs=200 -Dbenchmark.maxPlies=120 -Dbenchmark.minmaxDepth=3 -Dbenchmark.alphabetaDepth=4
+\end{minted}
+
+\paragraph{Lancer Minimax vs Minimax avec profondeur différente}
+Nous pouvons également comparer deux configurations de Minimax avec des profondeurs différentes pour évaluer l'impact de 
+la profondeur sur les performances :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMinMaxDepthVsDepth test \
+  -Dbenchmark.minmaxDepthA=3 -Dbenchmark.minmaxDepthB=5 \
+  -Dbenchmark.games=12 -Dbenchmark.aiTimeMs=200 -Dbenchmark.maxPlies=120
+\end{minted}
+
+\paragraph{Lancer uniquement MinMax contre MCTS-UCT}
+Ce test dédié exécute uniquement le duel MinMax vs MCTS-UCT :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMinMaxVsMctsUct test \
+  -Dbenchmark.minmaxDepth=7 -Dbenchmark.games=12 \
+  -Dbenchmark.aiTimeMs=500 -Dbenchmark.maxPlies=120
+\end{minted}
+
+\paragraph{Lancer uniquement AlphaBeta contre MCTS-UCT}
+Ce test dédié exécute uniquement le duel AlphaBeta vs MCTS-UCT :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkAlphaBetaVsMctsUct test \
+  -Dbenchmark.alphabetaDepth=7 -Dbenchmark.games=12 \
+  -Dbenchmark.aiTimeMs=500 -Dbenchmark.maxPlies=120
+\end{minted}
+
+\paragraph{Lancer uniquement MinMax contre MCTS-ML}
+\begin{minted}[frame=single, breaklines=true]{bash}
+  mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMinMaxVsMctsMl test -Dbenchmark.minmaxDepth=3 
+  -Dbenchmark.games=12 -Dbenchmark.aiTimeMs=250 -Dbenchmark.maxPlies=120
+\end{minted}
+
+À l'issue de l'exécution, les statistiques détaillées des duels sont automatiquement affichées dans la sortie standard de Maven.
+ Elles sont également sauvegardées de manière persistante dans le répertoire \texttt{target/benchmarks} sous la forme de fichiers horodatés.
 
 
 \end{document}

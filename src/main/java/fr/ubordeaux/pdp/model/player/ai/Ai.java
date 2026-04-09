@@ -3,7 +3,10 @@ package fr.ubordeaux.pdp.model.player.ai;
 import fr.ubordeaux.pdp.model.core.Board;
 import fr.ubordeaux.pdp.model.core.Configuration;
 import fr.ubordeaux.pdp.model.core.Move;
+import fr.ubordeaux.pdp.model.evaluation.AdvancedEvaluator;
 import fr.ubordeaux.pdp.model.evaluation.Evaluator;
+import fr.ubordeaux.pdp.model.evaluation.MaxEvaluator;
+import fr.ubordeaux.pdp.model.evaluation.SimpleEvaluator;
 import fr.ubordeaux.pdp.model.player.PlayerColor;
 import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import java.util.List;
@@ -41,6 +44,9 @@ public abstract class Ai {
 
   /** Maximum reasonable thinking time in milliseconds (30 seconds). */
   public static final long MAX_TIME_MS = 30000L;
+
+  /** Maximum depth automatically suggested from time budget. */
+  private static final int AUTO_MAX_DEPTH = 8;
 
   /** Maximum search depth for this specific AI instance. */
   protected int maxDepth;
@@ -233,6 +239,30 @@ public abstract class Ai {
     return Math.max(0, maxTimeMs - elapsed);
   }
 
+  /**
+   * Suggests a search depth from a given time budget.
+   *
+   * <p>Used when no explicit depth option is provided.
+   *
+   * @param timeMs available thinking time in milliseconds
+   * @return suggested depth, clamped to safe bounds
+   */
+  public static int suggestDepthFromTime(long timeMs) {
+    int depth;
+    if (timeMs <= 1000) {
+      depth = 4;
+    } else if (timeMs <= 3000) {
+      depth = 5;
+    } else if (timeMs <= 7000) {
+      depth = 6;
+    } else if (timeMs <= 15000) {
+      depth = 7;
+    } else {
+      depth = AUTO_MAX_DEPTH;
+    }
+    return Math.max(1, Math.min(depth, MAX_SAFE_DEPTH));
+  }
+
   // Getters et setters
   /**
    * Returns the maximum search depth for this AI instance.
@@ -279,7 +309,18 @@ public abstract class Ai {
    * @return an instance of Ai corresponding to the specified mode
    */
   public static Ai buildAi(Configuration cfg) {
-    String aiMode = cfg.getAiMode();
+    return buildAi(cfg, true);
+  }
+
+  /**
+   * Factory method to create an AI instance for a specific player color.
+   *
+   * @param cfg the configuration containing AI settings
+   * @param isWhite true for white player AI, false for black player AI
+   * @return an instance of Ai corresponding to the configured mode for that color
+   */
+  public static Ai buildAi(Configuration cfg, boolean isWhite) {
+    String aiMode = isWhite ? cfg.getWhiteAiMode() : cfg.getBlackAiMode();
     int depth = cfg.getAiDepth();
     long timeMs = cfg.getAiTime();
 
@@ -296,6 +337,25 @@ public abstract class Ai {
         return new IterativeDeepening(depth, timeMs);
       default:
         throw new IllegalArgumentException("Invalid AI mode: " + aiMode);
+    }
+  }
+
+  /**
+   * Factory method to create an evaluator instance based on Minimax scoring configuration.
+   *
+   * @param cfg the configuration containing scoring settings
+   * @return evaluator used by Minimax-family algorithms
+   */
+  public static Evaluator buildEvaluator(Configuration cfg) {
+    String scoring = cfg.getMinimaxScoring();
+    switch (scoring.toLowerCase()) {
+      case "simple":
+        return new SimpleEvaluator();
+      case "advanced":
+        return new AdvancedEvaluator();
+      case "max":
+      default:
+        return new MaxEvaluator();
     }
   }
 

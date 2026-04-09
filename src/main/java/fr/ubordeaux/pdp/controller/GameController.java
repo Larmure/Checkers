@@ -50,6 +50,9 @@ public class GameController {
   /** History size at the time of the last save. */
   private int lastSavedMoveCount = 0;
 
+  /** The last move that was saved (or {@code null} if the history was empty). */
+  private Move lastSavedMove = null;
+
   /** Dedicated thread running the main game loop for the CLI. */
   private Thread gameLoopThread;
 
@@ -58,6 +61,14 @@ public class GameController {
 
   /** Flag indicating if the game ended due to time expiration in blitz mode. */
   private boolean timeExpired = false;
+
+  /** The last load error message (null if loading succeeded). */
+  private String lastLoadError = null;
+
+  /** The delay before the first execution of the timer (ms). */
+  private static final long DELAY = 1000;
+  /** The period between timer executions (ms). */
+  private static final long PERIOD = 1000;
 
   /**
    * Initializes the controller with the required model and view components.
@@ -367,7 +378,7 @@ public class GameController {
           }
         }
       }
-    }, 1000, 1000);
+    }, DELAY, PERIOD);
   }
 
   /**
@@ -485,7 +496,22 @@ public class GameController {
     }
 
     for (int i = 0; i < n; i++) {
+      int historySizeBefore = game.getHistory().getSize();
+
       game.undoManage();
+
+      if (game.getHistory().getSize() == historySizeBefore) {
+        break;
+      }
+
+      while (game.getCurrentPlayer() instanceof AiPlayer) {
+        historySizeBefore = game.getHistory().getSize();
+        game.undoManage();
+
+        if (game.getHistory().getSize() == historySizeBefore) {
+          break;
+        }
+      }
     }
     triggerAiIfNecessary();
   }
@@ -504,7 +530,22 @@ public class GameController {
     }
 
     for (int i = 0; i < n; i++) {
+      int historySizeBefore = game.getHistory().getSize();
+
       game.redoManage();
+
+      if (game.getHistory().getSize() == historySizeBefore) {
+        break;
+      }
+
+      while (game.getCurrentPlayer() instanceof AiPlayer) {
+        historySizeBefore = game.getHistory().getSize();
+        game.redoManage();
+
+        if (game.getHistory().getSize() == historySizeBefore) {
+          break;
+        }
+      }
     }
     triggerAiIfNecessary();
   }
@@ -512,7 +553,16 @@ public class GameController {
   /**
    * Checks if the current game state has modifications since the last save.
    *
-   * @return {@code true} if there are unsaved moves
+   * <p>Compares both the history size and the last move (by reference). This ensures
+   * that undo/redo operations are properly detected as changes:
+   * <ul>
+   *   <li>If size differs from last save, there are unsaved changes</li>
+   *   <li>If size is the same but the actual move at the top differs (e.g., undo then
+   *       replay), there are unsaved changes because the move object is a different
+   *       instance</li>
+   * </ul>
+   *
+   * @return {@code true} if there are unsaved moves or changes
    */
   public boolean hasUnsavedChanges() {
     if (game == null || game.getHistory() == null) {
@@ -521,17 +571,49 @@ public class GameController {
     if (game.getState() == State.FINISHED) {
       return false;
     }
+
     int currentSize = game.getHistory().getSize();
-    return currentSize != lastSavedMoveCount;
+    if (currentSize != lastSavedMoveCount) {
+      return true;
+    }
+
+    // Same size — verify the move at the top is the same instance
+    if (currentSize == 0) {
+      return false;
+    }
+    return game.getHistory().getLastMove() != lastSavedMove;
   }
 
   /**
-   * Updates the save tracker to the current history size.
+   * Records the current game state as saved.
+   *
+   * <p>Stores both the history size and a reference to the last move. When the user
+   * later undoes and replays a different move, {@link #hasUnsavedChanges()} will
+   * detect it because the new move object is a different instance.
    */
   public void markAsSaved() {
     if (game != null && game.getHistory() != null) {
       lastSavedMoveCount = game.getHistory().getSize();
+      lastSavedMove = lastSavedMoveCount > 0 ? game.getHistory().getLastMove() : null;
     }
+  }
+
+  /**
+   * Sets the last load error message.
+   *
+   * @param errorMessage the error message, or null if loading succeeded
+   */
+  public void setLastLoadError(String errorMessage) {
+    this.lastLoadError = errorMessage;
+  }
+
+  /**
+   * Gets the last load error message.
+   *
+   * @return the error message, or null if the last load succeeded
+   */
+  public String getLastLoadError() {
+    return lastLoadError;
   }
 
   /**
@@ -543,6 +625,12 @@ public class GameController {
       if (configuration.isBlitz()) {
         stopBlitzTimer();
       }
+      // DISPLAY SCORE GAME
+      System.out.println(Internationalization.get("game.white_score") + ": "
+          + game.getWhiteScore());
+      System.out.println(Internationalization.get("game.black_score") + ": "
+          + game.getBlackScore());
+
       System.out.println(Internationalization.get("game.start_new_game"));
 
       if (view instanceof GraphicalUserInterface gui) {

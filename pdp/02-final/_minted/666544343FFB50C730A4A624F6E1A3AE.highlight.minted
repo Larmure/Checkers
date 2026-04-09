@@ -1,0 +1,8 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{n+nd}{@DisplayName}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{Test direct du switch case ML dans select}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{testSelectOnlyMl}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{k+kd}{throws}\PYG{+w}{ }\PYG{n}{Exception}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n}{mcts}\PYG{p}{.}\PYG{n+na}{setSelectionMode}\PYG{p}{(}\PYG{n}{SelectionMode}\PYG{p}{.}\PYG{n+na}{ML}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{  }\PYG{n}{Object}\PYG{+w}{ }\PYG{n}{result}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{selectMethod}\PYG{p}{.}\PYG{n+na}{invoke}\PYG{p}{(}\PYG{n}{mcts}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{root}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{board}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{undo}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{  }\PYG{n}{assertEquals}\PYG{p}{(}\PYG{n}{child}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{result}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{Le switch doit choisir l\PYGZsq{}enfant via le mode ML}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}

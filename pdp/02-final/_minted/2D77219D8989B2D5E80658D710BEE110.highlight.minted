@@ -1,0 +1,31 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+Algorithme ProtectionParMutex
+
+Pour chaque ressource partagée faire
+
+    si ressource = connexion client alors
+        lock(connectionLock)
+        effectuer connect / send / disconnect
+        unlock(connectionLock)
+    fin si
+
+    si ressource = cycle de vie du serveur alors
+        lock(lifecycleLock)
+        effectuer start / stop
+        unlock(lifecycleLock)
+    fin si
+
+    si ressource = session de jeu alors
+        entrer dans section synchronisée
+        traiter handleMove / end
+        sortir de la section synchronisée
+    fin si
+
+    si ressource = état d\PYGZsq{}un joueur alors
+        lock(playerLock)
+        lire ou modifier status et statistiques
+        unlock(playerLock)
+    fin si
+
+FinPour
+\end{MintedVerbatim}

@@ -1,8 +1,16 @@
-package fr.ubordeaux.pdp.server;
+package fr.ubordeaux.pdp.controller;
 
-import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.controller.commands.*;
+import fr.ubordeaux.pdp.controller.commands.JoinCommand;
+import fr.ubordeaux.pdp.controller.commands.PingCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitClientCommand;
+import fr.ubordeaux.pdp.controller.commands.QuitCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerListCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStartCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStatusCommand;
+import fr.ubordeaux.pdp.controller.commands.ServerStopCommand;
 import fr.ubordeaux.pdp.model.tools.Utils;
+import fr.ubordeaux.pdp.server.ClientMode;
+import fr.ubordeaux.pdp.server.ClientSession;
 import java.util.Arrays;
 
 /**
@@ -25,7 +33,7 @@ public class ShellCommandRouter {
 
   private final GameController controller;
   private final ClientSession session;
-
+  
   /**
    * Creates a router for shell commands.
    *
@@ -48,23 +56,30 @@ public class ShellCommandRouter {
     }
 
     String trimmed = input.trim();
+    ClientMode mode = session.getMode();
 
-    if (session.getMode() == ClientMode.LOCAL && isMove(trimmed)) {
-      handleLocalMove(trimmed);
-      return;
+    switch (mode) {
+      case LOCAL -> {
+        if (isMove(trimmed)) {
+          handleLocalMove(trimmed);
+          return;
+        }
+        if (isManouryMove(trimmed)) {
+          handleLocalManouryMove(trimmed);
+          return;
+        }
+        dispatchInput(trimmed);
+      }
+      case CONNECTED -> {
+        if (isMove(trimmed)) {
+          handleMove(trimmed);
+          return;
+        }
+        session.send(trimmed);
+      }
+      case SERVER -> dispatchInput(trimmed);
+      default -> throw new IllegalStateException("Unexpected mode: " + mode);
     }
-
-    if (session.getMode() == ClientMode.LOCAL && isManouryMove(trimmed)) {
-      handleLocalManouryMove(trimmed);
-      return;
-    }
-
-    if (session.getMode() == ClientMode.CONNECTED && isMove(trimmed)) {
-      handleMove(trimmed);
-      return;
-    }
-
-    dispatchCommand(trimmed);
   }
 
   /**
@@ -117,7 +132,11 @@ public class ShellCommandRouter {
    */
   private void handleMove(String input) {
     String[] tokens = input.split("\\s+");
-    session.send("MOVE " + tokens[0] + "-" + tokens[1]);
+    if (session.getMode() == ClientMode.CONNECTED) {
+      session.send("MOVE " + tokens[0] + "-" + tokens[1]);
+    } else {
+      controller.executeMove(tokens[0], tokens[1], false);
+    }
   }
 
   /**
@@ -125,7 +144,7 @@ public class ShellCommandRouter {
    *
    * @param input trimmed input line.
    */
-  private void dispatchCommand(String input) {
+  private void dispatchInput(String input) {
     String[] tokens = input.split("\\s+", 3);
     String command = tokens[0].toLowerCase();
 
@@ -134,7 +153,33 @@ public class ShellCommandRouter {
       case "join" -> handleJoin(tokens);
       case "ping" -> handlePing();
       case "quit" -> handleQuit();
-      case "help" -> new HelpClientCommand().execute();
+
+      // ---- Invitation commands (forwarded to server when CONNECTED) -------
+      case "accept", "decline", "cancel" -> {
+        if (blockIf(ClientMode.LOCAL,
+            "Not connected to a server. Use 'join' first.")) {
+          return;
+        }
+        if (blockIf(ClientMode.SERVER,
+            "Cannot use invitation commands in SERVER mode.")) {
+          return;
+        }
+        session.send(command.toUpperCase());
+      }
+
+      // ---- Presence commands (forwarded to server when CONNECTED) ---------
+      case "away", "back" -> {
+        if (blockIf(ClientMode.LOCAL,
+            "Not connected to a server. Use 'join' first.")) {
+          return;
+        }
+        if (blockIf(ClientMode.SERVER,
+            "Cannot use presence commands in SERVER mode.")) {
+          return;
+        }
+        session.send(command.toUpperCase());
+      }
+
       default -> handleLocalOrRemote(input, tokens);
     }
   }
@@ -170,10 +215,26 @@ public class ShellCommandRouter {
         }
         new ServerStopCommand(session).execute();
       }
+      case "status" -> {
+        if (blockUnless(ClientMode.SERVER, "No server running. Use 'server start' first.")) {
+          return;
+        }
+
+        if (ServerStartCommand.activeServer == null
+            || !ServerStartCommand.activeServer.isRunning()) {
+          System.out.println("Server status unavailable.");
+          return;
+        }
+
+        new ServerStatusCommand(
+            ServerStartCommand.activeServer.getTcpPort(),
+            ServerStartCommand.activeServer.getRegistry()
+        ).execute();
+      }
       default ->
-          System.out.println(
-              "Unknown server command: '" + sub + "'.\n"
-                  + "Available: server list | server start [PORT] | server stop");
+        System.out.println(
+            "Unknown server command: '" + sub + "'.\n"
+                + "Available: server list | server start [PORT] | server stop");
     }
   }
 
@@ -242,10 +303,9 @@ public class ShellCommandRouter {
       }
       case LOCAL -> {
         String commandName = tokens[0];
-        String[] args =
-            tokens.length > 1
-                ? Arrays.copyOfRange(tokens, 1, tokens.length)
-                : new String[0];
+        String[] args = tokens.length > 1
+            ? Arrays.copyOfRange(tokens, 1, tokens.length)
+            : new String[0];
         controller.executeCommand(commandName, args);
       }
       default -> throw new IllegalStateException("Unexpected mode: " + session.getMode());

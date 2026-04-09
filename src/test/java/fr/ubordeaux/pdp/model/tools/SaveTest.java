@@ -428,7 +428,7 @@ public class SaveTest {
     String content = Files.readString(getSavePath("test_ai_none_depth.txt"));
     assertTrue(content.contains("ai-mode=none"),
         "Quand aucune IA n'est active, ai-mode doit valoir none.");
-    assertTrue(content.contains("ai-depth=0"),
+    assertTrue(content.contains("ai-depth=1"),
         "Quand aucune IA n'est active, ai-depth doit valoir 0.");
   }
 
