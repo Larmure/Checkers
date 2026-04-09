@@ -1255,25 +1255,25 @@ Le détail des algorithmes IA (évaluateurs, MinMax, AlphaBeta et IterativeDeepe
   \centering
   \makebox[\textwidth][c]{
     \begin{tikzpicture}[scale=0.8, transform shape, node distance=1.1cm and 1.4cm, >=Stealth]
-      \node[draw, rounded corners, align=center, fill=gray!10, minimum width=3.2cm] (cfg)
+      \node[draw, rounded corners, align=center, fill=view_color, minimum width=3.2cm] (cfg)
       {Configuration\\\scriptsize modes, profondeur, temps, scoring};
 
-      \node[draw, rounded corners, align=center, fill=blue!10, right=of cfg, minimum width=3.0cm] (game)
+      \node[draw, rounded corners, align=center, fill=model_color, right=of cfg, minimum width=3.0cm] (game)
       {GameCheckers\\\scriptsize instanciation};
 
-      \node[draw, rounded corners, align=center, fill=blue!10, right=of game, minimum width=2.8cm] (player)
+      \node[draw, rounded corners, align=center, fill=model_color, right=of game, minimum width=2.8cm] (player)
       {AiPlayer\\\scriptsize delegation};
 
-      \node[draw, rounded corners, align=center, fill=green!12, below=of player, minimum width=2.8cm] (ai)
+      \node[draw, rounded corners, align=center, fill=model_color, below=of player, minimum width=2.8cm] (ai)
       {Ai\\\scriptsize getBestMove()};
 
-      \node[draw, rounded corners, align=center, fill=orange!14, right=of ai, minimum width=3.4cm] (search)
+      \node[draw, rounded corners, align=center, fill=model_color, right=of ai, minimum width=3.4cm] (search)
       {MinMax / AlphaBeta\\IterativeDeepening / Mcts};
 
-      \node[draw, rounded corners, align=center, fill=yellow!18, below=of search, minimum width=3.4cm] (eval)
+      \node[draw, rounded corners, align=center, fill=view_color, below=of search, minimum width=3.4cm] (eval)
       {Evaluator\\\scriptsize Simple / Advanced / Max};
 
-      \node[draw, rounded corners, align=center, fill=red!12, right=of search, minimum width=3.6cm] (ml)
+      \node[draw, rounded corners, align=center, fill=model_color, right=of search, minimum width=3.6cm] (ml)
       {SelectionMode\\\scriptsize UCT / ML\\LogisticRegressionTrainer};
 
       \draw[-{Stealth}] (cfg) -- (game);
@@ -1290,6 +1290,17 @@ Le détail des algorithmes IA (évaluateurs, MinMax, AlphaBeta et IterativeDeepe
       \draw[-{Stealth}] (search) -- (ml);
     \end{tikzpicture}
   }
+  \vspace{0.35cm}
+
+  \begin{tikzpicture}[
+    scale=0.8, transform shape,
+    leg/.style={rectangle, draw, rounded corners=4pt,
+                font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center}
+  ]
+    \node[leg, fill=model_color] (legModel) at (0, 0) {Model};
+    \node[leg, fill=view_color] (legView) at (3.1, 0) {View};
+  \end{tikzpicture}
+  
   \caption{Cha\^ine de d\'ependance du module Intelligence Artificielle}
   \label{fig:ia-dependencies}
 \end{figure}
