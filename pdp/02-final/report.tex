@@ -668,6 +668,38 @@ Copie
 \end{longtable}
 }
 
+\subsection{Algorithmes d'intelligence artificielle}
+
+\subsubsection{SimpleEvaluator}
+
+\texttt{SimpleEvaluator} est l'heuristique la plus légère du module. Son implémentation parcourt toutes les cases actives du plateau via \texttt{board.getIndexMax()} et interroge directement les bitboards avec \texttt{isBitWhitePawn}, \texttt{isBitBlackPawn}, \texttt{isBitWhiteChecker} et \texttt{isBitBlackChecker}. Chaque pion vaut 100 points et chaque dame 350 points ; le score final est positif si la position favorise les blancs et négatif si elle favorise les noirs\cite{windames_evaluation}.
+
+\subsubsection{AdvancedEvaluator}
+
+\texttt{AdvancedEvaluator} reprend la logique matérielle de \texttt{SimpleEvaluator}, mais ajoute un bonus de progression pour les pions. Pour calculer ce bonus, la classe reconstruit la ligne de chaque case à partir de l'indice courant et de la taille du plateau, puis ajoute ou retire un bonus d'avancement proportionnel à la distance parcourue vers la promotion. Les dames gardent leur valeur fixe, ce qui permet de conserver une heuristique lisible tout en intégrant une notion de dynamique de partie \cite{windames_evaluation}.
+
+\subsubsection{MaxEvaluator}
+
+\texttt{MaxEvaluator} est l'heuristique la plus coûteuse du trio. Elle combine d'abord le comptage matériel et le bonus d'avancement, puis ajoute deux critères stratégiques supplémentaires : le contrôle du centre et la mobilité. Le centre est détecté par la méthode privée \texttt{isInCenter(...)} à partir des coordonnées ligne/colonne, tandis que la mobilité est évaluée en appelant \texttt{board.getWhiteValidMoves()} et \texttt{board.getBlackValidMoves()} \cite{windames_evaluation}.
+
+\subsubsection{MinMax}
+
+\texttt{MinMax} implémente la stratégie classique de recherche adversariale. Le point d'entrée réel passe par \texttt{Ai.getBestMove(...)}, qui travaille sur une copie du plateau et crée un \texttt{ManagerUndoRedo} dédié à l'exploration. L'algorithme parcourt ensuite l'arbre de jeu en alternant les fonctions \texttt{minMax(...)} et \texttt{maxMin(...)} : chaque coup est appliqué avec \texttt{board.applyMove(move)}, enregistré dans \texttt{undo.registerMove(...)} puis annulé immédiatement après l'évaluation de la branche.
+
+La classe dépend donc à la fois de \texttt{Board} pour générer les coups légaux, de \texttt{ManagerUndoRedo} pour revenir en arrière, et de \texttt{Evaluator} pour scorer les feuilles. La gestion du temps repose sur une exception interne \texttt{TimeExceededException} qui interrompt proprement la récursion si le budget est dépassé. Le résultat est ensuite renvoyé sous forme d'un \texttt{Move} détaché de l'arbre de recherche afin de ne pas propager d'état interne vers la partie réelle.
+
+\subsubsection{MinMaxAlphaBeta}
+
+\texttt{MinMaxAlphaBeta} reprend exactement le même contrat que \texttt{MinMax}, mais ajoute deux bornes locales, \(\alpha\) et \(\beta\), dans les méthodes \texttt{maxValue(...)} et \texttt{minValue(...)}. Après chaque enfant évalué, la borne adaptée est mise à jour ; dès que \(\beta \leq \alpha\), la boucle est interrompue et les frères restants sont ignorés. La qualité du résultat reste identique à celle de MinMax, mais l'arbre visité peut être très réduit lorsque l'ordre des coups est favorable.
+
+Du point de vue des dépendances, la classe reste branchée sur les mêmes briques que \texttt{MinMax} : \texttt{Board}, \texttt{ManagerUndoRedo}, \texttt{Evaluator} et \texttt{PlayerColor}. La différence est purement algorithmique, ce qui permet à \texttt{GameCheckers} de la substituer à MinMax sans changer le reste du moteur.
+
+\subsubsection{IterativeDeepening}
+
+\texttt{IterativeDeepening} n'implémente pas son propre arbre de recherche ; elle encapsule un \texttt{MinMax} interne et relance le calcul pour des profondeurs croissantes, de 1 jusqu'à \texttt{maxDepth}. À chaque itération terminée, le meilleur coup courant remplace le précédent. Si le temps expire au milieu d'une profondeur, la classe conserve simplement le dernier coup entièrement validé.
+
+Cette organisation fait de la classe un adaptateur temporel plutôt qu'un nouvel algorithme de décision. Sa dépendance principale est donc le \texttt{MinMax} embarqué, auquel elle délègue toute l'exploration. Le bénéfice est double : on garantit toujours une réponse jouable et on améliore progressivement la qualité de la décision tant que le budget temps le permet.
+
 % ============================================================
 %  Section 3 — Architecture du projet
 % ============================================================
@@ -1232,6 +1264,8 @@ section~\ref{sec:archi-serveur-detail}.
 
 Les classes d'évaluation \texttt{SimpleEvaluator}, \texttt{AdvancedEvaluator} et \texttt{MaxEvaluator} implémentent la même interface \texttt{Evaluator} mais avec des heuristiques de coût croissant. Elles sont consommées par les algorithmes de recherche pour donner une valeur aux feuilles de l'arbre. Les trois évaluateurs se basent sur le site WinDames~\cite{windames_evaluation}. De son côté, \texttt{Mcts} n'utilise pas cette heuristique dans sa sélection principale, mais il reste compatible avec la même signature afin de pouvoir être instancié par le même pipeline que les autres IA.
 
+Le détail des algorithmes IA (évaluateurs, MinMax, AlphaBeta et IterativeDeepening) est désormais présenté dans la section~\ref{sec:algo}, sous-partie \textit{Algorithmes d'intelligence artificielle}.
+
 \begin{figure}[h]
   \centering
   \makebox[\textwidth][c]{
@@ -1275,36 +1309,6 @@ Les classes d'évaluation \texttt{SimpleEvaluator}, \texttt{AdvancedEvaluator} e
   \label{fig:ia-dependencies}
 \end{figure}
 
-\subsubsection{SimpleEvaluator}
-
-\texttt{SimpleEvaluator} est l'heuristique la plus légère du module. Son implémentation parcourt toutes les cases actives du plateau via \texttt{board.getIndexMax()} et interroge directement les bitboards avec \texttt{isBitWhitePawn}, \texttt{isBitBlackPawn}, \texttt{isBitWhiteChecker} et \texttt{isBitBlackChecker}. Chaque pion vaut 100 points et chaque dame 350 points ; le score final est positif si la position favorise les blancs et négatif si elle favorise les noirs\cite{windames_evaluation}.
-
-\subsubsection{AdvancedEvaluator}
-
-\texttt{AdvancedEvaluator} reprend la logique matérielle de \texttt{SimpleEvaluator}, mais ajoute un bonus de progression pour les pions. Pour calculer ce bonus, la classe reconstruit la ligne de chaque case à partir de l'indice courant et de la taille du plateau, puis ajoute ou retire un bonus d'avancement proportionnel à la distance parcourue vers la promotion. Les dames gardent leur valeur fixe, ce qui permet de conserver une heuristique lisible tout en intégrant une notion de dynamique de partie \cite{windames_evaluation}.
-
-\subsubsection{MaxEvaluator}
-
-\texttt{MaxEvaluator} est l'heuristique la plus coûteuse du trio. Elle combine d'abord le comptage matériel et le bonus d'avancement, puis ajoute deux critères stratégiques supplémentaires : le contrôle du centre et la mobilité. Le centre est détecté par la méthode privée \texttt{isInCenter(...)} à partir des coordonnées ligne/colonne, tandis que la mobilité est évaluée en appelant \texttt{board.getWhiteValidMoves()} et \texttt{board.getBlackValidMoves()} \cite{windames_evaluation}.
-
-\subsubsection{MinMax}
-
-\texttt{MinMax} implémente la stratégie classique de recherche adversariale. Le point d'entrée réel passe par \texttt{Ai.getBestMove(...)}, qui travaille sur une copie du plateau et crée un \texttt{ManagerUndoRedo} dédié à l'exploration. L'algorithme parcourt ensuite l'arbre de jeu en alternant les fonctions \texttt{minMax(...)} et \texttt{maxMin(...)} : chaque coup est appliqué avec \texttt{board.applyMove(move)}, enregistré dans \texttt{undo.registerMove(...)} puis annulé immédiatement après l'évaluation de la branche.
-
-La classe dépend donc à la fois de \texttt{Board} pour générer les coups légaux, de \texttt{ManagerUndoRedo} pour revenir en arrière, et de \texttt{Evaluator} pour scorer les feuilles. La gestion du temps repose sur une exception interne \texttt{TimeExceededException} qui interrompt proprement la récursion si le budget est dépassé. Le résultat est ensuite renvoyé sous forme d'un \texttt{Move} détaché de l'arbre de recherche afin de ne pas propager d'état interne vers la partie réelle.
-
-\subsubsection{MinMaxAlphaBeta}
-
-\texttt{MinMaxAlphaBeta} reprend exactement le même contrat que \texttt{MinMax}, mais ajoute deux bornes locales, \(\alpha\) et \(\beta\), dans les méthodes \texttt{maxValue(...)} et \texttt{minValue(...)}. Après chaque enfant évalué, la borne adaptée est mise à jour ; dès que \(\beta \leq \alpha\), la boucle est interrompue et les frères restants sont ignorés. La qualité du résultat reste identique à celle de MinMax, mais l'arbre visité peut être très réduit lorsque l'ordre des coups est favorable.
-
-Du point de vue des dépendances, la classe reste branchée sur les mêmes briques que \texttt{MinMax} : \texttt{Board}, \texttt{ManagerUndoRedo}, \texttt{Evaluator} et \texttt{PlayerColor}. La différence est purement algorithmique, ce qui permet à \texttt{GameCheckers} de la substituer à MinMax sans changer le reste du moteur.
-
-\subsubsection{IterativeDeepening}
-
-\texttt{IterativeDeepening} n'implémente pas son propre arbre de recherche ; elle encapsule un \texttt{MinMax} interne et relance le calcul pour des profondeurs croissantes, de 1 jusqu'à \texttt{maxDepth}. À chaque itération terminée, le meilleur coup courant remplace le précédent. Si le temps expire au milieu d'une profondeur, la classe conserve simplement le dernier coup entièrement validé.
-
-Cette organisation fait de la classe un adaptateur temporel plutôt qu'un nouvel algorithme de décision. Sa dépendance principale est donc le \texttt{MinMax} embarqué, auquel elle délègue toute l'exploration. Le bénéfice est double : on garantit toujours une réponse jouable et on améliore progressivement la qualité de la décision tant que le budget temps le permet.
-
 \subsubsection{Relations entre les classes}
 
 La figure~\ref{fig:ia-dependencies} résume le chemin suivi lors d'une décision. \texttt{GameCheckers} choisit l'algorithme et l'évaluateur à partir de la configuration, \texttt{AiPlayer} les encapsule, puis \texttt{Ai} orchestre la recherche sur une copie du plateau. Les algorithmes MinMax dérivés consomment ensuite l'évaluateur choisi, tandis que \texttt{Mcts} conserve la même interface mais s'appuie sur \texttt{SelectionMode} pour basculer entre UCT et la sélection guidée par apprentissage automatique.
@@ -1336,31 +1340,24 @@ Voir l'entrée \texttt{AdvancedEvaluator::evaluate(Board)} dans le tableau~\ref{
 
 \paragraph{MaxEvaluator}
 La méthode \texttt{evaluate(Board)} combine trois contributions : un parcours principal en $O(n)$,
-un test de centralité \texttt{isInCenter(...)} en $O(1)$ par case, puis une évaluation de mobilité
-dont le coût dépend des appels \texttt{getWhiteValidMoves()} et \texttt{getBlackValidMoves()}.
+un test de centralité en $O(1)$ par case, puis une évaluation de mobilité.
 Sa complexité globale s'écrit donc $O(n + M_{w} + M_{b})$, où $M_{w}$ et $M_{b}$ représentent les coûts
-de génération des coups blancs et noirs. La méthode \texttt{isInCenter(int, int, int)} elle-même ne fait
-que des comparaisons arithmétiques constantes et s'exécute en $O(1)$.
-Ces deux résultats correspondent aux entrées \texttt{MaxEvaluator::evaluate(Board)} et \texttt{MaxEvaluator::isInCenter(...)} du tableau~\ref{tab:ai-complexite-detaillee}.
+de génération des coups blancs et noirs.
+Dans cette explication, on retient uniquement la méthode principale \texttt{evaluate(Board)}.
 
 \paragraph{Complexité des algorithmes de recherche adversariale}
 
 \paragraph{MinMax}
 La méthode \texttt{calculateBestMove(...)} lance une recherche complète jusqu'à \texttt{maxDepth} et hérite donc
 d'une complexité asymptotique en $O(b^d)$, hors coût exact de génération des coups.
-La méthode \texttt{findBestMoveAtDepth(...)} itère d'abord sur les coups racines puis délègue à l'exploration
-récursive \texttt{minMax} / \texttt{maxMin}, ce qui conduit au même ordre de grandeur. Plus finement,
-\texttt{minMax(...)} et \texttt{maxMin(...)} coûtent $O(b^k)$ à profondeur restante $k$, soit $O(b^d)$ au pire
-depuis la racine. Enfin, \texttt{checkTime(long)} effectue un test booléen constant en $O(1)$.
-Le détail de ces méthodes (\texttt{calculateBestMove}, \texttt{findBestMoveAtDepth}, \texttt{minMax}, \texttt{maxMin}, \texttt{checkTime}) est donné dans le tableau~\ref{tab:ai-complexite-detaillee}.
+Pour éviter la redondance, l'analyse se limite ici à cette méthode principale,
+sans détailler les méthodes internes récursives.
 
 \paragraph{MinMaxAlphaBeta}
-Les méthodes \texttt{calculateBestMove(...)} et \texttt{findBestMoveAtDepth(...)} suivent la même logique
-que MinMax, mais ajoutent les bornes $\alpha$ et $\beta$ pour couper des sous-arbres.
-Ainsi, \texttt{maxValue(...)} et \texttt{minValue(...)} restent en $O(b^d)$ dans le pire cas (ordre des coups défavorable),
-mais peuvent atteindre $O(b^{d/2})$ dans le meilleur cas théorique avec un ordre des coups optimal.
-La méthode \texttt{checkTime(long)} reste en $O(1)$.
-Les bornes meilleur/pire cas et le détail par méthode (\texttt{findBestMoveAtDepth}, \texttt{maxValue}, \texttt{minValue}, \texttt{checkTime}) sont regroupés dans le tableau~\ref{tab:ai-complexite-detaillee}.
+La méthode principale \texttt{calculateBestMove(...)} suit la même logique que MinMax,
+mais ajoute les bornes $\alpha$ et $\beta$ pour couper des sous-arbres.
+Sa complexité reste en $O(b^d)$ dans le pire cas (ordre des coups défavorable),
+et peut atteindre $O(b^{d/2})$ dans le meilleur cas théorique avec un ordre des coups optimal.
 
 \paragraph{IterativeDeepening}
 La méthode \texttt{calculateBestMove(...)} enchaîne des recherches successives de profondeur
