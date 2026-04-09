@@ -11,6 +11,7 @@ import fr.ubordeaux.pdp.model.tools.ManagerUndoRedo;
 import fr.ubordeaux.pdp.view.GameView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Manages the core logic, rules, and state transitions for the Checkers game.
@@ -41,6 +42,14 @@ public class GameCheckers implements Subject {
   private int noProgressCount = 0;
   /** Counts turns since the last capture. */
   private int endGameCount = 0;
+  /** Stack of previous no-progress counter values for undo. */
+  private Stack<Integer> noProgressUndoStack = new Stack<>();
+  /** Stack of previous endgame counter values for undo. */
+  private Stack<Integer> endGameUndoStack = new Stack<>();
+  /** Stack of no-progress counter values for redo. */
+  private Stack<Integer> noProgressRedoStack = new Stack<>();
+  /** Stack of endgame counter values for redo. */
+  private Stack<Integer> endGameRedoStack = new Stack<>();
   /** Stores the history of board positions. */
   private List<String> positionHistory = new ArrayList<>();
   /** Indicates whether the game ended in a draw. */
@@ -255,6 +264,13 @@ public class GameCheckers implements Subject {
     board.applyMove(move);
     managerUndoRedo.registerMove(currentColor, move);
 
+    // Record counters before applying updates, and invalidate redo snapshots on
+    // every new move.
+    noProgressUndoStack.push(noProgressCount);
+    endGameUndoStack.push(endGameCount);
+    noProgressRedoStack.clear();
+    endGameRedoStack.clear();
+
     if (isCapture || isPawnMove) {
       noProgressCount = 0;
     } else {
@@ -443,10 +459,21 @@ public class GameCheckers implements Subject {
   public void undoManage() {
     if (managerUndoRedo.undo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-    }
 
-    if (!positionHistory.isEmpty()) {
-      positionHistory.remove(positionHistory.size() - 1);
+      // Save current counters for redo, then restore the exact pre-move values.
+      noProgressRedoStack.push(noProgressCount);
+      endGameRedoStack.push(endGameCount);
+
+      if (!noProgressUndoStack.isEmpty()) {
+        noProgressCount = noProgressUndoStack.pop();
+      }
+      if (!endGameUndoStack.isEmpty()) {
+        endGameCount = endGameUndoStack.pop();
+      }
+
+      if (!positionHistory.isEmpty()) {
+        positionHistory.remove(positionHistory.size() - 1);
+      }
     }
 
     notifyObservers();
@@ -459,9 +486,20 @@ public class GameCheckers implements Subject {
   public void redoManage() {
     if (managerUndoRedo.redo(this.isWhiteTurn)) {
       this.isWhiteTurn = !this.isWhiteTurn;
-    }
 
-    positionHistory.add(board.boardString());
+      // Save current counters for a potential undo, then restore redone values.
+      noProgressUndoStack.push(noProgressCount);
+      endGameUndoStack.push(endGameCount);
+
+      if (!noProgressRedoStack.isEmpty()) {
+        noProgressCount = noProgressRedoStack.pop();
+      }
+      if (!endGameRedoStack.isEmpty()) {
+        endGameCount = endGameRedoStack.pop();
+      }
+
+      positionHistory.add(board.boardString());
+    }
     notifyObservers();
   }
 
