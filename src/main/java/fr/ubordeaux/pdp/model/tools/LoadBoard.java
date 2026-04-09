@@ -629,6 +629,10 @@ public class LoadBoard {
       return "alphabeta";
     } else if (algo.equals("mcts")) {
       return "mcts";
+    } else if (algo.equals("iterativedeepening")
+        || algo.equals("iterative-deepening")
+        || algo.equals("ids")) {
+      return "iterativedeepening";
     } else {
       throw new Exception("Unknown AI algorithm: '" + raw + "'.");
     }

@@ -115,6 +115,8 @@ public class SaveBoard {
         algorithm = "alphabeta";
       } else if ("Mcts".equals(algorithmName)) {
         algorithm = "mcts";
+      } else if ("IterativeDeepening".equals(algorithmName)) {
+        algorithm = "iterativedeepening";
       } else {
         throw new IOException("Unknown AI algorithm: " + algorithmName);
       }
