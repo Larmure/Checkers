@@ -842,7 +842,7 @@ La figure~\ref{fig:gui-uml} présente les relations principales entre les compos
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.42\textwidth]{img_report/gui.png}
+  \includegraphics[width=0.85\textwidth]{img_report/gui.png}
   \caption{Architecture interne de la GUI.}
   \label{fig:gui-uml}
 \end{figure}
@@ -850,7 +850,7 @@ La figure~\ref{fig:gui-uml} présente les relations principales entre les compos
 
 \paragraph{GraphicalUserInterface : orchestration et cycle de vie}
 
-La classe \texttt{GraphicalUserInterface} reste le point d'entrée de la vue graphique. Elle implémente le contrat \texttt{GameView}, reçoit les notifications du modèle via le pattern Observer et orchestre la propagation des mises à jour vers les composants visuels.
+La classe \texttt{GraphicalUserInterface} reste le point d'entrée de la vue graphique. Elle hérite de \texttt{GameView}, reçoit les notifications du modèle via le pattern Observer et orchestre la propagation des mises à jour vers les composants visuels.
 
 Le point technique structurant est la gestion du thread JavaFX : toute mise à jour d'interface est redirigée vers l'Application Thread afin de garantir un rafraîchissement sûr, même lorsque les notifications proviennent d'un timer blitz ou d'un calcul d'IA exécuté en arrière-plan. La classe centralise également l'initialisation de la fenêtre, l'application du style et la fermeture contrôlée (avec vérification des sauvegardes en cours).
 
