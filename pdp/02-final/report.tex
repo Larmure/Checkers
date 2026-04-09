@@ -1569,35 +1569,31 @@ F39 a conduit à distinguer deux niveaux dans l'architecture réseau : les
 messages du protocole TCP, d'une part, et les commandes utilisateur ou
 d'administration, d'autre part.
 
-\smallskip
+\medskip
 \noindent\textbf{Messages du protocole TCP}
 
-\begin{itemize}
-    \item \texttt{REGISTER} : message envoyé lors de la connexion initiale pour
-    enregistrer un joueur auprès du serveur.
-    \item \texttt{NEW} : message utilisé pour initier une invitation de partie.
-    \item \texttt{MOVE} : message utilisé pour transmettre un coup au cours
-    d'une partie en cours.
-\end{itemize}
+Les messages \texttt{REGISTER}, \texttt{NEW} et \texttt{MOVE} relèvent
+directement du protocole TCP mis en place entre le client et le serveur.
+\texttt{REGISTER} est envoyé lors de la connexion initiale afin d'enregistrer
+un joueur auprès du serveur. \texttt{NEW} permet d'initier une invitation de
+partie, tandis que \texttt{MOVE} sert à transmettre un coup au cours d'une
+partie déjà en cours. Ces messages sont émis par \texttt{ClientSession},
+décodés par \texttt{GameServer}, puis relayés vers les composants métier
+appropriés : \texttt{GameRegistry} pour la gestion des joueurs et
+\texttt{GameSession} pour le traitement des coups et de la logique de partie.
 
-Ces messages sont émis par \texttt{ClientSession}, décodés par
-\texttt{GameServer}, puis relayés vers les composants métier appropriés :
-\texttt{GameRegistry} pour la gestion des joueurs et \texttt{GameSession} pour
-le traitement des coups et de la logique de partie.
-
-\smallskip
+\medskip
 \noindent\textbf{Commandes utilisateur et d'administration}
 
-\begin{itemize}
-    \item \texttt{server status} : commande d'administration implémentée dans
-    \texttt{ServerStatusCommand}, qui affiche le port d'écoute du serveur, le
-    nombre de clients connectés et le nombre de parties actives.
-    \item \texttt{scoreboard} : commande d'observation implémentée dans
-    \texttt{ScoreboardCommand}, qui consulte \texttt{GameRegistry} pour classer
-    les joueurs selon leur nombre de victoires et afficher leurs statistiques.
-\end{itemize}
+Certaines fonctionnalités sont exposées sous forme de commandes utilisateur ou
+d'administration. La commande \texttt{server status}, implémentée dans
+\texttt{ServerStatusCommand}, affiche le port d'écoute du serveur, le nombre de
+clients connectés et le nombre de parties actives. La commande
+\texttt{scoreboard}, implémentée dans \texttt{ScoreboardCommand}, consulte
+\texttt{GameRegistry} pour classer les joueurs selon leur nombre de victoires
+et afficher leurs statistiques globales.
 
-\smallskip
+\medskip
 \noindent\textbf{Routage des commandes}
 
 Les commandes saisies par l'utilisateur passent par
