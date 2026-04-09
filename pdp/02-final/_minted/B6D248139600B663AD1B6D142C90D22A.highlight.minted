@@ -1,0 +1,17 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kd}{public}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{enterServerMode}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n}{mode}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{ClientMode}\PYG{p}{.}\PYG{n+na}{SERVER}\PYG{p}{;}
+\PYG{+w}{  }\PYG{n}{System}\PYG{p}{.}\PYG{n+na}{out}\PYG{p}{.}\PYG{n+na}{println}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{[mode] Now in SERVER mode. Client commands are disabled.}\PYG{l+s}{\PYGZbs{}}\PYG{l+s}{n}\PYG{l+s}{\PYGZdq{}}
+\PYG{+w}{          }\PYG{o}{+}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{       Use \PYGZsq{}server stop\PYGZsq{} to return to local mode.}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k+kd}{public}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{exitServerMode}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n}{mode}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{ClientMode}\PYG{p}{.}\PYG{n+na}{LOCAL}\PYG{p}{;}
+\PYG{+w}{  }\PYG{n}{System}\PYG{p}{.}\PYG{n+na}{out}\PYG{p}{.}\PYG{n+na}{println}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{[mode] Server stopped. Back to LOCAL mode.}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k+kd}{public}\PYG{+w}{ }\PYG{n}{ClientMode}\PYG{+w}{ }\PYG{n+nf}{getMode}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{k}{return}\PYG{+w}{ }\PYG{n}{mode}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}

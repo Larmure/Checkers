@@ -1563,6 +1563,26 @@ commandes purement clientes.
 Les transitions entre ces états sont gérées dans \texttt{ClientSession} via des méthodes comme
 \texttt{enterServerMode()}, \texttt{exitServerMode()} et \texttt{getMode()}.
 
+    {\small
+\begin{minted}[frame=single]{java}
+public void enterServerMode() {
+  mode = ClientMode.SERVER;
+  System.out.println(
+      "[mode] Now in SERVER mode. Client commands are disabled.\n"
+          + "       Use 'server stop' to return to local mode.");
+}
+
+public void exitServerMode() {
+  mode = ClientMode.LOCAL;
+  System.out.println("[mode] Server stopped. Back to LOCAL mode.");
+}
+
+public ClientMode getMode() {
+  return mode;
+}
+\end{minted}
+}
+
 \subsubsection{Commandes réseau et commandes d'administration ajoutées}
 
 F39 a conduit à distinguer deux niveaux dans l'architecture réseau : les
@@ -1745,44 +1765,165 @@ l’utilisation conjointe du réseau avec l’interface graphique.
     \label{fig:lancement-online}
 \end{figure}
 
+\FloatBarrier
+
 Autrement dit, F39 ne modifie pas seulement le transport des données :
 elle étend aussi la manière dont l’application est initialisée et pilotée par
 l’utilisateur.
 
 \subsubsection{Gestion de la concurrence et apport des mutex}
 
-L'un des aspects les plus techniques de F39 concerne la gestion de la
-concurrence. L'introduction du réseau fait apparaître plusieurs flux
-d'exécution simultanés. Côté client, on retrouve au minimum le thread
-principal, qui lit les commandes utilisateur, et le thread secondaire lancé par
-\underline{\texttt{startListenerThread()}}, qui écoute les messages entrants du
-serveur. Côté serveur, chaque connexion cliente est traitée dans un thread
-potentiellement distinct, ce qui implique des accès concurrents aux mêmes
-structures globales. Sans protection, plusieurs problèmes peuvent apparaître :
-lecture incohérente de l'état \underline{\texttt{connected}}, écriture sur un
-socket en cours de fermeture, double création de partie avec les mêmes joueurs,
-ou mise à jour concurrente des statistiques. C'est précisément pour corriger ces
-risques que nous avons introduit des \textbf{mutex} et des protections
-explicites sur les sections critiques.
+L'introduction du réseau a rendu nécessaire la protection de plusieurs sections
+critiques. Côté client, il fallait éviter qu'un thread d'écoute et un thread
+d'envoi manipulent simultanément la même connexion TCP. Côté serveur, il fallait
+empêcher des accès concurrents au cycle de vie du serveur, à l'état des joueurs
+et au déroulement d'une partie. Nous avons donc introduit plusieurs mécanismes
+de synchronisation adaptés à chaque niveau : verrou explicite dans
+\texttt{ClientSession}, verrou de cycle de vie dans \texttt{GameServer},
+méthodes synchronisées dans \texttt{GameSession} et verrou dédié dans
+\texttt{PlayerSession}.
 
-Dans la version améliorée de cette fonctionnalité, l'état de connexion du client
-a été protégé par un verrou dédié, afin de sérialiser les accès à
-\underline{\texttt{socket}}, \underline{\texttt{in}},
-\underline{\texttt{out}}, \underline{\texttt{connected}} et
-\underline{\texttt{currentServer}}. Ce verrou évite qu'un thread d'écoute ferme
-ou lise la connexion pendant qu'un autre thread tente simultanément d'envoyer un
-message ou d'interroger l'état courant de la session. Du côté serveur, nous
-avons renforcé la sûreté d'exécution en protégeant les structures partagées et
-les opérations de cycle de vie : le registre central
-\underline{\texttt{GameRegistry}} doit manipuler les collections de joueurs et
-de sessions de manière atomique, tandis que la logique des parties dans
-\underline{\texttt{GameSession}} doit empêcher qu'un même tour soit joué deux
-fois en parallèle. De même, \underline{\texttt{PlayerSession}} centralise l'état
-individuel des joueurs et leurs statistiques ; ces données doivent donc rester
-cohérentes malgré des accès depuis plusieurs threads. Le rôle des mutex n'est
-donc pas d'ajouter une nouvelle fonctionnalité visible, mais de garantir que
-toutes les fonctionnalités réseau précédemment décrites restent correctes, même
-en environnement multi-thread.
+\medskip
+\noindent\textbf{Protection de la connexion côté client}
+
+{\small
+    \begin{minted}[frame=single]{java}
+private final ReentrantLock connectionLock = new ReentrantLock();
+
+public void connect(String host, int port) {
+  connectionLock.lock();
+  try {
+    if (connected) {
+      return;
+    }
+    socket = new Socket(host, port);
+    ...
+    connected = true;
+    currentServer = host + ":" + port;
+    mode = ClientMode.CONNECTED;
+  } finally {
+    connectionLock.unlock();
+  }
+}
+
+public void send(String message) {
+  connectionLock.lock();
+  try {
+    if (connected && out != null) {
+      out.println(message);
+    }
+  } finally {
+    connectionLock.unlock();
+  }
+}
+    \end{minted}
+}
+
+Ce verrou sérialise les accès à l'état de connexion et empêche par exemple
+qu'un message soit envoyé pendant qu'un autre thread ferme le socket.
+
+\medskip
+\noindent\textbf{Protection du cycle de vie du serveur}
+
+{\small
+    \begin{minted}[frame=single]{java}
+private final ReentrantLock lifecycleLock = new ReentrantLock();
+
+public void start() throws IOException {
+  lifecycleLock.lock();
+  try {
+    if (running) {
+      return;
+    }
+    serverSocket = new ServerSocket(tcpPort);
+    running = true;
+  } finally {
+    lifecycleLock.unlock();
+  }
+}
+
+public void stop() {
+  lifecycleLock.lock();
+  try {
+    if (!running) {
+      return;
+    }
+    running = false;
+  } finally {
+    lifecycleLock.unlock();
+  }
+}
+    \end{minted}
+}
+
+Ce verrou rend \texttt{start()} et \texttt{stop()} mutuellement exclusifs et
+évite un double démarrage, une double fermeture du socket ou une lecture
+incohérente de l'état \texttt{running}.
+
+\medskip
+\noindent\textbf{Protection d'une session de jeu}
+
+{\small
+    \begin{minted}[frame=single]{java}
+public synchronized String handleMove(PlayerSession sender, String moveArgs) {
+  if (!active) {
+    return "ERROR: Session is no longer active.";
+  }
+
+  PlayerSession expected = players.get(currentTurnIndex);
+  if (!expected.getId().equals(sender.getId())) {
+    return "ERROR: Not your turn.";
+  }
+
+  controller.executeMove(...);
+  currentTurnIndex = (currentTurnIndex + 1) % players.size();
+  return null;
+}
+
+public synchronized void end(String winnerId) {
+  if (!active) {
+    return;
+  }
+  active = false;
+  ...
+}
+    \end{minted}
+}
+
+La synchronisation de \texttt{handleMove()} et \texttt{end()} garantit qu'une
+même partie ne peut pas être modifiée simultanément par plusieurs threads
+clients.
+
+\medskip
+\noindent\textbf{Protection de l'état d'un joueur}
+
+{\small
+    \begin{minted}[frame=single]{java}
+private final ReentrantLock playerLock = new ReentrantLock();
+
+public Status getStatus() {
+  playerLock.lock();
+  try {
+    return status;
+  } finally {
+    playerLock.unlock();
+  }
+}
+
+public void setStatus(Status status) {
+  playerLock.lock();
+  try {
+    this.status = status;
+  } finally {
+    playerLock.unlock();
+  }
+}
+    \end{minted}
+}
+
+Le verrou associé à \texttt{PlayerSession} protège les changements d'état et
+les statistiques, ce qui évite des incohérences lorsqu'un joueur passe de
+\texttt{IDLE} à \texttt{AWAY}, reçoit une invitation ou termine une partie.
 
 \subsubsection{Bilan de la fonctionnalité}
 

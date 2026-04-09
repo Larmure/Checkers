@@ -1,0 +1,30 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kd}{private}\PYG{+w}{ }\PYG{k+kd}{final}\PYG{+w}{ }\PYG{n}{ReentrantLock}\PYG{+w}{ }\PYG{n}{connectionLock}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{new}\PYG{+w}{ }\PYG{n}{ReentrantLock}\PYG{p}{(}\PYG{p}{)}\PYG{p}{;}
+
+\PYG{k+kd}{public}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{connect}\PYG{p}{(}\PYG{n}{String}\PYG{+w}{ }\PYG{n}{host}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{port}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n}{connectionLock}\PYG{p}{.}\PYG{n+na}{lock}\PYG{p}{(}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{  }\PYG{k}{try}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{connected}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{      }\PYG{k}{return}\PYG{p}{;}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{n}{socket}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{new}\PYG{+w}{ }\PYG{n}{Socket}\PYG{p}{(}\PYG{n}{host}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{port}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{    }\PYG{p}{.}\PYG{p}{.}\PYG{p}{.}
+\PYG{+w}{    }\PYG{n}{connected}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k+kc}{true}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{currentServer}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{host}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{:}\PYG{l+s}{\PYGZdq{}}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{port}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{mode}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{ClientMode}\PYG{p}{.}\PYG{n+na}{CONNECTED}\PYG{p}{;}
+\PYG{+w}{  }\PYG{p}{\PYGZcb{}}\PYG{+w}{ }\PYG{k}{finally}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{n}{connectionLock}\PYG{p}{.}\PYG{n+na}{unlock}\PYG{p}{(}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{  }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k+kd}{public}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{send}\PYG{p}{(}\PYG{n}{String}\PYG{+w}{ }\PYG{n}{message}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{n}{connectionLock}\PYG{p}{.}\PYG{n+na}{lock}\PYG{p}{(}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{  }\PYG{k}{try}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{connected}\PYG{+w}{ }\PYG{o}{\PYGZam{}}\PYG{o}{\PYGZam{}}\PYG{+w}{ }\PYG{n}{out}\PYG{+w}{ }\PYG{o}{!}\PYG{o}{=}\PYG{+w}{ }\PYG{k+kc}{null}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{      }\PYG{n}{out}\PYG{p}{.}\PYG{n+na}{println}\PYG{p}{(}\PYG{n}{message}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{  }\PYG{p}{\PYGZcb{}}\PYG{+w}{ }\PYG{k}{finally}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{n}{connectionLock}\PYG{p}{.}\PYG{n+na}{unlock}\PYG{p}{(}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{  }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}
