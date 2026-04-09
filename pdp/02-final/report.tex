@@ -1165,6 +1165,11 @@ immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
 permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
 l'indépendance des états de parties concurrentes.
 
+
+Pour une description plus détaillée du rôle de chaque classe et de leur
+articulation dans l'architecture réseau, on pourra se référer à la
+section~\ref{sec:archi-serveur-detail}.
+
 \subsection{Module Intelligence Artificielle}
 \label{sec:ai}
 
@@ -1622,7 +1627,7 @@ void testEvaluateMlCalculation(@TempDir Path tempDir) throws Exception {
 \end{minted}
 }
 
-\subsection*{F39 : Intégration du réseau, des interfaces et de la synchronisation}
+\subsection{F39 : Intégration du réseau, des interfaces et de la synchronisation}
 
 \subsubsection{Objectif général de la fonctionnalité}
 
@@ -1723,25 +1728,6 @@ commandes purement clientes.
 Les transitions entre ces états sont gérées dans \texttt{ClientSession} via des méthodes comme
 \texttt{enterServerMode()}, \texttt{exitServerMode()} et \texttt{getMode()}.
 
-    {\small
-\begin{minted}[frame=single]{java}
-public void enterServerMode() {
-  mode = ClientMode.SERVER;
-  System.out.println(
-      "[mode] Now in SERVER mode. Client commands are disabled.\n"
-          + "       Use 'server stop' to return to local mode.");
-}
-
-public void exitServerMode() {
-  mode = ClientMode.LOCAL;
-  System.out.println("[mode] Server stopped. Back to LOCAL mode.");
-}
-
-public ClientMode getMode() {
-  return mode;
-}
-\end{minted}
-}
 
 \subsubsection{Commandes réseau et commandes d'administration ajoutées}
 
@@ -1781,6 +1767,7 @@ Les commandes saisies par l'utilisateur passent par
 localement, transmises au serveur ou bloquées selon le mode courant.
 
 \subsubsection{Architecture serveur et isolation des sessions de jeu}
+\label{sec:archi-serveur-detail}
 
 Cette partie décrit deux niveaux complémentaires de l'architecture réseau :
 le serveur global, qui gère les connexions et les sessions, et les sessions de
