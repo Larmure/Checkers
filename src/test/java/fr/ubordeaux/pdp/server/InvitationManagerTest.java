@@ -1,11 +1,12 @@
 package fr.ubordeaux.pdp.server;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class InvitationManagerTest {
 
@@ -40,7 +41,9 @@ class InvitationManagerTest {
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
-    assertTrue(result.error.contains("not found"));
+    assertEquals(
+        Internationalization.get("server.invitation.player_not_found", "charlie"),
+        result.error);
   }
 
   @Test
@@ -50,7 +53,9 @@ class InvitationManagerTest {
     InvitationManager.CreateResult result = manager.createInvitation(alice, "bob", registry);
 
     assertFalse(result.isSuccess());
-    assertTrue(result.error.contains("away"));
+    assertEquals(
+        Internationalization.get("server.invitation.player_away", "bob"),
+        result.error);
   }
 
   @Test
@@ -58,7 +63,9 @@ class InvitationManagerTest {
     InvitationManager.CreateResult result = manager.createInvitation(alice, "alice", registry);
 
     assertFalse(result.isSuccess());
-    assertTrue(result.error.contains("cannot invite yourself"));
+    assertEquals(
+        Internationalization.get("server.invitation.cannot_invite_self"),
+        result.error);
   }
 
   @Test
@@ -68,7 +75,9 @@ class InvitationManagerTest {
 
     assertTrue(first.isSuccess());
     assertFalse(second.isSuccess());
-    assertTrue(second.error.contains("already in a game"));
+    assertEquals(
+        Internationalization.get("server.invitation.player_already_ingame", "bob"),
+        second.error);
   }
 
   @Test
@@ -88,7 +97,9 @@ class InvitationManagerTest {
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
-    assertTrue(result.error.contains("No pending invitation"));
+    assertEquals(
+        Internationalization.get("server.invitation.accept.none_found"),
+        result.error);
   }
 
   @Test
@@ -107,6 +118,9 @@ class InvitationManagerTest {
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
+    assertEquals(
+        Internationalization.get("server.invitation.decline.none_found"),
+        result.error);
   }
 
   @Test
@@ -125,6 +139,9 @@ class InvitationManagerTest {
 
     assertFalse(result.isSuccess());
     assertNull(result.invitation);
+    assertEquals(
+        Internationalization.get("server.invitation.cancel.none_found"),
+        result.error);
   }
 
   @Test

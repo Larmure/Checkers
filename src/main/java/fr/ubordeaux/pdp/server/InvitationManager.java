@@ -1,5 +1,6 @@
 package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class InvitationManager {
    *                       Receives the expired invitation and the registry.
    */
   public void startSweeper(GameRegistry registry,
-      BiConsumer<Invitation, GameRegistry> expiryCallback) {
+                           BiConsumer<Invitation, GameRegistry> expiryCallback) {
     scheduler.scheduleAtFixedRate(
         () -> sweepExpired(registry, expiryCallback),
         SWEEP_PERIOD_SECONDS, SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
@@ -83,35 +84,35 @@ public class InvitationManager {
     PlayerSession toPlayer = registry.getPlayer(toPlayerId);
 
     if (toPlayer == null) {
-      return CreateResult.error("Player '" + toPlayerId + "' not found.");
+      return CreateResult.error(
+          Internationalization.get("server.invitation.player_not_found", toPlayerId));
     }
     if (toPlayer.getStatus() == PlayerSession.Status.AWAY) {
       return CreateResult.error(
-          "Player '" + toPlayerId + "' is away and cannot receive invitations.");
+          Internationalization.get("server.invitation.player_away", toPlayerId));
     }
     if (!toPlayer.isIdle()) {
-      return CreateResult.error("Player '" + toPlayerId + "' is already in a game.");
+      return CreateResult.error(
+          Internationalization.get("server.invitation.player_already_ingame", toPlayerId));
     }
     if (fromPlayer.getId().equals(toPlayerId)) {
-      return CreateResult.error("You cannot invite yourself.");
+      return CreateResult.error(
+          Internationalization.get("server.invitation.cannot_invite_self"));
     }
 
-    // Check for an existing pending invitation between this pair (either direction)
     boolean duplicate = invitations.values().stream()
         .anyMatch(inv -> inv.isPending()
             && inv.getFromPlayerId().equals(fromPlayer.getId())
             && inv.getToPlayerId().equals(toPlayerId));
     if (duplicate) {
       return CreateResult.error(
-          "A pending invitation to '" + toPlayerId + "' already exists. "
-              + "Use 'cancel' to withdraw it first.");
+          Internationalization.get("server.invitation.duplicate_pending", toPlayerId));
     }
 
     String id = "INV-" + ID_COUNTER.getAndIncrement();
     Invitation invitation = new Invitation(id, fromPlayer.getId(), toPlayerId);
     invitations.put(id, invitation);
 
-    // Transition the invitee to WAITGAME status
     toPlayer.setStatus(PlayerSession.Status.WAITGAME);
 
     return CreateResult.success(invitation);
@@ -127,12 +128,13 @@ public class InvitationManager {
     Invitation inv = findPendingTo(acceptingPlayerId);
 
     if (inv == null) {
-      return AcceptResult.error("No pending invitation found for you. "
-          + "Wait for another player to invite you with 'new <your_id>'.");
+      return AcceptResult.error(
+          Internationalization.get("server.invitation.accept.none_found"));
     }
     if (inv.isExpired()) {
       inv.markExpired();
-      return AcceptResult.error("That invitation has already expired.");
+      return AcceptResult.error(
+          Internationalization.get("server.invitation.already_expired"));
     }
 
     inv.markAccepted();
@@ -149,7 +151,8 @@ public class InvitationManager {
     Invitation inv = findPendingTo(decliningPlayerId);
 
     if (inv == null) {
-      return DeclineResult.error("No pending invitation found for you.");
+      return DeclineResult.error(
+          Internationalization.get("server.invitation.decline.none_found"));
     }
 
     inv.markDeclined();
@@ -166,7 +169,8 @@ public class InvitationManager {
     Invitation inv = findPendingFrom(cancellingPlayerId);
 
     if (inv == null) {
-      return CancelResult.error("You have no pending outgoing invitation to cancel.");
+      return CancelResult.error(
+          Internationalization.get("server.invitation.cancel.none_found"));
     }
 
     inv.markCancelled();
@@ -216,11 +220,10 @@ public class InvitationManager {
    * Marks all pending-but-expired invitations as expired and fires the callback.
    */
   private void sweepExpired(GameRegistry registry,
-      BiConsumer<Invitation, GameRegistry> expiryCallback) {
+                            BiConsumer<Invitation, GameRegistry> expiryCallback) {
     invitations.values().forEach(inv -> {
       if (inv.getStatus() == Invitation.InvitationStatus.PENDING && inv.isExpired()) {
         inv.markExpired();
-        // Restore invitee to IDLE
         PlayerSession invitee = registry.getPlayer(inv.getToPlayerId());
         if (invitee != null && invitee.getStatus() == PlayerSession.Status.WAITGAME) {
           invitee.setStatus(PlayerSession.Status.IDLE);
@@ -229,10 +232,6 @@ public class InvitationManager {
       }
     });
   }
-
-  // -------------------------------------------------------------------------
-  // Result value objects (simple sealed alternatives to exceptions)
-  // -------------------------------------------------------------------------
 
   /** Result of {@link #createInvitation}. */
   public static final class CreateResult {

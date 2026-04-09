@@ -3,6 +3,7 @@ package fr.ubordeaux.pdp.server;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
@@ -130,13 +131,21 @@ class PlayerSessionTest {
     PlayerSession session = new PlayerSession("p1", "Daniel", out);
     String text = session.toString();
 
-    assertTrue(text.contains("ID       : p1"));
-    assertTrue(text.contains("Name     : Daniel"));
-    assertTrue(text.contains("Status   : idle"));
-    assertTrue(text.contains("Games    : 0"));
-    assertTrue(text.contains("Wins     : 0"));
-    assertTrue(text.contains("Losses   : 0"));
-    assertTrue(text.contains("Draws    : 0"));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.id"), "p1")));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.name"), "Daniel")));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.status"),
+        Internationalization.get("server.player.status.idle"))));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.games"), 0)));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.wins"), 0)));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.losses"), 0)));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.draws"), 0)));
   }
 
   @Test
@@ -150,12 +159,20 @@ class PlayerSessionTest {
 
     String text = session.toString();
 
-    assertTrue(text.contains("ID       : p1"));
-    assertTrue(text.contains("Name     : Daniel"));
-    assertTrue(text.contains("Status   : ingame"));
-    assertTrue(text.contains("Games    : 2"));
-    assertTrue(text.contains("Wins     : 1"));
-    assertTrue(text.contains("Losses   : 0"));
-    assertTrue(text.contains("Draws    : 1"));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.id"), "p1")));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.name"), "Daniel")));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.status"),
+        Internationalization.get("server.player.status.ingame"))));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.games"), 2)));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.wins"), 1)));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.losses"), 0)));
+    assertTrue(text.contains(String.format(
+        Internationalization.get("server.player.line.draws"), 1)));
   }
 }

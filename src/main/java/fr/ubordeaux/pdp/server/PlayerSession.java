@@ -1,5 +1,6 @@
 package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.io.PrintWriter;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -308,17 +309,25 @@ public class PlayerSession {
     playerLock.lock();
     try {
       return String.format(
-          "ID       : %s%n"
-              + "Name     : %s%n"
-              + "Status   : %s%n"
-              + "Games    : %d%n"
-              + "Wins     : %d%n"
-              + "Losses   : %d%n"
-              + "Draws    : %d",
-          id, name, status.name().toLowerCase(),
-          gamesPlayed, wins, losses, draws);
+          Internationalization.get("server.player.format"),
+          id,
+          name,
+          getLocalizedStatus(status),
+          gamesPlayed,
+          wins,
+          losses,
+          draws);
     } finally {
       playerLock.unlock();
     }
+  }
+
+  private String getLocalizedStatus(Status status) {
+    return switch (status) {
+      case IDLE -> Internationalization.get("server.player.status.idle");
+      case AWAY -> Internationalization.get("server.player.status.away");
+      case WAITGAME -> Internationalization.get("server.player.status.waitgame");
+      case INGAME -> Internationalization.get("server.player.status.ingame");
+    };
   }
 }
