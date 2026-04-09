@@ -1923,157 +1923,48 @@ l’utilisateur.
 
 \subsubsection{Gestion de la concurrence et apport des mutex}
 
-L'introduction du réseau a rendu nécessaire la protection de plusieurs sections
-critiques. Côté client, il fallait éviter qu'un thread d'écoute et un thread
-d'envoi manipulent simultanément la même connexion TCP. Côté serveur, il fallait
-empêcher des accès concurrents au cycle de vie du serveur, à l'état des joueurs
-et au déroulement d'une partie. Nous avons donc introduit plusieurs mécanismes
-de synchronisation adaptés à chaque niveau : verrou explicite dans
-\texttt{ClientSession}, verrou de cycle de vie dans \texttt{GameServer},
-méthodes synchronisées dans \texttt{GameSession} et verrou dédié dans
-\texttt{PlayerSession}.
+L'introduction du réseau a rendu nécessaire la protection de plusieurs ressources
+partagées, afin d'éviter les accès concurrents incohérents entre le client et le
+serveur. Nous avons donc introduit des mutex et des sections synchronisées dans
+les classes modifiées, de manière à garantir qu'une opération critique soit
+traitée de façon exclusive avant qu'une autre ne puisse intervenir sur la même
+ressource. Le principe général adopté dans notre architecture peut être résumé
+par l'algorithme suivant.
 
-\medskip
-\noindent\textbf{Protection de la connexion côté client}
 
-{\small
-    \begin{minted}[frame=single]{java}
-private final ReentrantLock connectionLock = new ReentrantLock();
+    {\small
+\begin{minted}[frame=single]{text}
+Algorithme ProtectionParMutex
 
-public void connect(String host, int port) {
-  connectionLock.lock();
-  try {
-    if (connected) {
-      return;
-    }
-    socket = new Socket(host, port);
-    ...
-    connected = true;
-    currentServer = host + ":" + port;
-    mode = ClientMode.CONNECTED;
-  } finally {
-    connectionLock.unlock();
-  }
+Pour chaque ressource partagée faire
+
+    si ressource = connexion client alors
+        lock(connectionLock)
+        effectuer connect / send / disconnect
+        unlock(connectionLock)
+    fin si
+
+    si ressource = cycle de vie du serveur alors
+        lock(lifecycleLock)
+        effectuer start / stop
+        unlock(lifecycleLock)
+    fin si
+
+    si ressource = session de jeu alors
+        entrer dans section synchronisée
+        traiter handleMove / end
+        sortir de la section synchronisée
+    fin si
+
+    si ressource = état d'un joueur alors
+        lock(playerLock)
+        lire ou modifier status et statistiques
+        unlock(playerLock)
+    fin si
+
+FinPour
+\end{minted}
 }
-
-public void send(String message) {
-  connectionLock.lock();
-  try {
-    if (connected && out != null) {
-      out.println(message);
-    }
-  } finally {
-    connectionLock.unlock();
-  }
-}
-    \end{minted}
-}
-
-Ce verrou sérialise les accès à l'état de connexion et empêche par exemple
-qu'un message soit envoyé pendant qu'un autre thread ferme le socket.
-
-\medskip
-\noindent\textbf{Protection du cycle de vie du serveur}
-
-{\small
-    \begin{minted}[frame=single]{java}
-private final ReentrantLock lifecycleLock = new ReentrantLock();
-
-public void start() throws IOException {
-  lifecycleLock.lock();
-  try {
-    if (running) {
-      return;
-    }
-    serverSocket = new ServerSocket(tcpPort);
-    running = true;
-  } finally {
-    lifecycleLock.unlock();
-  }
-}
-
-public void stop() {
-  lifecycleLock.lock();
-  try {
-    if (!running) {
-      return;
-    }
-    running = false;
-  } finally {
-    lifecycleLock.unlock();
-  }
-}
-    \end{minted}
-}
-
-Ce verrou rend \texttt{start()} et \texttt{stop()} mutuellement exclusifs et
-évite un double démarrage, une double fermeture du socket ou une lecture
-incohérente de l'état \texttt{running}.
-
-\medskip
-\noindent\textbf{Protection d'une session de jeu}
-
-{\small
-    \begin{minted}[frame=single]{java}
-public synchronized String handleMove(PlayerSession sender, String moveArgs) {
-  if (!active) {
-    return "ERROR: Session is no longer active.";
-  }
-
-  PlayerSession expected = players.get(currentTurnIndex);
-  if (!expected.getId().equals(sender.getId())) {
-    return "ERROR: Not your turn.";
-  }
-
-  controller.executeMove(...);
-  currentTurnIndex = (currentTurnIndex + 1) % players.size();
-  return null;
-}
-
-public synchronized void end(String winnerId) {
-  if (!active) {
-    return;
-  }
-  active = false;
-  ...
-}
-    \end{minted}
-}
-
-La synchronisation de \texttt{handleMove()} et \texttt{end()} garantit qu'une
-même partie ne peut pas être modifiée simultanément par plusieurs threads
-clients.
-
-\medskip
-\noindent\textbf{Protection de l'état d'un joueur}
-
-{\small
-    \begin{minted}[frame=single]{java}
-private final ReentrantLock playerLock = new ReentrantLock();
-
-public Status getStatus() {
-  playerLock.lock();
-  try {
-    return status;
-  } finally {
-    playerLock.unlock();
-  }
-}
-
-public void setStatus(Status status) {
-  playerLock.lock();
-  try {
-    this.status = status;
-  } finally {
-    playerLock.unlock();
-  }
-}
-    \end{minted}
-}
-
-Le verrou associé à \texttt{PlayerSession} protège les changements d'état et
-les statistiques, ce qui évite des incohérences lorsqu'un joueur passe de
-\texttt{IDLE} à \texttt{AWAY}, reçoit une invitation ou termine une partie.
 
 \subsubsection{Bilan de la fonctionnalité}
 
