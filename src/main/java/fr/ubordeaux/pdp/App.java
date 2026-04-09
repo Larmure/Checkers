@@ -265,6 +265,14 @@ public class App {
     contest = configManager.isContest();
     size = configManager.getSize();
     debug = configManager.isDebug();
+    whiteAi = configManager.isWhiteAi();
+    blackAi = configManager.isBlackAi();
+    aiTime = configManager.getAiTime();
+    whiteAiMode = configManager.getWhiteAiMode();
+    blackAiMode = configManager.getBlackAiMode();
+    aiDepth = configManager.getAiDepth();
+    selectionMode = configManager.getSelectionMode();
+    minimaxScoring = configManager.getMinimaxScoring();
     startupSaveFile = null;
 
     // Options definition

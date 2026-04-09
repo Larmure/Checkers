@@ -80,7 +80,6 @@ public class ConfigManagerTest {
         "pause = P",
         "hint = H"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -113,7 +112,6 @@ public class ConfigManagerTest {
         "size = 10",
         "debug = true"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -140,7 +138,6 @@ public class ConfigManagerTest {
         "size = 10",
         "debug = ???"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -163,7 +160,6 @@ public class ConfigManagerTest {
         "size = 9",
         "debug = true"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -186,7 +182,6 @@ public class ConfigManagerTest {
         "size = abc",
         "debug = true"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -204,7 +199,6 @@ public class ConfigManagerTest {
         "[defaults]",
         "size = 12"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -267,7 +261,6 @@ public class ConfigManagerTest {
         "[other]",
         "value = test"
     ));
-
     ConfigManager config = new ConfigManager();
     config.setShortcut("new-game", "CTRL+N");
     config.setShortcut("load-game", "CTRL+L");
@@ -315,7 +308,6 @@ public class ConfigManagerTest {
         "size = 8",
         "debug = false"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -343,7 +335,6 @@ public class ConfigManagerTest {
         "[shortcuts]",
         "new-game = CTRL+N"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -363,7 +354,6 @@ public class ConfigManagerTest {
         "blitz = false",
         "size = 10"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -390,7 +380,6 @@ public class ConfigManagerTest {
         "size = 10",
         "debug = false"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -414,7 +403,6 @@ public class ConfigManagerTest {
         "size = 8",
         "debug = true"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -442,7 +430,6 @@ public class ConfigManagerTest {
         "this line is invalid",
         "quit = CTRL+Q"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
@@ -480,12 +467,158 @@ public class ConfigManagerTest {
         "weird-key = XXX",
         "quit = CTRL+Q"
     ));
-
     ConfigManager config = new ConfigManager();
     config.load();
 
     assertEquals("CTRL+N", config.getShortcut("new-game"));
     assertEquals("CTRL+Q", config.getShortcut("quit"));
     assertNull(config.getShortcut("weird-key"));
+  }
+
+  @Test
+  public void testLoadReadsAiOptionsCorrectly() throws IOException {
+    Files.write(configFile, List.of(
+        "[defaults]",
+        "verbose = false",
+        "blitz = false",
+        "timeout = 30",
+        "contest = false",
+        "size = 8",
+        "debug = false",
+        "white-ai = true",
+        "black-ai = true",
+        "ai-time = 10",
+        "white-ai-mode = alphabeta",
+        "black-ai-mode = mcts",
+        "ai-depth = 7",
+        "ai-selection-mode = ML",
+        "minimax-scoring = advanced"
+    ));
+    ConfigManager config = new ConfigManager();
+    config.load();
+
+    assertTrue(config.isWhiteAi());
+    assertTrue(config.isBlackAi());
+    assertEquals(10000L, config.getAiTime()); // 10 seconds -> 10000ms
+    assertEquals("alphabeta", config.getWhiteAiMode());
+    assertEquals("mcts", config.getBlackAiMode());
+    assertEquals(7, config.getAiDepth());
+    assertEquals("ML", config.getSelectionMode().name());
+    assertEquals("advanced", config.getMinimaxScoring());
+  }
+
+  @Test
+  public void testLoadUsesDefaultsForMissingAiOptions() throws IOException {
+    Files.write(configFile, List.of(
+        "[defaults]",
+        "verbose = false",
+        "blitz = false",
+        "timeout = 30",
+        "contest = false",
+        "size = 8",
+        "debug = false"
+    ));
+    ConfigManager config = new ConfigManager();
+    config.load();
+
+    assertFalse(config.isWhiteAi());
+    assertFalse(config.isBlackAi());
+    assertEquals(5000L, config.getAiTime()); // DEFAULT_MAX_TIME_MS = 5000ms
+    assertEquals("minimax", config.getWhiteAiMode());
+    assertEquals("minimax", config.getBlackAiMode());
+    assertEquals(5, config.getAiDepth()); // DEFAULT_DEPTH = 5
+    assertEquals("UCT", config.getSelectionMode().name()); // DEFAULT_SELECTION_MODE
+    assertEquals("max", config.getMinimaxScoring());
+  }
+
+  @Test
+  public void testLoadFallsBackForInvalidAiBooleans() throws IOException {
+    Files.write(configFile, List.of(
+        "[defaults]",
+        "verbose = false",
+        "blitz = false",
+        "timeout = 30",
+        "contest = false",
+        "size = 8",
+        "debug = false",
+        "white-ai = maybe",
+        "black-ai = nope"
+    ));
+    ConfigManager config = new ConfigManager();
+    config.load();
+
+    assertFalse(config.isWhiteAi());
+    assertFalse(config.isBlackAi());
+  }
+
+  @Test
+  public void testLoadFallsBackForInvalidAiTime() throws IOException {
+    Files.write(configFile, List.of(
+        "[defaults]",
+        "verbose = false",
+        "blitz = false",
+        "timeout = 30",
+        "contest = false",
+        "size = 8",
+        "debug = false",
+        "ai-time = abc"
+    ));
+    ConfigManager config = new ConfigManager();
+    config.load();
+
+    assertEquals(5000L, config.getAiTime()); // Falls back to DEFAULT
+  }
+
+  @Test
+  public void testLoadFallsBackForInvalidAiDepth() throws IOException {
+    Files.write(configFile, List.of(
+        "[defaults]",
+        "verbose = false",
+        "blitz = false",
+        "timeout = 30",
+        "contest = false",
+        "size = 8",
+        "debug = false",
+        "ai-depth = xyz"
+    ));
+    ConfigManager config = new ConfigManager();
+    config.load();
+
+    assertEquals(5, config.getAiDepth()); // Falls back to DEFAULT
+  }
+
+  @Test
+  public void testLoadFallsBackForInvalidSelectionMode() throws IOException {
+    Files.write(configFile, List.of(
+        "[defaults]",
+        "verbose = false",
+        "blitz = false",
+        "timeout = 30",
+        "contest = false",
+        "size = 8",
+        "debug = false",
+        "ai-selection-mode = INVALID"
+    ));
+    ConfigManager config = new ConfigManager();
+    config.load();
+
+    assertEquals("UCT", config.getSelectionMode().name()); // Falls back to DEFAULT
+  }
+
+  @Test
+  public void testCreateDefaultConfigIncludesAiOptions() throws IOException {
+    ConfigManager config = new ConfigManager();
+    config.load();
+
+    assertTrue(Files.exists(configFile));
+    List<String> lines = Files.readAllLines(configFile);
+
+    assertTrue(lines.contains("white-ai = " + Utils.DEFAULT_WHITE_AI));
+    assertTrue(lines.contains("black-ai = " + Utils.DEFAULT_BLACK_AI));
+    assertTrue(lines.contains("ai-time = 5")); // DEFAULT_MAX_TIME_MS / 1000
+    assertTrue(lines.contains("white-ai-mode = " + Utils.DEFAULT_AI_MODE));
+    assertTrue(lines.contains("black-ai-mode = " + Utils.DEFAULT_AI_MODE));
+    assertTrue(lines.contains("ai-depth = 5")); // DEFAULT_DEPTH
+    assertTrue(lines.contains("minimax-scoring = " + Utils.DEFAULT_MINIMAX_SCORING));
   }
 }
