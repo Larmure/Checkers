@@ -77,7 +77,7 @@ public class GameCheckers implements Subject {
     }
 
     // MODE BLITZ
-    if (cfg.isBlitz() == true) {
+    if (cfg.isBlitz()) {
       int timeInSeconds = cfg.getTime() * 60;
 
       this.whitePlayer.setPlayTime(timeInSeconds);
@@ -179,7 +179,7 @@ public class GameCheckers implements Subject {
    */
   public void applyMove(String fromS, String toS, boolean isManoury) {
     Move move = null;
-    int from = -1;
+    int from = 1;
     int to = 1;
     PlayerColor currentColor;
 
