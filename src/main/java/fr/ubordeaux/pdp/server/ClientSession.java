@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -95,12 +96,16 @@ public class ClientSession {
     try {
       if (connected) {
         System.out.println(
-            "Already connected to " + currentServer
-                + ". Type 'quit' to disconnect first.");
+            Internationalization.get(
+                "server.client.already_connected",
+                currentServer));
         return;
       }
 
-      System.out.println("Connecting to " + host + ":" + port + "...");
+      System.out.println(
+          Internationalization.get(
+              "server.client.connecting",
+              host + ":" + port));
 
       Socket newSocket = null;
       BufferedReader newIn = null;
@@ -124,11 +129,17 @@ public class ClientSession {
         guiWindowOpened = false;
         mode = ClientMode.CONNECTED;
 
-        System.out.println("Connected to " + currentServer);
+        System.out.println(
+            Internationalization.get(
+                "server.client.connected",
+                currentServer));
         startListenerThread(newIn);
       } catch (IOException e) {
         closeQuietly(newIn, newOut, newSocket);
-        System.out.println("Connection failed: " + e.getMessage());
+        System.out.println(
+            Internationalization.get(
+                "server.client.connection_failed",
+                e.getMessage()));
       }
     } finally {
       connectionLock.unlock();
@@ -145,7 +156,7 @@ public class ClientSession {
       guiWindowOpened = false;
       mode = ClientMode.LOCAL;
       closeCurrentConnection();
-      System.out.println("Disconnected from server.");
+      System.out.println(Internationalization.get("server.client.disconnected"));
     } finally {
       connectionLock.unlock();
     }
@@ -170,15 +181,13 @@ public class ClientSession {
   /** Switches to {@link ClientMode#SERVER} mode. */
   public void enterServerMode() {
     mode = ClientMode.SERVER;
-    System.out.println(
-        "[mode] Now in SERVER mode. Client commands are disabled.\n"
-            + "       Use 'server stop' to return to local mode.");
+    System.out.println(Internationalization.get("server.client.mode.server"));
   }
 
   /** Returns to {@link ClientMode#LOCAL} mode. */
   public void exitServerMode() {
     mode = ClientMode.LOCAL;
-    System.out.println("[mode] Server stopped. Back to LOCAL mode.");
+    System.out.println(Internationalization.get("server.client.mode.local"));
   }
 
   /**
@@ -296,7 +305,10 @@ public class ClientSession {
     connectionLock.lock();
     try {
       if (connected) {
-        System.out.print("[" + currentServer + "] > ");
+        System.out.print(
+            Internationalization.get(
+                "server.client.prompt.remote",
+                currentServer));
       }
     } finally {
       connectionLock.unlock();
@@ -313,14 +325,15 @@ public class ClientSession {
         return;
       }
 
-      System.out.println("\n[!] Connection closed by server.");
+      System.out.println(
+          "\n" + Internationalization.get("server.client.closed_by_server"));
       connected = false;
       currentServer = null;
       serverRequiresGui = false;
       guiWindowOpened = false;
       mode = ClientMode.LOCAL;
       closeCurrentConnection();
-      System.out.print("[local] > ");
+      System.out.print(Internationalization.get("server.client.prompt.local"));
     } finally {
       connectionLock.unlock();
     }
@@ -343,9 +356,10 @@ public class ClientSession {
    */
   private void handleServerMessage(String message) {
     if ("BYE".equals(message)) {
-      System.out.println("\nServer: " + message);
+      System.out.println(
+          "\n" + Internationalization.get("server.client.server_message", message));
       disconnect();
-      System.out.print("[local] > ");
+      System.out.print(Internationalization.get("server.client.prompt.local"));
       return;
     }
 
@@ -353,12 +367,10 @@ public class ClientSession {
       serverRequiresGui = message.contains("mode=GUI");
       if (serverRequiresGui && !guiMode) {
         System.out.println(
-            "\n[!] Warning: this server is in GUI-only mode "
-                + "but you are using a CLI client.\n"
-                + "    Games will not render graphically. "
-                + "Reconnect with --gui to play properly.");
+            "\n" + Internationalization.get("server.client.warning.gui_only"));
       }
-      System.out.println("\nServer: " + message);
+      System.out.println(
+          "\n" + Internationalization.get("server.client.server_message", message));
       return;
     }
 
@@ -375,54 +387,64 @@ public class ClientSession {
         localController.startNewGame(Configuration.getDefaultConfiguration());
       }
 
-      System.out.println("\nGame started! " + message);
+      System.out.println(
+          "\n" + Internationalization.get("server.client.game_started", message));
       return;
     }
 
     if (message.startsWith("MOVE_OK ")) {
-      applyMoveMessage(message, "MOVE_OK ", "You played: ");
+      applyMoveMessage(message, "MOVE_OK ", "server.client.you_played");
       return;
     }
 
     if (message.startsWith("OPPONENT_MOVE ")) {
-      applyMoveMessage(message, "OPPONENT_MOVE ", "Opponent played: ");
+      applyMoveMessage(message, "OPPONENT_MOVE ", "server.client.opponent_played");
       return;
     }
 
     if (message.startsWith("INVITATION_RECEIVED")) {
-      System.out.println("\n╔══ INVITATION ══════════════════════════════════╗");
-      System.out.println("║  " + message);
-      System.out.println("║  Type 'accept' to accept or 'decline' to refuse.");
-      System.out.println("╚════════════════════════════════════════════════╝");
+      System.out.println("\n" + Internationalization.get("server.client.invitation.top"));
+      System.out.println(
+          Internationalization.get("server.client.invitation.message", message));
+      System.out.println(
+          Internationalization.get("server.client.invitation.actions"));
+      System.out.println(
+          Internationalization.get("server.client.invitation.bottom"));
     } else if (message.startsWith("INVITATION_SENT")) {
       System.out.println(
-          "\n[invitation] Invitation sent. "
-              + message.substring("INVITATION_SENT".length()).trim());
+          "\n" + Internationalization.get(
+              "server.client.invitation.sent",
+              message.substring("INVITATION_SENT".length()).trim()));
       System.out.println(
-          "[invitation] Waiting for a response... (type 'cancel' to withdraw)");
+          Internationalization.get("server.client.invitation.waiting"));
     } else if (message.startsWith("INVITATION_ACCEPTED")) {
       System.out.println(
-          "\n[invitation] Your invitation was accepted! "
-              + message.substring("INVITATION_ACCEPTED".length()).trim());
+          "\n" + Internationalization.get(
+              "server.client.invitation.accepted",
+              message.substring("INVITATION_ACCEPTED".length()).trim()));
     } else if (message.startsWith("INVITATION_DECLINED")) {
       System.out.println(
-          "\n[invitation] "
-              + message.substring("INVITATION_DECLINED".length()).trim()
-              + " declined your invitation.");
+          "\n" + Internationalization.get(
+              "server.client.invitation.declined",
+              message.substring("INVITATION_DECLINED".length()).trim()));
     } else if (message.startsWith("INVITATION_CANCELLED")) {
       System.out.println(
-          "\n[invitation] The invitation was cancelled. "
-              + message.substring("INVITATION_CANCELLED".length()).trim());
+          "\n" + Internationalization.get(
+              "server.client.invitation.cancelled",
+              message.substring("INVITATION_CANCELLED".length()).trim()));
     } else if (message.startsWith("INVITATION_EXPIRED")) {
       System.out.println(
-          "\n[invitation] An invitation expired: "
-              + message.substring("INVITATION_EXPIRED".length()).trim());
+          "\n" + Internationalization.get(
+              "server.client.invitation.expired",
+              message.substring("INVITATION_EXPIRED".length()).trim()));
     } else if (message.startsWith("STATUS_CHANGED")) {
       System.out.println(
-          "\n[status] Your status is now: "
-              + message.substring("STATUS_CHANGED".length()).trim());
+          "\n" + Internationalization.get(
+              "server.client.status_changed",
+              message.substring("STATUS_CHANGED".length()).trim()));
     } else {
-      System.out.println("\nServer: " + message);
+      System.out.println(
+          "\n" + Internationalization.get("server.client.server_message", message));
     }
   }
 
@@ -440,7 +462,7 @@ public class ClientSession {
     GameController localController = controller;
 
     if (parts.length == 2 && localController != null) {
-      System.out.println("\n" + humanPrefix + moveArg);
+      System.out.println("\n" + Internationalization.get(humanPrefix, moveArg));
       try {
         localController.executeMove(
             parts[0].trim(),
@@ -448,10 +470,13 @@ public class ClientSession {
             false);
       } catch (Exception e) {
         System.out.println(
-            "[warning] Could not apply local move: " + e.getMessage());
+            Internationalization.get(
+                "server.client.warning.local_move_failed",
+                e.getMessage()));
       }
     } else {
-      System.out.println("\nServer: " + message);
+      System.out.println(
+          "\n" + Internationalization.get("server.client.server_message", message));
     }
   }
 
@@ -479,7 +504,7 @@ public class ClientSession {
     gui.setController(controller);
     gui.start();
 
-    System.out.println("[GUI] Window opened for network game.");
+    System.out.println(Internationalization.get("server.client.gui_opened"));
   }
 
   /**

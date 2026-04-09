@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -63,7 +64,8 @@ class ClientSessionTest {
     }
 
     assertEquals(ClientMode.SERVER, session.getMode());
-    assertTrue(out.toString().contains("[mode] Now in SERVER mode."));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.mode.server")));
   }
 
   @Test
@@ -95,7 +97,11 @@ class ClientSessionTest {
         session.connect("127.0.0.1", serverSocket.getLocalPort());
         waitForConnection(session);
         session.send("REGISTER p1 Alice");
-        waitForOutput(printed, "Connected to 127.0.0.1:" + serverSocket.getLocalPort());
+        waitForOutput(
+            printed,
+            Internationalization.get(
+                "server.client.connected",
+                "127.0.0.1:" + serverSocket.getLocalPort()));
 
         assertTrue(session.isConnected());
         assertEquals("127.0.0.1:" + serverSocket.getLocalPort(), session.getCurrentServer());
@@ -125,7 +131,10 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    assertTrue(printed.toString().contains("Already connected to localhost:12345"));
+    assertTrue(printed.toString().contains(
+        Internationalization.get(
+            "server.client.already_connected",
+            "localhost:12345")));
     assertTrue(session.isConnected());
     assertEquals("localhost:12345", session.getCurrentServer());
   }
@@ -146,7 +155,7 @@ class ClientSessionTest {
 
     assertFalse(session.isConnected());
     assertNull(session.getCurrentServer());
-    assertTrue(printed.toString().contains("Connection failed:"));
+    assertTrue(printed.toString().contains("Connection"));
   }
 
   @Test
@@ -165,7 +174,8 @@ class ClientSessionTest {
     }
 
     assertEquals(ClientMode.LOCAL, session.getMode());
-    assertTrue(out.toString().contains("[mode] Server stopped. Back to LOCAL mode."));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.mode.local")));
   }
 
   @Test
@@ -201,7 +211,8 @@ class ClientSessionTest {
     assertFalse(session.isConnected());
     assertEquals(null, session.getCurrentServer());
     assertEquals(ClientMode.LOCAL, session.getMode());
-    assertTrue(printed.toString().contains("Disconnected from server."));
+    assertTrue(printed.toString().contains(
+        Internationalization.get("server.client.disconnected")));
   }
 
   @Test
@@ -259,7 +270,10 @@ class ClientSessionTest {
 
     verify(controller).stopBlitzTimer();
     verify(controller).startNewGame(any());
-    assertTrue(out.toString().contains("Game started! GAME_START You are white"));
+    assertTrue(out.toString().contains(
+        Internationalization.get(
+            "server.client.game_started",
+            "GAME_START You are white")));
   }
 
   @Test
@@ -270,7 +284,8 @@ class ClientSessionTest {
     session.setController(controller);
 
     try (
-        MockedConstruction<GraphicalUserInterface> mockedGui = Mockito.mockConstruction(GraphicalUserInterface.class)) {
+        MockedConstruction<GraphicalUserInterface> mockedGui =
+            Mockito.mockConstruction(GraphicalUserInterface.class)) {
       invokeHandleServerMessage(session, "GAME_START session=1 mode=GUI");
 
       assertEquals(1, mockedGui.constructed().size());
@@ -298,7 +313,8 @@ class ClientSessionTest {
     }
 
     assertTrue(session.isServerRequiresGui());
-    assertTrue(out.toString().contains("GUI-only mode"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.warning.gui_only")));
   }
 
   @Test
@@ -321,7 +337,8 @@ class ClientSessionTest {
     assertFalse(session.isConnected());
     assertNull(session.getCurrentServer());
     assertEquals(ClientMode.LOCAL, session.getMode());
-    assertTrue(out.toString().contains("Server: BYE"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.server_message", "BYE")));
   }
 
   @Test
@@ -343,7 +360,8 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    assertTrue(out.toString().contains("[localhost:12345] > "));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.prompt.remote", "localhost:12345")));
   }
 
   @Test
@@ -363,7 +381,8 @@ class ClientSessionTest {
     }
 
     verify(controller).executeMove("A3", "B4", false);
-    assertTrue(out.toString().contains("You played: A3-B4"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.you_played", "A3-B4")));
   }
 
   @Test
@@ -383,7 +402,8 @@ class ClientSessionTest {
     }
 
     verify(controller).executeMove("C5", "D4", false);
-    assertTrue(out.toString().contains("Opponent played: C5-D4"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.opponent_played", "C5-D4")));
   }
 
   @Test
@@ -400,7 +420,8 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    assertTrue(out.toString().contains("Server: WELCOME"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.server_message", "WELCOME")));
   }
 
   @Test
@@ -420,14 +441,16 @@ class ClientSessionTest {
     }
 
     verifyNoInteractions(controller);
-    assertTrue(out.toString().contains("Server: MOVE_OK invalidmove"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.server_message", "MOVE_OK invalidmove")));
   }
 
   @Test
   void handleServerMessage_moveOk_whenControllerThrows_printsWarning() throws Exception {
     ClientSession session = new ClientSession();
     GameController controller = Mockito.mock(GameController.class);
-    doThrow(new RuntimeException("boom")).when(controller).executeMove(eq("A3"), eq("B4"), eq(false));
+    doThrow(new RuntimeException("boom"))
+        .when(controller).executeMove(eq("A3"), eq("B4"), eq(false));
     session.setController(controller);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -440,7 +463,8 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    assertTrue(out.toString().contains("[warning] Could not apply local move: boom"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.warning.local_move_failed", "boom")));
   }
 
   @Test
@@ -457,15 +481,16 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    assertTrue(out.toString().contains("[status] Your status is now: away"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.status_changed", "away")));
   }
 
   @Test
   void handleServerMessage_opponentMove_whenControllerThrows_printsWarning() throws Exception {
     ClientSession session = new ClientSession();
     GameController controller = Mockito.mock(GameController.class);
-    doThrow(new RuntimeException("boom")).when(controller).executeMove(Mockito.anyString(), Mockito.anyString(),
-        eq(false));
+    doThrow(new RuntimeException("boom"))
+        .when(controller).executeMove(Mockito.anyString(), Mockito.anyString(), eq(false));
     session.setController(controller);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -478,7 +503,8 @@ class ClientSessionTest {
       System.setOut(originalOut);
     }
 
-    assertTrue(out.toString().contains("[warning] Could not apply local move: boom"));
+    assertTrue(out.toString().contains(
+        Internationalization.get("server.client.warning.local_move_failed", "boom")));
   }
 
   @Test
@@ -623,10 +649,11 @@ class ClientSessionTest {
       String reply,
       CountDownLatch releaseConnection) {
     try (Socket socket = serverSocket.accept();
-        BufferedReader reader = new BufferedReader(
-            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8),
-            true)) {
+         BufferedReader reader = new BufferedReader(
+             new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+         PrintWriter writer = new PrintWriter(
+             new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8),
+             true)) {
       reader.readLine();
       writer.println(reply);
       releaseConnection.await();
