@@ -125,6 +125,32 @@ Tests (JUnit + headless TestFX):
 mvn test
 ```
 
+AI benchmarks (manual, long-running):
+
+```bash
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest test
+```
+
+Optional runtime tuning:
+
+```bash
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest test \
+	-Dbenchmark.games=20 -Dbenchmark.aiTimeMs=200 \
+	-Dbenchmark.maxPlies=120 -Dbenchmark.minmaxDepth=3 -Dbenchmark.alphabetaDepth=4
+```
+
+Generated benchmark reports are saved to:
+
+- `target/benchmarks/`
+- one file per run (timestamped)
+
+This produces:
+
+- MinMax vs AlphaBeta vs MCTS-UCT (wins/losses/draws)
+- MCTS-UCT vs MCTS-ML (wins/losses/draws)
+
+Note: the MCTS-ML benchmark requires `ml_weights.txt` to be present.
+
 Full verification (tests + PMD + CPD):
 
 ```bash

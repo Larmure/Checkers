@@ -1358,6 +1358,8 @@ while (current != null) {
 
 \paragraph{Guidage par Machine Learning}
 
+Le détail opérationnel de l'entraînement (commande, collecte des données et format des poids) est présenté en annexe, section~\ref{sec:annexe-procedure-entrainement}.
+
 \paragraph{Pipeline d'entraînement du modèle}
 Pour générer les poids (\texttt{mlWeights}) et le biais (\texttt{mlBias}) utilisés par cette fonction, nous avons implémenté un pipeline
  d'apprentissage supervisé autonome dans la classe \texttt{LogisticRegressionTrainer}. L'entraînement s'effectue via l'option en ligne de 
@@ -1946,6 +1948,68 @@ restant fidèle à l'organisation générale du projet.
 
 \section{Revue critique de projet}
 
+\subsection{Benchmark et performances de l'IA}
+
+Afin d'évaluer objectivement l'efficacité de nos différents algorithmes et heuristiques, nous avons mis en place un protocole de test automatisé 
+(via les tests, voir annexe~\ref{sec:annexe-lancement-benchmarks} pour les commandes de lancement). 
+
+\paragraph{Protocole expérimental :}
+Toutes les parties de ce benchmark ont ete jouees sur un plateau standard de 8 x 8. Pour chaque duel, une serie de 12 parties (par defaut) a 
+ete simulee, en alternant l affectation des IA aux couleurs blanc/noir pour lisser l avantage du trait, les blancs commencant toujours. Le temps de réflexion a 
+ été strictement limité à \textbf{250} millisecondes par coup pour chaque agent.
+
+\subsubsection{Résultats globaux}
+
+Le tableau \ref{tab:benchmark-ia} synthétise les taux de victoire, de défaite et de nullité pour les confrontations majeures de notre moteur.
+
+\begin{table}[!ht]
+    \centering
+    \caption{Résultats des affrontements entre les différents agents IA (Série de 12 parties)}
+    \label{tab:benchmark-ia}
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Affiche (IA 1 vs IA 2)} & \textbf{Victoires IA 1} & \textbf{Victoires IA 2} & \textbf{Nuls} & \textbf{Profondeur moy.} \\ \hline
+        MinMax vs AlphaBeta & 50 \% & 50 \% & 0 \% & 3 vs 4 (param.) \\ \hline
+        MCTS-UCT vs MCTS-ML & 100 \% & 0 \% & 0 \% & N/A \\ \hline
+        MinMax vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A \\ \hline
+        AlphaBeta vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Analyse des confrontations}
+
+\paragraph{MinMax vs AlphaBeta :}
+Théoriquement, à profondeur d'exploration égale, MinMax et AlphaBeta renvoient exactement le même coup. Avec une contrainte 
+temporelle très stricte de 250 millisecondes, l'élagage opéré par AlphaBeta lui permet d'atteindre une profondeur moyenne de 
+4 niveaux, contre seulement 3 pour le MinMax classique. De manière surprenante, ce duel se solde par une égalité parfaite (50 \% - 50 \%). 
+Cela s'explique par le fait qu'à cette cadence ultra-rapide, la différence entre une profondeur 3 et 4 n'est pas suffisante pour créer une 
+fracture stratégique décisive sur un plateau $8 \times 8$. Les deux algorithmes souffrent d'un horizon de calcul trop court ("effet d'horizon") 
+pour anticiper les rafles complexes.
+
+\paragraph{MCTS-UCT vs MCTS-ML :}
+Ce duel oppose l'approche statistique classique guidée par la formule UCB1 à notre modèle orienté par les poids issus de l'apprentissage automatique. 
+Les résultats montrent une domination absolue du MCTS-UCT (100 \% de victoires). Cette écrasante victoire confirme l'hypothèse soulevée lors de l'entraînement 
+du modèle : la régression logistique employée est trop basique. En se focalisant sur des statistiques matérielles via un calcul qui ralentit le nombre de 
+simulations par seconde, le mode ML passe à côté des subtilités positionnelles. L'UCT standard s'impose grâce à sa vitesse d'itération brute et sa capacité 
+à explorer naturellement les branches tactiques prometteuses.
+
+\noindent\textit{Note : le modèle de Machine Learning a été entraîné sur un dataset de 50 parties jouées par l'IA UCT classique contre elle-même, ce qui est 
+très limité pour apprendre des patterns complexes.}
+
+
+\paragraph{MinMax vs MCTS-UCT :}
+Cette confrontation met en lumière l'opposition entre une recherche exhaustive (MinMax) et une recherche probabiliste asymétrique (MCTS). Dans le temps 
+imparti de 250 ms, la très faible profondeur atteinte par MinMax (3 coups d'anticipation) le rend complètement aveugle aux tactiques à moyen terme. Le 
+MCTS, en revanche, tire pleinement parti de ce quart de seconde pour effectuer des milliers de simulations aléatoires, lui permettant d'évaluer les 
+positions avec une bien meilleure fiabilité. Cette différence fondamentale de fonctionnement se traduit par un taux de victoire de 100 \% en faveur du MCTS-UCT.
+
+\paragraph{AlphaBeta vs MCTS-UCT :}
+Il s'agit du véritable affrontement de notre moteur sous contrainte de temps réel (cadence Blitz extrême). D'un côté, AlphaBeta peine à dépasser 
+la profondeur 4, ce qui le rend vulnérable dès qu'une combinaison nécessite une lecture plus lointaine. De l'autre, le MCTS-UCT excelle dans l'évaluation
+ stratégique asymétrique. Les résultats finaux (100 \% de victoires pour le MCTS-UCT) démontrent de manière irréfutable qu'avec des budgets de temps 
+ très limités, la flexibilité et la profondeur asymétrique des simulations de Monte Carlo surpassent largement la recherche exhaustive en largeur, 
+ même lorsqu'elle est optimisée par l'élagage $\alpha-\beta$.
 \subsection{Bug}
 
 \subsection{Axes d'amélioration}
@@ -1985,7 +2049,7 @@ restant fidèle à l'organisation générale du projet.
 \endlastfoot
 
 F1 & Lancement du programme & Fait \\ \hline
-F2 & Fichier de configuration & Partiel\\ \hline
+F2 & Fichier de configuration & Fait\\ \hline
 F3 & Internationalisation (i18n) & Partiel \\ \hline
 F4 & Interface en ligne de commande & Fait \\ \hline
 F5 & Mode blitz & Fait \\ \hline
@@ -2026,7 +2090,63 @@ F39 & Serveur multi-clients et gestion de parties & Partiel \\ \hline
 F40 & Système d’invitations et gestion avancée des joueurs & Fait \\ \hline
 \end{longtable} 
 
+\section{Procédure d'entraînement du modèle}
+\label{sec:annexe-procedure-entrainement}
 
+Le modèle de sélection par apprentissage automatique s'appuie sur une phase d'entraînement préalable, indispensable pour générer
+ le fichier de poids exploité par l'algorithme MCTS. Cette phase est automatisée et peut être déclenchée via l'exécutable du projet, avec l'option
+ \texttt{-tr} (pour \textit{train}), suivie du nombre de parties de simulation souhaitées.
+
+\paragraph{Exécution de l'entraînement}
+Pour lancer un cycle d'apprentissage, l'utilisateur doit exécuter la commande suivante depuis le terminal :
+\begin{minted}[frame=single]{bash}
+./checkers -tr 50
+\end{minted}
+Dans cet exemple, le programme lance 50 parties en mode \textit{self-play} (MCTS contre MCTS). La collecte est faite directement dans
+\texttt{LogisticRegressionTrainer} via des objets \texttt{Board}, \texttt{AiPlayer} et \texttt{ManagerUndoRedo}, sans dépendre du rendu GUI.
+
+\paragraph{Processus de collecte et d'optimisation}
+À chaque mouvement effectué lors de ces parties, le système extrait un vecteur de caractéristiques décrivant l'état du plateau, notamment le nombre et le
+ différentiel de pièces. Concrètement, la classe extrait 6 variables : pions blancs, pions noirs, dames blanches, dames noires,
+ différentiel de pions, différentiel de dames. Les parties sont bornées à 100 coups maximum (\texttt{MAX\_MOVES = 100}).
+ Une fois la collecte terminée, \texttt{train()} applique une descente de gradient pendant 1000 \textit{epochs} avec
+ \texttt{learningRate = 0.01}. Les parties nulles sont comptabilisées dans le bilan, mais ne sont pas ajoutées au dataset supervisé
+ (seules les parties avec vainqueur produisent des exemples étiquetés).
+
+Les paramètres optimisés sont ensuite sauvegardés dans \texttt{ml\_weights.txt}
+(première ligne : poids séparés par des virgules, deuxième ligne : biais). Ce fichier est lu ensuite par MCTS lorsque
+le mode de sélection \texttt{ML} est activé (option \texttt{-as ml}).
+
+\section{Lancement des benchmarks}
+\label{sec:annexe-lancement-benchmarks}
+
+Pour exécuter les séries de benchmarks depuis la racine du projet, plusieurs commandes Maven sont à disposition. Ces commandes 
+permettent de cibler spécifiquement les scénarios à évaluer et d'en ajuster finement les paramètres.
+
+\paragraph{Lancer l'intégralité des benchmarks}
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest test
+\end{minted}
+
+\paragraph{Lancer uniquement les duels classiques (MinMax / AlphaBeta / MCTS-UCT)}
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkAiVsAi test
+\end{minted}
+
+\paragraph{Lancer spécifiquement le duel MCTS-UCT contre MCTS-ML}
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMctsUctVsMl test
+\end{minted}
+
+\paragraph{Exécution avec des paramètres personnalisés}
+Il est possible de surcharger les paramètres par défaut en modifiant le nombre de parties, le temps de réflexion alloué ou 
+encore la profondeur de recherche des algorithmes. Voici un exemple d'exécution personnalisée :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest test -Dbenchmark.games=20 -Dbenchmark.aiTimeMs=200 -Dbenchmark.maxPlies=120 -Dbenchmark.minmaxDepth=3 -Dbenchmark.alphabetaDepth=4
+\end{minted}
+
+À l'issue de l'exécution, les statistiques détaillées des duels sont automatiquement affichées dans la sortie standard de Maven.
+ Elles sont également sauvegardées de manière persistante dans le répertoire \texttt{target/benchmarks} sous la forme de fichiers horodatés.
 
 
 \end{document}

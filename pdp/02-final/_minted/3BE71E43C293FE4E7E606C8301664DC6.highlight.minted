@@ -1,7 +1,0 @@
-\begin{MintedVerbatim}[commandchars=\\\{\}]
-\PYG{n+nd}{@DisplayName}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{Default constructor sets exploration constant to sqrt(2)}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
-\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{testDefaultConstructorExplorationConstant}\PYG{p}{(}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
-\PYG{+w}{  }\PYG{n}{Mcts}\PYG{+w}{ }\PYG{n}{mcts}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{new}\PYG{+w}{ }\PYG{n}{Mcts}\PYG{p}{(}\PYG{p}{)}\PYG{p}{;}
-\PYG{+w}{  }\PYG{n}{assertEquals}\PYG{p}{(}\PYG{n}{Mcts}\PYG{p}{.}\PYG{n+na}{DEFAULT\PYGZus{}EXPLORATION}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{mcts}\PYG{p}{.}\PYG{n+na}{explorationConstant}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{1e\PYGZhy{}9}\PYG{p}{)}\PYG{p}{;}
-\PYG{p}{\PYGZcb{}}
-\end{MintedVerbatim}
