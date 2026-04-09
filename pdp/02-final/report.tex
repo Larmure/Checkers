@@ -1608,7 +1608,7 @@ Pour générer les poids (\texttt{mlWeights}) et le biais (\texttt{mlBias}) util
     instanciation, garantissant une séparation propre entre la phase d'entraînement et la phase d'inférence (jeu).
 \end{enumerate}
 
-\paragraph{Bilan de l'approche}
+\subsubsection{Bilan de l'approche}
 Bien évidemment, ce mode de sélection par apprentissage automatique n'a pas démontré de gain significatif en termes de 
 performance ou de qualité de jeu par rapport à l'UCT classique. Cela s'explique par la simplicité de notre modèle : 
 la régression logistique est un modèle linéaire, et nos 6 \textit{features} mathématiques (uniquement basées sur le comptage matériel)
@@ -1619,7 +1619,7 @@ d'entraînement et d'inférence est pleinement fonctionnel, ce qui ouvre la port
 (comme le remplacement de la régression logistique par un réseau de neurones profond évaluant des motifs complexes) pour renforcer drastiquement 
 l'intelligence de notre agent.
 
-\paragraph{Détermination du meilleur coup final}
+\subsubsection{Détermination du meilleur coup final}
 
 À l'épuisement du temps de réflexion imparti, l'arbre cesse de croître. Quelle que soit l'heuristique de sélection utilisée durant la recherche 
 (la formule UCT classique ou les prédictions du modèle de Machine Learning), la décision finale ne se base pas sur ces scores d'évaluation. 
@@ -1629,58 +1629,32 @@ L'IA fait appel à la méthode \texttt{mostVisitedChild()}, qui sélectionne le 
 signifie qu'elle a continuellement été considérée comme la plus prometteuse par l'algorithme, et qu'elle a survécu à un grand nombre de
  simulations face aux meilleures réponses possibles de l'adversaire.
 
-\paragraph{Stratégie de validation et de tests}
+\subsubsection{Stratégie de validation et de tests}
 
-Afin de garantir la robustesse de notre implémentation du MCTS, nous avons développé une série de tests unitaires centralisés dans la classe 
-\texttt{MctsTest}. La première étape de cette validation consiste à vérifier l'intégrité de l'arbre de recherche et de son cycle de vie. Cela 
-passe notamment par le contrôle de l'initialisation des paramètres fondamentaux, comme l'affectation correcte de la constante d'exploration à sa 
-valeur théorique par défaut de $\sqrt{2}$. Nous nous assurons également de la stabilité de l'algorithme face aux cas limites. Par exemple, si l'IA 
-est sollicitée sur un plateau où aucun mouvement légal n'est possible (en toute fin de partie), la méthode de recherche est tenue de retourner une 
-absence de coup sans provoquer la moindre erreur d'exécution. \\
+Afin de garantir la robustesse de notre implémentation du MCTS, nous avons organisé la validation autour de la classe
+\texttt{MctsTest}. Les tests ne cherchent pas à démontrer la supériorité stratégique de l'algorithme, mais à vérifier qu'il se
+comporte correctement dans les situations représentatives et dans les cas limites.
 
-{\small
-\begin{minted}[frame=single]{java}
-@DisplayName("Default constructor sets exploration constant to sqrt(2)")
-void testDefaultConstructorExplorationConstant() {
-  Mcts mcts = new Mcts();
-  assertEquals(Mcts.DEFAULT_EXPLORATION, mcts.explorationConstant, 1e-9);
-}
-\end{minted}
-}
+La première famille de tests vérifie la configuration de base de l'IA. Nous contrôlons que le constructeur par défaut initialise
+bien la constante d'exploration à sa valeur théorique \(\sqrt{2}\), et que les variantes avec paramètres personnalisés
+conservent les valeurs attendues. Nous validons également le rejet des constantes d'exploration non positives, afin de prévenir
+une configuration mathématiquement incohérente dès l'instanciation. \\
 
-Le mode de sélection par apprentissage automatique (\texttt{SelectionMode.ML}) a nécessité une approche de test plus pointue. Étant donné que 
-cette fonctionnalité manipule des classes internes privées, comme les nœuds de l'arbre, et lit des fichiers de poids externes, nous avons fait 
-appel à la réflexion Java pour isoler et éprouver ces composants. Cette technique nous permet de confirmer que la fonction de chargement analyse
- correctement les vecteurs de caractéristiques, tout en gérant proprement les fichiers corrompus via des exceptions contrôlées. De plus, la réflexion
-  nous sert à simuler artificiellement des nœuds en cours de partie pour vérifier que l'algorithme bascule bien sur le moteur d'inférence ML, 
-  au lieu de la formule UCT, lorsque l'option correspondante est activée au lancement.\\
+La deuxième famille de tests couvre le comportement opérationnel de la recherche. Nous vérifions que \texttt{getBestMove(...)}
+retourne effectivement un coup valide lorsque des mouvements sont possibles, et qu'elle renvoie \texttt{null} lorsqu'aucun coup
+légal n'existe. Cette vérification est importante parce qu'elle garantit que l'algorithme reste stable jusqu'aux positions de fin
+de partie, sans lever d'exception ni produire de résultat invalide. \\
 
-{\small
-\begin{minted}[frame=single]{java}
-@DisplayName("Test direct du switch case ML dans select")
-void testSelectOnlyMl() throws Exception {
-  mcts.setSelectionMode(SelectionMode.ML);
-  Object result = selectMethod.invoke(mcts, root, board, undo);
-  assertEquals(child, result, "Le switch doit choisir l'enfant via le mode ML");
-}
-\end{minted}
-}
+La troisième famille se concentre sur le mode de sélection \texttt{ML}. Comme cette branche manipule des éléments internes privés
+et dépend d'un fichier de poids externe, les tests utilisent la réflexion Java pour isoler les points sensibles : chargement des
+poids, gestion des fichiers mal formés, calcul d'une probabilité d'évaluation bornée entre 0 et 1, et sélection correcte du
+nœud enfant lorsque le mode ML est activé. Cette approche permet de valider la chaîne complète, depuis l'entrée des paramètres
+jusqu'à la décision finale de sélection. \\
 
-Enfin, nous contrôlons rigoureusement la cohérence mathématique des calculs qui guident les choix de l'IA. Nos tests s'assurent par exemple que 
-l'évaluation par régression logistique génère systématiquement une probabilité valide, strictement bornée entre 0 et 1, grâce à l'application de 
-la fonction sigmoïde sur les statistiques du plateau. Du côté de l'approche statistique classique, nous validons le mécanisme de convergence de 
-l'UCT en vérifiant que le code attribue bien la priorité maximale (\texttt{Double.MAX\_VALUE}) aux branches non explorées. C'est cette garantie 
-mathématique qui force l'algorithme à évaluer chaque coup légal au moins une fois avant de se concentrer sur l'exploitation des meilleures variantes.
-
-{\small
-\begin{minted}[frame=single]{java}
-@DisplayName("evaluateMl correctly calculates probability with loaded weights")
-void testEvaluateMlCalculation(@TempDir Path tempDir) throws Exception {
-  double probability = (double) evaluateMlMethod.invoke(mcts, childNode, board, undo);
-  assertTrue(probability >= 0.0 && probability <= 1.0);
-}
-\end{minted}
-}
+Enfin, les tests jouent aussi un rôle de garde-fou sur la logique de l'UCT. Ils vérifient notamment que les nœuds encore non
+explorés sont priorisés de manière absolue, ce qui force l'algorithme à tester chaque coup légal au moins une fois avant de se
+concentrer sur l'exploitation des branches les plus prometteuses. Autrement dit, la suite de tests ne se limite pas à des
+vérifications techniques : elle protège directement les invariants qui fondent le comportement attendu du MCTS.
 
 \subsection{F39 : Intégration du réseau, des interfaces et de la synchronisation}
 
@@ -2046,8 +2020,8 @@ Afin d'évaluer objectivement l'efficacité de nos différents algorithmes et he
 
 \paragraph{Protocole expérimental :}
 Toutes les parties de ce benchmark ont ete jouees sur un plateau standard de 8 x 8. Pour chaque duel, une serie de 12 parties (par defaut) a 
-ete simulee, en alternant l affectation des IA aux couleurs blanc/noir pour lisser l avantage du trait, les blancs commencant toujours. Le temps de réflexion a 
- été strictement limité à \textbf{250} millisecondes par coup pour chaque agent.
+ete simulee, en alternant l affectation des IA aux couleurs blanc/noir pour lisser l avantage du trait, les blancs commencant toujours. Le temps de réflexion est
+le même pour tous les agents mais varie en fonction de l'experience.
 
 \subsubsection{Résultats globaux}
 
@@ -2058,13 +2032,17 @@ Le tableau \ref{tab:benchmark-ia} synthétise les taux de victoire, de défaite 
     \caption{Résultats des affrontements entre les différents agents IA (Série de 12 parties)}
     \label{tab:benchmark-ia}
     \renewcommand{\arraystretch}{1.3}
-    \begin{tabular}{|l|c|c|c|c|}
+    \begin{tabular}{|l|c|c|c|c|c|}
         \hline
-        \textbf{Affiche (IA 1 vs IA 2)} & \textbf{Victoires IA 1} & \textbf{Victoires IA 2} & \textbf{Nuls} & \textbf{Profondeur moy.} \\ \hline
-        MinMax vs AlphaBeta & 50 \% & 50 \% & 0 \% & 3 vs 4 (param.) \\ \hline
-        MCTS-UCT vs MCTS-ML & 100 \% & 0 \% & 0 \% & N/A \\ \hline
-        MinMax vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A \\ \hline
-        AlphaBeta vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A \\ \hline
+      \textbf{Affiche (IA 1 vs IA 2)} & \textbf{Victoires IA 1} & \textbf{Victoires IA 2} & \textbf{Nuls} & \textbf{Profondeur} & \textbf{Temps de réflexion} \\ \hline
+      MinMax vs AlphaBeta & 50 \% & 50 \% & 0 \% & 3 vs 4  & 250 ms \\ \hline
+      MCTS-UCT vs MCTS-ML & 100 \% & 0 \% & 0 \% & N/A & 250 ms \\ \hline
+      MinMax vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A & 250 ms \\ \hline
+      AlphaBeta vs MCTS-UCT & 0 \% & 100 \% & 0 \% & N/A & 250 ms \\ \hline
+      MinMax vs MinMax & 0 \% & 100 \% & 0 \% & 3 vs 5  & 250 ms \\ \hline
+      MinMax vs MCTS-UCT & 6 \% & 94 \% & 0 \% & 7 vs N/A  & 500 ms \\ \hline
+      AlphaBeta vs MCTS-UCT & 16.67 \% & 75 \% & 8.33 \% & 7 vs N/A  & 500 ms \\ \hline
+      MinMax vs MCTS-ML & 100 \% & 0 \% & 0 \% & 3 vs N/A  & 250 ms \\ \hline
     \end{tabular}
 \end{table}
 
@@ -2101,6 +2079,31 @@ la profondeur 4, ce qui le rend vulnérable dès qu'une combinaison nécessite u
  stratégique asymétrique. Les résultats finaux (100 \% de victoires pour le MCTS-UCT) démontrent de manière irréfutable qu'avec des budgets de temps 
  très limités, la flexibilité et la profondeur asymétrique des simulations de Monte Carlo surpassent largement la recherche exhaustive en largeur, 
  même lorsqu'elle est optimisée par l'élagage $\alpha-\beta$.
+
+\paragraph{MinMax-d3 vs MinMax-d5 :}
+Ce duel compare deux configurations du même algorithme MinMax, l'une limitée à une profondeur de 3, l'autre à une profondeur de 5. 
+Avec un temps de réflexion de seulement 200 ms. La version à profondeur 5 est systématiquement plus performante que celle à profondeur 3,
+ ce qui confirme que même une augmentation modeste de la profondeur d'exploration peut faire une différence significative dans la qualité 
+ des décisions prises par MinMax, à condition que le temps de calcul le permette.
+
+\paragraph{MinMax-d7 vs MCTS-UCT :}
+Le temps de réflexion a été augmenté à 500 ms mais malgré une profondeur de 7, le MinMax ne parvient pas à rivaliser avec le MCTS-UCT. 
+Cela s'explique par le fait que, même à profondeur 7, 
+MinMax reste limité dans sa capacité à anticiper les rafles complexes et les positions tactiques critiques qui peuvent survenir dans les 
+parties de dames. En revanche, le MCTS-UCT, grâce à sa nature probabiliste et à sa capacité à explorer un grand nombre de positions en
+ peu de temps, continue de surpasser le MinMax, même lorsque ce dernier est configuré pour une profondeur relativement élevée.
+
+\paragraph{AlphaBeta-d7 vs MCTS-UCT :}
+Malgré une profondeur de 7, AlphaBeta ne parvient pas à rivaliser avec le MCTS-UCT, même avec un temps de réflexion de 500 ms. Cela souligne que,
+bien que l'élagage $\alpha-\beta$ permette d'explorer plus profondément que le MinMax classique, il reste fondamentalement limité par sa 
+nature exhaustive. 
+
+\paragraph{MinMax-d3 vs MCTS-ML :}
+Ce duel met en lumière les limites de notre approche de Machine Learning. Malgré une profondeur de 3, le MinMax classique surpasse totalement 
+le MCTS-ML (100 \% de victoires). Cela confirme que le modèle de régression logistique utilisé pour guider les simulations du MCTS n'est pas
+ suffisamment puissant pour capturer les subtilités stratégiques du jeu de dames. En se basant uniquement sur des statistiques matérielles, 
+ il manque des éléments clés de l'évaluation positionnelle, ce qui conduit à des choix de simulation moins pertinents et à une performance 
+ globalement médiocre.
 
 \subsection{Bugs}
 
@@ -2266,6 +2269,37 @@ Il est possible de surcharger les paramètres par défaut en modifiant le nombre
 encore la profondeur de recherche des algorithmes. Voici un exemple d'exécution personnalisée :
 \begin{minted}[frame=single, breaklines=true]{bash}
 mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest test -Dbenchmark.games=20 -Dbenchmark.aiTimeMs=200 -Dbenchmark.maxPlies=120 -Dbenchmark.minmaxDepth=3 -Dbenchmark.alphabetaDepth=4
+\end{minted}
+
+\paragraph{Lancer Minimax vs Minimax avec profondeur différente}
+Nous pouvons également comparer deux configurations de Minimax avec des profondeurs différentes pour évaluer l'impact de 
+la profondeur sur les performances :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMinMaxDepthVsDepth test \
+  -Dbenchmark.minmaxDepthA=3 -Dbenchmark.minmaxDepthB=5 \
+  -Dbenchmark.games=12 -Dbenchmark.aiTimeMs=200 -Dbenchmark.maxPlies=120
+\end{minted}
+
+\paragraph{Lancer uniquement MinMax contre MCTS-UCT}
+Ce test dédié exécute uniquement le duel MinMax vs MCTS-UCT :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMinMaxVsMctsUct test \
+  -Dbenchmark.minmaxDepth=7 -Dbenchmark.games=12 \
+  -Dbenchmark.aiTimeMs=500 -Dbenchmark.maxPlies=120
+\end{minted}
+
+\paragraph{Lancer uniquement AlphaBeta contre MCTS-UCT}
+Ce test dédié exécute uniquement le duel AlphaBeta vs MCTS-UCT :
+\begin{minted}[frame=single, breaklines=true]{bash}
+mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkAlphaBetaVsMctsUct test \
+  -Dbenchmark.alphabetaDepth=7 -Dbenchmark.games=12 \
+  -Dbenchmark.aiTimeMs=500 -Dbenchmark.maxPlies=120
+\end{minted}
+
+\paragraph{Lancer uniquement MinMax contre MCTS-ML}
+\begin{minted}[frame=single, breaklines=true]{bash}
+  mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkMinMaxVsMctsMl test -Dbenchmark.minmaxDepth=3 
+  -Dbenchmark.games=12 -Dbenchmark.aiTimeMs=250 -Dbenchmark.maxPlies=120
 \end{minted}
 
 À l'issue de l'exécution, les statistiques détaillées des duels sont automatiquement affichées dans la sortie standard de Maven.

@@ -37,6 +37,8 @@ class AiBenchmarkTest {
   private static final int DEFAULT_GAMES_PER_DUEL = 12;
   private static final int DEFAULT_AI_TIME_MS = 250;
   private static final int DEFAULT_MINMAX_DEPTH = 3;
+  private static final int DEFAULT_MINMAX_DEPTH_A = 3;
+  private static final int DEFAULT_MINMAX_DEPTH_B = 4;
   private static final int DEFAULT_ALPHABETA_DEPTH = 4;
 
   private static final int MAX_PLIES = intProperty("benchmark.maxPlies", DEFAULT_MAX_PLIES);
@@ -45,6 +47,10 @@ class AiBenchmarkTest {
 
   private static final int MINMAX_DEPTH = intProperty("benchmark.minmaxDepth",
       DEFAULT_MINMAX_DEPTH);
+  private static final int MINMAX_DEPTH_A = intProperty("benchmark.minmaxDepthA",
+      DEFAULT_MINMAX_DEPTH_A);
+  private static final int MINMAX_DEPTH_B = intProperty("benchmark.minmaxDepthB",
+      DEFAULT_MINMAX_DEPTH_B);
   private static final int ALPHABETA_DEPTH = intProperty("benchmark.alphabetaDepth",
       DEFAULT_ALPHABETA_DEPTH);
 
@@ -88,6 +94,94 @@ class AiBenchmarkTest {
 
     assertEquals(GAMES_PER_DUEL, duel.totalGames());
     assertTrue(report.contains("MCTS-UCT"));
+    assertTrue(report.contains("MCTS-ML"));
+  }
+
+  @Test
+  @DisplayName("Benchmark MinMax depth A vs depth B")
+  void benchmarkMinMaxDepthVsDepth() throws IOException {
+    DuelStats duel = runDuel(
+        AlgoProfile.minMaxDepth(MINMAX_DEPTH_A),
+        AlgoProfile.minMaxDepth(MINMAX_DEPTH_B),
+        GAMES_PER_DUEL);
+
+    String title = String.format("MinMax depth benchmark (d=%d vs d=%d)",
+        MINMAX_DEPTH_A, MINMAX_DEPTH_B);
+    String report = formatReport(title, List.of(duel));
+    Path output = writeReport("minmax-depth-vs-depth", report);
+
+    System.out.println(report);
+    System.out.println("Saved benchmark report to: " + output);
+
+    assertEquals(GAMES_PER_DUEL, duel.totalGames());
+    assertTrue(report.contains("MinMax-d" + MINMAX_DEPTH_A));
+    assertTrue(report.contains("MinMax-d" + MINMAX_DEPTH_B));
+  }
+
+  @Test
+  @DisplayName("Benchmark MinMax vs MCTS-UCT")
+  void benchmarkMinMaxVsMctsUct() throws IOException {
+    DuelStats duel = runDuel(
+        AlgoProfile.minMax(),
+        AlgoProfile.mctsUct(),
+        GAMES_PER_DUEL);
+
+    String title = String.format("MinMax vs MCTS-UCT benchmark (minmaxDepth=%d)", MINMAX_DEPTH);
+    String report = formatReport(title, List.of(duel));
+    Path output = writeReport("minmax-vs-mcts-uct", report);
+
+    System.out.println(report);
+    System.out.println("Saved benchmark report to: " + output);
+
+    assertEquals(GAMES_PER_DUEL, duel.totalGames());
+    assertTrue(report.contains("MinMax"));
+    assertTrue(report.contains("MCTS-UCT"));
+  }
+
+  @Test
+  @DisplayName("Benchmark AlphaBeta vs MCTS-UCT")
+  void benchmarkAlphaBetaVsMctsUct() throws IOException {
+    DuelStats duel = runDuel(
+        AlgoProfile.alphaBeta(),
+        AlgoProfile.mctsUct(),
+        GAMES_PER_DUEL);
+
+    String title = String.format("AlphaBeta vs MCTS-UCT benchmark (alphabetaDepth=%d)",
+        ALPHABETA_DEPTH);
+    String report = formatReport(title, List.of(duel));
+    Path output = writeReport("alphabeta-vs-mcts-uct", report);
+
+    System.out.println(report);
+    System.out.println("Saved benchmark report to: " + output);
+
+    assertEquals(GAMES_PER_DUEL, duel.totalGames());
+    assertTrue(report.contains("AlphaBeta"));
+    assertTrue(report.contains("MCTS-UCT"));
+  }
+
+  @Test
+  @DisplayName("Benchmark MinMax vs MCTS-ML")
+  void benchmarkMinMaxVsMctsMl() throws IOException {
+    Path weightPath = Paths.get(LogisticRegressionTrainer.OUTPUT_FILEPATH);
+    assertTrue(Files.exists(weightPath),
+        "Missing ML weights file: " + weightPath + ". Train once with -tr before benchmark.");
+
+    Mcts.loadMlWeights(weightPath.toString());
+
+    DuelStats duel = runDuel(
+        AlgoProfile.minMax(),
+        AlgoProfile.mctsMl(),
+        GAMES_PER_DUEL);
+
+    String title = String.format("MinMax vs MCTS-ML benchmark (minmaxDepth=%d)", MINMAX_DEPTH);
+    String report = formatReport(title, List.of(duel));
+    Path output = writeReport("minmax-vs-mcts-ml", report);
+
+    System.out.println(report);
+    System.out.println("Saved benchmark report to: " + output);
+
+    assertEquals(GAMES_PER_DUEL, duel.totalGames());
+    assertTrue(report.contains("MinMax"));
     assertTrue(report.contains("MCTS-ML"));
   }
 
@@ -159,6 +253,8 @@ class AiBenchmarkTest {
     sb.append("max_plies: ").append(MAX_PLIES).append("\n");
     sb.append("ai_time_ms: ").append(AI_TIME_MS).append("\n");
     sb.append("minmax_depth: ").append(MINMAX_DEPTH).append("\n");
+    sb.append("minmax_depth_a: ").append(MINMAX_DEPTH_A).append("\n");
+    sb.append("minmax_depth_b: ").append(MINMAX_DEPTH_B).append("\n");
     sb.append("alphabeta_depth: ").append(ALPHABETA_DEPTH).append("\n\n");
 
     for (DuelStats duel : duels) {
@@ -244,6 +340,12 @@ class AiBenchmarkTest {
       return new AlgoProfile(
           "MinMax",
           () -> new MinMax(MINMAX_DEPTH, AI_TIME_MS));
+    }
+
+    static AlgoProfile minMaxDepth(int depth) {
+      return new AlgoProfile(
+          "MinMax-d" + depth,
+          () -> new MinMax(depth, AI_TIME_MS));
     }
 
     static AlgoProfile alphaBeta() {
