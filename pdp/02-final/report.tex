@@ -718,194 +718,7 @@ assertFalse(timeSpinner.isDisabled());
 Cette approche garantit que le comportement du dialogue reste stable lors des refactorisations futures et valide que les interactions 
 entre composants restent cohérentes.
 
-\subsection{Module Réseau}
-\label{sec:reseau}
 
-La couche réseau de l'application repose sur une architecture client--serveur
-basée sur TCP et structurée principalement autour du package \texttt{server}.
-La figure~\ref{fig:architecture-serveur} présente les principaux composants de
-ce module ainsi que leurs interactions.
-\texttt{server}.
-La figure~\ref{fig:architecture-serveur} en présente les composants principaux
-ainsi que leurs interactions.
- 
-% ----------------------------------------------------------------
-%  Couleurs (nommer avec pdp- pour éviter les conflits)
-% ----------------------------------------------------------------
-% ----------------------------------------------------------------
-%  Couleurs
-% ----------------------------------------------------------------
-\definecolor{pdp-teal50}{HTML}{E1F5EE}
-\definecolor{pdp-teal600}{HTML}{0F6E56}
-\definecolor{pdp-teal800}{HTML}{085041}
-\definecolor{pdp-purple50}{HTML}{EEEDFE}
-\definecolor{pdp-purple600}{HTML}{534AB7}
-\definecolor{pdp-purple800}{HTML}{3C3489}
-\definecolor{pdp-gray50}{HTML}{F1EFE8}
-\definecolor{pdp-gray600}{HTML}{5F5E5A}
-\definecolor{pdp-blue50}{HTML}{E6F1FB}
-\definecolor{pdp-blue600}{HTML}{185FA5}
-\definecolor{pdp-blue800}{HTML}{0C447C}
-\definecolor{pdp-border}{HTML}{C4C2B8}
-
-\tikzset{
-    pdp base/.style={
-        draw,
-        rounded corners=5pt,
-        minimum width=3.8cm,
-        minimum height=1.0cm,
-        align=center,
-        font=\small\bfseries,
-        inner sep=5pt,
-        line width=0.4pt
-    },
-    pdp teal/.style={pdp base,
-    fill=pdp-teal50, draw=pdp-teal600, text=pdp-teal800},
-    pdp purple/.style={pdp base,
-    fill=pdp-purple50, draw=pdp-purple600, text=pdp-purple800},
-    pdp gray/.style={pdp base,
-    fill=pdp-gray50, draw=pdp-gray600, text=pdp-gray600},
-    pdp blue/.style={pdp base,
-    fill=pdp-blue50, draw=pdp-blue600, text=pdp-blue800},
-    pdp zone/.style={
-        draw=pdp-border,
-        dashed,
-        rounded corners=8pt,
-        line width=0.5pt,
-        inner sep=10pt
-    },
-    pdp rel/.style={
-        -{Stealth[length=4.5pt]},
-        line width=0.6pt,
-        color=pdp-gray600
-    },
-    pdp lbl/.style={
-        font=\scriptsize\itshape,
-        color=pdp-gray600,
-        fill=white,
-        inner sep=1pt
-    }
-}
-
-\begin{figure}[ht]
-    \centering
-    \begin{tikzpicture}[node distance=0.7cm and 1.2cm]
-
-        % ---- Zone client ------------------------------------------
-        \node[pdp blue] (cs)
-        {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
-
-        \node[pdp blue, above=of cs] (psclient)
-        {PlayerSession\\[-2pt]{\footnotesize\normalfont État local du joueur}};
-
-        \node[pdp gray, below=of cs] (cm)
-        {ClientMode\\[-2pt]{\footnotesize\normalfont \textit{enum}}};
-
-        \node[pdp gray, below=of cm] (sls)
-        {ServerListService\\[-2pt]{\footnotesize\normalfont Découverte UDP}};
-
-        \begin{pgfonlayer}{background}
-            \node[pdp zone,
-                label={[font=\small\bfseries, text=pdp-gray600]above:Client},
-                fit=(psclient)(cs)(cm)(sls)] {};
-        \end{pgfonlayer}
-
-        % ---- Zone serveur -----------------------------------------
-        \node[pdp teal, right=3.2cm of cs] (gr)
-        {GameRegistry\\[-2pt]{\footnotesize\normalfont Registre thread-safe}};
-
-        \node[pdp purple, right=1.5cm of gr] (im)
-        {InvitationManager\\[-2pt]{\footnotesize\normalfont Gestion des invitations}};
-
-        \node[pdp teal, below=of gr] (ps)
-        {PlayerSession};
-
-        \node[pdp teal, below=of ps] (gs)
-        {GameSession};
-
-        \node[pdp purple, below=of im] (inv)
-        {Invitation};
-
-        \node[pdp gray, below=1.0cm of gs] (ds)
-        {DiscoveryService\\[-2pt]{\footnotesize\normalfont Annonce UDP}};
-
-        \node[pdp gray, below=1.0cm of inv] (gcf)
-        {GameControllerFactory\\[-2pt]{\footnotesize\normalfont \textit{interface fonctionnelle}}};
-
-        \begin{pgfonlayer}{background}
-            \node[pdp zone,
-                label={[font=\small\bfseries, text=pdp-gray600]above:Serveur (\texttt{server})},
-                fit=(gr)(im)(ps)(gs)(inv)(ds)(gcf)] (serverzone) {};
-        \end{pgfonlayer}
-
-        % ---- Séparateur -------------------------------------------
-        \draw[dashed, color=pdp-border, line width=0.4pt]
-        ([yshift=-0.35cm] gs.south -| serverzone.west)
-        -- ([yshift=-0.35cm] gs.south -| serverzone.east)
-        node[midway, above, font=\scriptsize\itshape, color=pdp-gray600]
-            {infrastructure};
-
-        % ---- Relations principales --------------------------------
-        \draw[pdp rel] (cs.east) -- node[pdp lbl, above] {TCP} (gr.west);
-
-        \draw[pdp rel] (gr.south) -- (ps.north);
-
-        \draw[pdp rel] (ps.south) -- node[pdp lbl, right] {session active} (gs.north);
-
-        \draw[pdp rel] (im.south) -- node[pdp lbl, right] {crée} (inv.north);
-
-        \draw[pdp rel] (ds.west) -- node[pdp lbl, above] {UDP} (sls.east);
-
-        \draw[pdp rel] (gs.east) -- node[pdp lbl, right] {utilise} (gcf.west);
-
-        \draw[pdp rel] (gr.east) -- node[pdp lbl, above] {coordonne} (im.west);
-
-        % ---- Légende ----------------------------------------------
-        \matrix[
-            below=0.7cm of serverzone.south,
-            column sep=1.0cm,
-            nodes={anchor=west, font=\small}
-        ] {
-            \node[pdp teal, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
-            & \node {Registre et sessions de jeu}; \\
-            \node[pdp purple, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
-            & \node {Système d'invitations}; \\
-            \node[pdp gray, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
-            & \node {Infrastructure}; \\
-            \node[pdp blue, minimum width=0.8cm, minimum height=0.35cm, inner sep=2pt] {};
-            & \node {Composants côté client}; \\
-        };
-
-    \end{tikzpicture}
-    \caption{Architecture structurelle de la couche réseau}
-    \label{fig:architecture-serveur}
-\end{figure}
-\FloatBarrier
- 
-% ---- Description textuelle des composants ------------------
- 
-\paragraph{Côté client.}
-Le \texttt{ShellCommandRouter} constitue le point d'entrée unique pour toute
-saisie utilisateur. Il consulte l'énumération \texttt{ClientMode}
-(\texttt{LOCAL}, \texttt{CONNECTED}, \texttt{SERVER}) pour aiguiller chaque
-commande vers le bon gestionnaire, évitant ainsi les états incohérents
-(par exemple, démarrer un serveur alors qu'une connexion est déjà ouverte).
-La \texttt{ClientSession} encapsule la socket TCP, le fil d'écoute
-(\textit{listener thread}) et le protocole de \textit{handshake}
-(\texttt{REGISTER} / \texttt{WELCOME}). Le \texttt{ServerListService} écoute
-les annonces UDP diffusées par \texttt{DiscoveryService} afin de présenter
-la liste des serveurs disponibles sur le réseau local.
- 
-\paragraph{Côté serveur.}
-Le \texttt{GameRegistry} centralise, de façon thread-safe, l'ensemble des
-\texttt{PlayerSession} et des \texttt{GameSession} actives. Il constitue
-la source de vérité pour l'état de chaque joueur connecté. L'\texttt{InvitationManager}
-orchestre le cycle de vie complet des invitations — de leur création jusqu'à
-l'acceptation, au refus ou à l'expiration automatique par un fil démon
-(\textit{sweeper}) — en s'appuyant sur les objets \texttt{Invitation}
-immuables. Enfin, la \texttt{GameControllerFactory}, interface fonctionnelle,
-permet d'instancier un contrôleur de jeu isolé pour chaque session, garantissant
-l'indépendance des états de parties concurrentes.
 
 \section{Intelligence Artificielle}
 
@@ -2228,18 +2041,6 @@ sans dupliquer la logique métier, tout en ajoutant les commande demandées. Cet
 donc plusieurs composants centraux du projet : {\texttt{ClientSession}}, {\texttt{GameServer}}, 
 {\texttt{GameRegistry}},{\texttt{GameSession}} et {\texttt{PlayerSession}}.
 
-Pour rendre cette intégration cohérente, nous avons d'abord introduit une notion explicite de 
-\textbf{mode d'exécution} grâce à l'énumération {\texttt{ClientMode}}.
-Trois états ont été définis : {\texttt{LOCAL}}, 
-lorsque l'application fonctionne sans connexion réseau ; \underline{\texttt{SERVER}}, 
-lorsqu'un serveur est démarré localement ; et \underline{\texttt{CONNECTED}}, 
-lorsqu'un client est relié à un serveur distant. Cette séparation est essentielle, 
-car elle permet de contrôler quelles commandes sont autorisées selon le contexte. 
-Par exemple, un client déjà connecté ne doit pas pouvoir démarrer un serveur local, 
-tandis qu'une instance qui héberge déjà un serveur ne doit pas réutiliser certaines 
-commandes purement clientes.  
-Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSession}} via des méthodes comme 
-{\texttt{enterServerMode()}}, \underline{\texttt{exitServerMode()}} et \underline{\texttt{getMode()}}. 
 \subsubsection{Articulation entre mode local, mode serveur et mode connecté}
 
 \begin{figure}[H]
@@ -2314,17 +2115,152 @@ Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSes
 
 
 Pour rendre cette intégration cohérente, nous avons d'abord introduit une notion explicite de
-\textbf{mode d'exécution} grâce à l'énumération {\texttt{ClientMode}}.
-Trois états ont été définis : {\texttt{LOCAL}},
-lorsque l'application fonctionne sans connexion réseau ; \underline{\texttt{SERVER}},
-lorsqu'un serveur est démarré localement ; et \underline{\texttt{CONNECTED}},
+\textbf{mode d'exécution} grâce à l'énumération \texttt{ClientMode}.
+Trois états ont été définis : \texttt{LOCAL},
+lorsque l'application fonctionne sans connexion réseau ; \texttt{SERVER},
+lorsqu'un serveur est démarré localement ; et \texttt{CONNECTED},
 lorsqu'un client est relié à un serveur distant. Cette séparation est essentielle,
 car elle permet de contrôler quelles commandes sont autorisées selon le contexte.
 Par exemple, un client déjà connecté ne doit pas pouvoir démarrer un serveur local,
 tandis qu'une instance qui héberge déjà un serveur ne doit pas réutiliser certaines
 commandes purement clientes.
-Les transitions entre ces états sont gérées dans \underline{\texttt{ClientSession}} via des méthodes comme  {\texttt{enterServerMode()}},
-{\texttt{exitServerMode()}} et {\texttt{getMode()}}.
+Les transitions entre ces états sont gérées dans \texttt{ClientSession} via des méthodes comme
+\texttt{enterServerMode()}, \texttt{exitServerMode()} et \texttt{getMode()}.
+
+\subsubsection{Commandes réseau et commandes d'administration ajoutées}
+
+F39 a conduit à distinguer deux niveaux dans l'architecture réseau : les
+messages du protocole TCP, d'une part, et les commandes utilisateur ou
+d'administration, d'autre part.
+
+\smallskip
+\noindent\textbf{Messages du protocole TCP}
+
+\begin{itemize}
+    \item \texttt{REGISTER} : message envoyé lors de la connexion initiale pour
+    enregistrer un joueur auprès du serveur.
+    \item \texttt{NEW} : message utilisé pour initier une invitation de partie.
+    \item \texttt{MOVE} : message utilisé pour transmettre un coup au cours
+    d'une partie en cours.
+\end{itemize}
+
+Ces messages sont émis par \texttt{ClientSession}, décodés par
+\texttt{GameServer}, puis relayés vers les composants métier appropriés :
+\texttt{GameRegistry} pour la gestion des joueurs et \texttt{GameSession} pour
+le traitement des coups et de la logique de partie.
+
+\smallskip
+\noindent\textbf{Commandes utilisateur et d'administration}
+
+\begin{itemize}
+    \item \texttt{server status} : commande d'administration implémentée dans
+    \texttt{ServerStatusCommand}, qui affiche le port d'écoute du serveur, le
+    nombre de clients connectés et le nombre de parties actives.
+    \item \texttt{scoreboard} : commande d'observation implémentée dans
+    \texttt{ScoreboardCommand}, qui consulte \texttt{GameRegistry} pour classer
+    les joueurs selon leur nombre de victoires et afficher leurs statistiques.
+\end{itemize}
+
+\smallskip
+\noindent\textbf{Routage des commandes}
+
+Les commandes saisies par l'utilisateur passent par
+\texttt{ShellCommandRouter}, qui décide si elles doivent être exécutées
+localement, transmises au serveur ou bloquées selon le mode courant.
+
+\subsubsection{Architecture serveur et isolation des sessions de jeu}
+
+Cette partie décrit deux niveaux complémentaires de l'architecture réseau :
+le serveur global, qui gère les connexions et les sessions, et les sessions de
+jeu elles-mêmes, qui encapsulent la logique d'une partie particulière.
+
+\smallskip
+\noindent\textbf{Rôle du serveur global}
+
+La classe \texttt{GameServer} constitue le point central du mode
+serveur. Elle ouvre un \texttt{ServerSocket} sur un port TCP donné,
+accepte les connexions entrantes et supervise l'ensemble du service réseau.
+
+\begin{itemize}
+    \item elle reçoit les connexions de plusieurs clients ;
+    \item elle délègue leur traitement à des threads distincts via
+    \texttt{Executors.newCachedThreadPool()} ;
+    \item elle enregistre les joueurs connectés dans
+    \texttt{GameRegistry} sous forme de
+    \texttt{PlayerSession} ;
+    \item elle orchestre la création de nouvelles parties.
+\end{itemize}
+
+\smallskip
+\noindent\textbf{Registre partagé des joueurs et des parties}
+
+La classe \texttt{GameRegistry} joue le rôle de registre central.
+Elle conserve les joueurs actuellement connectés ainsi que les sessions de jeu
+actives. Elle fournit donc au serveur une vue globale de l'état courant du
+système.
+
+\smallskip
+\noindent\textbf{Création isolée des parties}
+
+Lorsqu'une nouvelle partie est lancée, le serveur crée un nouveau
+\texttt{GameController} à l'aide de
+\texttt{GameControllerFactory}. Ce point est essentiel, car il
+garantit qu'une partie réseau possède son propre état de jeu.
+
+Chaque session dispose ainsi :
+\begin{itemize}
+    \item de son propre plateau ;
+    \item de son propre historique ;
+    \item de son propre tour courant ;
+    \item de sa propre évolution jusqu'à la fin de la partie.
+\end{itemize}
+
+Deux parties simultanées restent donc totalement indépendantes l'une de
+l'autre. Cette isolation était indispensable pour permettre un véritable mode
+multi-clients.
+
+\smallskip
+\noindent\textbf{Rôle d'une session de jeu}
+
+La classe \texttt{GameSession} représente une partie active. Elle
+encapsule toute la logique locale à cette partie, sans surcharger le serveur
+global avec des détails de gameplay.
+
+Elle prend notamment en charge :
+\begin{itemize}
+    \item l'ordre des tours ;
+    \item la validation des coups ;
+    \item l'application des coups via le contrôleur ;
+    \item la diffusion des notifications comme
+    \texttt{OPPONENT\_MOVE} ;
+    \item la terminaison propre de la session.
+\end{itemize}
+
+\smallskip
+\noindent\textbf{Méthodes clés}
+
+La méthode \texttt{handleMove()} vérifie qu'un joueur agit au bon
+moment, applique le coup puis informe les autres participants.
+La méthode \texttt{end()} clôt la partie, met à jour les
+statistiques et rétablit les joueurs dans un état disponible.
+
+\smallskip
+\noindent\textbf{Bilan architectural}
+
+L'architecture distingue donc clairement :
+\begin{itemize}
+    \item un niveau global, assuré par \texttt{GameServer}, pour la
+    gestion du service réseau ;
+    \item un niveau intermédiaire, assuré par \texttt{GameRegistry},
+    pour le suivi des joueurs et des sessions ;
+    \item un niveau local, assuré par \texttt{GameSession}, pour la
+    gestion d'une partie donnée.
+\end{itemize}
+
+Cette séparation améliore la lisibilité de l'architecture, limite les
+interférences entre parties simultanées et rend possible un fonctionnement
+serveur réellement concurrent.
+
 \subsubsection{Connexion réseau et intégration avec les interfaces CLI et GUI}
 
 La classe \underline{\texttt{ClientSession}} constitue le point d'entrée principal
@@ -2356,65 +2292,6 @@ soit par des actions locales, soit par des événements réseau. Cette
 mutualisation garantit la cohérence fonctionnelle entre les deux interfaces et
 limite fortement la duplication de code.
 
-\subsubsection{Architecture serveur et isolation des sessions de jeu}
-
-Côté serveur, la classe \underline{\texttt{GameServer}} assure la gestion des
-connexions entrantes, la création des parties et la supervision globale du
-service. Elle ouvre un \underline{\texttt{ServerSocket}} sur un port TCP donné,
-puis accepte les connexions de plusieurs clients successifs. Chaque client est
-pris en charge dans un thread distinct grâce à un pool créé par
-\underline{\texttt{Executors.newCachedThreadPool()}}, ce qui permet au serveur
-de traiter plusieurs joueurs simultanément. Lorsqu'un client s'enregistre, il
-est représenté sous la forme d'un objet \underline{\texttt{PlayerSession}}
-conservé dans \underline{\texttt{GameRegistry}}, qui joue le rôle de registre
-partagé des joueurs connectés et des parties actives. Lorsqu'une partie est
-créée, le serveur construit un nouveau \underline{\texttt{GameController}} par
-l'intermédiaire de \underline{\texttt{GameControllerFactory}}. Cela garantit
-qu'une partie réseau possède son propre état de jeu, totalement indépendant des
-autres. Deux parties simultanées ne partagent donc ni le plateau, ni
-l'historique, ni le tour courant. Cette isolation était indispensable pour
-rendre possible un véritable serveur multi-clients.
-
-La classe \underline{\texttt{GameSession}} représente précisément une partie
-active. Elle centralise la logique d'une session multijoueur : ordre des tours,
-validation des coups, diffusion des notifications
-\underline{\texttt{OPPONENT\_MOVE}} et terminaison de la partie. La méthode
-\underline{\texttt{handleMove()}} vérifie qu'un joueur agit bien au bon moment,
-applique le coup via le contrôleur et en informe les autres participants. La
-méthode \underline{\texttt{end()}} clôt ensuite la session en mettant à jour les
-statistiques et en rétablissant les joueurs dans un état disponible. Cette
-structuration permet d'encapsuler clairement ce qui relève d'une partie
-particulière, sans polluer le serveur global avec des détails de jeu.
-
-\subsubsection{Commandes réseau et commandes d'administration ajoutées}
-
-F39 s'est également traduite par l'ajout ou la consolidation de plusieurs
-commandes réseau. Dans le flux de communication client--serveur, des commandes
-comme \underline{\texttt{REGISTER}}, \underline{\texttt{PING}},
-\underline{\texttt{STATUS}}, \underline{\texttt{PLAYERS}},
-\underline{\texttt{NEW}}, \underline{\texttt{MOVE}} ou
-\underline{\texttt{QUIT}} permettent respectivement d'enregistrer un joueur,
-mesurer la connectivité, consulter l'état du serveur, lister les joueurs
-présents, créer une nouvelle partie, envoyer un coup et fermer proprement la
-connexion. Ce protocole texte simple présente un double avantage : il est facile
-à déboguer et il reste compatible avec une interface CLI tout en étant
-suffisamment structuré pour piloter une interface graphique. Côté client,
-\underline{\texttt{ClientSession}} assure l'émission et l'interprétation de ces
-messages ; côté serveur, \underline{\texttt{GameServer}} les décode pour
-déclencher les actions appropriées.
-
-À cela s'ajoutent des commandes de gestion et d'observation du serveur. La
-commande \underline{\texttt{server status}}, implémentée dans
-\underline{\texttt{ServerStatusCommand}}, affiche le port d'écoute ainsi que le
-nombre de clients et de parties actives. La commande
-\underline{\texttt{scoreboard}}, implémentée dans
-\underline{\texttt{ScoreboardCommand}}, classe les joueurs selon leur nombre de
-victoires et affiche leurs statistiques globales. Ces commandes montrent que le
-réseau n'a pas été conçu uniquement comme un canal de transport des coups du
-jeu, mais aussi comme une infrastructure administrable, observable et
-exploitable en cours d'exécution. Elles participent donc pleinement à la valeur
-de F39, car elles rendent la couche réseau utilisable au quotidien, aussi bien
-pour jouer que pour surveiller le système.
 
 \subsubsection{Cohérence avec les options de lancement et la commande \texttt{new}}
 

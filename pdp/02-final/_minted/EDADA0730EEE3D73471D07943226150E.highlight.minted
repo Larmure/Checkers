@@ -1,0 +1,14 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{// Extrait simplifié de GameCheckers.java : évolution de l\PYGZsq{}état du système}
+\PYG{k+kd}{public}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{applyMove}\PYG{p}{(}\PYG{n}{String}\PYG{+w}{ }\PYG{n}{from}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{String}\PYG{+w}{ }\PYG{n}{to}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{boolean}\PYG{+w}{ }\PYG{n}{isManoury}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{c+c1}{// 1. Délégation de la physique au plateau}
+\PYG{+w}{    }\PYG{n}{board}\PYG{p}{.}\PYG{n+na}{applyMove}\PYG{p}{(}\PYG{n}{move}\PYG{p}{)}\PYG{p}{;}
+
+\PYG{+w}{    }\PYG{c+c1}{// 2. Mise à jour de l\PYGZsq{}état global (historique et tour de jeu)}
+\PYG{+w}{    }\PYG{n}{managerUndoRedo}\PYG{p}{.}\PYG{n+na}{registerMove}\PYG{p}{(}\PYG{n}{currentColor}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{move}\PYG{p}{)}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k}{this}\PYG{p}{.}\PYG{n+na}{isWhiteTurn}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{o}{!}\PYG{k}{this}\PYG{p}{.}\PYG{n+na}{isWhiteTurn}\PYG{p}{;}
+
+\PYG{+w}{    }\PYG{c+c1}{// 3. Signal de fin d\PYGZsq{}opération à l\PYGZsq{}interface}
+\PYG{+w}{    }\PYG{n}{notifyObservers}\PYG{p}{(}\PYG{p}{)}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}
