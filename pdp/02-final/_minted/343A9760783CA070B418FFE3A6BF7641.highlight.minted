@@ -1,0 +1,5 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+mvn\PYG{+w}{ }\PYGZhy{}DrunBenchmarks\PYG{o}{=}\PYG{n+nb}{true}\PYG{+w}{ }\PYGZhy{}Dtest\PYG{o}{=}AiBenchmarkTest\PYGZsh{}benchmarkAlphaBetaVsMctsUct\PYG{+w}{ }\PYG{n+nb}{test}\PYG{+w}{ }\PYG{l+s+se}{\PYGZbs{}}
+\PYG{+w}{  }\PYGZhy{}Dbenchmark.alphabetaDepth\PYG{o}{=}\PYG{l+m}{7}\PYG{+w}{ }\PYGZhy{}Dbenchmark.games\PYG{o}{=}\PYG{l+m}{12}\PYG{+w}{ }\PYG{l+s+se}{\PYGZbs{}}
+\PYG{+w}{  }\PYGZhy{}Dbenchmark.aiTimeMs\PYG{o}{=}\PYG{l+m}{500}\PYG{+w}{ }\PYGZhy{}Dbenchmark.maxPlies\PYG{o}{=}\PYG{l+m}{120}
+\end{MintedVerbatim}

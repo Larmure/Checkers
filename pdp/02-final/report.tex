@@ -1074,18 +1074,12 @@ La figure~\ref{fig:architecture-serveur} en présente les composants principaux
 ainsi que leurs interactions.
 
 % ─── Nouvelles couleurs (préfixe net-, sans conflit avec le rapport) ─────────
-\definecolor{net-indigo50}{HTML}{EEF2FF}
-\definecolor{net-indigo600}{HTML}{4F46E5}
-\definecolor{net-indigo800}{HTML}{3730A3}
-\definecolor{net-amber50}{HTML}{FFFBEB}
-\definecolor{net-amber600}{HTML}{D97706}
-\definecolor{net-amber800}{HTML}{92400E}
-\definecolor{net-rose50}{HTML}{FFF1F2}
-\definecolor{net-rose600}{HTML}{BE123C}
-\definecolor{net-rose800}{HTML}{9F1239}
-\definecolor{net-slate50}{HTML}{F8FAFC}
-\definecolor{net-slate500}{HTML}{64748B}
-\definecolor{net-slate800}{HTML}{1E293B}
+\definecolor{net-cyan50}{HTML}{CFFAFE}
+\definecolor{net-cyan700}{HTML}{0E7490}
+\definecolor{net-lime50}{HTML}{ECFCCB}
+\definecolor{net-lime700}{HTML}{4D7C0F}
+\definecolor{net-stone50}{HTML}{F5F5F4}
+\definecolor{net-stone600}{HTML}{78716C}
 
 \begin{figure}[ht]
     \centering
@@ -1101,107 +1095,101 @@ ainsi que leurs interactions.
         nzone/.style={draw, dashed, rounded corners=8pt, line width=0.5pt, inner sep=10pt},
     ]
 
-% ─── Grille de coordonnées ────────────────────────────────────────────────────
-%  x : 0 (client)   5.8 (serveur-gauche)   11.2 (serveur-droite)
-%  y : 3.5  2.0  0.5  -1.0
-
 % ─── CLIENT ──────────────────────────────────────────────────────────────────
-        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        \node[nbox, fill=net-stone50, draw=net-stone600, text=black]
         (SCR) at (0, 3.5)
             {PlayerSession\\[-2pt]{\footnotesize\normalfont Score des joueurs}};
 
-        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        \node[nbox, fill=net-stone50, draw=net-stone600, text=black]
         (CS) at (0, 2.0)
             {ClientSession\\[-2pt]{\footnotesize\normalfont Connexion TCP}};
 
-        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        \node[nbox, fill=net-stone50, draw=net-stone600, text=black]
         (CM) at (0, 0.5)
             {ClientMode\\[-2pt]{\footnotesize\normalfont\textit{«enum»}}};
 
-        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        \node[nbox, fill=net-stone50, draw=net-stone600, text=black]
         (SLS) at (0, -1.0)
             {ServerListService\\[-2pt]{\footnotesize\normalfont Découverte UDP}};
 
 % ─── SERVEUR — colonne centrale (registre & sessions) ────────────────────────
-        \node[nbox, fill=net-amber50, draw=net-amber600, text=net-amber800]
+        \node[nbox, fill=net-cyan50, draw=net-cyan700, text=net-cyan700]
         (GR) at (5.8, 3.5)
             {GameRegistry\\[-2pt]{\footnotesize\normalfont Registre thread-safe}};
 
-        \node[nbox, fill=net-amber50, draw=net-amber600, text=net-amber800]
+        \node[nbox, fill=net-cyan50, draw=net-cyan700, text=net-cyan700]
         (PS) at (5.8, 2.0)
             {PlayerSession};
 
-        \node[nbox, fill=net-amber50, draw=net-amber600, text=net-amber800]
+        \node[nbox, fill=net-cyan50, draw=net-cyan700, text=net-cyan700]
         (GS) at (5.8, 0.5)
             {GameSession};
 
-        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        \node[nbox, fill=net-stone50, draw=net-stone600, text=black]
         (DS) at (5.8, -1.0)
             {DiscoveryService\\[-2pt]{\footnotesize\normalfont Broadcast UDP}};
 
 % ─── SERVEUR — colonne droite (invitations & factory) ────────────────────────
-        \node[nbox, fill=net-rose50, draw=net-rose600, text=net-rose800]
+        \node[nbox, fill=net-cyan50, draw=net-cyan700, text=net-cyan700]
         (IM) at (11.2, 3.5)
             {InvitationManager\\[-2pt]{\footnotesize\normalfont Cycle de vie des invitations}};
 
-        \node[nbox, fill=net-rose50, draw=net-rose600, text=net-rose800]
+        \node[nbox, fill=net-cyan50, draw=net-cyan700, text=net-cyan700]
         (INV) at (11.2, 2.0)
             {Invitation};
 
-        \node[nbox, fill=net-slate50, draw=net-slate500, text=net-slate800]
+        \node[nbox, fill=net-stone50, draw=net-stone600, text=black]
         (GCF) at (11.2, 0.5)
             {GameControllerFactory\\[-2pt]{\footnotesize\normalfont\textit{«interface fonctionnelle»}}};
 
 % ─── ZONES ───────────────────────────────────────────────────────────────────
         \begin{pgfonlayer}{background}
-            \node[nzone, draw=net-slate500,
+            \node[nzone, draw=net-stone600,
                 fit=(SCR)(CS)(CM)(SLS),
-                label={[font=\small\bfseries, text=net-slate800, yshift=2pt]above:Client}]
+                label={[font=\small\bfseries, text=net-stone600, yshift=2pt]above:Client}]
             (clientZone) {};
-            \node[nzone, draw=net-amber600,
+            \node[nzone, draw=net-cyan700,
                 fit=(GR)(PS)(GS)(DS)(IM)(INV)(GCF),
-                label={[font=\small\bfseries, text=net-amber800, yshift=2pt]above:%
+                label={[font=\small\bfseries, text=net-cyan700, yshift=2pt]above:%
                 Serveur }]
             (serverZone) {};
         \end{pgfonlayer}
 
 % ─── SÉPARATEUR INFRASTRUCTURE ───────────────────────────────────────────────
-        \draw[dashed, color=net-slate500, line width=0.4pt]
+        \draw[dashed, color=net-stone600, line width=0.4pt]
         ([yshift=-0.42cm] GS.south -| serverZone.west) --
         ([yshift=-0.42cm] GS.south -| serverZone.east)
-        node[midway, above, font=\scriptsize\itshape, color=net-slate500]{infrastructure};
+        node[midway, above, font=\scriptsize\itshape, color=net-stone600]{infrastructure};
 
 % ─── FLÈCHES ─────────────────────────────────────────────────────────────────
 % 1. ClientSession → GameRegistry : TCP
-%    Sort par l'est, monte horizontalement puis rejoint GR par l'ouest
         \draw[narr]
         (CS.east) -- ++(0.9,0)
         |- node[nlbl, pos=0.25, above]{TCP}
         (GR.west);
 
-% 2. ServerListService → DiscoveryService : UDP — ligne horizontale pure
+% 2. ServerListService → DiscoveryService : UDP
         \draw[narr]
         (SLS.east) --
         node[nlbl, above]{UDP}
         (DS.west);
 
-% 3. GameRegistry → PlayerSession : descente verticale directe
+% 3. GameRegistry → PlayerSession : descente verticale
         \draw[narr] (GR.south) -- (PS.north);
 
-% 4. GameRegistry → GameSession : contournement par la droite,
-%    arrive par le nord de GS (évite de traverser PS)
+% 4. GameRegistry → GameSession : contournement par la droite
         \draw[narr]
         (GR.east) -- ++(0.55,0)
         |- node[nlbl, pos=0.30, right]{gère}
         (GS.east);
 
-% 5. InvitationManager → Invitation : descente verticale directe
+% 5. InvitationManager → Invitation : descente verticale
         \draw[narr]
         (IM.south) --
         node[nlbl, right]{crée}
         (INV.north);
 
-% 6. GameSession → GameControllerFactory : horizontale pure (même ordonnée y=0.5)
+% 6. GameSession → GameControllerFactory : horizontale pure
         \draw[narr]
         (GS.east) -- ++(0.55,0) --
         node[nlbl, above]{utilise}
@@ -1211,13 +1199,10 @@ ainsi que leurs interactions.
         \matrix [below=0.7cm of serverZone.south,
             column sep=1.2cm,
             nodes={anchor=west, font=\small}] {
-            \node[nbox, fill=net-amber50, draw=net-amber600,
+            \node[nbox, fill=net-cyan50, draw=net-cyan700,
                 minimum width=0.9cm, minimum height=0.35cm, inner sep=2pt] {};
-            & \node {Registre \& sessions (données de jeu)}; \\[4pt]
-            \node[nbox, fill=net-rose50, draw=net-rose600,
-                minimum width=0.9cm, minimum height=0.35cm, inner sep=2pt] {};
-            & \node {Système d'invitations}; \\[4pt]
-            \node[nbox, fill=net-slate50, draw=net-slate500,
+            & \node {Invitation \& sessions (données de jeu)}; \\[4pt]
+            \node[nbox, fill=net-stone50, draw=net-stone600,
                 minimum width=0.9cm, minimum height=0.35cm, inner sep=2pt] {};
             & \node {Infrastructure \& client}; \\
         };
