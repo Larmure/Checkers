@@ -34,13 +34,12 @@ public class InvitationManager {
   private final Map<String, Invitation> invitations = new ConcurrentHashMap<>();
 
   /** Scheduled sweep task for expiry checks. */
-  private final ScheduledExecutorService scheduler =
-      Executors.newSingleThreadScheduledExecutor(
-          r -> {
-            Thread t = new Thread(r, "invitation-sweeper");
-            t.setDaemon(true);
-            return t;
-          });
+  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
+      r -> {
+        Thread t = new Thread(r, "invitation-sweeper");
+        t.setDaemon(true);
+        return t;
+      });
 
   /**
    * Starts the background expiry sweeper.
@@ -50,7 +49,7 @@ public class InvitationManager {
    *                       Receives the expired invitation and the registry.
    */
   public void startSweeper(GameRegistry registry,
-                           BiConsumer<Invitation, GameRegistry> expiryCallback) {
+      BiConsumer<Invitation, GameRegistry> expiryCallback) {
     scheduler.scheduleAtFixedRate(
         () -> sweepExpired(registry, expiryCallback),
         SWEEP_PERIOD_SECONDS, SWEEP_PERIOD_SECONDS, TimeUnit.SECONDS);
@@ -217,7 +216,7 @@ public class InvitationManager {
    * Marks all pending-but-expired invitations as expired and fires the callback.
    */
   private void sweepExpired(GameRegistry registry,
-                            BiConsumer<Invitation, GameRegistry> expiryCallback) {
+      BiConsumer<Invitation, GameRegistry> expiryCallback) {
     invitations.values().forEach(inv -> {
       if (inv.getStatus() == Invitation.InvitationStatus.PENDING && inv.isExpired()) {
         inv.markExpired();
@@ -237,7 +236,9 @@ public class InvitationManager {
 
   /** Result of {@link #createInvitation}. */
   public static final class CreateResult {
+    /** Created invitation when the operation succeeds; {@code null} otherwise. */
     public final Invitation invitation;
+    /** Error message when the operation fails; {@code null} on success. */
     public final String error;
 
     private CreateResult(Invitation invitation, String error) {
@@ -245,14 +246,31 @@ public class InvitationManager {
       this.error = error;
     }
 
+    /**
+     * Creates a successful result.
+     *
+     * @param inv created invitation
+     * @return a successful create result
+     */
     public static CreateResult success(Invitation inv) {
       return new CreateResult(inv, null);
     }
 
+    /**
+     * Creates a failed result.
+     *
+     * @param msg error message
+     * @return a failed create result
+     */
     public static CreateResult error(String msg) {
       return new CreateResult(null, msg);
     }
 
+    /**
+     * Indicates whether invitation creation succeeded.
+     *
+     * @return {@code true} when {@link #invitation} is non-null
+     */
     public boolean isSuccess() {
       return invitation != null;
     }
@@ -260,7 +278,9 @@ public class InvitationManager {
 
   /** Result of {@link #accept}. */
   public static final class AcceptResult {
+    /** Accepted invitation when the operation succeeds; {@code null} otherwise. */
     public final Invitation invitation;
+    /** Error message when the operation fails; {@code null} on success. */
     public final String error;
 
     private AcceptResult(Invitation invitation, String error) {
@@ -268,14 +288,31 @@ public class InvitationManager {
       this.error = error;
     }
 
+    /**
+     * Creates a successful result.
+     *
+     * @param inv accepted invitation
+     * @return a successful accept result
+     */
     public static AcceptResult success(Invitation inv) {
       return new AcceptResult(inv, null);
     }
 
+    /**
+     * Creates a failed result.
+     *
+     * @param msg error message
+     * @return a failed accept result
+     */
     public static AcceptResult error(String msg) {
       return new AcceptResult(null, msg);
     }
 
+    /**
+     * Indicates whether invitation acceptance succeeded.
+     *
+     * @return {@code true} when {@link #invitation} is non-null
+     */
     public boolean isSuccess() {
       return invitation != null;
     }
@@ -283,7 +320,9 @@ public class InvitationManager {
 
   /** Result of {@link #decline}. */
   public static final class DeclineResult {
+    /** Declined invitation when the operation succeeds; {@code null} otherwise. */
     public final Invitation invitation;
+    /** Error message when the operation fails; {@code null} on success. */
     public final String error;
 
     private DeclineResult(Invitation invitation, String error) {
@@ -291,14 +330,31 @@ public class InvitationManager {
       this.error = error;
     }
 
+    /**
+     * Creates a successful result.
+     *
+     * @param inv declined invitation
+     * @return a successful decline result
+     */
     public static DeclineResult success(Invitation inv) {
       return new DeclineResult(inv, null);
     }
 
+    /**
+     * Creates a failed result.
+     *
+     * @param msg error message
+     * @return a failed decline result
+     */
     public static DeclineResult error(String msg) {
       return new DeclineResult(null, msg);
     }
 
+    /**
+     * Indicates whether invitation decline succeeded.
+     *
+     * @return {@code true} when {@link #invitation} is non-null
+     */
     public boolean isSuccess() {
       return invitation != null;
     }
@@ -306,7 +362,9 @@ public class InvitationManager {
 
   /** Result of {@link #cancel}. */
   public static final class CancelResult {
+    /** Cancelled invitation when the operation succeeds; {@code null} otherwise. */
     public final Invitation invitation;
+    /** Error message when the operation fails; {@code null} on success. */
     public final String error;
 
     private CancelResult(Invitation invitation, String error) {
@@ -314,14 +372,31 @@ public class InvitationManager {
       this.error = error;
     }
 
+    /**
+     * Creates a successful result.
+     *
+     * @param inv cancelled invitation
+     * @return a successful cancel result
+     */
     public static CancelResult success(Invitation inv) {
       return new CancelResult(inv, null);
     }
 
+    /**
+     * Creates a failed result.
+     *
+     * @param msg error message
+     * @return a failed cancel result
+     */
     public static CancelResult error(String msg) {
       return new CancelResult(null, msg);
     }
 
+    /**
+     * Indicates whether invitation cancellation succeeded.
+     *
+     * @return {@code true} when {@link #invitation} is non-null
+     */
     public boolean isSuccess() {
       return invitation != null;
     }

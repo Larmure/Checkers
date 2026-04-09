@@ -71,6 +71,9 @@ public class GraphicalUserInterface extends GameView {
 
   /**
    * Creates the GUI with default configuration values.
+   *
+   * @param serverMode {@code true} if the GUI runs in server mode
+   * @param session shared client session
    */
   public GraphicalUserInterface(boolean serverMode, ClientSession session) {
     this(null, serverMode, session);

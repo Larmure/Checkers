@@ -262,7 +262,7 @@ public class AppTest {
   public void testAiMode() {
     App.run(new String[] { "-am", "mcts" });
 
-    assertEquals("mcts", App.aiMode);
+    assertEquals("mcts", App.getAiMode());
   }
 
   @Test

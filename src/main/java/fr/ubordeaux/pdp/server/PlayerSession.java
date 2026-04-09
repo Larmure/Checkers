@@ -42,9 +42,13 @@ public class PlayerSession {
    * </pre>
    */
   public enum Status {
+    /** Player is connected and available. */
     IDLE,
+    /** Player is temporarily unavailable. */
     AWAY,
+    /** Player is waiting for an invitation response flow to complete. */
     WAITGAME,
+    /** Player is currently in an active game. */
     INGAME
   }
 
@@ -55,7 +59,6 @@ public class PlayerSession {
    * on this player's state atomic (e.g. check status then change it).
    */
   private final ReentrantLock playerLock = new ReentrantLock();
-
 
   private final String id;
   private final String name;
@@ -299,7 +302,6 @@ public class PlayerSession {
   public void send(String message) {
     out.println(message);
   }
-
 
   @Override
   public String toString() {

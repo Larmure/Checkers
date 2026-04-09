@@ -23,10 +23,15 @@ public class Invitation {
 
   /** Possible states of an invitation. */
   public enum InvitationStatus {
+    /** Invitation has been created and is awaiting a response. */
     PENDING,
+    /** Invitee accepted the invitation. */
     ACCEPTED,
+    /** Invitee explicitly declined the invitation. */
     DECLINED,
+    /** Inviter cancelled the invitation before it was answered. */
     CANCELLED,
+    /** Invitation timed out before any response was received. */
     EXPIRED
   }
 

@@ -93,9 +93,11 @@ public class MainView extends BorderPane {
    *                      keyboard shortcuts; must not be {@code null}
    * @param cliConfig     optional CLI configuration used to prefill
    *                      configuration dialogs; may be {@code null}  // style.css : .root-pane
+    * @param serverMode    {@code true} if the GUI runs in server mode
+    * @param session       shared client session; may be {@code null} outside network mode
    */
   public MainView(GameController controller, ConfigManager configManager,
-                  Configuration cliConfig, boolean serverMode, ClientSession session) {
+      Configuration cliConfig, boolean serverMode, ClientSession session) {
     this.controller = controller;
     this.configManager = configManager;
     this.cliConfig = cliConfig;

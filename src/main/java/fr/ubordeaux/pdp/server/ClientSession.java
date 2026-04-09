@@ -108,14 +108,12 @@ public class ClientSession {
 
       try {
         newSocket = new Socket(host, port);
-        newIn =
-            new BufferedReader(
-                new InputStreamReader(newSocket.getInputStream()));
-        newOut =
-            new PrintWriter(
-                new BufferedWriter(
-                    new OutputStreamWriter(newSocket.getOutputStream())),
-                true);
+        newIn = new BufferedReader(
+            new InputStreamReader(newSocket.getInputStream()));
+        newOut = new PrintWriter(
+            new BufferedWriter(
+                new OutputStreamWriter(newSocket.getOutputStream())),
+            true);
 
         socket = newSocket;
         in = newIn;
@@ -183,12 +181,20 @@ public class ClientSession {
     System.out.println("[mode] Server stopped. Back to LOCAL mode.");
   }
 
-  /** Returns the current operating mode. */
+  /**
+   * Returns the current operating mode.
+   *
+   * @return the current client mode
+   */
   public ClientMode getMode() {
     return mode;
   }
 
-  /** Returns {@code true} if the TCP socket is open. */
+  /**
+   * Returns {@code true} if the TCP socket is open.
+   *
+   * @return {@code true} if this session is connected to a server
+   */
   public boolean isConnected() {
     connectionLock.lock();
     try {
@@ -198,7 +204,11 @@ public class ClientSession {
     }
   }
 
-  /** Returns the {@code "host:port"} string, or {@code null} when not connected. */
+  /**
+   * Returns the {@code "host:port"} string, or {@code null} when not connected.
+   *
+   * @return the current remote endpoint, or {@code null} if disconnected
+   */
   public String getCurrentServer() {
     connectionLock.lock();
     try {
@@ -208,12 +218,20 @@ public class ClientSession {
     }
   }
 
-  /** Returns the default host used when no address is given to {@code join}. */
+  /**
+   * Returns the default host used when no address is given to {@code join}.
+   *
+   * @return the default host name
+   */
   public String getDefaultHost() {
     return DEFAULT_HOST;
   }
 
-  /** Returns the default port used when no address is given to {@code join}. */
+  /**
+   * Returns the default port used when no address is given to {@code join}.
+   *
+   * @return the default TCP port
+   */
   public int getDefaultPort() {
     return DEFAULT_PORT;
   }
@@ -252,22 +270,21 @@ public class ClientSession {
    * @param reader the active reader bound to the current socket
    */
   private void startListenerThread(BufferedReader reader) {
-    Thread listener =
-        new Thread(
-            () -> {
-              try {
-                String response;
-                while ((response = reader.readLine()) != null) {
-                  handleServerMessage(response);
-                  printRemotePromptIfConnected();
-                }
-              } catch (IOException ignored) {
-                // Cleanup is handled below.
-              } finally {
-                handleUnexpectedServerStop();
-              }
-            },
-            "server-listener");
+    Thread listener = new Thread(
+        () -> {
+          try {
+            String response;
+            while ((response = reader.readLine()) != null) {
+              handleServerMessage(response);
+              printRemotePromptIfConnected();
+            }
+          } catch (IOException ignored) {
+            // Cleanup is handled below.
+          } finally {
+            handleUnexpectedServerStop();
+          }
+        },
+        "server-listener");
     listener.setDaemon(true);
     listener.start();
   }

@@ -28,14 +28,20 @@ Toujours en rapport à la question précédente, est ce que si la profondeur est
 temps est grand, est ce que l'ia va faire des recherches plus profondes que la profondeur donnée
 jusqu'à ce que le temps soit écoulé ou est ce que l'ia va s'arrêter à la profondeur donnée ? 
 
+Bug: 
+Lorsqu'on quitte et q'il demande sauveagrder, la fenêtre de sauvegarde freeze
+alt+f4 pour fermer la fenêtre de sauvegarde
+Shell interactif: set Param=value, ne gère pas tous les paramètres
+Règles des jeu dans l'interactif, à mettre  
 
 
-F01: erreur sur sortie erreur
+
+F01: c'est ok?
 F02: fichier à mettre à jour
 F03: à finir
 F04: nickel
 F05: nickel
-F06: option reconnue mais non implémentée
+F06: nickel
 F07: nickel
 F08: nickel
 F09: nickel

@@ -81,7 +81,7 @@ public class App {
   private static long aiTime = Ai.DEFAULT_MAX_TIME_MS;
 
   /** Flag to set the AI mode. */
-  public static String aiMode = Utils.DEFAULT_AI_MODE;
+  private static String aiMode = Utils.DEFAULT_AI_MODE;
 
   /** Flag to set the white AI mode. */
   private static String whiteAiMode = Utils.DEFAULT_AI_MODE;
@@ -156,16 +156,15 @@ public class App {
         System.out.println("Server running in server mode.");
       }
 
-      Thread serverThread =
-          new Thread(
-              () -> {
-                try {
-                  server.start();
-                } catch (IOException e) {
-                  System.err.println("Failed to start server: " + e.getMessage());
-                }
-              },
-              "game-server-main");
+      Thread serverThread = new Thread(
+          () -> {
+            try {
+              server.start();
+            } catch (IOException e) {
+              System.err.println("Failed to start server: " + e.getMessage());
+            }
+          },
+          "game-server-main");
       serverThread.setDaemon(false);
       serverThread.start();
       return;
@@ -203,8 +202,6 @@ public class App {
       view = new CommandLineInterface(verbose, debug);
     }
     GameController controller = new GameController(view);
-
-
 
     session.setController(controller);
     ShellCommandRouter router = new ShellCommandRouter(controller, session);
@@ -292,7 +289,6 @@ public class App {
         .desc("start server in headless mode")
         .build();
 
-
     options.addOption(serverOption);
     options.addOption(daemonOption);
     Option aiOption = Option.builder("a")
@@ -348,7 +344,6 @@ public class App {
           }
         }
       }
-
 
       if (cmd.hasOption("daemon")) {
         daemonMode = true;
@@ -747,5 +742,14 @@ public class App {
    */
   public static String getBlackAiMode() {
     return blackAiMode;
+  }
+
+  /**
+   * Returns the configured AI mode for both players (if set via --ai) or the default AI mode.  
+   *
+   * @return AI mode.
+   */
+  public static String getAiMode() {
+    return aiMode;
   }
 }
