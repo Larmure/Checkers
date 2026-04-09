@@ -258,9 +258,6 @@ public class GameCheckers implements Subject {
       return;
     }
 
-    boolean isPawnMove = board.isBitWhitePawn(from) || board.isBitBlackPawn(from);
-    boolean isCapture = move.isCapture();
-
     board.applyMove(move);
     managerUndoRedo.registerMove(currentColor, move);
 
@@ -270,6 +267,9 @@ public class GameCheckers implements Subject {
     endGameUndoStack.push(endGameCount);
     noProgressRedoStack.clear();
     endGameRedoStack.clear();
+
+    boolean isPawnMove = board.isBitWhitePawn(from) || board.isBitBlackPawn(from);
+    boolean isCapture = move.isCapture();
 
     if (isCapture || isPawnMove) {
       noProgressCount = 0;
