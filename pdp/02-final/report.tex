@@ -2010,9 +2010,39 @@ la profondeur 4, ce qui le rend vulnérable dès qu'une combinaison nécessite u
  stratégique asymétrique. Les résultats finaux (100 \% de victoires pour le MCTS-UCT) démontrent de manière irréfutable qu'avec des budgets de temps 
  très limités, la flexibilité et la profondeur asymétrique des simulations de Monte Carlo surpassent largement la recherche exhaustive en largeur, 
  même lorsqu'elle est optimisée par l'élagage $\alpha-\beta$.
-\subsection{Bug}
+
+\subsection{Bugs}
+
+Lors des tests et du développement, plusieurs anomalies ont été identifiées :
+
+\begin{enumerate}
+    \item \textbf{Mode serveur -- Acceptation de commandes limitée}
+    
+    Le mode serveur (option \texttt{---server}) n'accepte pas les commandes interactives après son lancement initial. 
+    Une fois que le serveur est démarré, l'architecture réseau n'accepte plus l'ensemble 
+    des commandes disponibles défini dans l'interface de contrôle. 
+    (par ex., la commande \texttt{players}, ne s'affiche pas proprement.)
+    
+    \item \textbf{Absence de vérification d'intégrité de l'historique lors de la sauvegarde}
+    
+    Le système de sauvegarde ne valide pas l'intégrité de l'historique du jeu avant de procéder à la sauvegarde. 
+    Cette absence de vérification peut conduire à la sauvegarde d'états de jeu corrompus ou incohérents.
+    
+    \item \textbf{Blocage de la fenêtre de sauvegarde lors de la fermeture}
+    
+    Lorsque l'utilisateur quitte l'application et que le système demande une confirmation de sauvegarde, 
+    la fenêtre de dialogue peut se bloquer (freeze) et devenir non-réactive. L'utilisateur ne peut alors sortir 
+    de cette situation que par des moyens externes (raccourci Alt+F4).
+    
+    \item \textbf{Shell interactif -- Gestion incomplète des paramètres}
+    
+    La commande \texttt{set Param=value} du shell interactif ne gère pas l'ensemble des paramètres configurables du système. 
+    Certains paramètres ne sont pas reconnus ou acceptés, limitant la flexibilité de configuration en temps réel.
+
+\end{enumerate}
 
 \subsection{Axes d'amélioration}
+
 
 \section*{Conclusion}
 
