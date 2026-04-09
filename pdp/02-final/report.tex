@@ -2154,63 +2154,63 @@ Lors des tests et du développement, plusieurs anomalies ont été identifiées 
 
 \section{Liste des 40 besoins}
 
-\begin{longtable}{|c|p{8cm}|c|}
+\begin{longtable}{|c|p{7.3cm}|c|p{5.2cm}|}
 \caption{État d'avancement des besoins fonctionnels} \label{tab:besoins} \\
 
 \hline 
-\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} \\ \hline
+\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} & \textbf{Erreur (si Partiel)} \\ \hline
 \endfirsthead
 
 \hline
-\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} \\ \hline
+\textbf{ID} & \textbf{Description du besoin} & \textbf{Statut} & \textbf{Erreur (si Partiel)} \\ \hline
 \endhead
 
-\hline \multicolumn{3}{r}{\textit{Suite à la page suivante...}} \\
+\hline \multicolumn{4}{r}{\textit{Suite à la page suivante...}} \\
 \endfoot
 
 \hline
 \endlastfoot
 
-F1 & Lancement du programme & Fait \\ \hline
-F2 & Fichier de configuration & Fait\\ \hline
-F3 & Internationalisation (i18n) & Partiel \\ \hline
-F4 & Interface en ligne de commande & Fait \\ \hline
-F5 & Mode blitz & Fait \\ \hline
-F6 & Mode contest & Fait \\ \hline
-F7 & Interface graphique & Fait \\ \hline
-F8 & Mode IA & Fait \\ \hline
-F9 & Taille du damier & Fait \\ \hline
-F10 & Gestion des règles & Fait \\ \hline
-F11 & Gestion des erreurs de l’utilisateur & Fait \\ \hline
-F12 & Gestion du undo/redo & Fait \\ \hline
-F13 & Gestion des conseils & Fait \\ \hline
-F14 & Gestion du blitz & Fait \\ \hline
-F15 & Shell interactif & Partiel \\ \hline
-F16 & Proposer de sauvegarder avant de quitter & Fait \\ \hline
-F17 & Édition de la commande en cours & Fait \\ \hline
-F18 & Historique des commandes tapées & Fait \\ \hline
-F19 & Complétion des commandes & Fait \\ \hline
-F20 & Notation des coups & Fait \\ \hline
-F21 & Sauvegarde et restauration d’une partie & Fait \\ \hline
-F22 & Commentaires dans la sauvegarde & Fait \\ \hline
-F23 & Format des paramètres du jeu & Fait\\ \hline
-F24 & Format du damier & Fait \\ \hline
-F25 & Format de l’historique & Partiel \\ \hline
-F26 & Module bitboard & Fait \\ \hline
-F27 & Algorithmes de manipulation des bitboards & Fait \\ \hline
-F28 & Menus de l’application & Fait \\ \hline
-F29 & Raccourcis clavier & Fait \\ \hline
-F30 & Drag’n’Drop & Fait \\ \hline
-F31 & Temps de réflexion borné & Fait \\ \hline
-F32 & Minimax avec $\alpha\beta$-pruning & Fait \\ \hline
-F33 & Fonctions d’évaluation pour Minimax & Fait \\ \hline
-F34 & Approfondissement itératif de Minimax & Partiel \\ \hline
-F35 & Profondeur de recherche de Minimax & Fait \\ \hline
-F36 & Monte Carlo Tree Search (MCTS) & Fait \\ \hline
-F37 & Fonction de sélection par Machine Learning & Fait \\ \hline
-F38 & Découverte de serveurs et connexion client-serveur basique & Fait\\ \hline
-F39 & Serveur multi-clients et gestion de parties & Partiel \\ \hline
-F40 & Système d’invitations et gestion avancée des joueurs & Fait \\ \hline
+F1 & Lancement du programme & Fait & --- \\ \hline
+F2 & Fichier de configuration & Fait & --- \\ \hline
+F3 & Internationalisation (i18n) & Partiel & Traductions incomplètes \\ \hline
+F4 & Interface en ligne de commande & Fait & --- \\ \hline
+F5 & Mode blitz & Fait & --- \\ \hline
+F6 & Mode contest & Fait & --- \\ \hline
+F7 & Interface graphique & Fait & --- \\ \hline
+F8 & Mode IA & Fait & --- \\ \hline
+F9 & Taille du damier & Fait & --- \\ \hline
+F10 & Gestion des règles & Fait & --- \\ \hline
+F11 & Gestion des erreurs de l’utilisateur & Fait & --- \\ \hline
+F12 & Gestion du undo/redo & Fait & --- \\ \hline
+F13 & Gestion des conseils & Fait & --- \\ \hline
+F14 & Gestion du blitz & Fait & --- \\ \hline
+F15 & Shell interactif & Partiel & set Param=value, ne gère pas tous les paramètres. \\ \hline
+F16 & Proposer de sauvegarder avant de quitter & Fait & --- \\ \hline
+F17 & Édition de la commande en cours & Fait & --- \\ \hline
+F18 & Historique des commandes tapées & Fait & --- \\ \hline
+F19 & Complétion des commandes & Fait & --- \\ \hline
+F20 & Notation des coups & Fait & --- \\ \hline
+F21 & Sauvegarde et restauration d’une partie & Partiel & Le chargement d'un fichier ne vérifie pas la validité de l'historique par rapport aux bord. \\ \hline
+F22 & Commentaires dans la sauvegarde & Fait & --- \\ \hline
+F23 & Format des paramètres du jeu & Fait & --- \\ \hline
+F24 & Format du damier & Fait & --- \\ \hline
+F25 & Format de l’historique & Fait &  \\ \hline
+F26 & Module bitboard & Fait & --- \\ \hline
+F27 & Algorithmes de manipulation des bitboards & Fait & --- \\ \hline
+F28 & Menus de l’application & Fait & --- \\ \hline
+F29 & Raccourcis clavier & Fait & --- \\ \hline
+F30 & Drag’n’Drop & Fait & --- \\ \hline
+F31 & Temps de réflexion borné & Fait & --- \\ \hline
+F32 & Minimax avec $\alpha\beta$-pruning & Fait & --- \\ \hline
+F33 & Fonctions d’évaluation pour Minimax & Fait & --- \\ \hline
+F34 & Approfondissement itératif de Minimax & Partiel & Pas par rapport au temps dispo si on est en mode blitz. \\ \hline
+F35 & Profondeur de recherche de Minimax & Fait & --- \\ \hline
+F36 & Monte Carlo Tree Search (MCTS) & Fait & --- \\ \hline
+F37 & Fonction de sélection par Machine Learning & Fait & --- \\ \hline
+F38 & Découverte de serveurs et connexion client-serveur basique & Fait & --- \\ \hline
+F39 & Serveur multi-clients et gestion de parties & Partiel & Synchronisation incomplète dans certains scénarios multi-clients. \\ \hline
+F40 & Système d’invitations et gestion avancée des joueurs & Fait & --- \\ \hline
 \end{longtable} 
 
 \section{Procédure d'entraînement du modèle}
