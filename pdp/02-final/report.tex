@@ -1,15 +1,26 @@
 \documentclass[a4paper]{article}
 
-\usepackage[svgnames]{xcolor}
+\usepackage[svgnames, x11names, table]{xcolor}
 \usepackage{pdp}
 \usepackage{longtable}
 \usepackage{amsmath}
 \usepackage{caption}
 \usepackage{placeins}
 \usepackage{comment}
+\usepackage{tikz}
 \usetikzlibrary{positioning,fit,backgrounds,arrows.meta,babel,shapes.geometric}
 \pgfdeclarelayer{background}
 \pgfsetlayers{background,main}
+
+
+%B5FFE2 VIEW
+%FFBD59 CONTROLLER
+%F19C99 MODEL
+%0097b2 méthode
+%b694cf mode
+%7ed957 IA
+%ff66c4 condition de boucle
+%d9d9d9 shell
 
 \captionsetup[figure]{justification=centering, singlelinecheck=false}
 
@@ -555,6 +566,7 @@ ne modifient qu'un bit et restent en $O(1)$. Les méthodes utilitaires de test
 (\texttt{restorePiece}, \texttt{demoteBit}, \texttt{remove}, \texttt{addWhite}, \texttt{addBlack}, \texttt{clearBoard})
 sont donc toutes en $O(1)$ dans ce modèle borné.
 
+
 \subsubsection{Génération des coups}
 
 La génération globale \texttt{getValidMoves(boolean)} effectue un balayage des cases actives puis appelle des routines
@@ -665,6 +677,16 @@ L'architecture de notre application repose sur le patron Modèle-Vue-Contrôleur
 Cette section détaille la conception de notre moteur de jeu (qui incarne le Modèle) et 
 la façon dont il interagit avec le reste du programme pour assurer le bon déroulement d'une partie.
 
+\definecolor{view_color}{HTML}{B5FFE2}
+\definecolor{controller_color}{HTML}{FFBD59}
+\definecolor{model_color}{HTML}{F19C99}
+\definecolor{method_color}{HTML}{0097b2}
+\definecolor{mode_color}{HTML}{b694cf}
+\definecolor{ai_color}{HTML}{7ed957}
+\definecolor{loop_color}{HTML}{ff66c4}
+\definecolor{shell_network_color}{HTML}{d9d9d9}
+\definecolor{persist_color}{HTML}{ff3131}
+
 \begin{figure}[ht]
 \centering
 \makebox[\textwidth][c]{
@@ -677,13 +699,13 @@ la façon dont il interagit avec le reste du programme pour assurer le bon déro
   % ============================
   % Niveau 1 : vue globale
   % ============================
-  \node[mod, fill=Honeydew!65] (entry) at (-8.1, 2.9) {Entrées utilisateur\\{\scriptsize CLI / GUI}};
-  \node[mod, fill=Lavender!45] (controllerTop) at (-2.8, 2.9) {Contrôle applicatif\\{\scriptsize GameController / Router}};
-  \node[mod, fill=LightSteelBlue!35] (modelTop) at (2.5, 2.9) {Moteur de jeu\\{\footnotesize model : Board, GameCheckers}};
+  \node[mod, fill={view_color}] (entry) at (-8.1, 2.9) {Entrées utilisateur\\{\scriptsize CLI / GUI}};
+  \node[mod, fill={controller_color}] (controllerTop) at (-2.8, 2.9) {Contrôle applicatif\\{\scriptsize GameController / Router}};
+  \node[mod, fill={model_color}] (modelTop) at (2.5, 2.9) {Moteur de jeu\\{\footnotesize model : Board, GameCheckers}};
 
-  \node[mod, fill=Thistle!35] (networkTop) at (2.5, 5.0) {Module Réseau\\{\scriptsize TCP client/serveur}};
-  \node[mod, fill=MistyRose!45] (aiTop) at (2.5, 0.45) {Module IA\\{\scriptsize MinMax, AlphaBeta, MCTS}};
-  \node[mod, fill=LemonChiffon!55] (persistTop) at (-2.8, 0.45) {Persistance\\{\scriptsize save/load, historique}};
+  \node[mod, fill={shell_network_color}] (networkTop) at (2.5, 5.0) {Module Réseau\\{\scriptsize TCP client/serveur}};
+  \node[mod, fill={ai_color}] (aiTop) at (2.5, 0.45) {Module IA\\{\scriptsize MinMax, AlphaBeta, MCTS}};
+  \node[mod, fill={persist_color}, text=white] (persistTop) at (-2.8, 0.45) {Persistance\\{\scriptsize save/load, historique}};
 
   \draw[flow] (entry.east) -- node[above, font=\tiny]{actions} (controllerTop.west);
   \draw[flow] (controllerTop.east) -- node[above, font=\tiny]{commandes} (modelTop.west);
@@ -695,14 +717,14 @@ la façon dont il interagit avec le reste du programme pour assurer le bon déro
   % ============================
   % Légende couleurs -> packages
   % ============================
-  \node[font=\scriptsize\bfseries] at (-7.6, -1.0) {Légende des couleurs (packages)};
+  \node[font=\scriptsize\bfseries] at (0, -1.0) {Légende des couleurs (packages)};
 
-  \node[leg, fill=Honeydew!65] (legView) at (-7.6, -2.1) {Package \texttt{view}};
-  \node[leg, fill=Lavender!45] (legController) at (-3.9, -2.1) {Package \texttt{controller}};
-  \node[leg, fill=LightSteelBlue!35] (legModel) at (-0.2, -2.1) {Package \texttt{model}};
-  \node[leg, fill=MistyRose!45] (legAi) at (3.5, -2.1) {Package \texttt{ai}};
-  \node[leg, fill=Thistle!35] (legNetwork) at (-2.0, -3.25) {Package \texttt{server} / réseau};
-  \node[leg, fill=LemonChiffon!55] (legPersist) at (2.4, -3.25) {Persistance (save/load)};
+  \node[leg, fill={view_color}] (legView) at (-9.0, -2.1) {Package \texttt{view}};
+  \node[leg, fill={controller_color}] (legController) at (-5.4, -2.1) {Package \texttt{controller}};
+  \node[leg, fill={model_color}] (legModel) at (-1.8, -2.1) {Package \texttt{model}};
+  \node[leg, fill={ai_color}] (legAi) at (1.8, -2.1) {Package \texttt{ai}};
+  \node[leg, fill={shell_network_color}] (legNetwork) at (5.4, -2.1) {Package \texttt{server} / réseau};
+  \node[leg, fill={persist_color}, text=white] (legPersist) at (9.0, -2.1) {Persistance (save/load)};
 \end{tikzpicture}
 }
 \caption{Architecture globale du projet : interactions MVC et légende des couleurs par package}
@@ -722,7 +744,7 @@ Ses responsabilités sont réparties entre deux classes majeures. D'un côté, l
   umlclass/.style={draw, rounded corners=3pt, align=left, font=\footnotesize, inner sep=4pt, minimum width=4.0cm},
   umllink/.style={-{Stealth[length=3.5pt]}, line width=0.5pt}
 ]
-  \node[umlclass, fill=LightSteelBlue!35] (gc) {
+  \node[umlclass, fill=model_color] (gc) {
     \textbf{GameCheckers}\\
     - board : Board\\
     - managerUndoRedo : ManagerUndoRedo\\
@@ -733,7 +755,7 @@ Ses responsabilités sont réparties entre deux classes majeures. D'un côté, l
     + notifyObservers() : void
   };
 
-  \node[umlclass, fill=Honeydew!60, right=1.6cm of gc] (board) {
+  \node[umlclass, fill=model_color, right=1.6cm of gc] (board) {
     \textbf{Board}\\
     - whitePawns, blackPawns : long\\
     - whiteCheckers, blackCheckers : long\\
@@ -743,7 +765,7 @@ Ses responsabilités sont réparties entre deux classes majeures. D'un côté, l
     + copy() : Board
   };
 
-  \node[umlclass, fill=MistyRose!45, below=1.2cm of gc] (undo) {
+  \node[umlclass, fill=model_color, below=1.2cm of gc] (undo) {
     \textbf{ManagerUndoRedo}\\
     - undoStack, redoStack\\
     \rule{3.8cm}{0.4pt}\\
@@ -752,7 +774,7 @@ Ses responsabilités sont réparties entre deux classes majeures. D'un côté, l
     + redo(isWhiteTurn) : void
   };
 
-  \node[umlclass, fill=LemonChiffon!55, below=1.2cm of board] (move) {
+  \node[umlclass, fill=model_color, below=1.2cm of board] (move) {
     \textbf{Move}\\
     - from : int\\
     - to : int\\
@@ -763,6 +785,17 @@ Ses responsabilités sont réparties entre deux classes majeures. D'un côté, l
   \draw[umllink] (gc.south) -- node[left, font=\scriptsize]{gère} (undo.north);
   \draw[umllink] (board.south) -- node[right, font=\scriptsize]{produit/applique} (move.north);
   \draw[umllink, dashed] (gc.south east) -- node[below right, font=\scriptsize]{consomme} (move.north west);
+
+  \node[
+    draw,
+    rounded corners=3pt,
+    fill=model_color,
+    font=\scriptsize\bfseries,
+    minimum width=3.0cm,
+    minimum height=0.7cm,
+    below=1.0cm of move,
+    xshift=-2.8cm
+  ] (legendModel) {Model};
 \end{tikzpicture}
 \caption{Diagramme de classes UML simplifié du moteur de jeu}
 \label{fig:uml-moteur}
@@ -795,27 +828,26 @@ l'état du jeu.
 
 \begin{tikzpicture}[
   scale=0.8, transform shape,
-  comp/.style={rectangle, rounded corners=4pt, fill=coulOrange, text=white,
-               font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
-  meth/.style={rectangle, rounded corners=6pt, fill=coulTeal, text=white,
-               font=\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
-  mode/.style={ellipse, fill=coulTeal, text=white,
-               font=\footnotesize, minimum width=2.0cm, minimum height=0.55cm, align=center},
+  leg/.style={rectangle, draw, rounded corners=4pt,
+              font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
   dot/.style={circle, fill=coulRed, minimum size=7pt, inner sep=0pt},
   arr/.style={-{Stealth[length=5pt]}, dashed, thick},
   label/.style={font=\scriptsize, align=center},
 ]
   \node[label, font=\scriptsize\bfseries] at (0, 0.8) {Légende};
 
-  \node[comp] (legComp) at (-5.4, 0) {Classe};
-  \node[meth] (legMeth) at (-2.8, 0) {Méthode};
-  \node[mode] (legMode) at (-0.2, 0) {Mode/état};
+  \node[leg, fill=model_color] (legModel) at (-8.8, 0) {Model};
+  \node[leg, fill=controller_color] (legController) at (-6.2, 0) {Controller};
+  \node[leg, fill=shell_network_color] (legShell) at (-3.6, 0) {Réseau};
+  \node[leg, fill=view_color] (legView) at (-1.0, 0) {View};
+  \node[leg, fill=method_color, text=white] (legMethod) at (1.6, 0) {Méthode};
+  \node[leg, fill=mode_color, text=white] (legMode) at (4.2, 0) {Mode};
 
-  \node[dot] (legDot) at (2.0, 0) {};
+  \node[dot] (legDot) at (6.8, 0) {};
   \node[label, right=3pt of legDot] {Événement};
 
-  \draw[arr] (4.0, 0) -- (5.5, 0);
-  \node[label, above=1pt] at (4.75, 0) {Route/flux};
+  \draw[arr] (8.8, 0) -- (10.3, 0);
+  \node[label, above=1pt] at (9.55, 0) {Route/flux};
 \end{tikzpicture}
 \caption{Interaction entre le moteur et la vue via le contrôleur}
 \label{fig:mvc}
@@ -829,23 +861,6 @@ Concernant la dynamique, le jeu s'exécute au tour par tour, géré par une mach
 à états simple définie par l'énumération \texttt{State} (\texttt{IN\_GAME}, 
 \texttt{PAUSE}, \texttt{FINISHED}).
 
-{\small
-\begin{minted}[frame=single]{java}
-// Extrait simplifié de GameCheckers.java : évolution de l'état du système
-public void applyMove(String from, String to, boolean isManoury) {
-    // 1. Délégation de la physique au plateau
-    board.applyMove(move);
-    
-    // 2. Mise à jour de l'état global (historique et tour de jeu)
-    managerUndoRedo.registerMove(currentColor, move);
-    this.isWhiteTurn = !this.isWhiteTurn;
-    
-    // 3. Signal de fin d'opération à l'interface
-    notifyObservers();
-}
-\end{minted}
-}
-
 Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vérifie si la partie est terminée. Si le jeu continue, il oriente le flux vers une attente de saisie utilisateur, ou lance immédiatement la réflexion de l'algorithme si le joueur suivant est une intelligence artificielle.
 
 \begin{figure}[H]
@@ -856,30 +871,26 @@ Une fois le coup appliqué et la vue rafraîchie, le \texttt{GameController} vé
 
 \begin{tikzpicture}[
   scale=0.8, transform shape,
-  comp/.style={rectangle, rounded corners=4pt, fill=coulOrange, text=white,
-               font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
-  meth/.style={rectangle, rounded corners=6pt, fill=coulTeal, text=white,
-               font=\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
-  mode/.style={ellipse, fill=coulTeal, text=white,
-               font=\footnotesize, minimum width=2.0cm, minimum height=0.55cm, align=center},
-  cond/.style={diamond, aspect=1.8, fill=coulTeal, text=white,
-               font=\footnotesize, minimum width=1.6cm, minimum height=0.75cm, align=center},
+  leg/.style={rectangle, draw, rounded corners=4pt,
+              font=\bfseries\footnotesize, minimum width=2.2cm, minimum height=0.55cm, align=center},
   dot/.style={circle, fill=coulRed, minimum size=7pt, inner sep=0pt},
   arr/.style={-{Stealth[length=5pt]}, dashed, thick},
   label/.style={font=\scriptsize, align=center},
 ]
   \node[label, font=\scriptsize\bfseries] at (0, 0.8) {Légende};
 
-  \node[comp] (legComp) at (-7.8, 0) {Classe};
-  \node[meth] (legMeth) at (-5.2, 0) {Méthode};
-  \node[mode] (legMode) at (-2.6, 0) {Mode/état};
-  \node[cond] (legCond) at (0.4, 0) {Condition};
+  \node[leg, fill=controller_color] (legController) at (-9.0, 0) {Controller};
+  \node[leg, fill=ai_color] (legAi) at (-6.4, 0) {Ai};
+  \node[leg, fill=view_color] (legView) at (-3.8, 0) {View};
+  \node[leg, fill=method_color, text=white] (legMethod) at (1.4, 0) {Méthode};
+  \node[leg, fill=mode_color, text=white] (legCondition) at (-1.2, 0) {Condition};
+  \node[leg, fill=loop_color, text=white] (legLoop) at (4.0, 0) {Boucle};
 
-  \node[dot] (legDot) at (3.0, 0) {};
+  \node[dot] (legDot) at (6.8, 0) {};
   \node[label, right=3pt of legDot] {Événement};
 
-  \draw[arr] (5.0, 0) -- (6.5, 0);
-  \node[label, above=1pt] at (5.75, 0) {Route/flux};
+  \draw[arr] (8.6, 0) -- (10.1, 0);
+  \node[label, above=1pt] at (9.35, 0) {Route/flux};
 \end{tikzpicture}
 \caption{Boucle de contrôle du jeu}
 \label{fig:controller-loop}
@@ -941,6 +952,18 @@ notifie les vues, qui se contentent de se rafraîchir. Ce fonctionnement paraît
     \begin{minipage}{0.5\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img_report/affichage.png}
+        \\
+        \vspace{0.25cm}
+        \begin{tikzpicture}[
+          scale=0.62, transform shape,
+          leg/.style={rectangle, draw, rounded corners=4pt,
+                      font=\bfseries\footnotesize, minimum width=2.2cm,
+                      minimum height=0.55cm, align=center}
+        ]
+          \node[leg, fill=model_color] (legModel) at (0, 0) {Model};
+          \node[leg, fill=controller_color] (legController) at (3.1, 0) {Controller};
+          \node[leg, fill=view_color] (legView) at (6.2, 0) {View};
+        \end{tikzpicture}
         \caption{Architecture des modules Model-View}
     \end{minipage}
 \end{figure}
