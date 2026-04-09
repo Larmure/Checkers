@@ -2151,6 +2151,11 @@ Les violations suivantes ont été identifiées lors de l'analyse PMD mais n'ont
 
 \begin{enumerate}
     \setcounter{enumi}{2}
+    \item \textbf{Réduction des violations de la Loi de Déméter}
+    
+    De nombreuses chaînes d'appels de méthodes (\texttt{a.getB().getC()}) ont été détectées 
+    par PMD.
+
     \item \textbf{Intégration d'un logger}
 
     Remplacer les appels à System.out.println et System.err.println par un framework de logging (SLF4J/Logback) 
@@ -2206,7 +2211,7 @@ d’entraînement. Côté réseau, la base est opérationnelle mais certains sc�
 stabilisation complète de la GUI connectée demandent encore du durcissement. Ces points ne remettent 
 pas en cause la structure générale; ils définissent un plan d’évolution précis: enrichissement du 
 pipeline d’apprentissage, fiabilisation des transitions de session réseau, et renforcement des 
-tests d’intégration distribués.
+tests unitaires.
 
 Au-delà des livrables, le projet a surtout démontré une capacité collective à tenir une cohérence 
 architecturale sur un codebase partagé, à arbitrer entre ambition et robustesse, et à converger vers 
