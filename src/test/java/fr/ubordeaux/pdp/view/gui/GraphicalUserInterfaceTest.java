@@ -42,7 +42,7 @@ class GraphicalUserInterfaceTest {
   @Test
   void testConstructorWithCliConfigStoresConfig() throws Exception {
     Configuration cfg = Configuration.getDefaultConfiguration();
-    GraphicalUserInterface gui = new GraphicalUserInterface(cfg);
+    GraphicalUserInterface gui = new GraphicalUserInterface(cfg, false, null);
 
     Field cliConfigField = GraphicalUserInterface.class.getDeclaredField("cliConfig");
     cliConfigField.setAccessible(true);
@@ -52,14 +52,14 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testShowHintWithNullMainViewDoesNotThrow() {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
 
     assertDoesNotThrow(() -> gui.showHint("A1", "B2"));
   }
 
   @Test
   void testShowGameOverAlertReturnsImmediatelyWhenAlreadyShown() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     setGameOverAlert(gui, true);
 
     assertDoesNotThrow(() -> gui.showGameOverAlert(null, false));
@@ -68,7 +68,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testShowGameOverAlertUsesTimeExpiredHeader() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Player whitePlayer = Mockito.mock(Player.class);
     Player blackPlayer = Mockito.mock(Player.class);
@@ -115,7 +115,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testShowGameOverAlertUsesDrawHeader() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Stage stage = Mockito.mock(Stage.class);
 
@@ -153,7 +153,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testShowGameOverAlertUsesWinnerHeader() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Player whitePlayer = Mockito.mock(Player.class);
     Player blackPlayer = Mockito.mock(Player.class);
@@ -190,7 +190,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testUpdateResetsGameOverAlertWhenStateIsInGame() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Mockito.when(game.getState()).thenReturn(State.IN_GAME);
 
@@ -202,7 +202,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testUpdateKeepsGameOverAlertWhenStateIsNotInGame() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Mockito.when(game.getState()).thenReturn(State.FINISHED);
 
@@ -214,7 +214,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testDisplayDelegatesToUpdateAndResetsFlagInGame() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     Mockito.when(game.getState()).thenReturn(State.IN_GAME);
 
@@ -226,14 +226,14 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testStartWhenToolkitAlreadyInitializedThrowsIllegalStateException() {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
 
     assertThrows(IllegalStateException.class, gui::start);
   }
 
   @Test
   void testRequestQuitWithoutGameExitsDirectly() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameController controller = Mockito.mock(GameController.class);
 
     gui.setController(controller);
@@ -252,7 +252,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testRequestQuitWhenGameInProgressAndUserConfirmsSave() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameController controller = Mockito.mock(GameController.class);
     GameCheckers game = Mockito.mock(GameCheckers.class);
     MainView mainView = Mockito.mock(MainView.class);
@@ -281,7 +281,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testRequestQuitWhenGameInProgressAndUserDeclinesSave() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameController controller = Mockito.mock(GameController.class);
     GameCheckers game = Mockito.mock(GameCheckers.class);
 
@@ -309,7 +309,7 @@ class GraphicalUserInterfaceTest {
 
   @Test
   void testRequestQuitWhenGameInProgressAndUserCancels() throws Exception {
-    GraphicalUserInterface gui = new GraphicalUserInterface();
+    GraphicalUserInterface gui = new GraphicalUserInterface(false, null);
     GameController controller = Mockito.mock(GameController.class);
     GameCheckers game = Mockito.mock(GameCheckers.class);
 
