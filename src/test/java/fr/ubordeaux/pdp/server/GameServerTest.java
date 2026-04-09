@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.HeadlessView;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -142,10 +143,10 @@ class GameServerTest {
 
     int actualPort = getServerSocket(server).getLocalPort();
     try (Socket client = new Socket("127.0.0.1", actualPort);
-        PrintWriter clientOut = new PrintWriter(
-            new OutputStreamWriter(client.getOutputStream(), StandardCharsets.UTF_8), true);
-        BufferedReader clientIn = new BufferedReader(
-            new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8))) {
+         PrintWriter clientOut = new PrintWriter(
+             new OutputStreamWriter(client.getOutputStream(), StandardCharsets.UTF_8), true);
+         BufferedReader clientIn = new BufferedReader(
+             new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8))) {
       clientOut.println("REGISTER p1 Alice");
       assertTrue(clientIn.readLine().startsWith("WELCOME p1"));
       client.shutdownOutput();
@@ -209,7 +210,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, player, "PLAYERS");
 
-    assertTrue(buffer.toString().contains("(none)"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.players_empty")));
   }
 
   @Test
@@ -251,7 +253,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, sender, "NEW p2");
 
-    assertTrue(buffer.toString().contains("must be idle"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.error.must_be_idle_to_invite", "away")));
   }
 
   @Test
@@ -272,7 +275,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, sender, "NEW p2");
 
-    assertTrue(buffer.toString().contains("away and cannot receive invitations"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.invitation.player_away", "p2")));
   }
 
   @Test
@@ -295,7 +299,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, sender, "NEW p2");
 
-    assertTrue(buffer.toString().contains("already in a game"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.invitation.player_already_ingame", "p2")));
   }
 
   @Test
@@ -315,7 +320,8 @@ class GameServerTest {
     invokeHandleCommand(server, out, player, "AWAY");
 
     assertEquals(PlayerSession.Status.AWAY, player.getStatus());
-    assertTrue(buffer.toString().contains("STATUS_CHANGED away"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.status_changed_away")));
   }
 
   @Test
@@ -337,7 +343,8 @@ class GameServerTest {
     invokeHandleCommand(server, out, player, "AWAY");
 
     assertEquals(PlayerSession.Status.INGAME, player.getStatus());
-    assertTrue(buffer.toString().contains("Cannot go away while in a game"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.error.cannot_go_away_ingame")));
   }
 
   @Test
@@ -357,7 +364,8 @@ class GameServerTest {
     invokeHandleCommand(server, out, player, "BACK");
 
     assertEquals(PlayerSession.Status.IDLE, player.getStatus());
-    assertTrue(buffer.toString().contains("STATUS_CHANGED idle"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.status_changed_idle")));
   }
 
   @Test
@@ -379,7 +387,8 @@ class GameServerTest {
     invokeHandleCommand(server, out, player, "BACK");
 
     assertEquals(PlayerSession.Status.INGAME, player.getStatus());
-    assertTrue(buffer.toString().contains("Cannot use BACK while in a game"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.error.cannot_back_ingame")));
   }
 
   @Test
@@ -401,7 +410,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, player, "MOVE A3-B4");
 
-    assertTrue(buffer.toString().contains("MOVE_OK A3-B4"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.move_ok", "A3-B4")));
     assertEquals("A3", controller.lastFrom);
     assertEquals("B4", controller.lastTo);
     assertFalse(controller.lastIsManoury);
@@ -429,8 +439,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, player, "MOVE A3-B4");
 
-    assertTrue(buffer.toString().contains("Illegal move"));
-    assertTrue(buffer.toString().contains("forbidden move"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.game.illegal_move", "forbidden move")));
   }
 
   @Test
@@ -459,7 +469,8 @@ class GameServerTest {
     assertNotNull(registry.getSessionForPlayer("alice"));
     assertEquals(PlayerSession.Status.INGAME, alice.getStatus());
     assertEquals(PlayerSession.Status.INGAME, bob.getStatus());
-    assertTrue(aliceBuffer.toString().contains("INVITATION_ACCEPTED STARTING_GAME"));
+    assertTrue(aliceBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_accepted_starting_game")));
     assertTrue(aliceBuffer.toString().contains("GAME_START session="));
     assertTrue(bobBuffer.toString().contains("GAME_START session="));
   }
@@ -510,8 +521,10 @@ class GameServerTest {
     invokeHandleCommand(server, bobOut, bob, "DECLINE");
     invokeHandleCommand(server, aliceOut, alice, "CANCEL");
 
-    assertTrue(bobBuffer.toString().contains("No pending invitation found for you"));
-    assertTrue(aliceBuffer.toString().contains("no pending outgoing invitation"));
+    assertTrue(bobBuffer.toString().contains(
+        Internationalization.get("server.invitation.accept.none_found")));
+    assertTrue(aliceBuffer.toString().contains(
+        Internationalization.get("server.invitation.cancel.none_found")));
   }
 
   @Test
@@ -535,8 +548,10 @@ class GameServerTest {
     invokeHandleCommand(server, bobOut, bob, "DECLINE");
 
     assertEquals(PlayerSession.Status.IDLE, bob.getStatus());
-    assertTrue(bobBuffer.toString().contains("INVITATION_DECLINED"));
-    assertTrue(aliceBuffer.toString().contains("INVITATION_DECLINED BY=bob"));
+    assertTrue(bobBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_declined")));
+    assertTrue(aliceBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_declined_by", "bob")));
   }
 
   @Test
@@ -560,8 +575,10 @@ class GameServerTest {
     invokeHandleCommand(server, aliceOut, alice, "CANCEL");
 
     assertEquals(PlayerSession.Status.IDLE, bob.getStatus());
-    assertTrue(aliceBuffer.toString().contains("INVITATION_CANCELLED"));
-    assertTrue(bobBuffer.toString().contains("INVITATION_CANCELLED BY=alice"));
+    assertTrue(aliceBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_cancelled")));
+    assertTrue(bobBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_cancelled_by", "alice")));
   }
 
   @Test
@@ -587,8 +604,10 @@ class GameServerTest {
     invokeHandleInvitationExpiry(server, result.invitation, registry);
 
     assertEquals(PlayerSession.Status.IDLE, bob.getStatus());
-    assertTrue(aliceBuffer.toString().contains("INVITATION_EXPIRED TO=bob"));
-    assertTrue(bobBuffer.toString().contains("INVITATION_EXPIRED FROM=alice"));
+    assertTrue(aliceBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_expired_to", "bob")));
+    assertTrue(bobBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_expired_from", "alice")));
   }
 
   @Test
@@ -614,7 +633,8 @@ class GameServerTest {
 
     invokeHandleInvitationExpiry(server, result.invitation, registry);
 
-    assertTrue(aliceBuffer.toString().contains("INVITATION_EXPIRED TO=bob"));
+    assertTrue(aliceBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_expired_to", "bob")));
     assertTrue(bobBuffer.toString().isEmpty());
   }
 
@@ -644,8 +664,10 @@ class GameServerTest {
 
     invokeCleanupPlayerInvitations(server, alice);
 
-    assertTrue(bobBuffer.toString().contains("INVITATION_CANCELLED BY=alice (player disconnected)"));
-    assertTrue(carolBuffer.toString().contains("INVITATION_DECLINED BY=alice (player disconnected)"));
+    assertTrue(bobBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_cancelled_disconnected", "alice")));
+    assertTrue(carolBuffer.toString().contains(
+        Internationalization.get("server.main.invitation_declined_disconnected", "alice")));
   }
 
   @Test
@@ -665,7 +687,8 @@ class GameServerTest {
     invokeHandleClient(server, client);
 
     String output = out.toString(StandardCharsets.UTF_8);
-    assertTrue(output.contains("ERROR: Usage: REGISTER <id> <name>"));
+    assertTrue(output.contains(
+        Internationalization.get("server.main.error.register_usage")));
     assertEquals(0, getRegistry(server).getPlayerCount());
   }
 
@@ -688,11 +711,11 @@ class GameServerTest {
     invokeHandleClient(server, client);
 
     String output = out.toString(StandardCharsets.UTF_8);
-    assertTrue(output.contains("ID 'p1' is already taken"));
+    assertTrue(output.contains(
+        Internationalization.get("server.main.error.id_taken", "p1")));
     assertEquals(1, registry.getPlayerCount());
   }
 
-  @Test
   void handleClient_registersGuiOnlyPlayerAndSendsGuiWelcome() throws Exception {
     GameServer server = new GameServer(
         "TestServer",
@@ -701,7 +724,8 @@ class GameServerTest {
         false,
         true);
 
-    ByteArrayInputStream in = new ByteArrayInputStream("REGISTER p1 Alice\n".getBytes(StandardCharsets.UTF_8));
+    ByteArrayInputStream in =
+        new ByteArrayInputStream("REGISTER p1 Alice\n".getBytes(StandardCharsets.UTF_8));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
     Socket client = new StubSocket(in, out);
@@ -709,8 +733,12 @@ class GameServerTest {
     invokeHandleClient(server, client);
 
     String output = out.toString(StandardCharsets.UTF_8);
-    assertTrue(output.contains("WELCOME p1 mode=GUI"));
-    assertTrue(output.contains("WAITING"));
+
+    String expectedWelcome = "WELCOME p1 mode=GUI";
+    String expectedWaiting = Internationalization.get("server.main.waiting_single_player");
+
+    assertTrue(output.contains(expectedWelcome), "WELCOME missing. OUTPUT=[" + output + "]");
+    assertTrue(output.contains(expectedWaiting), "WAITING missing. OUTPUT=[" + output + "]");
   }
 
   @Test
@@ -726,7 +754,8 @@ class GameServerTest {
           false);
 
       IOException ex = assertThrows(IOException.class, server::start);
-      assertTrue(ex.getMessage().contains("already in use"));
+      assertTrue(ex.getMessage().contains(
+          Internationalization.get("server.main.port_in_use", usedPort)));
       assertTrue(!server.isRunning());
     }
   }
@@ -838,7 +867,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, player, "NEW");
 
-    assertTrue(buffer.toString().contains("ERROR: Usage: NEW <player_id>"));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.error.new_usage")));
   }
 
   @Test
@@ -857,7 +887,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, player, "NEW unknown");
 
-    assertTrue(buffer.toString().contains("ERROR: Player 'unknown' not found."));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.error.player_not_found", "unknown")));
   }
 
   @Test
@@ -876,8 +907,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, player, "MOVE A3-B4");
 
-    assertTrue(
-        buffer.toString().contains("ERROR: Not in a game. Use NEW to invite a player."));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.error.not_in_game")));
   }
 
   @Test
@@ -896,7 +927,8 @@ class GameServerTest {
 
     invokeHandleCommand(server, out, player, "UNKNOWN_CMD");
 
-    assertTrue(buffer.toString().contains("ERROR: Unknown command 'UNKNOWN_CMD'."));
+    assertTrue(buffer.toString().contains(
+        Internationalization.get("server.main.error.unknown_command", "UNKNOWN_CMD")));
   }
 
   @Test
@@ -916,7 +948,8 @@ class GameServerTest {
     invokeHandleClient(server, client);
 
     String output = out.toString(StandardCharsets.UTF_8);
-    assertTrue(output.contains("ERROR: First message must be REGISTER <id> <name>"));
+    assertTrue(output.contains(
+        Internationalization.get("server.main.error.first_message_register")));
     assertEquals(0, getRegistry(server).getPlayerCount());
   }
 
@@ -1055,7 +1088,7 @@ class GameServerTest {
     private int executeMoveCalls = 0;
     private String lastFrom;
     private String lastTo;
-    private boolean lastIsManoury; // This line is retained for context
+    private boolean lastIsManoury;
     private RuntimeException moveException;
 
     private RecordingGameController() {

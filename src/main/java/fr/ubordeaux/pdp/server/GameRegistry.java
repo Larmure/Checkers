@@ -1,6 +1,7 @@
 package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Comparator;
@@ -200,7 +201,7 @@ public class GameRegistry {
     rwLock.readLock().lock();
     try {
       if (players.isEmpty()) {
-        return "No players connected.";
+        return Internationalization.get("server.registry.no_players_connected");
       }
       return players.values().stream()
           .sorted(Comparator.comparingInt(PlayerSession::getWins).reversed())

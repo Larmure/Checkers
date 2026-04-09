@@ -1,5 +1,6 @@
 package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -57,7 +58,7 @@ public class DiscoveryService implements Runnable {
       String message = serverName + ":" + localIp + ":" + tcpPort;
       byte[] buffer = message.getBytes();
 
-      System.out.println("Discovery service started, broadcasting every 10 seconds...");
+      System.out.println(Internationalization.get("server.discovery.started"));
 
       while (running && !Thread.currentThread().isInterrupted()) {
         DatagramPacket packet =
@@ -69,7 +70,8 @@ public class DiscoveryService implements Runnable {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (Exception e) {
-      System.err.println("Discovery service error: " + e.getMessage());
+      System.err.println(
+          Internationalization.get("server.discovery.error", e.getMessage()));
     }
   }
 }

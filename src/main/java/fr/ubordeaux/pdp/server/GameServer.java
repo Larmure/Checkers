@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -124,7 +125,7 @@ public class GameServer {
     lifecycleLock.lock();
     try {
       if (running) {
-        System.out.println("[server] Already running on port " + tcpPort + ".");
+        System.out.println(Internationalization.get("server.main.already_running", tcpPort));
         return;
       }
 
@@ -132,8 +133,7 @@ public class GameServer {
         serverSocket = new ServerSocket(tcpPort);
       } catch (java.net.BindException e) {
         throw new IOException(
-            "Port " + tcpPort + " is already in use. "
-                + "Stop the existing server or choose another port.", e);
+            Internationalization.get("server.main.port_in_use", tcpPort), e);
       }
 
       running = true;
@@ -146,24 +146,27 @@ public class GameServer {
       discoveryThread.setDaemon(true);
       discoveryThread.start();
 
-      System.out.println("[server] Started on port " + tcpPort
-          + (guiOnly ? " (GUI-only mode)" : "") + ".");
-      System.out.println("[server] Discovery broadcasting on UDP 12346.");
+      String suffix = guiOnly
+          ? Internationalization.get("server.main.gui_only_suffix")
+          : "";
+      System.out.println(Internationalization.get("server.main.started", tcpPort, suffix));
+      System.out.println(Internationalization.get("server.main.discovery_started"));
 
     } finally {
       lifecycleLock.unlock();
     }
 
-    // Block outside the lock so stop() can close the socket from another thread.
     while (running) {
       try {
         Socket client = serverSocket.accept();
         client.setSoTimeout(CLIENT_TIMEOUT_MS);
-        System.out.println("[server] Client connected: " + client.getInetAddress());
+        System.out.println(Internationalization.get(
+            "server.main.client_connected", client.getInetAddress()));
         clientPool.submit(() -> handleClient(client));
       } catch (IOException e) {
         if (running) {
-          System.err.println("[server] Error accepting client: " + e.getMessage());
+          System.err.println(Internationalization.get(
+              "server.main.accept_error", e.getMessage()));
         }
       }
     }
@@ -180,7 +183,7 @@ public class GameServer {
     lifecycleLock.lock();
     try {
       if (!running) {
-        System.out.println("[server] Server is not running.");
+        System.out.println(Internationalization.get("server.main.not_running"));
         return;
       }
       running = false;
@@ -188,8 +191,6 @@ public class GameServer {
       lifecycleLock.unlock();
     }
 
-    // Performed outside the lock — these are I/O operations that should not
-    // hold the lifecycle lock longer than necessary.
     invitationManager.stopSweeper();
 
     for (PrintWriter out : connectedClients) {
@@ -206,7 +207,8 @@ public class GameServer {
         serverSocket.close();
       }
     } catch (IOException e) {
-      System.err.println("[server] Error closing socket: " + e.getMessage());
+      System.err.println(Internationalization.get(
+          "server.main.close_socket_error", e.getMessage()));
     }
 
     if (clientPool != null) {
@@ -216,7 +218,7 @@ public class GameServer {
       discoveryThread.interrupt();
     }
 
-    System.out.println("[server] Server stopped.");
+    System.out.println(Internationalization.get("server.main.stopped"));
   }
 
 
@@ -238,13 +240,13 @@ public class GameServer {
 
       String handshake = in.readLine();
       if (handshake == null || !handshake.startsWith("REGISTER ")) {
-        out.println("ERROR: First message must be REGISTER <id> <name>");
+        out.println(Internationalization.get("server.main.error.first_message_register"));
         return;
       }
 
       String[] parts = handshake.split("\\s+", 3);
       if (parts.length < 3) {
-        out.println("ERROR: Usage: REGISTER <id> <name>");
+        out.println(Internationalization.get("server.main.error.register_usage"));
         return;
       }
 
@@ -253,14 +255,16 @@ public class GameServer {
 
       PlayerSession player = registry.registerPlayer(playerId, playerName, out);
       if (player == null) {
-        out.println("ERROR: ID '" + playerId + "' is already taken. Choose another.");
+        out.println(Internationalization.get("server.main.error.id_taken", playerId));
         return;
       }
 
-      String modeTag = guiOnly ? " mode=GUI" : " mode=ANY";
-      out.println("WELCOME " + playerId + modeTag);
-      System.out.println("[server] Registered: " + playerId + " (" + playerName + ")");
-
+      String modeTag = guiOnly
+          ? Internationalization.get("server.main.mode_tag_gui")
+          : Internationalization.get("server.main.mode_tag_any");
+      out.println(Internationalization.get("server.main.welcome", playerId, modeTag));
+      System.out.println(Internationalization.get(
+          "server.main.registered", playerId, playerName));
 
       tryAutoStart();
 
@@ -269,12 +273,14 @@ public class GameServer {
         handleCommand(out, player, line.trim());
       }
 
-      System.out.println("[server] Client disconnected: " + playerId);
+      System.out.println(Internationalization.get(
+          "server.main.client_disconnected", playerId));
       cleanupPlayerInvitations(player);
       registry.removePlayer(playerId);
 
     } catch (IOException e) {
-      System.err.println("[server] Client I/O error: " + e.getMessage());
+      System.err.println(Internationalization.get(
+          "server.main.client_io_error", e.getMessage()));
     } finally {
       try {
         client.close();
@@ -304,28 +310,35 @@ public class GameServer {
 
       case "PLAYERS" -> {
         String formatted = registry.getPlayersFormatted();
-        out.println("PLAYERS\n" + (formatted.isBlank() ? "(none)" : formatted));
+        out.println(Internationalization.get(
+            "server.main.players_response",
+            formatted.isBlank()
+                ? Internationalization.get("server.main.players_empty")
+                : formatted));
       }
 
       case "STATUS" -> {
         String target = rest.trim();
         if (target.isBlank()) {
-          out.println("PLAYER_INFO\n" + player);
+          out.println(Internationalization.get("server.main.player_info_response", player));
         } else {
           PlayerSession targetPlayer = registry.getPlayer(target);
           if (targetPlayer == null) {
-            out.println("ERROR: Player '" + target + "' not found.");
+            out.println(Internationalization.get("server.main.error.player_not_found", target));
           } else {
-            out.println("PLAYER_INFO\n" + targetPlayer);
+            out.println(Internationalization.get(
+                "server.main.player_info_response", targetPlayer));
           }
         }
       }
 
-      case "SCOREBOARD" -> out.println("SCOREBOARD\n" + registry.getScoreboardFormatted());
+      case "SCOREBOARD" -> out.println(
+          Internationalization.get("server.main.scoreboard_response",
+              registry.getScoreboardFormatted()));
 
       case "NEW" -> {
         if (rest.isBlank()) {
-          out.println("ERROR: Usage: NEW <player_id>");
+          out.println(Internationalization.get("server.main.error.new_usage"));
           break;
         }
         handleNewInvitation(out, player, rest.trim());
@@ -336,16 +349,16 @@ public class GameServer {
       case "CANCEL" -> handleCancel(out, player);
 
       case "AWAY" -> {
-        // Lock the player so that the check and the set are atomic.
         player.lock();
         try {
           if (player.getStatus() == PlayerSession.Status.INGAME) {
-            out.println("ERROR: Cannot go away while in a game.");
+            out.println(Internationalization.get("server.main.error.cannot_go_away_ingame"));
           } else if (player.getStatus() == PlayerSession.Status.WAITGAME) {
-            out.println("ERROR: You have a pending invitation. Use DECLINE first, then AWAY.");
+            out.println(Internationalization.get(
+                "server.main.error.pending_invitation_decline_first"));
           } else {
             player.setStatus(PlayerSession.Status.AWAY);
-            out.println("STATUS_CHANGED away");
+            out.println(Internationalization.get("server.main.status_changed_away"));
           }
         } finally {
           player.unlock();
@@ -356,10 +369,10 @@ public class GameServer {
         player.lock();
         try {
           if (player.getStatus() == PlayerSession.Status.INGAME) {
-            out.println("ERROR: Cannot use BACK while in a game.");
+            out.println(Internationalization.get("server.main.error.cannot_back_ingame"));
           } else {
             player.setStatus(PlayerSession.Status.IDLE);
-            out.println("STATUS_CHANGED idle");
+            out.println(Internationalization.get("server.main.status_changed_idle"));
           }
         } finally {
           player.unlock();
@@ -369,18 +382,19 @@ public class GameServer {
       case "MOVE" -> {
         GameSession session = registry.getSessionForPlayer(player.getId());
         if (session == null) {
-          out.println("ERROR: Not in a game. Use NEW to invite a player.");
+          out.println(Internationalization.get("server.main.error.not_in_game"));
         } else {
           String error = session.handleMove(player, rest);
           if (error != null) {
             out.println(error);
           } else {
-            out.println("MOVE_OK " + rest);
+            out.println(Internationalization.get("server.main.move_ok", rest));
           }
         }
       }
 
-      default -> out.println("ERROR: Unknown command '" + cmd + "'.");
+      default -> out.println(Internationalization.get(
+          "server.main.error.unknown_command", cmd));
     }
   }
 
@@ -393,14 +407,15 @@ public class GameServer {
    */
   private void handleNewInvitation(PrintWriter out, PlayerSession sender, String toId) {
     if (!sender.isIdle()) {
-      out.println("ERROR: You must be idle to send an invitation "
-          + "(current status: " + sender.getStatus().name().toLowerCase() + ").");
+      out.println(Internationalization.get(
+          "server.main.error.must_be_idle_to_invite",
+          sender.getStatus().name().toLowerCase()));
       return;
     }
 
     PlayerSession invitee = registry.getPlayer(toId);
     if (invitee == null) {
-      out.println("ERROR: Player '" + toId + "' not found.");
+      out.println(Internationalization.get("server.main.error.player_not_found", toId));
       return;
     }
 
@@ -414,13 +429,20 @@ public class GameServer {
 
     Invitation inv = result.invitation;
 
-    out.println("INVITATION_SENT PLAYER=" + invitee.getName()
-        + " TIMEOUT=" + Invitation.TIMEOUT_SECONDS + "s");
-    invitee.send("INVITATION_RECEIVED FROM=" + sender.getId()
-        + " EXPIRES=" + Invitation.TIMEOUT_SECONDS + "s");
+    out.println(Internationalization.get(
+        "server.main.invitation_sent",
+        invitee.getName(),
+        Invitation.TIMEOUT_SECONDS));
+    invitee.send(Internationalization.get(
+        "server.main.invitation_received",
+        sender.getId(),
+        Invitation.TIMEOUT_SECONDS));
 
-    System.out.println("[server] Invitation " + inv.getInvitationId()
-        + ": " + sender.getId() + " → " + toId);
+    System.out.println(Internationalization.get(
+        "server.main.invitation_logged",
+        inv.getInvitationId(),
+        sender.getId(),
+        toId));
   }
 
   /** Handles {@code ACCEPT}. */
@@ -433,14 +455,14 @@ public class GameServer {
 
     PlayerSession inviter = registry.getPlayer(result.invitation.getFromPlayerId());
     if (inviter == null) {
-      out.println("ERROR: The player who invited you has disconnected.");
+      out.println(Internationalization.get("server.main.error.inviter_disconnected"));
       acceptor.setStatus(PlayerSession.Status.IDLE);
       return;
     }
 
     acceptor.setStatus(PlayerSession.Status.IDLE);
     inviter.setStatus(PlayerSession.Status.IDLE);
-    inviter.send("INVITATION_ACCEPTED STARTING_GAME");
+    inviter.send(Internationalization.get("server.main.invitation_accepted_starting_game"));
     startInvitedGame(inviter, acceptor);
   }
 
@@ -454,9 +476,10 @@ public class GameServer {
 
     PlayerSession inviter = registry.getPlayer(result.invitation.getFromPlayerId());
     decliner.setStatus(PlayerSession.Status.IDLE);
-    out.println("INVITATION_DECLINED");
+    out.println(Internationalization.get("server.main.invitation_declined"));
     if (inviter != null) {
-      inviter.send("INVITATION_DECLINED BY=" + decliner.getId());
+      inviter.send(Internationalization.get(
+          "server.main.invitation_declined_by", decliner.getId()));
     }
   }
 
@@ -469,10 +492,11 @@ public class GameServer {
     }
 
     PlayerSession invitee = registry.getPlayer(result.invitation.getToPlayerId());
-    out.println("INVITATION_CANCELLED");
+    out.println(Internationalization.get("server.main.invitation_cancelled"));
     if (invitee != null) {
       invitee.setStatus(PlayerSession.Status.IDLE);
-      invitee.send("INVITATION_CANCELLED BY=" + canceller.getId());
+      invitee.send(Internationalization.get(
+          "server.main.invitation_cancelled_by", canceller.getId()));
     }
   }
 
@@ -483,7 +507,8 @@ public class GameServer {
       PlayerSession invitee = registry.getPlayer(cancel.invitation.getToPlayerId());
       if (invitee != null) {
         invitee.setStatus(PlayerSession.Status.IDLE);
-        invitee.send("INVITATION_CANCELLED BY=" + player.getId() + " (player disconnected)");
+        invitee.send(Internationalization.get(
+            "server.main.invitation_cancelled_disconnected", player.getId()));
       }
     }
 
@@ -491,7 +516,8 @@ public class GameServer {
     if (decline.isSuccess()) {
       PlayerSession inviter = registry.getPlayer(decline.invitation.getFromPlayerId());
       if (inviter != null) {
-        inviter.send("INVITATION_DECLINED BY=" + player.getId() + " (player disconnected)");
+        inviter.send(Internationalization.get(
+            "server.main.invitation_declined_disconnected", player.getId()));
       }
     }
   }
@@ -503,12 +529,15 @@ public class GameServer {
 
     if (invitee != null && invitee.getStatus() == PlayerSession.Status.WAITGAME) {
       invitee.setStatus(PlayerSession.Status.IDLE);
-      invitee.send("INVITATION_EXPIRED FROM=" + inv.getFromPlayerId());
+      invitee.send(Internationalization.get(
+          "server.main.invitation_expired_from", inv.getFromPlayerId()));
     }
     if (inviter != null) {
-      inviter.send("INVITATION_EXPIRED TO=" + inv.getToPlayerId() + " (no response)");
+      inviter.send(Internationalization.get(
+          "server.main.invitation_expired_to", inv.getToPlayerId()));
     }
-    System.out.println("[server] Invitation " + inv.getInvitationId() + " expired.");
+    System.out.println(Internationalization.get(
+        "server.main.invitation_expired_logged", inv.getInvitationId()));
   }
 
   /**
@@ -527,17 +556,27 @@ public class GameServer {
     GameSession session = registry.createSession(pair, sessionController);
 
     String playerList = inviter.getId() + " " + invitee.getId();
-    String modeTag = guiOnly ? " mode=GUI" : "";
+    String modeTag = guiOnly
+        ? Internationalization.get("server.main.mode_tag_gui")
+        : "";
 
     for (PlayerSession p : pair) {
-      p.send("GAME_START session=" + session.getSessionId()
-          + " players=" + playerList
-          + " first=" + inviter.getId()
-          + modeTag);
+      p.send(Internationalization.get(
+          "server.main.game_start",
+          session.getSessionId(),
+          playerList,
+          inviter.getId(),
+          modeTag));
     }
 
-    System.out.println("[server] Game started: " + session.getSessionId()
-        + " between " + playerList + (guiOnly ? " [GUI]" : ""));
+    String guiSuffix = guiOnly
+        ? Internationalization.get("server.main.game_started_gui_suffix")
+        : "";
+    System.out.println(Internationalization.get(
+        "server.main.game_started_logged",
+        session.getSessionId(),
+        playerList,
+        guiSuffix));
   }
 
   /**
@@ -550,8 +589,7 @@ public class GameServer {
 
     if (idlePlayers.size() == 1) {
       idlePlayers.get(0).send(
-          "WAITING You are the only player connected. "
-              + "Use 'players' to list others, then 'new <id>' to invite someone.");
+          Internationalization.get("server.main.waiting_single_player"));
     }
   }
 
@@ -599,6 +637,4 @@ public class GameServer {
   public GameRegistry getRegistry() {
     return registry;
   }
-
-
 }
