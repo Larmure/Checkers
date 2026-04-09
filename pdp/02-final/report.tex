@@ -1037,7 +1037,7 @@ Pour la sauvegarde et le chargement, nous avons choisi de développer des boîte
  
 La couche réseau de l'application s'appuie sur une architecture client-serveur
 TCP, basant principalement sur le package
-\texttt{fr.ubordeaux.pdp.server}.
+\texttt{server}.
 La figure~\ref{fig:architecture-serveur} en présente les composants principaux
 ainsi que leurs interactions.
 
@@ -1129,7 +1129,7 @@ ainsi que leurs interactions.
             \node[nzone, draw=net-amber600,
                 fit=(GR)(PS)(GS)(DS)(IM)(INV)(GCF),
                 label={[font=\small\bfseries, text=net-amber800, yshift=2pt]above:%
-                Serveur (\texttt{server})}]
+                Serveur }]
             (serverZone) {};
         \end{pgfonlayer}
 
