@@ -284,18 +284,6 @@ public class GameCheckers implements Subject {
   public State checkGameOver() {
     Player currentPlayer = isWhiteTurn ? whitePlayer : blackPlayer;
 
-    boolean whiteHasMoves = !getPossibleMoves(whitePlayer).isEmpty();
-    boolean blackHasMoves = !getPossibleMoves(blackPlayer).isEmpty();
-
-    // If both players have no moves, the game is finished as a draw.
-    if (!whiteHasMoves && !blackHasMoves) {
-      System.out.println(Internationalization.get("game.game_over"));
-      System.out.println(Internationalization.get("game.game_draw"));
-      draw = true;
-      setState(State.FINISHED);
-      return this.state;
-    }
-
     // A player loses immediately if they cannot make a move.
     if (getPossibleMoves(currentPlayer).isEmpty()) {
       System.out.println(Internationalization.get("game.game_over"));

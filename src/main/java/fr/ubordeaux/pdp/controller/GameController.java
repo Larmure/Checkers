@@ -65,6 +65,11 @@ public class GameController {
   /** The last load error message (null if loading succeeded). */
   private String lastLoadError = null;
 
+  /** The delay before the first execution of the timer (ms). */
+  private static final long DELAY = 1000;
+  /** The period between timer executions (ms). */
+  private static final long PERIOD = 1000;
+
   /**
    * Initializes the controller with the required model and view components.
    *
@@ -373,7 +378,7 @@ public class GameController {
           }
         }
       }
-    }, 1000, 1000);
+    }, DELAY, PERIOD);
   }
 
   /**

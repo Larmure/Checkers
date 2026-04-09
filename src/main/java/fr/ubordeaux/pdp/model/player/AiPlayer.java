@@ -67,8 +67,8 @@ public class AiPlayer extends Player {
    */
   public AiPlayer(String name) {
     super(name);
-    this.algorithm = new MinMaxAlphaBeta(); // Initialiser d'abord
-    this.evaluator = new SimpleEvaluator(); // Puis initialiser
+    this.algorithm = new MinMaxAlphaBeta();
+    this.evaluator = new SimpleEvaluator();
   }
 
   /**

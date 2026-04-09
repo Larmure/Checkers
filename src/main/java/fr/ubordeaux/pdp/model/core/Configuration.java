@@ -289,10 +289,10 @@ public class Configuration {
   }
 
   /**
-   * Returns the time limit for each player in seconds, applicable only if blitz
+   * Returns the time limit for each player in minutes, applicable only if blitz
    * mode is enabled.
    *
-   * @return the time limit for each player in seconds.
+   * @return the time limit for each player in minutes.
    */
   public int getTime() {
     return time;
