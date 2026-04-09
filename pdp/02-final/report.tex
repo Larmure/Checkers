@@ -1610,87 +1610,60 @@ Cette partie décrit deux niveaux complémentaires de l'architecture réseau :
 le serveur global, qui gère les connexions et les sessions, et les sessions de
 jeu elles-mêmes, qui encapsulent la logique d'une partie particulière.
 
-\smallskip
-\noindent\textbf{Rôle du serveur global}
+\medskip
+\noindent\textbf{GameServer}
 
-La classe \texttt{GameServer} constitue le point central du mode
-serveur. Elle ouvre un \texttt{ServerSocket} sur un port TCP donné,
-accepte les connexions entrantes et supervise l'ensemble du service réseau.
+La classe \texttt{GameServer} constitue le point central du mode serveur. Elle
+ouvre un \texttt{ServerSocket} sur un port TCP donné, accepte les connexions
+entrantes et supervise l'ensemble du service réseau. Elle reçoit ainsi les
+connexions de plusieurs clients, délègue leur traitement à des threads distincts
+via \texttt{Executors.newCachedThreadPool()}, enregistre les joueurs connectés
+et orchestre la création de nouvelles parties.
 
-\begin{itemize}
-    \item elle reçoit les connexions de plusieurs clients ;
-    \item elle délègue leur traitement à des threads distincts via
-    \texttt{Executors.newCachedThreadPool()} ;
-    \item elle enregistre les joueurs connectés dans
-    \texttt{GameRegistry} sous forme de
-    \texttt{PlayerSession} ;
-    \item elle orchestre la création de nouvelles parties.
-\end{itemize}
+\medskip
+\noindent\textbf{GameRegistry}
 
-\smallskip
-\noindent\textbf{Registre partagé des joueurs et des parties}
+La classe \texttt{GameRegistry} joue le rôle de registre central. Elle conserve
+les joueurs actuellement connectés ainsi que les sessions de jeu actives, ce qui
+fournit au serveur une vue globale de l'état courant du système. Elle constitue
+ainsi le point de coordination entre les joueurs présents sur le serveur et les
+parties en cours.
 
-La classe \texttt{GameRegistry} joue le rôle de registre central.
-Elle conserve les joueurs actuellement connectés ainsi que les sessions de jeu
-actives. Elle fournit donc au serveur une vue globale de l'état courant du
-système.
-
-\smallskip
-\noindent\textbf{Création isolée des parties}
+\medskip
+\noindent\textbf{GameControllerFactory et isolation des parties}
 
 Lorsqu'une nouvelle partie est lancée, le serveur crée un nouveau
-\texttt{GameController} à l'aide de
-\texttt{GameControllerFactory}. Ce point est essentiel, car il
-garantit qu'une partie réseau possède son propre état de jeu.
+\texttt{GameController} à l'aide de \texttt{GameControllerFactory}. Ce point est
+essentiel, car il garantit qu'une partie réseau possède son propre état de jeu.
+Chaque session dispose ainsi de son propre plateau, de son propre historique, de
+son propre tour courant et de sa propre évolution jusqu'à la fin de la partie.
+Deux parties simultanées restent donc totalement indépendantes l'une de l'autre,
+ce qui était indispensable pour permettre un véritable mode multi-clients.
 
-Chaque session dispose ainsi :
-\begin{itemize}
-    \item de son propre plateau ;
-    \item de son propre historique ;
-    \item de son propre tour courant ;
-    \item de sa propre évolution jusqu'à la fin de la partie.
-\end{itemize}
+\medskip
+\noindent\textbf{GameSession}
 
-Deux parties simultanées restent donc totalement indépendantes l'une de
-l'autre. Cette isolation était indispensable pour permettre un véritable mode
-multi-clients.
+La classe \texttt{GameSession} représente une partie active. Elle encapsule
+toute la logique locale à cette partie, sans surcharger le serveur global avec
+des détails de gameplay. Elle gère l'ordre des tours, la validation des coups,
+l'application des actions via le contrôleur, la diffusion des notifications
+comme \texttt{OPPONENT\_MOVE}, ainsi que la terminaison propre de la session. La
+méthode \texttt{handleMove()} vérifie qu'un joueur agit au bon moment, applique
+le coup puis informe les autres participants, tandis que la méthode
+\texttt{end()} clôt la partie, met à jour les statistiques et rétablit les
+joueurs dans un état disponible.
 
-\smallskip
-\noindent\textbf{Rôle d'une session de jeu}
-
-La classe \texttt{GameSession} représente une partie active. Elle
-encapsule toute la logique locale à cette partie, sans surcharger le serveur
-global avec des détails de gameplay.
-
-Elle prend notamment en charge :
-\begin{itemize}
-    \item l'ordre des tours ;
-    \item la validation des coups ;
-    \item l'application des coups via le contrôleur ;
-    \item la diffusion des notifications comme
-    \texttt{OPPONENT\_MOVE} ;
-    \item la terminaison propre de la session.
-\end{itemize}
-
-\smallskip
-\noindent\textbf{Méthodes clés}
-
-La méthode \texttt{handleMove()} vérifie qu'un joueur agit au bon
-moment, applique le coup puis informe les autres participants.
-La méthode \texttt{end()} clôt la partie, met à jour les
-statistiques et rétablit les joueurs dans un état disponible.
-
-\smallskip
+\medskip
 \noindent\textbf{Bilan architectural}
 
 L'architecture distingue donc clairement :
 \begin{itemize}
-    \item un niveau global, assuré par \texttt{GameServer}, pour la
-    gestion du service réseau ;
-    \item un niveau intermédiaire, assuré par \texttt{GameRegistry},
-    pour le suivi des joueurs et des sessions ;
-    \item un niveau local, assuré par \texttt{GameSession}, pour la
-    gestion d'une partie donnée.
+    \item un niveau global, assuré par \texttt{GameServer}, pour la gestion du
+    service réseau ;
+    \item un niveau intermédiaire, assuré par \texttt{GameRegistry}, pour le
+    suivi des joueurs et des sessions ;
+    \item un niveau local, assuré par \texttt{GameSession}, pour la gestion
+    d'une partie donnée.
 \end{itemize}
 
 Cette séparation améliore la lisibilité de l'architecture, limite les
@@ -1729,27 +1702,56 @@ mutualisation garantit la cohérence fonctionnelle entre les deux interfaces et
 limite fortement la duplication de code.
 
 
-\subsubsection{Cohérence avec les options de lancement et la commande \texttt{new}}
+\subsubsection{Cohérence avec les options de lancement}
 
-L'intégration réseau a également eu des conséquences sur le point d'entrée de
-l'application et sur la gestion des options. Dans notre architecture, le
-lancement du programme doit pouvoir distinguer plusieurs scénarios : démarrage
-en mode local, ouverture d'un serveur, connexion à un serveur distant, ou encore
-démarrage d'une partie paramétrée avec des options avancées. Cette cohérence est
-visible à travers la commande \underline{\texttt{new}}, implémentée par
-\underline{\texttt{NewCommand}}, qui permet déjà de configurer de manière fine
-une partie locale : mode blitz, taille du plateau, IA activées, temps de
-réflexion, profondeur Minimax, mode de sélection du MCTS et fonction
-d'évaluation. L'ajout du réseau devait donc rester compatible avec cette
-philosophie générale : le système ne devait pas opposer brutalement ``jeu
-local'' et ``jeu réseau'', mais prolonger la même logique de configuration dans
-de nouveaux contextes d'exécution. C'est dans ce cadre que les nouvelles options
-ajoutées au lancement via \underline{\texttt{App.java}} prennent tout leur sens
-: elles servent à choisir explicitement le mode d'utilisation de l'application,
-tout en conservant une cohérence avec les commandes déjà existantes dans le
-shell. Autrement dit, F39 ne modifie pas seulement le transport des données ;
-elle étend aussi la manière dont l'application est initialisée et pilotée par
-l'utilisateur.
+L’intégration réseau a également nécessité une évolution de \texttt{App.java}.
+Le point d’entrée du programme a été adapté pour reconnaître les nouveaux modes
+de lancement, notamment le démarrage d’un serveur, le mode démon et
+l’utilisation conjointe du réseau avec l’interface graphique.
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[
+        term/.style={
+            draw,
+            rounded corners,
+            minimum width=4.2cm,
+            minimum height=2.5cm,
+            align=left,
+            fill=gray!8
+        },
+        arrow/.style={->, thick}
+    ]
+        \node[term] (server) at (0,0) {
+            \textbf{Terminal 1}\\
+            \texttt{./checkers --server}\\
+            \textit{Démarrage du serveur}
+        };
+
+        \node[term] (client1) at (-5,-4) {
+            \textbf{Terminal 2}\\
+            \texttt{./checkers}\\
+            \texttt{join IP:port}\\
+            \textit{Client 1}
+        };
+
+        \node[term] (client2) at (5,-4) {
+            \textbf{Terminal 3}\\
+            \texttt{./checkers}\\
+            \texttt{join IP:port}\\
+            \textit{Client 2}
+        };
+
+        \draw[arrow] (client1.north) -- node[left] {\texttt{TCP}} (server.south west);
+        \draw[arrow] (client2.north) -- node[right] {\texttt{TCP}} (server.south east);
+    \end{tikzpicture}
+    \caption{Exemple minimal de lancement d’une partie en ligne : un serveur et deux clients sur trois terminaux distincts.}
+    \label{fig:lancement-online}
+\end{figure}
+
+Autrement dit, F39 ne modifie pas seulement le transport des données :
+elle étend aussi la manière dont l’application est initialisée et pilotée par
+l’utilisateur.
 
 \subsubsection{Gestion de la concurrence et apport des mutex}
 
