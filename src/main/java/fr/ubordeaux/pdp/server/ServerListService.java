@@ -1,5 +1,6 @@
 package fr.ubordeaux.pdp.server;
 
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -26,7 +27,8 @@ public class ServerListService {
   private static final int SOCKET_TIMEOUT_MS = 1_000;
   private static final int SERVER_EXPIRY_MS = 10_000;
 
-  private ServerListService() {}
+  private ServerListService() {
+  }
 
   /**
    * Listens for UDP broadcasts and returns servers that are still active.
@@ -49,7 +51,7 @@ public class ServerListService {
       byte[] buffer = new byte[1024];
       long startTime = System.currentTimeMillis();
 
-      System.out.println("Scanning for servers (30s)...");
+      System.out.println(Internationalization.get("server.scanning"));
 
       while (System.currentTimeMillis() - startTime < LISTEN_DURATION_MS) {
         try {
@@ -64,7 +66,8 @@ public class ServerListService {
           if (isNew) {
             String[] parts = message.split(":");
             if (parts.length == 3) {
-              System.out.println("  Found: " + parts[0] + " at " + parts[1] + ":" + parts[2]);
+              String msg = Internationalization.get("server.server_found", parts[0], parts[1], parts[2]);
+              System.out.println(msg);
             }
           }
         } catch (SocketTimeoutException ignored) {
@@ -73,18 +76,19 @@ public class ServerListService {
 
         long now = System.currentTimeMillis();
         serverTimestamps.entrySet().removeIf(
-              entry -> {
-                boolean expired = (now - entry.getValue()) > SERVER_EXPIRY_MS;
-                if (expired) {
-                  System.out.println("  Expired: " + entry.getKey());
-                }
-                return expired;
-              });
+            entry -> {
+              boolean expired = (now - entry.getValue()) > SERVER_EXPIRY_MS;
+              if (expired) {
+                String msg = Internationalization.get("server.server_expired", entry.getKey());
+                System.out.println(msg);
+              }
+              return expired;
+            });
       }
     } catch (java.net.BindException e) {
-      System.err.println("Port " + DISCOVERY_PORT + " already in use.");
+      System.err.println(Internationalization.get("server.port_in_use", DISCOVERY_PORT));
     } catch (Exception e) {
-      System.err.println("Discovery error: " + e.getMessage());
+      System.err.println(Internationalization.get("server.discovery_error_msg", e.getMessage()));
     }
 
     return new ArrayList<>(serverTimestamps.keySet());
@@ -97,8 +101,8 @@ public class ServerListService {
   private static void printLocalAddress() {
     try {
       String localIp = InetAddress.getLocalHost().getHostAddress();
-      System.out.println("Your IP address : " + localIp);
-      System.out.println("Share with others: join " + localIp + ":<port>");
+      System.out.println(Internationalization.get("server.local_ip", localIp));
+      System.out.println(Internationalization.get("server.share_with_others", localIp));
     } catch (Exception e) {
       System.out.println("Your IP address : (could not determine)");
     }

@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -66,7 +67,6 @@ public class GameServer {
   private final boolean guiOnly;
   private final GameControllerFactory controllerFactory;
 
-
   /**
    * Ensures {@link #start()} and {@link #stop()} are mutually exclusive.
    *
@@ -88,8 +88,7 @@ public class GameServer {
    */
   private volatile boolean running = false;
 
-  private final Set<PrintWriter> connectedClients =
-      Collections.newSetFromMap(new ConcurrentHashMap<>());
+  private final Set<PrintWriter> connectedClients = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
   /**
    * Unique constructor — all parameters are explicit to avoid boolean-argument confusion.
@@ -101,7 +100,7 @@ public class GameServer {
    * @param guiOnly          {@code true} to tag all games with {@code mode=GUI}
    */
   public GameServer(String serverName, int tcpPort,
-                    GameControllerFactory controllerFactory, boolean daemon, boolean guiOnly) {
+      GameControllerFactory controllerFactory, boolean daemon, boolean guiOnly) {
     this.serverName = serverName;
     this.tcpPort = tcpPort;
     this.controllerFactory = controllerFactory;
@@ -124,7 +123,7 @@ public class GameServer {
     lifecycleLock.lock();
     try {
       if (running) {
-        System.out.println("[server] Already running on port " + tcpPort + ".");
+        System.out.println(Internationalization.get("server.already_running", tcpPort));
         return;
       }
 
@@ -133,7 +132,8 @@ public class GameServer {
       } catch (java.net.BindException e) {
         throw new IOException(
             "Port " + tcpPort + " is already in use. "
-                + "Stop the existing server or choose another port.", e);
+                + "Stop the existing server or choose another port.",
+            e);
       }
 
       running = true;
@@ -146,9 +146,8 @@ public class GameServer {
       discoveryThread.setDaemon(true);
       discoveryThread.start();
 
-      System.out.println("[server] Started on port " + tcpPort
-          + (guiOnly ? " (GUI-only mode)" : "") + ".");
-      System.out.println("[server] Discovery broadcasting on UDP 12346.");
+      System.out.println(Internationalization.get("server.started", tcpPort));
+      System.out.println(Internationalization.get("server.discovery_broadcast"));
 
     } finally {
       lifecycleLock.unlock();
@@ -159,11 +158,13 @@ public class GameServer {
       try {
         Socket client = serverSocket.accept();
         client.setSoTimeout(CLIENT_TIMEOUT_MS);
-        System.out.println("[server] Client connected: " + client.getInetAddress());
+        String msg = Internationalization.get("server.client_connected", client.getInetAddress());
+        System.out.println(msg);
         clientPool.submit(() -> handleClient(client));
       } catch (IOException e) {
         if (running) {
-          System.err.println("[server] Error accepting client: " + e.getMessage());
+          String errMsg = Internationalization.get("server.error_accepting_client", e.getMessage());
+          System.err.println(errMsg);
         }
       }
     }
@@ -180,7 +181,7 @@ public class GameServer {
     lifecycleLock.lock();
     try {
       if (!running) {
-        System.out.println("[server] Server is not running.");
+        System.out.println(Internationalization.get("server.not_running"));
         return;
       }
       running = false;
@@ -206,7 +207,7 @@ public class GameServer {
         serverSocket.close();
       }
     } catch (IOException e) {
-      System.err.println("[server] Error closing socket: " + e.getMessage());
+      System.err.println(Internationalization.get("server.error_closing_socket", e.getMessage()));
     }
 
     if (clientPool != null) {
@@ -216,9 +217,8 @@ public class GameServer {
       discoveryThread.interrupt();
     }
 
-    System.out.println("[server] Server stopped.");
+    System.out.println(Internationalization.get("server.stopped"));
   }
-
 
   /**
    * Handles the NEW invitation command and delivers an invitation to a target player.
@@ -232,19 +232,18 @@ public class GameServer {
         BufferedReader in = new BufferedReader(
             new InputStreamReader(client.getInputStream()));
         PrintWriter out = new PrintWriter(
-            new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)
-    ) {
+            new BufferedWriter(new OutputStreamWriter(client.getOutputStream())), true)) {
       connectedClients.add(out);
 
       String handshake = in.readLine();
       if (handshake == null || !handshake.startsWith("REGISTER ")) {
-        out.println("ERROR: First message must be REGISTER <id> <name>");
+        out.println(Internationalization.get("server.register_error_first"));
         return;
       }
 
       String[] parts = handshake.split("\\s+", 3);
       if (parts.length < 3) {
-        out.println("ERROR: Usage: REGISTER <id> <name>");
+        out.println(Internationalization.get("server.register_error_usage"));
         return;
       }
 
@@ -253,14 +252,13 @@ public class GameServer {
 
       PlayerSession player = registry.registerPlayer(playerId, playerName, out);
       if (player == null) {
-        out.println("ERROR: ID '" + playerId + "' is already taken. Choose another.");
+        out.println(Internationalization.get("server.register_error_id_taken", playerId));
         return;
       }
 
       String modeTag = guiOnly ? " mode=GUI" : " mode=ANY";
-      out.println("WELCOME " + playerId + modeTag);
-      System.out.println("[server] Registered: " + playerId + " (" + playerName + ")");
-
+      out.println(Internationalization.get("server.welcome", playerId, modeTag));
+      System.out.println(Internationalization.get("server.registered", playerId, playerName));
 
       tryAutoStart();
 
@@ -269,12 +267,12 @@ public class GameServer {
         handleCommand(out, player, line.trim());
       }
 
-      System.out.println("[server] Client disconnected: " + playerId);
+      System.out.println(Internationalization.get("server.client_disconnected", playerId));
       cleanupPlayerInvitations(player);
       registry.removePlayer(playerId);
 
     } catch (IOException e) {
-      System.err.println("[server] Client I/O error: " + e.getMessage());
+      System.err.println(Internationalization.get("server.io_error", e.getMessage()));
     } finally {
       try {
         client.close();
@@ -291,7 +289,7 @@ public class GameServer {
    * {@code BACK}), the player's lock is held for the entire read-modify sequence to
    * prevent a race with a concurrent game-end or invitation callback.
    */
-  private void handleCommand(PrintWriter out, PlayerSession player, String line)  {
+  private void handleCommand(PrintWriter out, PlayerSession player, String line) {
     if (line.isBlank()) {
       return;
     }
@@ -304,7 +302,8 @@ public class GameServer {
 
       case "PLAYERS" -> {
         String formatted = registry.getPlayersFormatted();
-        out.println("PLAYERS\n" + (formatted.isBlank() ? "(none)" : formatted));
+        String playersList = formatted.isBlank() ? Internationalization.get("server.players_none") : formatted;
+        out.println("PLAYERS\n" + playersList);
       }
 
       case "STATUS" -> {
@@ -314,7 +313,7 @@ public class GameServer {
         } else {
           PlayerSession targetPlayer = registry.getPlayer(target);
           if (targetPlayer == null) {
-            out.println("ERROR: Player '" + target + "' not found.");
+            out.println(Internationalization.get("server.player_not_found", target));
           } else {
             out.println("PLAYER_INFO\n" + targetPlayer);
           }
@@ -404,8 +403,7 @@ public class GameServer {
       return;
     }
 
-    InvitationManager.CreateResult result =
-        invitationManager.createInvitation(sender, toId, registry);
+    InvitationManager.CreateResult result = invitationManager.createInvitation(sender, toId, registry);
 
     if (!result.isSuccess()) {
       out.println("ERROR: " + result.error);
@@ -599,6 +597,5 @@ public class GameServer {
   public GameRegistry getRegistry() {
     return registry;
   }
-
 
 }

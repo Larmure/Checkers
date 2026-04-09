@@ -2,6 +2,7 @@ package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
 import fr.ubordeaux.pdp.model.core.Configuration;
+import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.gui.GraphicalUserInterface;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -94,13 +95,11 @@ public class ClientSession {
     connectionLock.lock();
     try {
       if (connected) {
-        System.out.println(
-            "Already connected to " + currentServer
-                + ". Type 'quit' to disconnect first.");
+        System.out.println(Internationalization.get("client.already_connected", currentServer));
         return;
       }
 
-      System.out.println("Connecting to " + host + ":" + port + "...");
+      System.out.println(Internationalization.get("client.connecting", host, port));
 
       Socket newSocket = null;
       BufferedReader newIn = null;
@@ -124,11 +123,11 @@ public class ClientSession {
         guiWindowOpened = false;
         mode = ClientMode.CONNECTED;
 
-        System.out.println("Connected to " + currentServer);
+        System.out.println(Internationalization.get("client.connected", currentServer));
         startListenerThread(newIn);
       } catch (IOException e) {
         closeQuietly(newIn, newOut, newSocket);
-        System.out.println("Connection failed: " + e.getMessage());
+        System.out.println(Internationalization.get("client.connection_failed", e.getMessage()));
       }
     } finally {
       connectionLock.unlock();
@@ -145,7 +144,7 @@ public class ClientSession {
       guiWindowOpened = false;
       mode = ClientMode.LOCAL;
       closeCurrentConnection();
-      System.out.println("Disconnected from server.");
+      System.out.println(Internationalization.get("client.disconnected"));
     } finally {
       connectionLock.unlock();
     }
@@ -170,15 +169,13 @@ public class ClientSession {
   /** Switches to {@link ClientMode#SERVER} mode. */
   public void enterServerMode() {
     mode = ClientMode.SERVER;
-    System.out.println(
-        "[mode] Now in SERVER mode. Client commands are disabled.\n"
-            + "       Use 'server stop' to return to local mode.");
+    System.out.println(Internationalization.get("client.mode_server"));
   }
 
   /** Returns to {@link ClientMode#LOCAL} mode. */
   public void exitServerMode() {
     mode = ClientMode.LOCAL;
-    System.out.println("[mode] Server stopped. Back to LOCAL mode.");
+    System.out.println(Internationalization.get("client.mode_local"));
   }
 
   /**
@@ -313,7 +310,7 @@ public class ClientSession {
         return;
       }
 
-      System.out.println("\n[!] Connection closed by server.");
+      System.out.println(Internationalization.get("client.connection_closed"));
       connected = false;
       currentServer = null;
       serverRequiresGui = false;
@@ -375,7 +372,7 @@ public class ClientSession {
         localController.startNewGame(Configuration.getDefaultConfiguration());
       }
 
-      System.out.println("\nGame started! " + message);
+      System.out.println(Internationalization.get("client.game_started", message));
       return;
     }
 
@@ -390,10 +387,10 @@ public class ClientSession {
     }
 
     if (message.startsWith("INVITATION_RECEIVED")) {
-      System.out.println("\n╔══ INVITATION ══════════════════════════════════╗");
-      System.out.println("║  " + message);
-      System.out.println("║  Type 'accept' to accept or 'decline' to refuse.");
-      System.out.println("╚════════════════════════════════════════════════╝");
+      System.out.println(Internationalization.get("client.invitation_header"));
+      System.out.println(Internationalization.get("client.invitation_message", message));
+      System.out.println(Internationalization.get("client.invitation_prompt"));
+      System.out.println(Internationalization.get("client.invitation_footer"));
     } else if (message.startsWith("INVITATION_SENT")) {
       System.out.println(
           "\n[invitation] Invitation sent. "
