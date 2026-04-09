@@ -2120,6 +2120,57 @@ Lors des tests et du développement, plusieurs anomalies ont été identifiées 
 \end{enumerate}
 
 \subsection{Axes d'amélioration}
+Les points ci-dessous représentent des améliorations futures pouvant enrichir le projet :
+
+\begin{enumerate}
+    \item \textbf{Optimisation de la représentation des bitboards}
+    
+    Réduire le nombre de bitboards de 4 à 3 combiner les pawns et checkers de chaque couleur dans une seule bitboard, 
+    et utiliser un masque distinct pour identifier les dames. Cette optimisation diminuerait la mémoire utilisée et 
+    pourrait améliorer les performances d'accès aux données de plateau, particulièrement bénéfique pour 
+    l'évaluation rapide en minimax.
+
+  \item \textbf{Mise en place de la GUI réseau}
+
+  La prise en charge du mode réseau dans la GUI a été amorcée dans le code, mais elle n'est pas encore totalement stabilisée. Une amélioration consisterait à fiabiliser les transitions entre mode local, mode serveur et mode connecté, ainsi qu'à finaliser la synchronisation de l'interface lors des connexions et déconnexions.
+
+\end{enumerate}
+
+Les violations suivantes ont été identifiées lors de l'analyse PMD mais n'ont pu être corrigées dans les délais impartis :
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item \textbf{Intégration d'un logger}
+
+    Remplacer les appels à System.out.println et System.err.println par un framework de logging (SLF4J/Logback) 
+    pour une meilleure gestion des niveaux de log et de la traçabilité.
+
+    \item \textbf{Sécurisation des comparaisons de chaînes}
+
+    Positionner les littéraux en premier dans les comparaisons (\texttt{"valeur".equals(variable)}) 
+    afin d'éviter les \texttt{NullPointerException} en cas de variable nulle.
+
+    \item \textbf{Extraction des littéraux dupliqués en constantes}
+    
+    Remplacer les chaînes de caractères répétées par des constantes \texttt{static final} 
+    pour faciliter la maintenance et éviter les incohérences.
+
+    \item \textbf{Spécification de la locale pour les conversions de casse}
+    
+    Utiliser \texttt{toUpperCase(Locale.ROOT)} et \texttt{toLowerCase(Locale.ROOT)} 
+    plutôt que les variantes sans locale, afin de garantir un comportement identique quelle que soit la langue du système.
+
+    \item \textbf{Affinement de la gestion des exceptions}
+    
+    Remplacer les \texttt{catch (Exception e)} génériques par des catches ciblant 
+    les exceptions précises attendues, pour une meilleure robustesse et lisibilité du code.
+
+    \item \textbf{Remplacement des assignations à null par Optional}
+    
+    Utiliser \texttt{Optional<T>} à la place des assignations explicites à \texttt{null} 
+    pour rendre les cas d'absence de valeur plus explicites et éviter les \texttt{NullPointerException}.
+
+\end{enumerate}
 
 
 \section*{Conclusion}
