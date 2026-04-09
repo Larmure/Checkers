@@ -400,7 +400,9 @@ public class MenuView extends MenuBar {
     Alert alert = new Alert(Alert.AlertType.INFORMATION);
     alert.setTitle(Internationalization.get("dialog.about_title"));
     alert.setHeaderText(Internationalization.get("dialog.about_header"));
-    alert.setContentText(Internationalization.get("dialog.about_content"));
+    String about = Internationalization.get("dialog.about_content");
+    String rules = Internationalization.get("game.gui.rules");
+    alert.setContentText(about + "\n\n" + rules);
     alert.showAndWait();
   }
 
