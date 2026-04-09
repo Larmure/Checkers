@@ -2175,6 +2175,32 @@ Les violations suivantes ont été identifiées lors de l'analyse PMD mais n'ont
 
 \section*{Conclusion}
 
+Ce projet a permis de livrer un système de jeu de dames structuré autour d’un moteur bitboard, 
+d’une architecture MVC et d’un mode réseau intégré. Sur les 40 besoins initiaux, 35 sont validés 
+et 5 restent partiels, ce qui traduit un niveau d’achèvement élevé pour un projet combinant 
+règles métier, interface graphique, algorithmes d’IA et communication distribuée.
+
+Le principal résultat technique est la solidité du cœur moteur: les opérations critiques 
+(tests, accès, application locale des coups) restent en temps constant, ce qui a rendu possible 
+l’exploration IA dans des contraintes de temps réalistes. Les campagnes de benchmark confirment ce 
+comportement: sous budget court (250 ms), l’approche MCTS-UCT domine nettement les variantes 
+MinMax/AlphaBeta; à budget plus long (500 ms), l’écart se réduit mais le MCTS conserve un avantage sur 
+les positions tactiques ouvertes. Ces résultats valident nos choix d’architecture et montrent que 
+le projet ne se limite pas à une implémentation fonctionnelle: il produit des comportements 
+mesurables, cohérents avec les propriétés attendues des algorithmes.
+
+Les limites identifiées ont été définies. La sélection ML basée sur une régression logistique 
+reste en retrait face à UCT, ce qui pointe surtout la qualité et la richesse insuffisantes du dataset 
+d’entraînement. Côté réseau, la base est opérationnelle mais certains scénarios multi-clients et la 
+stabilisation complète de la GUI connectée demandent encore du durcissement. Ces points ne remettent 
+pas en cause la structure générale; ils définissent un plan d’évolution précis: enrichissement du 
+pipeline d’apprentissage, fiabilisation des transitions de session réseau, et renforcement des 
+tests d’intégration distribués.
+
+Au-delà des livrables, le projet a surtout démontré une capacité collective à tenir une cohérence 
+architecturale sur un codebase partagé, à arbitrer entre ambition et robustesse, et à converger vers 
+des choix techniques justifiés par des données. C’est cette articulation entre conception, implémentation 
+et validation expérimentale qui constitue la réussite principale du travail réalisé.
 %------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
 %------------------------------------------------------------------------------
