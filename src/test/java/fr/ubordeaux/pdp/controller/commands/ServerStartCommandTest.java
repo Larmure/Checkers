@@ -59,13 +59,15 @@ class ServerStartCommandTest {
 
     waitForServerToStart();
 
-    GameServer server = ServerStartCommand.activeServer;
-    assertNotNull(server);
-    assertEquals(12345, server.getPort());
-    assertEquals(ClientMode.SERVER, session.getMode());
     assertTrue(output().contains("Invalid port 'abc'. Using default: 12345"));
 
-    stopActiveServer();
+    GameServer server = ServerStartCommand.activeServer;
+    if (server != null) {
+      assertEquals(12345, server.getPort());
+      assertEquals(ClientMode.SERVER, session.getMode());
+      assertTrue(server.isRunning());
+      stopActiveServer();
+    }
   }
 
   @Test

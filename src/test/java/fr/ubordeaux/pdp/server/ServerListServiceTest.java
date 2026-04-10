@@ -3,7 +3,6 @@ package fr.ubordeaux.pdp.server;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
@@ -43,13 +42,12 @@ class ServerListServiceTest {
       String stdout = out.toString();
       String stderr = err.toString();
 
-      boolean printedAddress = stdout.contains("Your IP address")
-          || stdout.contains(Internationalization.get("server.list.local_ip_unknown"));
+      boolean printedAddress = stdout.contains("Your IP address : ")
+          || stdout.contains("Your IP address : (could not determine)");
 
-      boolean printedScanMessage = stdout.contains(
-          Internationalization.get("server.list.scanning"))
-          || stderr.contains(Internationalization.get("server.list.port_in_use", 12346))
-          || stderr.contains("Discovery");
+      boolean printedScanMessage = stdout.contains("Scanning for servers (30s)...")
+          || stderr.contains("Port 12346 already in use.")
+          || stderr.contains("Discovery error:");
 
       assertTrue(
           printedAddress,

@@ -138,13 +138,13 @@ public class Utils {
       "show board|history|time|configuration",
       "set PARAM=VALUE",
       "online mode",
-      "server list",
-      "server start [PORT]",
-      "server stop",
-      "server status",
-      "players",
+      "server list  // Local"  ,
+      "server start [PORT]  //Local ",
+      "server stop  //server only",
+      "server status  //server only",
+      "players  //for connected players",
       "score",
-      "join [IP[:PORT]]"
+      "join [IP[:PORT]] //to join a server"
   };
 
   /** Set of valid AI modes for the game. */

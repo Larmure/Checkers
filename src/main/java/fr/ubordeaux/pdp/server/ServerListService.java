@@ -1,6 +1,5 @@
 package fr.ubordeaux.pdp.server;
 
-import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -50,7 +49,7 @@ public class ServerListService {
       byte[] buffer = new byte[1024];
       long startTime = System.currentTimeMillis();
 
-      System.out.println(Internationalization.get("server.list.scanning"));
+      System.out.println("Scanning for servers (30s)...");
 
       while (System.currentTimeMillis() - startTime < LISTEN_DURATION_MS) {
         try {
@@ -65,12 +64,7 @@ public class ServerListService {
           if (isNew) {
             String[] parts = message.split(":");
             if (parts.length == 3) {
-              System.out.println(
-                  Internationalization.get(
-                      "server.list.found",
-                      parts[0],
-                      parts[1],
-                      parts[2]));
+              System.out.println("  Found: " + parts[0] + " at " + parts[1] + ":" + parts[2]);
             }
           }
         } catch (SocketTimeoutException ignored) {
@@ -82,24 +76,15 @@ public class ServerListService {
             entry -> {
               boolean expired = (now - entry.getValue()) > SERVER_EXPIRY_MS;
               if (expired) {
-                System.out.println(
-                    Internationalization.get(
-                        "server.list.expired",
-                        entry.getKey()));
+                System.out.println("  Expired: " + entry.getKey());
               }
               return expired;
             });
       }
     } catch (java.net.BindException e) {
-      System.err.println(
-          Internationalization.get(
-              "server.list.port_in_use",
-              DISCOVERY_PORT));
+      System.err.println("Port " + DISCOVERY_PORT + " already in use.");
     } catch (Exception e) {
-      System.err.println(
-          Internationalization.get(
-              "server.list.discovery_error",
-              e.getMessage()));
+      System.err.println("Discovery error: " + e.getMessage());
     }
 
     return new ArrayList<>(serverTimestamps.keySet());
@@ -112,16 +97,10 @@ public class ServerListService {
   private static void printLocalAddress() {
     try {
       String localIp = InetAddress.getLocalHost().getHostAddress();
-      System.out.println(
-          Internationalization.get(
-              "server.list.local_ip",
-              localIp));
-      System.out.println(
-          Internationalization.get(
-              "server.list.share_join",
-              localIp));
+      System.out.println("Your IP address : " + localIp);
+      System.out.println("Share with others: join " + localIp + ":<port>");
     } catch (Exception e) {
-      System.out.println(Internationalization.get("server.list.local_ip_unknown"));
+      System.out.println("Your IP address : (could not determine)");
     }
   }
 }
