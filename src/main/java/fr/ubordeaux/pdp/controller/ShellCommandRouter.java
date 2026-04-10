@@ -75,7 +75,7 @@ public class ShellCommandRouter {
           handleMove(trimmed);
           return;
         }
-        session.send(trimmed);
+        dispatchInput(trimmed);
       }
       case SERVER -> dispatchInput(trimmed);
       default -> throw new IllegalStateException("Unexpected mode: " + mode);

@@ -2078,6 +2078,17 @@ Lors des tests et du développement, plusieurs anomalies ont été identifiées 
     La commande \texttt{set Param=value} du shell interactif ne gère pas l'ensemble des paramètres configurables du système. 
     Certains paramètres ne sont pas reconnus ou acceptés, limitant la flexibilité de configuration en temps réel.
 
+    \item \textbf{Commande \texttt{quit}}
+
+    La commande \texttt{quit} fonctionne désormais correctement en mode connecté :
+    elle déclenche bien la déconnexion locale du client sans envoi de commande
+    invalide au serveur distant. Toutefois, un message d'erreur résiduel
+    (\texttt{ERROR: Unknown command 'QUIT'}) peut encore s'afficher lors de la
+    fermeture de la session. Ce comportement n'empêche pas la déconnexion, mais
+    montre qu'un ajustement reste nécessaire dans la séquence de terminaison côté
+    client.
+
+
 \end{enumerate}
 
 \subsection{Axes d'amélioration}
@@ -2386,12 +2397,7 @@ la commande \texttt{join IP:port}. Une fois la connexion établie, les joueurs
 utilisent les commandes habituelles du jeu ; leurs actions sont alors
 transmises au serveur, qui centralise les échanges et synchronise l'état de la
 partie partagée.
-
-\paragraph{Intérêt de cette organisation}
-Cette procédure montre que le mode en ligne ne constitue pas un programme
-séparé, mais une extension du mode d'exécution habituel. Le même exécutable est
-utilisé pour lancer le serveur ou les clients, ce qui garantit une utilisation
-homogène de l'application tout en conservant une architecture réseau claire.
+    
 
 
 \end{document}
