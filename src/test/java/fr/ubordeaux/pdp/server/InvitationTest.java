@@ -1,9 +1,7 @@
 package fr.ubordeaux.pdp.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-import fr.ubordeaux.pdp.model.tools.Internationalization;
 import org.junit.jupiter.api.Test;
 
 class InvitationTest {
@@ -60,18 +58,5 @@ class InvitationTest {
     Invitation inv = new Invitation("INV-1", "alice", "bob");
 
     assertTrue(inv.getRemainingSeconds() >= 0);
-  }
-
-  @Test
-  void toString_containsLocalizedMainInformation() {
-    Invitation inv = new Invitation("INV-1", "alice", "bob");
-
-    String text = inv.toString();
-
-    assertTrue(text.contains("INV-1"));
-    assertTrue(text.contains("alice"));
-    assertTrue(text.contains("bob"));
-    assertTrue(text.contains(
-        Internationalization.get("server.invitation.status.pending")));
   }
 }

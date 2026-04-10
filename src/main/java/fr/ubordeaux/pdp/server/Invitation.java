@@ -1,6 +1,5 @@
 package fr.ubordeaux.pdp.server;
 
-import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.time.Instant;
 
 /**
@@ -156,22 +155,11 @@ public class Invitation {
 
   @Override
   public String toString() {
-    return String.format(
-        Internationalization.get("server.invitation.format"),
-        invitationId,
-        fromPlayerId,
-        toPlayerId,
-        getLocalizedStatus(status),
-        getRemainingSeconds());
-  }
-
-  private String getLocalizedStatus(InvitationStatus status) {
-    return switch (status) {
-      case PENDING -> Internationalization.get("server.invitation.status.pending");
-      case ACCEPTED -> Internationalization.get("server.invitation.status.accepted");
-      case DECLINED -> Internationalization.get("server.invitation.status.declined");
-      case CANCELLED -> Internationalization.get("server.invitation.status.cancelled");
-      case EXPIRED -> Internationalization.get("server.invitation.status.expired");
-    };
+    return "Invitation["
+        + invitationId
+        + " from=" + fromPlayerId
+        + " to=" + toPlayerId
+        + " status=" + status
+        + " remaining=" + getRemainingSeconds() + "s]";
   }
 }
