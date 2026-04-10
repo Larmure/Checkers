@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.tools.Internationalization;
 import fr.ubordeaux.pdp.view.HeadlessView;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -60,9 +59,7 @@ class GameSessionTest {
     String error = session.handleMove(alice, "b6-a5");
 
     assertNotNull(error);
-    assertEquals(
-        Internationalization.get("server.game.session_inactive", session.getSessionId()),
-        error);
+    assertTrue(error.contains("no longer active"));
   }
 
   @Test
@@ -70,9 +67,7 @@ class GameSessionTest {
     String error = session.handleMove(bob, "b6-a5");
 
     assertNotNull(error);
-    assertEquals(
-        Internationalization.get("server.game.not_your_turn", "alice"),
-        error);
+    assertTrue(error.contains("Not your turn"));
     assertEquals(alice, session.getCurrentPlayer());
   }
 
@@ -81,9 +76,7 @@ class GameSessionTest {
     String error = session.handleMove(alice, "b6a5");
 
     assertNotNull(error);
-    assertEquals(
-        Internationalization.get("server.game.invalid_move_format"),
-        error);
+    assertTrue(error.contains("Invalid move format"));
     assertEquals(alice, session.getCurrentPlayer());
   }
 
@@ -94,9 +87,8 @@ class GameSessionTest {
     String error = session.handleMove(alice, "b6-a5");
 
     assertNotNull(error);
-    assertEquals(
-        Internationalization.get("server.game.illegal_move", "forbidden move"),
-        error);
+    assertTrue(error.contains("Illegal move"));
+    assertTrue(error.contains("forbidden move"));
     assertEquals(alice, session.getCurrentPlayer());
   }
 
@@ -175,7 +167,7 @@ class GameSessionTest {
     assertTrue(text.contains("GAME-"));
     assertTrue(text.contains("alice"));
     assertTrue(text.contains("bob"));
-    assertTrue(text.contains("alice"));
+    assertTrue(text.contains("turn=alice"));
   }
 
   /** Fake controller for GameSession tests. */

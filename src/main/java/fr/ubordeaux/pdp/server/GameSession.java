@@ -1,7 +1,6 @@
 package fr.ubordeaux.pdp.server;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.tools.Internationalization;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,28 +69,26 @@ public class GameSession {
    */
   public synchronized String handleMove(PlayerSession sender, String moveArgs) {
     if (!active) {
-      return Internationalization.get("server.game.session_inactive", sessionId);
+      return "ERROR: Session " + sessionId + " is no longer active.";
     }
 
     PlayerSession expected = players.get(currentTurnIndex);
     if (!expected.getId().equals(sender.getId())) {
-      return Internationalization.get("server.game.not_your_turn", expected.getId());
+      return "ERROR: Not your turn. Waiting for " + expected.getId() + ".";
     }
 
     String[] parts = moveArgs.trim().split("-");
     if (parts.length != 2) {
-      return Internationalization.get("server.game.invalid_move_format");
+      return "ERROR: Invalid move format. Expected FROM-TO (e.g. e2-e4).";
     }
 
     try {
       controller.executeMove(parts[0].trim(), parts[1].trim(), false);
     } catch (Exception e) {
-      return Internationalization.get("server.game.illegal_move", e.getMessage());
+      return "ERROR: Illegal move — " + e.getMessage();
     }
 
-    String notification = Internationalization.get(
-        "server.game.notification.opponent_move",
-        moveArgs.trim());
+    String notification = "OPPONENT_MOVE " + moveArgs.trim();
     for (PlayerSession player : players) {
       if (!player.getId().equals(sender.getId())) {
         player.send(notification);
@@ -130,9 +127,7 @@ public class GameSession {
         player.recordLoss();
       }
       player.setStatus(PlayerSession.Status.IDLE);
-      player.send(isDraw
-          ? Internationalization.get("server.game.notification.game_over_draw")
-          : Internationalization.get("server.game.notification.game_over_winner", winnerId));
+      player.send("GAME_OVER" + (isDraw ? " DRAW" : " WINNER=" + winnerId));
     }
   }
 
@@ -184,17 +179,13 @@ public class GameSession {
 
   @Override
   public String toString() {
-    StringBuilder playersText = new StringBuilder();
+    StringBuilder sb = new StringBuilder(sessionId).append(" [");
     for (int i = 0; i < players.size(); i++) {
       if (i > 0) {
-        playersText.append(Internationalization.get("server.game.players_separator"));
+        sb.append(" vs ");
       }
-      playersText.append(players.get(i).getId());
+      sb.append(players.get(i).getId());
     }
-    return Internationalization.get(
-        "server.game.format",
-        sessionId,
-        playersText.toString(),
-        getCurrentPlayer().getId());
+    return sb.append("] turn=").append(getCurrentPlayer().getId()).toString();
   }
 }

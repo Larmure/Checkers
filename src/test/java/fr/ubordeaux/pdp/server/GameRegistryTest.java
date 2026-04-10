@@ -7,13 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.ubordeaux.pdp.controller.GameController;
-import fr.ubordeaux.pdp.model.tools.Internationalization;
-import fr.ubordeaux.pdp.view.HeadlessView;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * Tests for {@link GameRegistry}.
@@ -94,9 +93,7 @@ class GameRegistryTest {
   void getScoreboardFormatted_returnsPlaceholderWhenNoPlayers() {
     GameRegistry registry = new GameRegistry();
 
-    assertEquals(
-        Internationalization.get("server.registry.no_players_connected"),
-        registry.getScoreboardFormatted());
+    assertEquals("No players connected.", registry.getScoreboardFormatted());
   }
 
   @Test
@@ -116,12 +113,9 @@ class GameRegistryTest {
 
     String scoreboard = registry.getScoreboardFormatted();
 
-    int idxP1 = scoreboard.indexOf(String.format(
-        Internationalization.get("server.player.line.id"), "p1"));
-    int idxP2 = scoreboard.indexOf(String.format(
-        Internationalization.get("server.player.line.id"), "p2"));
-    int idxP3 = scoreboard.indexOf(String.format(
-        Internationalization.get("server.player.line.id"), "p3"));
+    int idxP1 = scoreboard.indexOf("ID       : p1");
+    int idxP2 = scoreboard.indexOf("ID       : p2");
+    int idxP3 = scoreboard.indexOf("ID       : p3");
 
     assertTrue(idxP1 >= 0);
     assertTrue(idxP2 >= 0);
@@ -148,7 +142,7 @@ class GameRegistryTest {
         registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
     PlayerSession p2 =
         registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
-    GameController controller = new DummyGameController();
+    GameController controller = Mockito.mock(GameController.class);
 
     GameSession session = registry.createSession(List.of(p1, p2), controller);
 
@@ -165,7 +159,7 @@ class GameRegistryTest {
         registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
     PlayerSession p2 =
         registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
-    GameController controller = new DummyGameController();
+    GameController controller = Mockito.mock(GameController.class);
 
     GameSession session = registry.createSession(List.of(p1, p2), controller);
 
@@ -194,7 +188,7 @@ class GameRegistryTest {
     PlayerSession p4 =
         registry.registerPlayer("p4", "Eve", new PrintWriter(new StringWriter(), true));
 
-    GameController controller = new DummyGameController();
+    GameController controller = Mockito.mock(GameController.class);
 
     GameSession active = registry.createSession(List.of(p1, p2), controller);
     GameSession ended = registry.createSession(List.of(p3, p4), controller);
@@ -219,7 +213,7 @@ class GameRegistryTest {
     PlayerSession p4 =
         registry.registerPlayer("p4", "Eve", new PrintWriter(new StringWriter(), true));
 
-    GameController controller = new DummyGameController();
+    GameController controller = Mockito.mock(GameController.class);
 
     registry.createSession(List.of(p1, p2), controller);
     GameSession ended = registry.createSession(List.of(p3, p4), controller);
@@ -240,7 +234,7 @@ class GameRegistryTest {
     PlayerSession p4 =
         registry.registerPlayer("p4", "Eve", new PrintWriter(new StringWriter(), true));
 
-    GameController controller = new DummyGameController();
+    GameController controller = Mockito.mock(GameController.class);
 
     GameSession active = registry.createSession(List.of(p1, p2), controller);
     GameSession ended = registry.createSession(List.of(p3, p4), controller);
@@ -260,7 +254,7 @@ class GameRegistryTest {
         registry.registerPlayer("p1", "Daniel", new PrintWriter(new StringWriter(), true));
     PlayerSession p2 =
         registry.registerPlayer("p2", "Alice", new PrintWriter(new StringWriter(), true));
-    GameController controller = new DummyGameController();
+    GameController controller = Mockito.mock(GameController.class);
 
     GameSession session = registry.createSession(List.of(p1, p2), controller);
 
@@ -273,11 +267,5 @@ class GameRegistryTest {
     assertEquals(1, registry.getPlayerCount());
     assertEquals(0, registry.getActiveSessionCount());
     assertNull(registry.getSessionForPlayer("p2"));
-  }
-
-  private static final class DummyGameController extends GameController {
-    private DummyGameController() {
-      super(new HeadlessView());
-    }
   }
 }
