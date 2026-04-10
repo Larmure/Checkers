@@ -1855,90 +1855,40 @@ Cette séparation améliore la lisibilité de l'architecture, limite les
 interférences entre parties simultanées et rend possible un fonctionnement
 serveur réellement concurrent.
 
-\subsubsection{Connexion réseau et intégration avec les interfaces CLI et GUI}
+\subsubsection{Connexion réseau et intégration avec l'interface CLI}
 
-La classe \underline{\texttt{ClientSession}} constitue le point d'entrée principal
-de la logique réseau côté client. Elle encapsule l'ensemble de l'état de
-connexion : le socket TCP (\underline{\texttt{socket}}), les flux d'entrée et de
-sortie (\underline{\texttt{in}} et \underline{\texttt{out}}), l'état booléen
-\underline{\texttt{connected}}, ainsi que l'adresse du serveur courant dans
-\underline{\texttt{currentServer}}. Elle fournit les opérations fondamentales
-\underline{\texttt{connect()}}, \underline{\texttt{disconnect()}} et
-\underline{\texttt{send()}}, qui permettent respectivement d'établir la
-connexion, de la fermer proprement et d'envoyer des commandes texte au serveur.
-Une fois connecté, le client lance un thread dédié par
-\underline{\texttt{startListenerThread()}}, chargé d'écouter en permanence les
-messages provenant du serveur. Cette architecture permet au client de rester
-interactif pendant que les mises à jour réseau arrivent en arrière-plan.
+\paragraph{Rôle de \texttt{ClientSession}}
+La classe \texttt{ClientSession} constitue le point d'entrée principal de la
+logique réseau côté client. Elle encapsule l'ensemble de l'état de connexion :
+le socket TCP, les flux d'entrée et de sortie, l'état de connexion, ainsi que
+l'adresse du serveur courant. Elle fournit les opérations fondamentales
+\texttt{connect()}, \texttt{disconnect()} et \texttt{send()}, qui permettent
+respectivement d'établir la connexion, de la fermer proprement et de
+transmettre des commandes texte au serveur.
 
-L'intérêt principal de cette conception est qu'elle unifie le comportement entre
-le mode CLI et le mode GUI. En effet, les messages reçus du serveur, comme
-\underline{\texttt{GAME\_START}}, \underline{\texttt{MOVE\_OK}} ou
-\underline{\texttt{OPPONENT\_MOVE}}, sont tous interprétés dans
-\underline{\texttt{handleServerMessage()}} puis réinjectés dans le même
-\underline{\texttt{GameController}} local via
-\underline{\texttt{executeMove()}}. En mode CLI, cela se traduit par un
-affichage textuel immédiat dans le terminal ; en mode GUI, la même mise à jour
-du contrôleur entraîne naturellement le rafraîchissement de l'affichage
-graphique. Ainsi, le projet ne possède pas un moteur pour le terminal et un
-autre pour l'interface graphique : il possède un contrôleur unique, alimenté
-soit par des actions locales, soit par des événements réseau. Cette
-mutualisation garantit la cohérence fonctionnelle entre les deux interfaces et
-limite fortement la duplication de code.
+\paragraph{Réception asynchrone des messages}
+Une fois la connexion établie, \texttt{ClientSession} démarre un fil d'écoute
+dédié via \texttt{startListenerThread()}, chargé de lire en continu les
+messages provenant du serveur. Cette organisation sépare la saisie utilisateur
+dans le terminal de la réception des événements réseau, ce qui garantit que
+l'interface en ligne de commande reste réactive pendant toute la durée de la
+session.
 
+\paragraph{Liaison avec la CLI}
+L'intégration avec la CLI repose sur un principe simple : les messages reçus du
+serveur, tels que \texttt{GAME\_START}, \texttt{MOVE\_OK} ou
+\texttt{OPPONENT\_MOVE}, sont interprétés par
+\texttt{handleServerMessage()} puis réinjectés dans le même flux de contrôle
+que les actions locales. Autrement dit, la couche réseau ne contourne pas la
+logique applicative existante : elle alimente le \texttt{GameController} déjà
+utilisé par l'interface textuelle.
 
-\subsubsection{Cohérence avec les options de lancement}
+\paragraph{Conséquence architecturale}
+Ce choix évite de dupliquer la logique métier entre jeu local et jeu distant.
+La CLI conserve ainsi un comportement homogène : qu'un coup provienne d'une
+commande saisie par l'utilisateur ou d'un message reçu depuis le réseau, il est
+traité par le même contrôleur et selon les mêmes règles du moteur.
 
-L’intégration réseau a également nécessité une évolution de \texttt{App.java}.
-Le point d’entrée du programme a été adapté pour reconnaître les nouveaux modes
-de lancement, notamment le démarrage d’un serveur, le mode démon et
-l’utilisation conjointe du réseau avec l’interface graphique.
-
-\begin{figure}[h]
-    \centering
-    \begin{tikzpicture}[
-        term/.style={
-            draw,
-            rounded corners,
-            minimum width=4.2cm,
-            minimum height=2.5cm,
-            align=left,
-            fill=gray!8
-        },
-        arrow/.style={->, thick}
-    ]
-        \node[term] (server) at (0,0) {
-            \textbf{Terminal 1}\\
-            \texttt{./checkers --server}\\
-            \textit{Démarrage du serveur}
-        };
-
-        \node[term] (client1) at (-5,-4) {
-            \textbf{Terminal 2}\\
-            \texttt{./checkers}\\
-            \texttt{join IP:port}\\
-            \textit{Client 1}
-        };
-
-        \node[term] (client2) at (5,-4) {
-            \textbf{Terminal 3}\\
-            \texttt{./checkers}\\
-            \texttt{join IP:port}\\
-            \textit{Client 2}
-        };
-
-        \draw[arrow] (client1.north) -- node[left] {\texttt{TCP}} (server.south west);
-        \draw[arrow] (client2.north) -- node[right] {\texttt{TCP}} (server.south east);
-    \end{tikzpicture}
-    \caption{Exemple minimal de lancement d’une partie en ligne : un serveur et deux clients sur trois terminaux distincts.}
-    \label{fig:lancement-online}
-\end{figure}
-
-\FloatBarrier
-
-Autrement dit, F39 ne modifie pas seulement le transport des données :
-elle étend aussi la manière dont l’application est initialisée et pilotée par
-l’utilisateur.
 
 \subsubsection{Gestion de la concurrence et apport des mutex}
 
@@ -1990,7 +1940,7 @@ FinPour
 En définitive, F39 représente une fonctionnalité transversale majeure du projet.
 Elle ne se réduit ni à l'ouverture d'un socket, ni à l'affichage d'un plateau
 graphique connecté. Elle articule la communication réseau, la compatibilité
-entre CLI et GUI, l'ajout de nouvelles commandes de jeu et d'administration,
+entre CLI , l'ajout de nouvelles commandes de jeu et d'administration,
 l'intégration avec les options de lancement, la création de sessions
 indépendantes et la sécurisation des accès concurrents par mutex et
 synchronisation. Cette fonctionnalité illustre donc un véritable travail
@@ -2379,6 +2329,69 @@ mvn -DrunBenchmarks=true -Dtest=AiBenchmarkTest#benchmarkAlphaBetaVsMctsUct test
 
 À l'issue de l'exécution, les statistiques détaillées des duels sont automatiquement affichées dans la sortie standard de Maven.
  Elles sont également sauvegardées de manière persistante dans le répertoire \texttt{target/benchmarks} sous la forme de fichiers horodatés.
+
+
+\paragraph{Exemple minimal d'exécution}
+L'exemple présenté à la figure~\ref{fig:lancement-online} illustre le cas le
+plus simple : un terminal dédié au serveur et deux terminaux supplémentaires
+utilisés par les clients.
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[
+        term/.style={
+            draw,
+            rounded corners,
+            minimum width=4.2cm,
+            minimum height=2.5cm,
+            align=left,
+            fill=gray!8
+        },
+        arrow/.style={->, thick}
+    ]
+        \node[term] (server) at (0,0) {
+            \textbf{Terminal 1}\\
+            \texttt{./checkers ---server}\\
+            \textit{Démarrage du serveur}
+        };
+
+        \node[term] (client1) at (-5,-4) {
+            \textbf{Terminal 2}\\
+            \texttt{./checkers}\\
+            \texttt{join IP:port}\\
+            \textit{Client 1}
+        };
+
+        \node[term] (client2) at (5,-4) {
+            \textbf{Terminal 3}\\
+            \texttt{./checkers}\\
+            \texttt{join IP:port}\\
+            \textit{Client 2}
+        };
+
+        \draw[arrow] (client1.north) -- node[left] {\texttt{TCP}} (server.south west);
+        \draw[arrow] (client2.north) -- node[right] {\texttt{TCP}} (server.south east);
+    \end{tikzpicture}
+    \caption{Exemple minimal de lancement d'une partie en ligne : un serveur et deux clients sur trois terminaux distincts.}
+    \label{fig:lancement-online}
+\end{figure}
+
+\FloatBarrier
+
+\paragraph{Séquence d'utilisation}
+Dans un premier terminal, l'utilisateur démarre le serveur avec
+\texttt{./checkers ---server}. Dans des terminaux distincts, les clients lancent
+ensuite l'application de manière classique, puis se connectent au serveur via
+la commande \texttt{join IP:port}. Une fois la connexion établie, les joueurs
+utilisent les commandes habituelles du jeu ; leurs actions sont alors
+transmises au serveur, qui centralise les échanges et synchronise l'état de la
+partie partagée.
+
+\paragraph{Intérêt de cette organisation}
+Cette procédure montre que le mode en ligne ne constitue pas un programme
+séparé, mais une extension du mode d'exécution habituel. Le même exécutable est
+utilisé pour lancer le serveur ou les clients, ce qui garantit une utilisation
+homogène de l'application tout en conservant une architecture réseau claire.
 
 
 \end{document}
